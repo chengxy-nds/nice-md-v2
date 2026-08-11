@@ -123,38 +123,30 @@ function handleInsert(mat) {
           v-for="mat in filteredMaterials"
           :key="mat.id"
           class="mc-card"
+          @click="handleInsert(mat)"
         >
+          <!-- Top Right Tag/Badge (e.g., VIP, 135爆款) -->
+          <div v-if="mat.tag" class="mc-card-badge" :class="{ 'is-vip': mat.tag === 'VIP' }">
+            {{ mat.tag }}
+          </div>
+
           <!-- Material Live Render Box -->
           <div class="mc-card-preview">
             <div class="mc-render-paper" v-html="mat.html"></div>
           </div>
 
-          <!-- Material Metadata -->
-          <div class="mc-card-body">
-            <div class="mc-card-info">
-              <h3 class="mc-card-title">{{ mat.title }}</h3>
-              <p class="mc-card-desc">{{ mat.description }}</p>
+          <!-- Quick Action Bar -->
+          <div class="mc-card-actions" @click.stop>
+            <button class="mc-btn-secondary" @click="handleCopy(mat)">
+              <Check v-if="copiedId === mat.id" size="13" />
+              <Copy v-else size="13" />
+              <span>{{ copiedId === mat.id ? '已复制' : '复制' }}</span>
+            </button>
 
-              <div class="mc-tags">
-                <span v-for="t in mat.tags" :key="t" class="mc-tag-chip">
-                  {{ t }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Actions -->
-            <div class="mc-card-actions">
-              <button class="mc-btn-secondary" @click="handleCopy(mat)">
-                <Check v-if="copiedId === mat.id" size="13" />
-                <Copy v-else size="13" />
-                <span>{{ copiedId === mat.id ? '已复制' : '复制 HTML' }}</span>
-              </button>
-
-              <button class="mc-btn-primary" @click="handleInsert(mat)">
-                <Plus size="13" />
-                <span>插入编辑器</span>
-              </button>
-            </div>
+            <button class="mc-btn-primary" @click="handleInsert(mat)">
+              <Plus size="13" />
+              <span>插入编辑器</span>
+            </button>
           </div>
         </div>
 
@@ -334,27 +326,52 @@ function handleInsert(mat) {
 
 /* Card */
 .mc-card {
+  position: relative;
   background: var(--bg-editor, #ffffff);
   border: 1px solid var(--border-color, #eaebed);
   border-radius: 12px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  transition: all 0.2s ease;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .mc-card:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.04);
+  border-color: var(--accent-color, #2563eb);
+  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.12);
   transform: translateY(-2px);
+}
+
+/* Badge (Top Right) */
+.mc-card-badge {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  z-index: 5;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 12px;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+  letter-spacing: 0.3px;
+}
+
+.mc-card-badge.is-vip {
+  background: #fef3c7;
+  color: #d97706;
+  border: 1px solid #fde68a;
+  box-shadow: 0 1px 4px rgba(217, 119, 6, 0.15);
 }
 
 /* Live Render Box */
 .mc-card-preview {
+  flex: 1;
   min-height: 120px;
-  background: var(--bg-main, #f8fafc);
-  border-bottom: 1px solid var(--border-color, #f1f5f9);
-  padding: 16px;
+  background: #ffffff;
+  padding: 24px 18px 18px 18px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -364,55 +381,23 @@ function handleInsert(mat) {
 .mc-render-paper {
   width: 100%;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px dashed #e2e8f0;
   border-radius: 8px;
   padding: 12px 14px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.02);
+  box-shadow: 0 1px 3px rgba(0,0,0,0.01);
+  transition: all 0.15s ease;
 }
 
-/* Card Body */
-.mc-card-body {
-  padding: 14px 16px;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
+.mc-card:hover .mc-render-paper {
+  border-color: #cbd5e1;
+  border-style: solid;
 }
 
-.mc-card-info {
-  flex: 1;
-  margin-bottom: 14px;
-}
-
-.mc-card-title {
-  font-size: 14px;
-  font-weight: 600;
-  margin: 0 0 6px 0;
-  color: var(--text-main, #111827);
-}
-
-.mc-card-desc {
-  font-size: 12px;
-  color: var(--text-muted, #6b7280);
-  line-height: 1.5;
-  margin: 0 0 10px 0;
-}
-
-.mc-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.mc-tag-chip {
-  font-size: 10px;
-  padding: 2px 6px;
-  border-radius: 4px;
-  background: var(--bg-main, #f3f4f6);
-  color: var(--text-muted, #4b5563);
-}
-
-/* Actions */
+/* Actions Bar */
 .mc-card-actions {
+  padding: 10px 14px 12px;
+  background: #f8fafc;
+  border-top: 1px solid #f1f5f9;
   display: flex;
   gap: 8px;
 }
@@ -434,13 +419,13 @@ function handleInsert(mat) {
 
 .mc-btn-secondary {
   border: 1px solid var(--border-color, #e5e7eb);
-  background: var(--bg-editor, #ffffff);
+  background: #ffffff;
   color: var(--text-main, #374151);
 }
 
 .mc-btn-secondary:hover {
-  background: var(--bg-main, #f9fafb);
-  border-color: #d1d5db;
+  background: #f1f5f9;
+  border-color: #cbd5e1;
 }
 
 .mc-btn-primary {
