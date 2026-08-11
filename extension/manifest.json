@@ -1,0 +1,70 @@
+{
+  "manifest_version": 3,
+  "name": "NiceMD 极简发布助手",
+  "version": "1.0.0",
+  "description": "配合 NiceMD 编辑器，实现文章标题与内容在知乎、掘金、CSDN 等平台的一键自动填装与快捷发布。",
+  "permissions": [
+    "storage",
+    "tabs",
+    "cookies",
+    "declarativeNetRequest"
+  ],
+  "host_permissions": [
+    "http://*/*",
+    "https://*/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "http://173.168.5.225/*"
+      ],
+      "js": ["content-bridge.js"],
+      "run_at": "document_start"
+    },
+    {
+      "matches": [
+        "https://*.zhihu.com/write*",
+        "https://juejin.cn/editor/drafts/new*",
+        "https://juejin.cn/editor/drafts/*",
+        "https://editor.csdn.net/*",
+        "https://mp.csdn.net/mp_blog/creation/editor*",
+        "https://mp.weixin.qq.com/cgi-bin/appmsg*",
+        "https://i.cnblogs.com/posts/edit*",
+        "https://baijiahao.baidu.com/builder/rc/write*",
+        "https://member.bilibili.com/platform/upload/text*",
+        "https://mp.eastmoney.com/NewWrite/Article*",
+        "https://my.oschina.net/action/blog/write*",
+        "https://mp.sohu.com/mpbp/bp/article/write*",
+        "https://www.yuque.com/*/markdown*",
+        "https://blog.51cto.com/blogger/publish*",
+        "https://www.douban.com/note/create*",
+        "https://segmentfault.com/write*",
+        "https://card.weibo.com/article/v5/editor*",
+        "https://mp.xueqiu.com/writeV2*",
+        "https://www.imooc.com/article/publish*",
+        "https://www.woshipm.com/writing*"
+      ],
+      "js": ["content-automation.js"],
+      "run_at": "document_end"
+    },
+    {
+      "matches": ["http://*/*", "https://*/*"],
+      "exclude_matches": [
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "http://173.168.5.225/*"
+      ],
+      "js": ["content-extractor.js"],
+      "run_at": "document_end"
+    }
+  ],
+  "action": {
+    "default_title": "NiceMD 极简发布助手",
+    "default_popup": "popup.html"
+  }
+}

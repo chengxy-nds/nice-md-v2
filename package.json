@@ -1,0 +1,40 @@
+{
+  "name": "nice-md",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port=3000 --host=0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@bytemd/plugin-gfm": "^1.22.0",
+    "@bytemd/plugin-highlight": "^1.22.0",
+    "@bytemd/vue-next": "^1.22.0",
+    "@codemirror/lang-css": "^6.3.1",
+    "@codemirror/lang-markdown": "^6.5.2",
+    "@lucide/vue": "^1.16.0",
+    "canvas-confetti": "^1.9.4",
+    "codemirror": "^6.0.2",
+    "docx": "^9.7.1",
+    "highlight.js": "^11.11.1",
+    "html-docx-js-typescript": "^0.1.5",
+    "html-to-image": "^1.11.13",
+    "html2canvas": "^1.4.1",
+    "html2pdf.js": "^0.14.0",
+    "jspdf": "^4.2.1",
+    "jszip": "^3.10.1",
+    "katex": "^0.17.0",
+    "lucide-vue-next": "^1.0.0",
+    "mammoth": "^1.12.0",
+    "marked": "^18.0.4",
+    "mermaid": "^11.15.0",
+    "vue": "^3.5.34",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^6.0.6",
+    "vite": "^8.0.12"
+  }
+}

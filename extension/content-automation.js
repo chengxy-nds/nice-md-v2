@@ -1,0 +1,388 @@
+/**
+ * Content Automation Script
+ * Injected on target editor pages to inject the saved article payload.
+ */
+
+const SELECTORS = {
+  wechat: {
+    title: '.title-editor__input .ProseMirror, .title-editor__input [contenteditable="true"], #title, #js_title, #js_article_title',
+    editor: '.rich_media_content .ProseMirror, .rich_media_content [contenteditable="true"], body.view, body[contenteditable="true"]',
+    format: 'text/html'
+  },
+  zhihu: {
+    title: 'textarea.WriteIndex-titleInput, [placeholder*="请输入标题"]',
+    editor: '.public-DraftEditor-content, .DraftEditor-root [contenteditable="true"], [role="textbox"]',
+    format: 'text/plain'
+  },
+  juejin: {
+    title: 'input.title-input, [placeholder*="文章标题"]',
+    editor: '.cm-content, .bytemd-editor [contenteditable="true"], .cm-editor [contenteditable="true"], .bytemd-editor textarea',
+    format: 'text/plain'
+  },
+  csdn: {
+    title: 'input.article-bar__title, #txtTitle, [placeholder*="标题"]',
+    editor: 'body.cke_editable, .cke_editable, .CodeMirror textarea, .cm-content, .ck-editor__editable, .ck-content, .editor__inner, .editor textarea, #editor textarea, .editor [contenteditable="true"], .markdown-editor-content textarea',
+    format: 'text/plain'
+  },
+  cnblogs: {
+    title: '#txt-title, [placeholder*="标题"], .post-title-input',
+    editor: '#Editor_Edit_EditorBody, .editor-textarea, textarea, .cm-content, #editor-content',
+    format: 'text/plain'
+  },
+  baijiahao: {
+    title: '.editor-title input, [placeholder*="文章标题"], #title-input',
+    editor: '.ProseMirror, [contenteditable="true"], .ueditor-content',
+    format: 'text/html'
+  },
+  bilibili: {
+    title: '.title-input, input[placeholder*="请输入标题"]',
+    editor: '.ProseMirror, [contenteditable="true"], .editor-content',
+    format: 'text/plain'
+  },
+  eastmoney: {
+    title: '.title-input, [placeholder*="标题"], #txtTitle',
+    editor: '[contenteditable="true"], .editor-content, textarea',
+    format: 'text/html'
+  },
+  oschina: {
+    title: '[placeholder*="标题"], .title-input, #title',
+    editor: '.ProseMirror, [contenteditable="true"], textarea',
+    format: 'text/plain'
+  },
+  sohu: {
+    title: '.title-input, [placeholder*="标题"], input',
+    editor: '.ProseMirror, [contenteditable="true"], .editor',
+    format: 'text/html'
+  },
+  yuque: {
+    title: '[placeholder*="标题"], .title-input, .ne-title-editor',
+    editor: '.ne-engine, [contenteditable="true"]',
+    format: 'text/plain'
+  },
+  '51cto': {
+    title: '#title, [placeholder*="标题"], .title-input',
+    editor: '[contenteditable="true"], textarea',
+    format: 'text/plain'
+  },
+  douban: {
+    title: '#note_title, [placeholder*="题目"], input',
+    editor: '#note_text, textarea',
+    format: 'text/plain'
+  },
+  segmentfault: {
+    title: '[placeholder*="标题"], #title, .title-input',
+    editor: '.cm-content, [contenteditable="true"], textarea',
+    format: 'text/plain'
+  },
+  weibo: {
+    title: '.title-input, [placeholder*="标题"], input',
+    editor: '.editor-content, [contenteditable="true"], textarea',
+    format: 'text/html'
+  },
+  xueqiu: {
+    title: '.write-title, [placeholder*="标题"], input',
+    editor: '.editor-body, [contenteditable="true"], textarea',
+    format: 'text/html'
+  },
+  imooc: {
+    title: '.js-title, [placeholder*="标题"], input',
+    editor: '[contenteditable="true"], textarea',
+    format: 'text/html'
+  },
+  woshipm: {
+    title: '#post_title, [placeholder*="标题"], input',
+    editor: '[contenteditable="true"], textarea',
+    format: 'text/html'
+  }
+};
+
+function getPlatformKey() {
+  const host = window.location.hostname;
+  if (host.includes('zhihu.com')) return 'zhihu';
+  if (host.includes('juejin.cn')) return 'juejin';
+  if (host.includes('csdn.net')) return 'csdn';
+  if (host.includes('weixin.qq.com')) return 'wechat';
+  if (host.includes('cnblogs.com')) return 'cnblogs';
+  if (host.includes('baidu.com')) return 'baijiahao';
+  if (host.includes('bilibili.com')) return 'bilibili';
+  if (host.includes('eastmoney.com')) return 'eastmoney';
+  if (host.includes('oschina.net')) return 'oschina';
+  if (host.includes('sohu.com')) return 'sohu';
+  if (host.includes('yuque.com')) return 'yuque';
+  if (host.includes('51cto.com')) return '51cto';
+  if (host.includes('douban.com')) return 'douban';
+  if (host.includes('segmentfault.com')) return 'segmentfault';
+  if (host.includes('weibo.com')) return 'weibo';
+  if (host.includes('xueqiu.com')) return 'xueqiu';
+  if (host.includes('imooc.com')) return 'imooc';
+  if (host.includes('woshipm.com')) return 'woshipm';
+  return null;
+}
+
+// Helper to query element from main document and child iframes, excluding invalid inputs (file, hidden, etc.)
+function findElement(selector) {
+  const isElementValidTextEditable = (el) => {
+    if (!el) return false;
+    if (el.tagName === 'INPUT') {
+      const type = (el.getAttribute('type') || 'text').toLowerCase();
+      const invalidTypes = ['file', 'hidden', 'submit', 'button', 'checkbox', 'radio', 'image', 'reset', 'range', 'color'];
+      if (invalidTypes.includes(type)) return false;
+    }
+    return true;
+  };
+
+  // 1. Try main document
+  try {
+    const els = document.querySelectorAll(selector);
+    for (const el of els) {
+      if (isElementValidTextEditable(el)) return el;
+    }
+  } catch (e) {
+    // Ignore invalid selectors
+  }
+  
+  // 2. Try nested accessible iframes
+  const iframes = document.querySelectorAll('iframe');
+  for (const iframe of iframes) {
+    try {
+      const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+      if (iframeDoc) {
+        const subEls = iframeDoc.querySelectorAll(selector);
+        for (const el of subEls) {
+          if (isElementValidTextEditable(el)) return el;
+        }
+      }
+    } catch (e) {
+      // Ignore cross-origin security warnings
+    }
+  }
+  return null;
+}
+
+// Helper to simulate paste event into Rich Text/Markdown editors with multi-level fallbacks
+function simulatePaste(target, markdown, html, format = 'text/plain') {
+  target.focus();
+  
+  const isCodeMirrorTextarea = target.tagName === 'TEXTAREA' && target.closest('.CodeMirror');
+  const isStandardInput = (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') && !isCodeMirrorTextarea;
+  
+  // 1. For standard Input/Textarea elements, direct value manipulation is 100% reliable and preserves newlines
+  if (isStandardInput) {
+    const start = target.selectionStart || 0;
+    const end = target.selectionEnd || 0;
+    const val = target.value || '';
+    target.value = val.substring(0, start) + markdown + val.substring(end);
+    target.selectionStart = target.selectionEnd = start + markdown.length;
+    target.dispatchEvent(new Event('input', { bubbles: true }));
+    target.dispatchEvent(new Event('change', { bubbles: true }));
+    console.log('[NiceMD Automation] Standard input/textarea filled directly.');
+    return;
+  }
+
+  // 2. For Contenteditable elements & CodeMirror textareas: Dispatching ClipboardEvent is the safest & most standard method
+  const targetDoc = target.ownerDocument || document;
+  const initialText = target.textContent || (target.value || '');
+  
+  // Setup Selection for Contenteditables before dispatching (Only if it already has text to avoid breaking empty ProseMirror editors)
+  const isContentEditable = target.getAttribute('contenteditable') === 'true' || target.contentEditable === 'true';
+  if (isContentEditable && target.textContent.trim().length > 0) {
+    try {
+      const selection = targetDoc.getSelection();
+      if (selection) {
+        const range = targetDoc.createRange();
+        range.selectNodeContents(target);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        selection.collapseToEnd(); // Put cursor at the end
+      }
+    } catch (err) {
+      console.warn('[NiceMD Automation] Failed to set selection range:', err);
+    }
+  }
+
+  // Dispatch ClipboardEvent paste
+  try {
+    const dataTransfer = new DataTransfer();
+    dataTransfer.setData('text/plain', markdown);
+    if (html) {
+      dataTransfer.setData('text/html', html);
+    }
+    const pasteEvent = new ClipboardEvent('paste', {
+      bubbles: true,
+      cancelable: true,
+      clipboardData: dataTransfer
+    });
+    target.dispatchEvent(pasteEvent);
+    console.log('[NiceMD Automation] Dispatched ClipboardEvent.');
+  } catch (err) {
+    console.error('[NiceMD Automation] ClipboardEvent dispatch failed:', err);
+  }
+
+  // 3. Fallback: If content didn't change (ClipboardEvent ignored), try execCommand (Except for Draft.js/Zhihu to avoid freezing)
+  const currentText = target.textContent || (target.value || '');
+  if (currentText === initialText && !target.closest('.DraftEditor-root')) {
+    try {
+      if (format === 'text/html' && html) {
+        targetDoc.execCommand('insertHTML', false, html);
+        console.log('[NiceMD Automation] Fallback: Inserted HTML via insertHTML command.');
+      } else {
+        targetDoc.execCommand('insertText', false, markdown);
+        console.log('[NiceMD Automation] Fallback: Inserted text via insertText command.');
+      }
+    } catch (err) {
+      console.warn('[NiceMD Automation] Fallback execCommand failed:', err);
+    }
+  }
+}
+
+// Automate input filling with support for custom dynamic selectors
+function injectContent(platform, payload, customSelectors) {
+  const config = customSelectors || SELECTORS[platform];
+  if (!config) return;
+
+  console.log(`[NiceMD Automation] Start filling content for ${platform}...`);
+  
+  let titleFilled = false;
+  let bodyFilled = false;
+  let attempts = 0;
+  
+  const interval = setInterval(() => {
+    attempts++;
+    
+    // Find title input
+    const titleInput = findElement(config.title);
+    console.log(`[NiceMD Automation Debug] Title element attempt ${attempts}:`, titleInput);
+    
+    if (titleInput && !titleFilled) {
+      const isContentEditable = titleInput.getAttribute('contenteditable') === 'true' || titleInput.contentEditable === 'true';
+      if (isContentEditable) {
+        simulatePaste(titleInput, payload.title, '', 'text/plain');
+        // Fallback: If still empty, force textContent without synthetic event triggers to avoid WeChat binding crash
+        if (titleInput.textContent.trim() === '') {
+          titleInput.textContent = payload.title;
+        }
+        // Verify success before locking titleFilled
+        if (titleInput.textContent.trim() !== '') {
+          titleFilled = true;
+          console.log('[NiceMD Automation] Title filled successfully (contenteditable).');
+        }
+      } else {
+        titleInput.focus();
+        titleInput.value = payload.title;
+        titleInput.dispatchEvent(new Event('input', { bubbles: true }));
+        titleInput.dispatchEvent(new Event('change', { bubbles: true }));
+        if (titleInput.value.trim() !== '') {
+          titleFilled = true;
+          console.log('[NiceMD Automation] Title filled successfully (input).');
+        }
+      }
+    }
+    
+    // Find editor element
+    const editorEl = findElement(config.editor);
+    console.log(`[NiceMD Automation Debug] Editor element attempt ${attempts}:`, editorEl);
+    
+    if (editorEl && !bodyFilled) {
+      bodyFilled = true; // Mark as filled synchronously to prevent parallel executions
+      setTimeout(() => {
+        simulatePaste(editorEl, payload.markdown, payload.html, config.format);
+        // Verify body filling. If empty, reset bodyFilled so it retries on next tick
+        const currentText = editorEl.textContent || (editorEl.value || '');
+        if (currentText.trim() === '') {
+          bodyFilled = false;
+          console.log('[NiceMD Automation] Editor body was empty after paste, resetting for retry.');
+        } else {
+          console.log('[NiceMD Automation] Content body pasted successfully.');
+        }
+      }, 500);
+    }
+    
+    // Check if finished or timeout (after 20 attempts, i.e., 10 seconds)
+    if ((titleFilled && bodyFilled) || attempts > 20) {
+      clearInterval(interval);
+      console.log(`[NiceMD Automation] Injection complete. Status: Title=${titleFilled}, Body=${bodyFilled}`);
+      
+      // Clean up storage so it doesn't trigger again on reload
+      chrome.storage.local.remove(`pending_publish_${platform}`);
+      
+      // Show success notification overlay
+      if (titleFilled || bodyFilled) {
+        showSuccessBanner(platform);
+      }
+    }
+  }, 500);
+}
+
+function showSuccessBanner(platform) {
+  const banner = document.createElement('div');
+  banner.style.cssText = `
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: #10b981;
+    color: white;
+    padding: 16px 24px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(16,185,129,0.3);
+    z-index: 999999;
+    font-family: system-ui, -apple-system, sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  `;
+  banner.innerHTML = `
+    <span style="font-size: 18px;">🚀</span>
+    <span>NiceMD 已为您自动填充好文章标题与内容！</span>
+  `;
+  
+  const style = document.createElement('style');
+  style.innerHTML = `
+    @keyframes slideIn {
+      from { transform: translateY(-40px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+  `;
+  document.head.appendChild(style);
+  document.body.appendChild(banner);
+  
+  setTimeout(() => {
+    banner.style.transform = 'translateY(-20px) scale(0.9)';
+    banner.style.opacity = '0';
+    banner.style.transition = 'all 0.3s ease';
+    setTimeout(() => banner.remove(), 300);
+  }, 4000);
+}
+
+// Initial fetch from chrome local storage
+onMounted(() => {
+  const platform = getPlatformKey();
+  if (!platform) return;
+  
+  const storageKey = `pending_publish_${platform}`;
+  chrome.storage.local.get([storageKey, 'platforms_config'], (res) => {
+    const payload = res[storageKey];
+    const platformsConfig = res.platforms_config || [];
+    const activePlatform = platformsConfig.find(p => p.id === platform);
+    
+    if (payload) {
+      const age = Date.now() - payload.timestamp;
+      if (age < 5 * 60 * 1000) {
+        injectContent(platform, payload, activePlatform ? activePlatform.selectors : null);
+      } else {
+        console.log('[NiceMD Automation] Stale payload ignored.');
+        chrome.storage.local.remove(storageKey);
+      }
+    }
+  });
+});
+
+function onMounted(fn) {
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    fn();
+  } else {
+    document.addEventListener('DOMContentLoaded', fn);
+  }
+}

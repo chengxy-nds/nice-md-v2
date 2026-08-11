@@ -1,0 +1,6 @@
+{
+  "name": "nice-md",
+  "description": "Powerful Markdown editor for WeChat and web publishing with theme customization and rich features.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

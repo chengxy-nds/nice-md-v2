@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>NiceMD - 极简多平台分发编辑器</title>
+    <meta name="description" content="NiceMD 是一款支持一键公众号复制与多平台分发的多功能 Markdown 编辑器，拥有趣味的打字音效和轨道分发舱交互系统。" />
+  </head>
+  <body>
+    <div id="app"></div>
+    <!-- Run setImmediate polyfill as a synchronous classic script BEFORE the
+         ES module bundle is evaluated. If it runs after, bluebird (bundled in
+         mammoth) doesn't see setImmediate at init time and falls back to a
+         window.postMessage("setImmediate...") scheduler, which triggers
+         JSON.parse errors in the assistant extension's content script. -->
+    <script>
+      if (!window.setImmediate) {
+        window.setImmediate = function (fn) {
+          var args = Array.prototype.slice.call(arguments, 1);
+          return setTimeout(function () { fn.apply(null, args); }, 0);
+        };
+        window.clearImmediate = function (id) {
+          clearTimeout(id);
+        };
+      }
+    </script>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

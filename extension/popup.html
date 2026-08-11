@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NiceMD 极简发布面板</title>
+  <link rel="stylesheet" href="popup.css">
+  <!-- Outfit & Inter Google Fonts for high-end modern appearance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;800&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="popup-container">
+    <!-- Header -->
+    <header class="popup-header">
+      <div class="header-logo">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>
+        </svg>
+        <span class="logo-text">NiceMD</span>
+        <span class="logo-badge">助手</span>
+      </div>
+      <div class="header-actions">
+        <!-- Open Web Editor Button -->
+        <button id="btn-open-editor" class="btn-action-brutal" title="打开 NiceMD 编辑器">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3"/>
+          </svg>
+        </button>
+        <!-- Refresh Button -->
+        <button id="btn-refresh" class="btn-action-brutal btn-yellow" title="刷新登录状态">
+          <svg id="icon-refresh" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- Tabs Header -->
+    <div class="popup-tabs">
+      <button id="tab-channels" class="tab-button active">分发通道</button>
+      <button id="tab-extractor" class="tab-button">网页提取</button>
+    </div>
+
+    <!-- Main Scrollable Content Area -->
+    <main class="popup-main">
+      <!-- Section 1: Channels List -->
+      <div id="section-channels" class="tab-section">
+        <div class="list-title">分发通道登录状态检测</div>
+        
+        <div id="loading-state" class="loading-state">
+          <div class="spinner"></div>
+          <p>正在读取各平台 Cookie 状态...</p>
+        </div>
+
+        <div id="platforms-list" class="platforms-list hidden">
+          <!-- Dynamic platform items are appended here -->
+        </div>
+      </div>
+
+      <!-- Section 2: Page Extractor and Editor -->
+      <div id="section-extractor" class="tab-section hidden">
+        <!-- Trigger Screen -->
+        <div id="extractor-trigger-view" class="extractor-view">
+          <button id="btn-extract-page" class="btn-brutal-large">
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+            </svg>
+            提取当前页面内容
+          </button>
+          <div id="extract-status" class="extract-status-text">提取网页正文并转换为 Markdown，导入前可自由编辑修改。</div>
+          <div class="setting-item-brutal" style="margin-top: 24px; display: flex; align-items: center; gap: 8px; justify-content: center; font-size: 12px;">
+            <input type="checkbox" id="chk-show-fab" style="cursor: pointer; accent-color: var(--accent-yellow); width: 15px; height: 15px;" />
+            <label for="chk-show-fab" style="cursor: pointer; user-select: none; font-weight: 600; color: var(--text-muted);">在网页中显示“同步到 NiceMD”悬浮按钮</label>
+          </div>
+        </div>
+
+        <!-- Edit Form Screen -->
+        <div id="extractor-edit-view" class="extractor-view hidden">
+          <div class="form-group">
+            <label for="ext-title">文章标题</label>
+            <input type="text" id="ext-title" class="input-brutal" placeholder="文章标题" />
+          </div>
+          
+          <div class="form-group">
+            <label for="ext-content">Markdown 正文</label>
+            <textarea id="ext-content" class="textarea-brutal" placeholder="正文 Markdown 格式内容..."></textarea>
+          </div>
+
+          <div class="form-actions" style="flex-wrap: wrap; gap: 8px;">
+            <button id="btn-import-editor" class="btn-brutal-action" style="flex: 1; min-width: 130px;">
+              导入网页编辑器
+            </button>
+            <button id="btn-go-publish" class="btn-brutal-action" style="flex: 1; min-width: 130px; background-color: var(--accent-coral); color: white;">
+              🚀 一键分发内容
+            </button>
+            <button id="btn-re-extract" class="btn-brutal-action btn-secondary" style="flex: 1; min-width: 80px; margin-left: 0;">
+              重新提取
+            </button>
+          </div>
+        </div>
+
+        <!-- Extractor Publish Screen -->
+        <div id="extractor-publish-view" class="extractor-view hidden">
+          <div class="publish-article-summary">
+            <label>分发文章标题</label>
+            <div id="pub-summary-title" class="summary-title-text">文章标题</div>
+          </div>
+
+          <div class="list-title" style="margin-top: 10px;">选择发布平台</div>
+          
+          <div id="publish-platforms-list" class="publish-selection-list">
+            <!-- Dynamic platform checkboxes appended here -->
+          </div>
+
+          <!-- Mini Terminal -->
+          <div id="publish-terminal" class="publish-terminal-screen hidden">
+            <!-- Logs go here -->
+          </div>
+
+          <div class="form-actions" style="margin-top: 12px; gap: 8px;">
+            <button id="btn-start-publish" class="btn-brutal-large" style="margin-top: 0; background-color: var(--accent-coral); color: white; flex: 2; height: 40px;">
+              🚀 开始同步发布
+            </button>
+            <button id="btn-back-to-edit" class="btn-brutal-action btn-secondary" style="height: 40px; flex: 1;">
+              返回编辑
+            </button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer Stats -->
+    <footer class="popup-footer">
+      <div id="footer-stats" class="stats-text">正在检查...</div>
+      <div class="footer-version">v1.2.0</div>
+    </footer>
+  </div>
+
+  <script src="marked.js"></script>
+  <script src="popup.js"></script>
+</body>
+</html>
