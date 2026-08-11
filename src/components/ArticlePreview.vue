@@ -526,6 +526,11 @@ function handlePreviewElementClick(e) {
   overflow-wrap: break-word;
 }
 
+.markdown-body :deep(> :first-child),
+.markdown-body :deep(#nice > :first-child) {
+  margin-top: 0 !important;
+}
+
 .markdown-body :deep(h1) {
   color: var(--ct-h1-color, var(--text-main));
   font-size: var(--ct-h1-size, 1.9em);
@@ -724,12 +729,26 @@ function handlePreviewElementClick(e) {
 }
 
 .phone-article-header {
-  margin-bottom: 1.25rem !important;
+  margin-bottom: 0.5rem !important;
   border-bottom: 1px solid #f1f5f9 !important;
-  padding-bottom: 0.75rem !important;
+  padding-bottom: 0.5rem !important;
   background: transparent !important;
   border-radius: 0 !important;
   box-shadow: none !important;
+}
+
+.wechat-body {
+  width: 100%;
+}
+
+.wechat-body :deep(#nice) {
+  padding-top: 0 !important;
+}
+
+.wechat-body :deep(#nice > :first-child),
+.wechat-body :deep(#nice > section:first-child) {
+  margin-top: 0 !important;
+  padding-top: 0 !important;
 }
 
 .phone-title {

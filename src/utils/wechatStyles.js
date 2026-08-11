@@ -685,6 +685,21 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
   // Convert inline non-standard tags (mark, del, kbd, sub, sup, code) & li p to <span> for WeChat
   convertNonStandardInlineTagsToSpans(root);
 
+  // Remove top margin on first element inside article body to prevent massive blank header gap
+  if (root.firstElementChild) {
+    const removeTopMargin = (el) => {
+      if (!el) return;
+      const existingStyle = el.getAttribute('style') || '';
+      let cleaned = existingStyle.replace(/margin-top\s*:\s*[^;]+;?/gi, '').trim();
+      if (cleaned && !cleaned.endsWith(';')) cleaned += ';';
+      el.setAttribute('style', cleanCss(cleaned + ' margin-top: 0 !important;'));
+    };
+    removeTopMargin(root.firstElementChild);
+    if (root.firstElementChild.firstElementChild) {
+      removeTopMargin(root.firstElementChild.firstElementChild);
+    }
+  }
+
   root.setAttribute('id', 'nice');
   root.setAttribute('data-tool', 'NiceMD编辑器');
   root.setAttribute('data-website', 'https://github.com/chengxy-nds/nice-md');
