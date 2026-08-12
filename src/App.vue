@@ -123,7 +123,7 @@ function handleApplyTemplate(template) {
 }
 
 function handleApplyTheme(theme) {
-  soundEngine.playClick();
+  soundEngine.playChime();
   const themeId = typeof theme === 'string' ? theme : theme.id;
   const customStylesObj = (typeof theme === 'object' && theme.customStyles)
     ? JSON.parse(JSON.stringify(theme.customStyles))
@@ -134,15 +134,20 @@ function handleApplyTheme(theme) {
   applyTheme(themeId);
   localStorage.setItem('nicemd_theme', themeId);
 
-  // 2) Update customStyles reactive state
+  // 2) Apply theme & customStyles onto current active document
+  if (!activeDocument.value) {
+    handleCreateDoc();
+  }
+  if (activeDocument.value) {
+    activeDocument.value.customStyles = customStylesObj;
+    activeDocument.value.updatedAt = Date.now();
+  }
   customStyles.value = customStylesObj;
 
-  // 3) Insert sample content into document & save customStyles onto document
-  handleApplyTemplate({
-    content: (typeof theme === 'object' && theme.sample) ? theme.sample : defaultMarkdown,
-    title: (typeof theme === 'object' && theme.name) ? theme.name : '已套用主题',
-    customStyles: customStylesObj
-  });
+  saveDocuments(documents.value);
+
+  // 3) Switch back to editor
+  currentView.value = 'editor';
 }
 
 function handleRenameDoc({ id, title }) {
@@ -288,6 +293,15 @@ const changeTheme = (themeId) => {
   currentTheme.value = themeId;
   applyTheme(themeId);
   localStorage.setItem('nicemd_theme', themeId);
+
+  // Update active document's customStyles to match the new theme's default styles so preview updates immediately
+  const newStyles = getThemeDefaultStyles(themeId) || {};
+  if (activeDocument.value) {
+    activeDocument.value.customStyles = newStyles;
+    activeDocument.value.updatedAt = Date.now();
+  }
+  customStyles.value = newStyles;
+  saveDocuments(documents.value);
 };
 
 const handleImport = ({ content, type, filename }) => {

@@ -17,8 +17,18 @@ const wechatTheme = {
 import { codeThemes } from './codeThemes';
 import { themes } from './themePresets';
 import { buildWechatTypo } from './themeTypography';
+import { allMaterialTemplatesMap } from './materialLibrary';
 
-export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', codeThemeId = 'atom-one-dark', customCss = '') {
+function isMaterialEl(el) {
+  if (!el || !el.closest) return false;
+  return !!el.closest('[data-material="true"], [data-material], .material-block, [data-heading][data-material]');
+}
+
+export function cleanCss(css) {
+  return (css || '').replace(/\s+/g, ' ').trim();
+}
+
+export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', codeThemeId = 'atom-one-dark', customCss = '', customStyles = null) {
   const codeTheme = codeThemes.find(t => t.id === codeThemeId) || codeThemes[0];
   const codeStyles = codeTheme.styles;
   const theme = themes.find(t => t.id === themeId) || themes[0];
@@ -55,8 +65,6 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     }
   });
 
-  const cleanCss = (css) => css.replace(/\s+/g, ' ').trim();
-
   // 1. Global Container Styling
   root.setAttribute('style', cleanCss(`
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
@@ -70,9 +78,10 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     background-color: ${colors.bgPreview};
   `));
 
-  // Helper to set style safely and convert elements to section if it is a heading to prevent WeChat from overriding styles
+// Helper to set style safely and convert elements to section if it is a heading to prevent WeChat from overriding styles
   const styleEl = (selector, styleStr) => {
     root.querySelectorAll(selector).forEach(el => {
+      if (isMaterialEl(el)) return;
       const cleanedStyle = cleanCss(styleStr);
       if (/^h[1-6]$/i.test(el.tagName)) {
         const section = doc.createElement('section');
@@ -94,11 +103,77 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     });
   };
 
+  // 1.5 Material Template Replacement for Headings, Blockquotes & Dividers
+  ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].forEach(tag => {
+    const matId = customStyles?.[tag]?.materialTemplateId || themeStyles?.[tag]?.materialTemplateId;
+    const prefix = customStyles?.[tag]?.materialPrefix || (tag === 'h1' ? 'PART' : 'SECTION');
+    if (matId && matId !== 'none' && allMaterialTemplatesMap[matId]) {
+      const tmpl = allMaterialTemplatesMap[matId];
+      let index = 0;
+      root.querySelectorAll(tag).forEach(el => {
+        if (isMaterialEl(el)) return;
+        index++;
+        const titleText = el.textContent.trim();
+        const renderedHtml = tmpl.render ? tmpl.render(titleText, index, { prefix }) : null;
+        if (renderedHtml) {
+          const tempContainer = doc.createElement('div');
+          tempContainer.innerHTML = renderedHtml;
+          const replacement = tempContainer.firstElementChild;
+          if (replacement) {
+            replacement.setAttribute('data-heading', tag);
+            replacement.setAttribute('data-material', 'true');
+            el.parentNode.replaceChild(replacement, el);
+          }
+        }
+      });
+    }
+  });
+
+  // Blockquotes (引用/引入) Material Replacement
+  const bqMatId = customStyles?.blockquote?.materialTemplateId || themeStyles?.blockquote?.materialTemplateId;
+  if (bqMatId && bqMatId !== 'none' && allMaterialTemplatesMap[bqMatId]) {
+    const tmpl = allMaterialTemplatesMap[bqMatId];
+    root.querySelectorAll('blockquote').forEach(el => {
+      if (isMaterialEl(el)) return;
+      const contentHtml = el.innerHTML.trim();
+      const renderedHtml = tmpl.render ? tmpl.render(contentHtml) : null;
+      if (renderedHtml) {
+        const tempContainer = doc.createElement('div');
+        tempContainer.innerHTML = renderedHtml;
+        const replacement = tempContainer.firstElementChild;
+        if (replacement) {
+          replacement.setAttribute('data-material', 'true');
+          el.parentNode.replaceChild(replacement, el);
+        }
+      }
+    });
+  }
+
+  // Dividers (分割线) Material Replacement
+  const hrMatId = customStyles?.hr?.materialTemplateId || themeStyles?.hr?.materialTemplateId;
+  if (hrMatId && hrMatId !== 'none' && allMaterialTemplatesMap[hrMatId]) {
+    const tmpl = allMaterialTemplatesMap[hrMatId];
+    root.querySelectorAll('hr').forEach(el => {
+      if (isMaterialEl(el)) return;
+      const renderedHtml = tmpl.render ? tmpl.render() : null;
+      if (renderedHtml) {
+        const tempContainer = doc.createElement('div');
+        tempContainer.innerHTML = renderedHtml;
+        const replacement = tempContainer.firstElementChild;
+        if (replacement) {
+          replacement.setAttribute('data-material', 'true');
+          el.parentNode.replaceChild(replacement, el);
+        }
+      }
+    });
+  }
+
   // 2. Headings decoration matching theme personalities
   const isMountain = theme.id === 'classic-indigo' || theme.id.startsWith('mountain-') || !theme.typography;
 
   if (isMountain) {
     root.querySelectorAll('h1').forEach(el => {
+      if (isMaterialEl(el)) return;
       const section = doc.createElement('section');
       section.setAttribute('data-heading', 'h1');
       section.setAttribute('style', cleanCss(`
@@ -116,6 +191,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     });
 
     root.querySelectorAll('h2').forEach(el => {
+      if (isMaterialEl(el)) return;
       const section = doc.createElement('section');
       section.setAttribute('data-heading', 'h2');
       section.setAttribute('style', cleanCss(`
@@ -134,6 +210,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     const T = theme.typography;
     const h3Spec = (T && T.h3) || {};
     root.querySelectorAll('h3').forEach(el => {
+      if (isMaterialEl(el)) return;
       const section = doc.createElement('section');
       section.setAttribute('data-heading', 'h3');
       const h3FontSize = h3Spec.size || '18px';
@@ -165,6 +242,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     });
 
     root.querySelectorAll('h4').forEach(el => {
+      if (isMaterialEl(el)) return;
       const section = doc.createElement('section');
       section.setAttribute('data-heading', 'h4');
       section.setAttribute('style', cleanCss(`
@@ -541,11 +619,17 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
 
   // 10. Images
   styleEl('img', `
-    max-width: 100%;
-    display: block;
-    border-radius: 6px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+    max-width: 100% !important;
+    height: auto !important;
+    display: block !important;
+    margin: 0 auto !important;
+    margin-top: 16px !important;
+    margin-bottom: 16px !important;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
   `);
+
+  convertImageContainersAndMargins(root, colors);
 
   // 11. Convert LaTeX Math Formulas (KaTeX) into high-resolution transparent PNG images via CodeCogs
   
@@ -837,10 +921,13 @@ function inlineComputedStyle(liveEl, cloneEl) {
 
   // ── img fallbacks (essential for WeChat) ──
   if (cloneEl.tagName === 'IMG') {
-    if (!props.some(p => p.startsWith('max-width'))) props.push('max-width: 100%');
-    if (!props.some(p => p.startsWith('display'))) props.push('display: block');
-    if (!props.some(p => p.startsWith('height')) && !props.some(p => p.startsWith('max-height')))
-      props.push('height: auto');
+    if (!props.some(p => p.startsWith('max-width'))) props.push('max-width: 100% !important');
+    if (!props.some(p => p.startsWith('display'))) props.push('display: block !important');
+    if (!props.some(p => p.startsWith('height') || p.startsWith('max-height')))
+      props.push('height: auto !important');
+    props.push('margin: 0 auto !important');
+    props.push('margin-top: 16px !important');
+    props.push('margin-bottom: 16px !important');
   }
 
   // Preserve existing inline style (e.g. from hljs syntax spans, mermaid diagrams)
@@ -857,10 +944,140 @@ function inlineComputedStyle(liveEl, cloneEl) {
 }
 
 /**
+ * Convert image wrappers (<p> or <figure>) to <section> and apply explicit 
+ * top/bottom margins and center alignment so WeChat MP Editor never strips image margins.
+ */
+function convertImageContainersAndMargins(root, colors = {}) {
+  const doc = root.ownerDocument || document;
+  const mutedColor = colors.muted || '#7f7f7f';
+
+  root.querySelectorAll('img').forEach(img => {
+    // Skip material templates
+    if (isMaterialEl(img)) return;
+
+    // Skip inline math formula images
+    if (img.classList.contains('math-inline-img')) return;
+
+    const isBlockMath = img.classList.contains('math-block-img');
+
+    // Ensure img itself has explicit block & margin inline styles
+    const existingStyle = img.getAttribute('style') || '';
+    const cleanExisting = existingStyle
+      .replace(/margin-[^;]+;?/gi, '')
+      .replace(/margin:[^;]+;?/gi, '')
+      .replace(/display:[^;]+;?/gi, '')
+      .replace(/max-width:[^;]+;?/gi, '');
+
+    const imgStyle = `
+      display: block !important;
+      max-width: 100% !important;
+      height: auto !important;
+      margin: 0 auto !important;
+      margin-top: 12px !important;
+      margin-bottom: 12px !important;
+      border-radius: 8px;
+      box-shadow: ${isBlockMath ? 'none' : '0 4px 12px rgba(0,0,0,0.06)'};
+    `;
+    img.setAttribute('style', cleanCss(cleanExisting + ';' + imgStyle));
+
+    // Get alt text for caption
+    const altText = (img.getAttribute('alt') || '').trim();
+    const hasMeaningfulAlt = altText && !/^(image|img|photo|pic|figure|\d+|https?:\/\/)/i.test(altText);
+
+    // Parent container check (<p>, <figure>, <div>, etc.)
+    const parent = img.parentNode;
+    if (!parent) return;
+
+    const parentTag = parent.tagName.toLowerCase();
+
+    // If parent is <p> or <figure>
+    if (parentTag === 'p' || parentTag === 'figure') {
+      const section = doc.createElement('section');
+      section.setAttribute('data-role', 'image-container');
+      section.setAttribute('style', cleanCss(`
+        margin-top: 20px !important;
+        margin-bottom: 20px !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding: 0 !important;
+        text-align: center !important;
+        clear: both !important;
+      `));
+
+      const figcaption = parent.querySelector('figcaption, .caption');
+
+      while (parent.firstChild) {
+        section.appendChild(parent.firstChild);
+      }
+
+      if (hasMeaningfulAlt && !figcaption && !section.querySelector('.img-caption')) {
+        const captionSec = doc.createElement('section');
+        captionSec.className = 'img-caption';
+        captionSec.setAttribute('style', cleanCss(`
+          font-size: 13px !important;
+          color: ${mutedColor} !important;
+          text-align: center !important;
+          margin-top: 8px !important;
+          margin-bottom: 4px !important;
+          line-height: 1.6 !important;
+          letter-spacing: 0.05em !important;
+        `));
+        captionSec.textContent = altText;
+        section.appendChild(captionSec);
+      } else if (figcaption) {
+        figcaption.setAttribute('style', cleanCss(`
+          font-size: 13px !important;
+          color: ${mutedColor} !important;
+          text-align: center !important;
+          margin-top: 8px !important;
+          margin-bottom: 4px !important;
+          line-height: 1.6 !important;
+        `));
+      }
+
+      parent.parentNode.replaceChild(section, parent);
+    } else if (parentTag !== 'section' || parent.getAttribute('data-role') !== 'image-container') {
+      // If image is not inside an image-container <section>, wrap it
+      const section = doc.createElement('section');
+      section.setAttribute('data-role', 'image-container');
+      section.setAttribute('style', cleanCss(`
+        margin-top: 20px !important;
+        margin-bottom: 20px !important;
+        margin-left: 0 !important;
+        margin-right: 0 !important;
+        padding: 0 !important;
+        text-align: center !important;
+        clear: both !important;
+      `));
+
+      parent.insertBefore(section, img);
+      section.appendChild(img);
+
+      if (hasMeaningfulAlt) {
+        const captionSec = doc.createElement('section');
+        captionSec.className = 'img-caption';
+        captionSec.setAttribute('style', cleanCss(`
+          font-size: 13px !important;
+          color: ${mutedColor} !important;
+          text-align: center !important;
+          margin-top: 8px !important;
+          margin-bottom: 4px !important;
+          line-height: 1.6 !important;
+          letter-spacing: 0.05em !important;
+        `));
+        captionSec.textContent = altText;
+        section.appendChild(captionSec);
+      }
+    }
+  });
+}
+
+/**
  * Convert headings to <section> so WeChat editor doesn't override styles.
  */
 function convertHeadingsToSections(root) {
   root.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(h => {
+    if (isMaterialEl(h)) return;
     const tag = h.tagName.toLowerCase();
     const section = document.createElement('section');
     section.setAttribute('data-heading', tag);
@@ -880,6 +1097,7 @@ function convertNonStandardInlineTagsToSpans(root) {
 
   // 1. Convert <p> inside <li> to <span> so WeChat editor never creates unwanted line breaks inside list items
   root.querySelectorAll('li p').forEach(p => {
+    if (isMaterialEl(p)) return;
     const span = doc.createElement('span');
     let style = (p.getAttribute('style') || '')
       .replace(/padding:[^;]+;?/gi, '')
@@ -892,6 +1110,7 @@ function convertNonStandardInlineTagsToSpans(root) {
 
   // 2. Convert non-standard inline tags (mark, del, s, strike, u, ins, kbd, sub, sup, code, font) to <span>
   root.querySelectorAll('font').forEach(font => {
+    if (isMaterialEl(font)) return;
     const color = font.getAttribute('color');
     const style = font.getAttribute('style') || '';
     const span = doc.createElement('span');
@@ -904,6 +1123,7 @@ function convertNonStandardInlineTagsToSpans(root) {
 
   root.querySelectorAll('mark, del, s, strike, u, ins, kbd, sub, sup, code').forEach(el => {
     if (el.tagName.toLowerCase() === 'code' && el.closest('pre')) return;
+    if (isMaterialEl(el)) return;
 
     const tag = el.tagName.toLowerCase();
     const span = doc.createElement('span');
@@ -941,11 +1161,12 @@ function applyCustomCssRules(root, customCss) {
     // Expand heading selectors (h1..h6) to target both tag and all descendants of section[data-heading="h1..h6"]
     if (/^h[1-6]$/i.test(cleanSelector)) {
       const h = cleanSelector.toLowerCase();
-      cleanSelector = `${h}, [data-heading="${h}"], [data-heading="${h}"] *`;
+      cleanSelector = `${h}, [data-heading="${h}"]:not([data-material="true"]), [data-heading="${h}"]:not([data-material="true"]) *`;
     }
 
     try {
       root.querySelectorAll(cleanSelector).forEach(el => {
+        if (isMaterialEl(el)) return;
         declarations.split(';').forEach(decl => {
           const parts = decl.split(':');
           if (parts.length >= 2) {
@@ -969,6 +1190,7 @@ function applyCustomCssRules(root, customCss) {
  */
 function stripExternalLinks(root) {
   root.querySelectorAll('a').forEach(a => {
+    if (isMaterialEl(a)) return;
     const href = a.getAttribute('href') || '';
     const isWeChat = href.includes('mp.weixin.qq.com') || href.startsWith('weixin://');
     if (!isWeChat) {
@@ -1181,6 +1403,7 @@ export function previewDomToWechatHtml(previewEl, primaryColor) {
   convertKatexToImages(clone, primaryColor);  // KaTeX → PNG before code restructuring
   restructureCodeBlocks(clone);               // <pre> → <section> wrapper + Mac header
   convertHeadingsToSections(clone);           // h1-h6 → <section> (WeChat overrides headings)
+  convertImageContainersAndMargins(clone, { muted: '#7f7f7f' }); // img → <section> wrapper + explicit 20px margins
   convertNonStandardInlineTagsToSpans(clone); // convert inline non-standard tags & li p to <span> for WeChat
   stripExternalLinks(clone);                  // external <a> → <span> (WeChat link policy)
 
@@ -1209,10 +1432,10 @@ export function previewDomToWechatHtml(previewEl, primaryColor) {
  * Copies styled HTML + fallback plain text to user clipboard.
  * When `previewEl` is provided, uses WYSIWYG computed-style path.
  */
-export async function copyToWeChat(htmlContent, plainText, themeId = 'classic-indigo', codeThemeId = 'atom-one-dark', customCss = '') {
+export async function copyToWeChat(htmlContent, plainText, themeId = 'classic-indigo', codeThemeId = 'atom-one-dark', customCss = '', customStyles = null) {
   // Always use the bulletproof compileToWeChatHtml engine to ensure zero negative margins,
   // zero floats, zero layout collisions, and 100% WeChat MP Editor compatibility.
-  const finalHtml = compileToWeChatHtml(htmlContent, themeId, codeThemeId, customCss);
+  const finalHtml = compileToWeChatHtml(htmlContent, themeId, codeThemeId, customCss, customStyles);
 
   const htmlBlob = new Blob([finalHtml], { type: 'text/html' });
   const textBlob = new Blob([plainText], { type: 'text/plain' });

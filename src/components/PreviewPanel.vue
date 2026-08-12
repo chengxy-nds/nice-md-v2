@@ -154,7 +154,7 @@ const injectedCustomCss = computed(() => {
       if (tag.startsWith('.')) return `.preview-body ${tag}, .wechat-body ${tag}`;
       if (/^h[1-6]$/i.test(tag)) {
         const h = tag.toLowerCase();
-        return `.preview-body ${h}, .preview-body [data-heading="${h}"], .preview-body [data-heading="${h}"] *, .wechat-body ${h}, .wechat-body [data-heading="${h}"], .wechat-body [data-heading="${h}"] *, .phone-screen-scroll ${h}, .phone-screen-scroll [data-heading="${h}"] *`;
+        return `.preview-body ${h}, .preview-body [data-heading="${h}"]:not([data-material="true"]), .preview-body [data-heading="${h}"]:not([data-material="true"]) *, .wechat-body ${h}, .wechat-body [data-heading="${h}"]:not([data-material="true"]), .wechat-body [data-heading="${h}"]:not([data-material="true"]) *, .phone-screen-scroll ${h}, .phone-screen-scroll [data-heading="${h}"]:not([data-material="true"]) *`;
       }
       return `.preview-body ${tag}, .preview-body .markdown-body ${tag}, .wechat-body ${tag}, .phone-screen-scroll ${tag}`;
     }).filter(Boolean);
@@ -224,7 +224,8 @@ const handleCopyWeChat = async () => {
     props.markdown,
     props.themeId,
     props.codeThemeId,
-    activeCustomStyles.value?.customCss || ''
+    activeCustomStyles.value?.customCss || '',
+    activeCustomStyles.value
   );
   if (success) {
     showToast('已复制公众号格式 (带完整样式)');
@@ -1047,7 +1048,16 @@ const handleCopyMarkdownText = async () => {
 
 .wechat-body :deep(img) {
   max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 16px auto;
   border-radius: var(--ct-img-radius, 8px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+.wechat-body :deep(section[data-role="image-container"]) {
+  margin: 20px 0;
+  text-align: center;
 }
 
 .wechat-body :deep(ul), .wechat-body :deep(ol) {

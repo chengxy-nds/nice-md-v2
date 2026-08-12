@@ -1,7 +1,8 @@
 <script setup>
 import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
-import { Palette, X, Save, Sliders, Code2, RotateCcw, Check } from 'lucide-vue-next';
+import { Palette, X, Save, Sliders, Code2, RotateCcw, Check, Sparkles } from 'lucide-vue-next';
 import { getThemeDefaultStyles } from '../utils/themePresets';
+import { allMaterialTemplatesMap, getMaterialTemplatesForKey } from '../utils/materialLibrary';
 import { EditorView, basicSetup } from 'codemirror';
 import { css } from '@codemirror/lang-css';
 import { keymap } from '@codemirror/view';
@@ -24,6 +25,48 @@ const saveToastVisible = ref(false);
 const codemirrorContainerRef = ref(null);
 let cmView = null;
 let isUpdatingFromCodeMirror = false;
+
+// Material Template Replacement Modal state & helpers
+const materialModalOpen = ref(false);
+const currentModalKey = ref('h1');
+
+function hasMaterialSupport(key) {
+  return ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'hr'].includes(key);
+}
+
+function getMaterialTypeLabel(key) {
+  const map = {
+    h1: 'H1 一级标题',
+    h2: 'H2 二级标题',
+    h3: 'H3 三级标题',
+    h4: 'H4 四级标题',
+    h5: 'H5 五级标题',
+    h6: 'H6 六级标题',
+    blockquote: '引用 / 引入',
+    hr: '分割线'
+  };
+  return map[key] || '素材';
+}
+
+function openMaterialModal(key) {
+  currentModalKey.value = key;
+  materialModalOpen.value = true;
+}
+
+function selectMaterialTemplate(templateId) {
+  const key = currentModalKey.value;
+  updateStyle(key, 'materialTemplateId', templateId);
+  materialModalOpen.value = false;
+}
+
+function getMaterialTemplateName(id) {
+  const t = allMaterialTemplatesMap[id];
+  return t ? t.name : '经典素材';
+}
+
+function hasPrefixOption(id) {
+  return ['h-135-part01-leaf', 'h-135-part02-peach', 'h-135-part03-purple', 'h-135-morandi-block'].includes(id);
+}
 
 // Full list of all 28 Markdown syntax element definitions
 const elements = [
@@ -173,7 +216,7 @@ function generateCssFromStyles(styles) {
   };
 
   if (S.body) css += addRule('#nice, xiaofu, .markdown-body', { color: cleanColor(S.body.color, '#2b2b2b'), backgroundColor: S.body.backgroundColor });
-  if (S.h1) {
+  if (S.h1 && (!S.h1.materialTemplateId || S.h1.materialTemplateId === 'none')) {
     const h1Color = cleanColor(S.h1.color, '#2775b6');
     css += addRule('#nice h1, xiaofu h1', {
       color: (h1Color === '#ffffff' && !S.h1.backgroundColor) ? '#2775b6' : h1Color,
@@ -186,7 +229,9 @@ function generateCssFromStyles(styles) {
       display: S.h1.display
     });
   }
-  if (S.h2) css += addRule('#nice h2, xiaofu h2', { color: cleanColor(S.h2.color, '#2775b6'), fontSize: S.h2.fontSize, fontWeight: S.h2.fontWeight, borderLeft: S.h2.borderLeft, paddingLeft: S.h2.paddingLeft });
+  if (S.h2 && (!S.h2.materialTemplateId || S.h2.materialTemplateId === 'none')) {
+    css += addRule('#nice h2, xiaofu h2', { color: cleanColor(S.h2.color, '#2775b6'), fontSize: S.h2.fontSize, fontWeight: S.h2.fontWeight, borderLeft: S.h2.borderLeft, paddingLeft: S.h2.paddingLeft });
+  }
   if (S.h3) css += addRule('#nice h3, xiaofu h3', { color: cleanColor(S.h3.color, '#2b2b2b'), fontSize: S.h3.fontSize, fontWeight: S.h3.fontWeight });
   if (S.h4) css += addRule('#nice h4, xiaofu h4', { color: cleanColor(S.h4.color, '#2b2b2b'), fontSize: S.h4.fontSize, fontWeight: S.h4.fontWeight });
   if (S.h5) css += addRule('#nice h5, xiaofu h5', { color: cleanColor(S.h5.color, '#2b2b2b'), fontSize: S.h5.fontSize, fontWeight: S.h5.fontWeight });
@@ -499,13 +544,56 @@ const cssLineCount = computed(() => {
       >
         <div class="section-label">
           <span class="section-icon">{{ el.icon }}</span>
-          <span>{{ el.label }}</span>
-          <button
-            v-if="localStyles[el.key]"
-            class="reset-btn"
-            @click="resetCategory(el.key)"
-            title="恢复默认"
-          >重置</button>
+          <span class="section-title-text">{{ el.label }}</span>
+          <div class="header-action-group">
+            <button
+              v-if="hasMaterialSupport(el.key)"
+              class="replace-material-btn"
+              @click="openMaterialModal(el.key)"
+              :title="`选择${getMaterialTypeLabel(el.key)}素材模版`"
+            >
+              <Sparkles class="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+              <span>素材替换</span>
+            </button>
+            <button
+              v-if="localStyles[el.key]"
+              class="reset-btn"
+              @click="resetCategory(el.key)"
+              title="恢复默认"
+            >重置</button>
+          </div>
+        </div>
+
+        <!-- Active Material Banner -->
+        <div
+          v-if="hasMaterialSupport(el.key) && getStyle(el.key).materialTemplateId && getStyle(el.key).materialTemplateId !== 'none'"
+          class="active-material-banner"
+        >
+          <div class="active-material-header">
+            <div class="active-material-title">
+              <Sparkles class="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+              <span class="banner-tag">素材模版已生效:</span>
+              <span class="banner-name">{{ getMaterialTemplateName(getStyle(el.key).materialTemplateId) }}</span>
+            </div>
+            <button
+              class="clear-material-btn"
+              @click="updateStyle(el.key, 'materialTemplateId', 'none')"
+              title="清除素材，恢复默认 CSS 样式"
+            >
+              <X class="w-3.5 h-3.5" />
+              <span>清除素材</span>
+            </button>
+          </div>
+          <div v-if="hasPrefixOption(getStyle(el.key).materialTemplateId)" class="material-prefix-row">
+            <span class="prefix-label">标牌前缀:</span>
+            <input
+              type="text"
+              :value="getStyle(el.key).materialPrefix || (el.key === 'h1' ? 'PART' : 'SECTION')"
+              @input="updateStyle(el.key, 'materialPrefix', $event.target.value)"
+              placeholder="如 PART / SECTION / 第"
+              class="prefix-input-field"
+            />
+          </div>
         </div>
         <div class="style-controls">
           <!-- Color (文字色) -->
@@ -794,6 +882,60 @@ const cssLineCount = computed(() => {
       </button>
     </div>
   </aside>
+
+  <!-- Material Template Picker Modal -->
+  <Teleport to="body">
+    <div v-if="materialModalOpen" class="heading-modal-overlay" @click.self="materialModalOpen = false">
+      <div class="heading-modal-content">
+        <div class="heading-modal-header">
+          <div class="modal-title-box">
+            <Sparkles class="w-5 h-5 text-amber-500" />
+            <h3>选择 {{ getMaterialTypeLabel(currentModalKey) }} 素材模版</h3>
+          </div>
+          <button class="modal-close-icon" @click="materialModalOpen = false">
+            <X class="w-5 h-5" />
+          </button>
+        </div>
+
+        <div class="heading-modal-subtext">
+          <template v-if="currentModalKey === 'blockquote'">
+            选择后，全篇 Markdown 文章的 <strong>> 引用 / 引入块</strong> 将统一替换为此素材视觉风格，呈现爆款公众号金句与卡片效果。
+          </template>
+          <template v-else-if="currentModalKey === 'hr'">
+            选择后，全篇 Markdown 文章的 <strong>--- 分割线</strong> 将统一替换为此素材视觉风格。
+          </template>
+          <template v-else>
+            选择后，全篇 Markdown 文章的 <strong>{{ getMaterialTypeLabel(currentModalKey) }}</strong> 将统一替换为此素材视觉风格，标题文字与序号（如 PART.01, PART.02）将按顺序自动带入，无需改动 Markdown 源码。
+          </template>
+        </div>
+
+        <div class="heading-materials-grid">
+          <div
+            v-for="item in getMaterialTemplatesForKey(currentModalKey)"
+            :key="item.id"
+            class="heading-material-card"
+            :class="{ 'is-selected': (getStyle(currentModalKey).materialTemplateId || 'none') === item.id }"
+            @click="selectMaterialTemplate(item.id)"
+          >
+            <div class="card-top">
+              <span class="tag-badge" :class="{ 'is-none': item.id === 'none' }">{{ item.tag }}</span>
+              <span class="card-name">{{ item.name }}</span>
+            </div>
+            <div class="card-preview-area" v-html="item.previewHtml"></div>
+            <div class="card-bottom">
+              <p class="card-desc">{{ item.description }}</p>
+              <button
+                class="apply-btn"
+                :class="(getStyle(currentModalKey).materialTemplateId || 'none') === item.id ? 'active' : ''"
+              >
+                {{ (getStyle(currentModalKey).materialTemplateId || 'none') === item.id ? '当前在用' : '替换为此素材' }}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -1237,5 +1379,291 @@ const cssLineCount = computed(() => {
 .save-theme-btn:hover {
   background: var(--border-color);
   border-color: var(--text-muted);
+}
+
+/* Material Replacement Action & Banners */
+.header-action-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+
+.replace-material-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  border-radius: 4px;
+  color: #d97706;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.replace-material-btn:hover {
+  background: rgba(245, 158, 11, 0.22);
+  border-color: #f59e0b;
+  color: #b45309;
+}
+
+.active-material-banner {
+  margin: 8px 0 12px;
+  padding: 8px 10px;
+  background: #fffbeb;
+  border: 1px dashed #fcd34d;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+:deep(.dark) .active-material-banner,
+.active-material-banner:where(.dark *) {
+  background: #271e05;
+  border-color: #78350f;
+}
+
+.active-material-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.active-material-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11.5px;
+}
+
+.banner-tag {
+  color: #92400e;
+  font-weight: 700;
+}
+
+.banner-name {
+  color: #d97706;
+  font-weight: 800;
+}
+
+.clear-material-btn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  background: #ffffff;
+  border: 1px solid #fcd34d;
+  border-radius: 4px;
+  color: #b45309;
+  font-size: 10.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.clear-material-btn:hover {
+  background: #fef3c7;
+  color: #78350f;
+}
+
+.material-prefix-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #78350f;
+}
+
+.prefix-input-field {
+  padding: 2px 6px;
+  border: 1px solid #fcd34d;
+  border-radius: 4px;
+  font-size: 11px;
+  background: #ffffff;
+  color: #0f172a;
+  width: 100px;
+}
+
+/* Modal Overlay & Card Grid */
+.heading-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.heading-modal-content {
+  width: 100%;
+  max-width: 820px;
+  max-height: 85vh;
+  background: var(--bg-editor, #ffffff);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.heading-modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-app, #f8fafc);
+}
+
+.modal-title-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15.5px;
+  font-weight: 800;
+  color: var(--text-main, #0f172a);
+}
+
+.modal-close-icon {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #64748b);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+}
+
+.modal-close-icon:hover {
+  background: var(--border-color, #f1f5f9);
+  color: var(--text-main, #0f172a);
+}
+
+.heading-modal-subtext {
+  padding: 10px 20px;
+  background: var(--bg-editor, #ffffff);
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  font-size: 12.5px;
+  color: var(--text-muted, #64748b);
+  line-height: 1.5;
+}
+
+.heading-materials-grid {
+  padding: 18px 20px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 14px;
+}
+
+.heading-material-card {
+  border: 1.5px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  padding: 12px;
+  background: var(--bg-editor, #ffffff);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.heading-material-card:hover {
+  border-color: #2563eb;
+  box-shadow: 0 4px 12px rgba(37,99,235,0.12);
+  transform: translateY(-1px);
+}
+
+.heading-material-card.is-selected {
+  border-color: #f59e0b;
+  background: #fffdf5;
+  box-shadow: 0 0 0 2px rgba(245,158,11,0.25);
+}
+
+.card-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.tag-badge {
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.tag-badge.is-none {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.card-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-main, #0f172a);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.card-preview-area {
+  padding: 8px 10px;
+  background: var(--bg-app, #f8fafc);
+  border-radius: 6px;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.card-bottom {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.card-desc {
+  font-size: 11px;
+  color: var(--text-muted, #64748b);
+  line-height: 1.35;
+  margin: 0;
+}
+
+.apply-btn {
+  width: 100%;
+  padding: 6px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  border: 1px solid var(--border-color, #cbd5e1);
+  background: var(--bg-app, #f8fafc);
+  color: var(--text-main, #334155);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.heading-material-card:hover .apply-btn {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+.apply-btn.active {
+  background: #f59e0b !important;
+  border-color: #f59e0b !important;
+  color: #ffffff !important;
 }
 </style>
