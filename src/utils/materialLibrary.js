@@ -22,25 +22,27 @@ export const materials = [
     title: '135 PART.01 黄绿夏风标题',
     description: '图二同款：倾斜 PART.01 标牌 + 弧形手绘箭头 + 绿叶波浪划线标题',
     tags: ['135爆款', 'PART.01', '绿叶'],
-    html: `<section style="margin: 24px 0 16px; padding: 10px 4px; clear: both; text-align: left;">
-  <section style="margin-bottom: 6px; line-height: 1;">
-    <section style="display: inline-block; vertical-align: bottom; background: #facc15; color: #ffffff; font-weight: bold; font-size: 13px; padding: 4px 10px; border-radius: 4px; -webkit-transform: rotate(-6deg); transform: rotate(-6deg); -webkit-box-shadow: 2px 2px 0px rgba(245,158,11,0.25); box-shadow: 2px 2px 0px rgba(245,158,11,0.25); letter-spacing: 0.5px; font-family: -apple-system, sans-serif; margin-right: 6px;">
-      PART.01
-    </section>
-    <svg width="28" height="18" viewBox="0 0 28 18" fill="none" style="display: inline-block; vertical-align: bottom; margin-bottom: 1px;">
-      <path d="M2 3 C10 0, 18 3, 24 13 M18 11 L24 13 L22 7" stroke="#facc15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </section>
-  <section style="line-height: 1.2;">
-    <section style="display: inline-block; vertical-align: middle; margin-right: 8px;">
-      <span style="font-size: 18px; font-weight: bold; color: #2e8b57; letter-spacing: 1px; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; display: inline-block;">
-        八月拾夏 静待秋风
-      </span>
-      <svg width="100%" height="8" viewBox="0 0 140 8" fill="none" style="display: block; margin-top: 3px;">
-        <path d="M0 2 Q 10 7, 20 2 T 40 2 T 60 2 T 80 2 T 100 2 T 120 2 T 140 2 M0 6 Q 10 11, 20 6 T 40 6 T 60 6 T 80 6 T 100 6 T 120 6 T 140 6" stroke="#facc15" stroke-width="1.5" stroke-linecap="round"/>
+    html: `<section style="margin: 24px 0 16px; padding: 10px 4px; clear: both; text-align: center;">
+  <section style="display: inline-block; text-align: left;">
+    <section style="margin-bottom: 6px; line-height: 1;">
+      <section style="display: inline-block; vertical-align: bottom; background: #facc15; color: #ffffff; font-weight: bold; font-size: 13px; padding: 4px 10px; border-radius: 4px; -webkit-transform: rotate(-6deg); transform: rotate(-6deg); -webkit-box-shadow: 2px 2px 0px rgba(245,158,11,0.25); box-shadow: 2px 2px 0px rgba(245,158,11,0.25); letter-spacing: 0.5px; font-family: -apple-system, sans-serif; margin-right: 6px;">
+        PART.01
+      </section>
+      <svg width="28" height="18" viewBox="0 0 28 18" fill="none" style="display: inline-block; vertical-align: bottom; margin-bottom: 1px;">
+        <path d="M2 3 C10 0, 18 3, 24 13 M18 11 L24 13 L22 7" stroke="#facc15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </section>
-    <span style="display: inline-block; vertical-align: middle; font-size: 20px; line-height: 1;">🌿</span>
+    <section style="line-height: 1.2;">
+      <section style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+        <span style="font-size: 18px; font-weight: bold; color: #2e8b57; letter-spacing: 1px; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; display: inline-block;">
+          八月拾夏 静待秋风
+        </span>
+        <svg width="100%" height="8" viewBox="0 0 140 8" fill="none" style="display: block; margin-top: 3px;">
+          <path d="M0 2 Q 10 7, 20 2 T 40 2 T 60 2 T 80 2 T 100 2 T 120 2 T 140 2 M0 6 Q 10 11, 20 6 T 40 6 T 60 6 T 80 6 T 100 6 T 120 6 T 140 6" stroke="#facc15" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </section>
+      <span style="display: inline-block; vertical-align: middle; font-size: 20px; line-height: 1;">🌿</span>
+    </section>
   </section>
 </section>`
   },
@@ -51,21 +53,23 @@ export const materials = [
     title: '135 PART.02 蜜桃浪漫标题',
     description: '倾斜粉红标牌 + 手绘心形小弧线 + 甜美粉色下划线',
     tags: ['135爆款', 'PART.02', '蜜桃粉'],
-    html: `<section style="margin: 24px 0 16px; padding: 10px 4px; clear: both; text-align: left;">
-  <section style="margin-bottom: 6px; line-height: 1;">
-    <section style="display: inline-block; vertical-align: bottom; background: #f43f5e; color: #ffffff; font-weight: bold; font-size: 13px; padding: 4px 10px; border-radius: 4px; -webkit-transform: rotate(-5deg); transform: rotate(-5deg); -webkit-box-shadow: 2px 2px 0px rgba(225,29,72,0.25); box-shadow: 2px 2px 0px rgba(225,29,72,0.25); margin-right: 6px;">
-      PART.02
+    html: `<section style="margin: 24px 0 16px; padding: 10px 4px; clear: both; text-align: center;">
+  <section style="display: inline-block; text-align: left;">
+    <section style="margin-bottom: 6px; line-height: 1;">
+      <section style="display: inline-block; vertical-align: bottom; background: #f43f5e; color: #ffffff; font-weight: bold; font-size: 13px; padding: 4px 10px; border-radius: 4px; -webkit-transform: rotate(-5deg); transform: rotate(-5deg); -webkit-box-shadow: 2px 2px 0px rgba(225,29,72,0.25); box-shadow: 2px 2px 0px rgba(225,29,72,0.25); margin-right: 6px;">
+        PART.02
+      </section>
+      <span style="display: inline-block; vertical-align: bottom; font-size: 16px;">✨</span>
     </section>
-    <span style="display: inline-block; vertical-align: bottom; font-size: 16px;">✨</span>
-  </section>
-  <section style="line-height: 1.2;">
-    <section style="display: inline-block; vertical-align: middle; margin-right: 8px;">
-      <span style="font-size: 18px; font-weight: bold; color: #be123c; letter-spacing: 0.8px; display: inline-block;">
-        关于生活中的温柔复苏
-      </span>
-      <section style="height: 3px; background: #fecdd3; border-radius: 2px; margin-top: 4px;"></section>
+    <section style="line-height: 1.2;">
+      <section style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+        <span style="font-size: 18px; font-weight: bold; color: #be123c; letter-spacing: 0.8px; display: inline-block;">
+          关于生活中的温柔复苏
+        </span>
+        <section style="height: 3px; background: #fecdd3; border-radius: 2px; margin-top: 4px;"></section>
+      </section>
+      <span style="display: inline-block; vertical-align: middle; font-size: 20px; line-height: 1;">🍑</span>
     </section>
-    <span style="display: inline-block; vertical-align: middle; font-size: 20px; line-height: 1;">🍑</span>
   </section>
 </section>`
   },
@@ -76,21 +80,23 @@ export const materials = [
     title: '135 PART.03 香草薰衣草紫标题',
     description: '倾斜紫色标牌 + 优雅星光点缀 + 紫色粗划线',
     tags: ['135爆款', 'PART.03', '香草紫'],
-    html: `<section style="margin: 24px 0 16px; padding: 10px 4px; clear: both; text-align: left;">
-  <section style="margin-bottom: 6px; line-height: 1;">
-    <section style="display: inline-block; vertical-align: bottom; background: #8b5cf6; color: #ffffff; font-weight: bold; font-size: 13px; padding: 4px 10px; border-radius: 4px; -webkit-transform: rotate(-4deg); transform: rotate(-4deg); -webkit-box-shadow: 2px 2px 0px rgba(139,92,246,0.25); box-shadow: 2px 2px 0px rgba(139,92,246,0.25); margin-right: 6px;">
-      PART.03
+    html: `<section style="margin: 24px 0 16px; padding: 10px 4px; clear: both; text-align: center;">
+  <section style="display: inline-block; text-align: left;">
+    <section style="margin-bottom: 6px; line-height: 1;">
+      <section style="display: inline-block; vertical-align: bottom; background: #8b5cf6; color: #ffffff; font-weight: bold; font-size: 13px; padding: 4px 10px; border-radius: 4px; -webkit-transform: rotate(-4deg); transform: rotate(-4deg); -webkit-box-shadow: 2px 2px 0px rgba(139,92,246,0.25); box-shadow: 2px 2px 0px rgba(139,92,246,0.25); margin-right: 6px;">
+        PART.03
+      </section>
+      <span style="display: inline-block; vertical-align: bottom; font-size: 16px;">🌙</span>
     </section>
-    <span style="display: inline-block; vertical-align: bottom; font-size: 16px;">🌙</span>
-  </section>
-  <section style="line-height: 1.2;">
-    <section style="display: inline-block; vertical-align: middle; margin-right: 8px;">
-      <span style="font-size: 18px; font-weight: bold; color: #5b21b6; letter-spacing: 0.8px; display: inline-block;">
-        晚风拂过 枕着星河入梦
-      </span>
-      <section style="height: 3px; background: #ddd6fe; border-radius: 2px; margin-top: 4px;"></section>
+    <section style="line-height: 1.2;">
+      <section style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+        <span style="font-size: 18px; font-weight: bold; color: #5b21b6; letter-spacing: 0.8px; display: inline-block;">
+          晚风拂过 枕着星河入梦
+        </span>
+        <section style="height: 3px; background: #ddd6fe; border-radius: 2px; margin-top: 4px;"></section>
+      </section>
+      <span style="display: inline-block; vertical-align: middle; font-size: 20px; line-height: 1;">🍇</span>
     </section>
-    <span style="display: inline-block; vertical-align: middle; font-size: 20px; line-height: 1;">🍇</span>
   </section>
 </section>`
   },
@@ -103,9 +109,11 @@ export const materials = [
     title: '135双重气泡块序号标题',
     description: '135编辑器热门爆款：实心与淡色双层圆圈序号，搭配加粗标题',
     tags: ['135热选', '序号标题', '蓝色'],
-    html: `<section style="margin: 24px 0 16px; clear: both; line-height: 1.4;">
-  <section style="display: inline-block; vertical-align: middle; background: #2563eb; color: #ffffff; font-size: 15px; font-weight: bold; width: 34px; height: 34px; line-height: 34px; text-align: center; border-radius: 50%; margin-right: 12px; -webkit-box-shadow: 0 4px 10px rgba(37,99,235,0.3); box-shadow: 0 4px 10px rgba(37,99,235,0.3);">01</section>
-  <span style="display: inline-block; vertical-align: middle; font-size: 17px; font-weight: bold; color: #1e293b; letter-spacing: 0.5px;">避免用战术上的勤奋，掩盖战略上的懒惰</span>
+    html: `<section style="margin: 24px 0 16px; text-align: center; clear: both; line-height: 1.4;">
+  <section style="display: inline-block; text-align: left;">
+    <section style="display: inline-block; vertical-align: middle; background: #2563eb; color: #ffffff; font-size: 15px; font-weight: bold; width: 34px; height: 34px; line-height: 34px; text-align: center; border-radius: 50%; margin-right: 12px; -webkit-box-shadow: 0 4px 10px rgba(37,99,235,0.3); box-shadow: 0 4px 10px rgba(37,99,235,0.3);">01</section>
+    <span style="display: inline-block; vertical-align: middle; font-size: 17px; font-weight: bold; color: #1e293b; letter-spacing: 0.5px;">避免用战术上的勤奋，掩盖战略上的懒惰</span>
+  </section>
 </section>`
   },
   {
@@ -115,8 +123,8 @@ export const materials = [
     title: '135经典立体明黄浮雕标题',
     description: '黄色立体沉底图层 + 左倾小方块，高对比强吸睛',
     tags: ['135热选', '明黄', '立体风'],
-    html: `<section style="margin: 24px 0 16px; display: block; clear: both;">
-  <section style="background: #fef08a; padding: 6px 16px 6px 12px; border-radius: 6px; -webkit-box-shadow: 3px 3px 0px #f59e0b; box-shadow: 3px 3px 0px #f59e0b; display: inline-block; line-height: 1.4;">
+    html: `<section style="margin: 24px 0 16px; text-align: center; display: block; clear: both;">
+  <section style="background: #fef08a; padding: 6px 16px 6px 12px; border-radius: 6px; -webkit-box-shadow: 3px 3px 0px #f59e0b; box-shadow: 3px 3px 0px #f59e0b; display: inline-block; line-height: 1.4; text-align: left;">
     <span style="display: inline-block; vertical-align: middle; width: 8px; height: 18px; background: #d97706; border-radius: 2px; margin-right: 8px;"></span>
     <span style="display: inline-block; vertical-align: middle; font-size: 16px; font-weight: bold; color: #78350f;">打造高转化率的爆款文章结构</span>
   </section>
@@ -129,12 +137,12 @@ export const materials = [
     title: '135薄荷绿立体 02 序号标题',
     description: '薄荷绿圆角方块 + 侧阴影，清新爽朗适合教程结构',
     tags: ['135热选', '薄荷绿', '序号'],
-    html: `<section style="margin: 24px 0 16px; clear: both; line-height: 1.4;">
+    html: `<section style="margin: 24px 0 16px; text-align: center; clear: both; line-height: 1.4;">
   <section style="display: inline-block; vertical-align: middle; background: #10b981; color: #ffffff; font-weight: bold; font-size: 16px; width: 36px; height: 32px; line-height: 32px; text-align: center; border-radius: 8px; -webkit-box-shadow: 3px 3px 0px #047857; box-shadow: 3px 3px 0px #047857; margin-right: 10px;">
     02
   </section>
   <span style="display: inline-block; vertical-align: middle; font-size: 17px; font-weight: bold; color: #064e3b; letter-spacing: 0.5px;">
-    突破认知瓶颈，实现底层能力复利
+    突破认知瓶颈
   </span>
 </section>`
   },
@@ -145,8 +153,10 @@ export const materials = [
     title: '135莫兰迪双色拼接标题',
     description: '低饱和度莫兰迪色系拼接，高级沉稳，适合文化随笔',
     tags: ['莫兰迪', '高级感', '拼接'],
-    html: `<section style="margin: 22px 0 14px; display: inline-block; border-radius: 6px; overflow: hidden; clear: both; line-height: 1;">
-  <span style="display: inline-block; vertical-align: middle; background: #a3b18a; color: #ffffff; font-weight: bold; font-size: 13px; padding: 8px 12px; letter-spacing: 0.5px;">SECTION</span><span style="display: inline-block; vertical-align: middle; background: #dad7cd; color: #3a5a40; font-weight: bold; font-size: 15px; padding: 8px 16px;">在平淡生活中发现闪光日常</span>
+    html: `<section style="margin: 22px 0 14px; text-align: center; clear: both; line-height: 1;">
+  <section style="display: inline-flex; vertical-align: middle; border-radius: 6px; overflow: hidden; max-width: 100%;">
+    <span style="background: #a3b18a; color: #ffffff; font-weight: bold; font-size: 13px; padding: 8px 12px; letter-spacing: 0.5px; white-space: nowrap;">SECTION</span><span style="background: #dad7cd; color: #3a5a40; font-weight: bold; font-size: 15px; padding: 8px 16px; white-space: nowrap;">发现闪光日常</span>
+  </section>
 </section>`
   },
   {
@@ -169,8 +179,10 @@ export const materials = [
     title: '135极简翡翠绿包边标题',
     description: '带有柔和绿底色与左边框修饰，清新耐看',
     tags: ['包边标题', '绿色', '极简'],
-    html: `<section style="margin: 22px 0 14px; padding: 8px 16px; border-left: 4px solid #10b981; background: #ecfdf5; border-radius: 0 8px 8px 0; clear: both;">
-  <span style="font-size: 16px; font-weight: bold; color: #065f46;">构建持续交付的自动化 SOP</span>
+    html: `<section style="margin: 22px 0 14px; text-align: center; clear: both;">
+  <section style="display: inline-block; padding: 8px 16px; border-left: 4px solid #10b981; background: #ecfdf5; border-radius: 0 8px 8px 0; text-align: left;">
+    <span style="font-size: 16px; font-weight: bold; color: #065f46;">构建持续交付 SOP</span>
+  </section>
 </section>`
   },
   {
@@ -180,9 +192,11 @@ export const materials = [
     title: '135赛博黑金科技感标题',
     description: '黑底金边科技光感标题，适合数码测评与 AI 前沿',
     tags: ['黑金', '科技感', '数码'],
-    html: `<section style="margin: 24px 0 16px; background: #0f172a; padding: 10px 18px; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0; clear: both; line-height: 1.4;">
-  <span style="display: inline-block; vertical-align: middle; color: #f59e0b; font-size: 18px; margin-right: 8px;">⚡</span>
-  <span style="display: inline-block; vertical-align: middle; font-size: 16px; font-weight: bold; color: #f8fafc; letter-spacing: 0.5px;">GenAI 大模型在业务落地的痛点剖析</span>
+    html: `<section style="margin: 24px 0 16px; text-align: center; clear: both;">
+  <section style="display: inline-block; background: #0f172a; padding: 10px 18px; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0; line-height: 1.4; text-align: left;">
+    <span style="display: inline-block; vertical-align: middle; color: #f59e0b; font-size: 18px; margin-right: 8px;">⚡</span>
+    <span style="display: inline-block; vertical-align: middle; font-size: 16px; font-weight: bold; color: #f8fafc; letter-spacing: 0.5px;">GenAI 业务落地痛点</span>
+  </section>
 </section>`
   },
 
@@ -486,25 +500,27 @@ export const headingTemplates = [
     render: (title, index, options = {}) => {
       const prefix = options.prefix || 'PART';
       const indexPadded = String(index).padStart(2, '0');
-      return `<section style="margin: 24px 0 16px; padding: 10px 4px; clear: both; text-align: left;">
-  <section style="margin-bottom: 6px; line-height: 1;">
-    <section style="display: inline-block; vertical-align: bottom; background: #facc15; color: #ffffff; font-weight: 800; font-size: 13px; padding: 4px 10px; border-radius: 4px; -webkit-transform: rotate(-6deg); transform: rotate(-6deg); -webkit-box-shadow: 2px 2px 0px rgba(245,158,11,0.25); box-shadow: 2px 2px 0px rgba(245,158,11,0.25); letter-spacing: 0.5px; font-family: -apple-system, sans-serif; margin-right: 6px;">
-      ${prefix}.${indexPadded}
-    </section>
-    <svg width="28" height="18" viewBox="0 0 28 18" fill="none" style="display: inline-block; vertical-align: bottom; margin-bottom: 1px;">
-      <path d="M2 3 C10 0, 18 3, 24 13 M18 11 L24 13 L22 7" stroke="#facc15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>
-  </section>
-  <section style="line-height: 1.2;">
-    <section style="display: inline-block; vertical-align: middle; margin-right: 8px;">
-      <span style="font-size: 18px; font-weight: 800; color: #2e8b57; letter-spacing: 1px; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; display: inline-block;">
-        ${title}
-      </span>
-      <svg width="100%" height="8" viewBox="0 0 140 8" fill="none" style="display: block; margin-top: 3px;">
-        <path d="M0 2 Q 10 7, 20 2 T 40 2 T 60 2 T 80 2 T 100 2 T 120 2 T 140 2 M0 6 Q 10 11, 20 6 T 40 6 T 60 6 T 80 6 T 100 6 T 120 6 T 140 6" stroke="#facc15" stroke-width="1.5" stroke-linecap="round"/>
+      return `<section style="margin: 24px 0 16px; padding: 10px 4px; clear: both; text-align: center;">
+  <section style="display: inline-block; text-align: left;">
+    <section style="margin-bottom: 6px; line-height: 1;">
+      <section style="display: inline-block; vertical-align: bottom; background: #facc15; color: #ffffff; font-weight: 800; font-size: 13px; padding: 4px 10px; border-radius: 4px; -webkit-transform: rotate(-6deg); transform: rotate(-6deg); -webkit-box-shadow: 2px 2px 0px rgba(245,158,11,0.25); box-shadow: 2px 2px 0px rgba(245,158,11,0.25); letter-spacing: 0.5px; font-family: -apple-system, sans-serif; margin-right: 6px;">
+        ${prefix}.${indexPadded}
+      </section>
+      <svg width="28" height="18" viewBox="0 0 28 18" fill="none" style="display: inline-block; vertical-align: bottom; margin-bottom: 1px;">
+        <path d="M2 3 C10 0, 18 3, 24 13 M18 11 L24 13 L22 7" stroke="#facc15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </section>
-    <span style="display: inline-block; vertical-align: middle; font-size: 20px; line-height: 1;">🌿</span>
+    <section style="line-height: 1.2;">
+      <section style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+        <span style="font-size: 18px; font-weight: 800; color: #2e8b57; letter-spacing: 1px; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; display: inline-block;">
+          ${title}
+        </span>
+        <svg width="100%" height="8" viewBox="0 0 140 8" fill="none" style="display: block; margin-top: 3px;">
+          <path d="M0 2 Q 10 7, 20 2 T 40 2 T 60 2 T 80 2 T 100 2 T 120 2 T 140 2 M0 6 Q 10 11, 20 6 T 40 6 T 60 6 T 80 6 T 100 6 T 120 6 T 140 6" stroke="#facc15" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </section>
+      <span style="display: inline-block; vertical-align: middle; font-size: 20px; line-height: 1;">🌿</span>
+    </section>
   </section>
 </section>`;
     }
@@ -518,21 +534,23 @@ export const headingTemplates = [
     render: (title, index, options = {}) => {
       const prefix = options.prefix || 'PART';
       const indexPadded = String(index).padStart(2, '0');
-      return `<section style="margin: 24px 0 16px; padding: 10px 4px; clear: both; text-align: left;">
-  <section style="margin-bottom: 6px; line-height: 1;">
-    <section style="display: inline-block; vertical-align: bottom; background: #f43f5e; color: #ffffff; font-weight: 800; font-size: 13px; padding: 4px 10px; border-radius: 4px; -webkit-transform: rotate(-5deg); transform: rotate(-5deg); -webkit-box-shadow: 2px 2px 0px rgba(225,29,72,0.25); box-shadow: 2px 2px 0px rgba(225,29,72,0.25); margin-right: 6px;">
-      ${prefix}.${indexPadded}
+      return `<section style="margin: 24px 0 16px; padding: 10px 4px; clear: both; text-align: center;">
+  <section style="display: inline-block; text-align: left;">
+    <section style="margin-bottom: 6px; line-height: 1;">
+      <section style="display: inline-block; vertical-align: bottom; background: #f43f5e; color: #ffffff; font-weight: 800; font-size: 13px; padding: 4px 10px; border-radius: 4px; -webkit-transform: rotate(-5deg); transform: rotate(-5deg); -webkit-box-shadow: 2px 2px 0px rgba(225,29,72,0.25); box-shadow: 2px 2px 0px rgba(225,29,72,0.25); margin-right: 6px;">
+        ${prefix}.${indexPadded}
+      </section>
+      <span style="display: inline-block; vertical-align: bottom; font-size: 16px;">✨</span>
     </section>
-    <span style="display: inline-block; vertical-align: bottom; font-size: 16px;">✨</span>
-  </section>
-  <section style="line-height: 1.2;">
-    <section style="display: inline-block; vertical-align: middle; margin-right: 8px;">
-      <span style="font-size: 18px; font-weight: 800; color: #be123c; letter-spacing: 0.8px; display: inline-block;">
-        ${title}
-      </span>
-      <section style="height: 3px; background: #fecdd3; border-radius: 2px; margin-top: 4px;"></section>
+    <section style="line-height: 1.2;">
+      <section style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+        <span style="font-size: 18px; font-weight: 800; color: #be123c; letter-spacing: 0.8px; display: inline-block;">
+          ${title}
+        </span>
+        <section style="height: 3px; background: #fecdd3; border-radius: 2px; margin-top: 4px;"></section>
+      </section>
+      <span style="display: inline-block; vertical-align: middle; font-size: 20px; line-height: 1;">🍑</span>
     </section>
-    <span style="display: inline-block; vertical-align: middle; font-size: 20px; line-height: 1;">🍑</span>
   </section>
 </section>`;
     }
@@ -546,21 +564,23 @@ export const headingTemplates = [
     render: (title, index, options = {}) => {
       const prefix = options.prefix || 'PART';
       const indexPadded = String(index).padStart(2, '0');
-      return `<section style="margin: 24px 0 16px; padding: 10px 4px; clear: both; text-align: left;">
-  <section style="margin-bottom: 6px; line-height: 1;">
-    <section style="display: inline-block; vertical-align: bottom; background: #8b5cf6; color: #ffffff; font-weight: 800; font-size: 13px; padding: 4px 10px; border-radius: 4px; -webkit-transform: rotate(-4deg); transform: rotate(-4deg); -webkit-box-shadow: 2px 2px 0px rgba(139,92,246,0.25); box-shadow: 2px 2px 0px rgba(139,92,246,0.25); margin-right: 6px;">
-      ${prefix}.${indexPadded}
+      return `<section style="margin: 24px 0 16px; padding: 10px 4px; clear: both; text-align: center;">
+  <section style="display: inline-block; text-align: left;">
+    <section style="margin-bottom: 6px; line-height: 1;">
+      <section style="display: inline-block; vertical-align: bottom; background: #8b5cf6; color: #ffffff; font-weight: 800; font-size: 13px; padding: 4px 10px; border-radius: 4px; -webkit-transform: rotate(-4deg); transform: rotate(-4deg); -webkit-box-shadow: 2px 2px 0px rgba(139,92,246,0.25); box-shadow: 2px 2px 0px rgba(139,92,246,0.25); margin-right: 6px;">
+        ${prefix}.${indexPadded}
+      </section>
+      <span style="display: inline-block; vertical-align: bottom; font-size: 16px;">🌙</span>
     </section>
-    <span style="display: inline-block; vertical-align: bottom; font-size: 16px;">🌙</span>
-  </section>
-  <section style="line-height: 1.2;">
-    <section style="display: inline-block; vertical-align: middle; margin-right: 8px;">
-      <span style="font-size: 18px; font-weight: 800; color: #5b21b6; letter-spacing: 0.8px; display: inline-block;">
-        ${title}
-      </span>
-      <section style="height: 3px; background: #ddd6fe; border-radius: 2px; margin-top: 4px;"></section>
+    <section style="line-height: 1.2;">
+      <section style="display: inline-block; vertical-align: middle; margin-right: 8px;">
+        <span style="font-size: 18px; font-weight: 800; color: #5b21b6; letter-spacing: 0.8px; display: inline-block;">
+          ${title}
+        </span>
+        <section style="height: 3px; background: #ddd6fe; border-radius: 2px; margin-top: 4px;"></section>
+      </section>
+      <span style="display: inline-block; vertical-align: middle; font-size: 20px; line-height: 1;">🍇</span>
     </section>
-    <span style="display: inline-block; vertical-align: middle; font-size: 20px; line-height: 1;">🍇</span>
   </section>
 </section>`;
     }
@@ -573,9 +593,11 @@ export const headingTemplates = [
     previewHtml: `<div style="display:flex;align-items:center;gap:6px;"><span style="background:#2563eb;color:#fff;font-size:11px;font-weight:800;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;">01</span><span style="font-size:13px;font-weight:700;color:#1e293b;">战略思维与底层认知</span></div>`,
     render: (title, index) => {
       const indexPadded = String(index).padStart(2, '0');
-      return `<section style="margin: 24px 0 16px; clear: both; line-height: 1.4;">
-  <section style="display: inline-block; vertical-align: middle; background: #2563eb; color: #ffffff; font-size: 15px; font-weight: 800; width: 34px; height: 34px; line-height: 34px; text-align: center; border-radius: 50%; margin-right: 12px; -webkit-box-shadow: 0 4px 10px rgba(37,99,235,0.3); box-shadow: 0 4px 10px rgba(37,99,235,0.3);">${indexPadded}</section>
-  <span style="display: inline-block; vertical-align: middle; font-size: 17px; font-weight: 700; color: #1e293b; letter-spacing: 0.5px;">${title}</span>
+      return `<section style="margin: 24px 0 16px; text-align: center; clear: both; line-height: 1.4;">
+  <section style="display: inline-block; text-align: left;">
+    <section style="display: inline-block; vertical-align: middle; background: #2563eb; color: #ffffff; font-size: 15px; font-weight: 800; width: 34px; height: 34px; line-height: 34px; text-align: center; border-radius: 50%; margin-right: 12px; -webkit-box-shadow: 0 4px 10px rgba(37,99,235,0.3); box-shadow: 0 4px 10px rgba(37,99,235,0.3);">${indexPadded}</section>
+    <span style="display: inline-block; vertical-align: middle; font-size: 17px; font-weight: 700; color: #1e293b; letter-spacing: 0.5px;">${title}</span>
+  </section>
 </section>`;
     }
   },
@@ -586,7 +608,7 @@ export const headingTemplates = [
     tag: '135爆款',
     previewHtml: `<div style="background:#fef08a;padding:4px 8px;border-radius:4px;box-shadow:2px 2px 0 #f59e0b;font-size:12px;font-weight:800;color:#78350f;">打造高转化率结构</div>`,
     render: (title) => {
-      return `<section style="margin: 24px 0 16px; display: block; clear: both;">
+      return `<section style="margin: 24px 0 16px; text-align: center; display: block; clear: both;">
   <section style="background: #fef08a; padding: 6px 16px 6px 12px; border-radius: 6px; -webkit-box-shadow: 3px 3px 0px #f59e0b; box-shadow: 3px 3px 0px #f59e0b; display: inline-block; line-height: 1.4;">
     <span style="display: inline-block; vertical-align: middle; width: 8px; height: 18px; background: #d97706; border-radius: 2px; margin-right: 8px;"></span>
     <span style="display: inline-block; vertical-align: middle; font-size: 16px; font-weight: 800; color: #78350f;">${title}</span>
@@ -602,7 +624,7 @@ export const headingTemplates = [
     previewHtml: `<div style="display:flex;align-items:center;gap:6px;"><div style="background:#10b981;color:#fff;font-size:10px;font-weight:bold;padding:2px 5px;border-radius:4px;box-shadow:2px 2px 0 #047857;">02</div><span style="font-size:12px;font-weight:bold;color:#064e3b;">突破认知瓶颈</span></div>`,
     render: (title, index) => {
       const indexPadded = String(index).padStart(2, '0');
-      return `<section style="margin: 24px 0 16px; clear: both; line-height: 1.4;">
+      return `<section style="margin: 24px 0 16px; text-align: center; clear: both; line-height: 1.4;">
   <section style="display: inline-block; vertical-align: middle; background: #10b981; color: #ffffff; font-weight: bold; font-size: 16px; width: 36px; height: 32px; line-height: 32px; text-align: center; border-radius: 8px; -webkit-box-shadow: 3px 3px 0px #047857; box-shadow: 3px 3px 0px #047857; margin-right: 10px;">
     ${indexPadded}
   </section>
@@ -620,8 +642,10 @@ export const headingTemplates = [
     previewHtml: `<div style="display:inline-flex;border-radius:4px;overflow:hidden;font-size:11px;"><span style="background:#a3b18a;color:#fff;padding:2px 5px;font-weight:bold;">SECTION</span><span style="background:#dad7cd;color:#3a5a40;padding:2px 6px;font-weight:bold;">发现闪光日常</span></div>`,
     render: (title, index, options = {}) => {
       const prefix = options.prefix || 'SECTION';
-      return `<section style="margin: 22px 0 14px; display: inline-block; border-radius: 6px; overflow: hidden; clear: both; line-height: 1;">
-  <span style="display: inline-block; vertical-align: middle; background: #a3b18a; color: #ffffff; font-weight: bold; font-size: 13px; padding: 8px 12px; letter-spacing: 0.5px;">${prefix}</span><span style="display: inline-block; vertical-align: middle; background: #dad7cd; color: #3a5a40; font-weight: bold; font-size: 15px; padding: 8px 16px;">${title}</span>
+      return `<section style="margin: 22px 0 14px; text-align: center; clear: both; line-height: 1;">
+  <section style="display: inline-flex; vertical-align: middle; border-radius: 6px; overflow: hidden; max-width: 100%;">
+    <span style="background: #a3b18a; color: #ffffff; font-weight: bold; font-size: 13px; padding: 8px 12px; letter-spacing: 0.5px; white-space: nowrap;">${prefix}</span><span style="background: #dad7cd; color: #3a5a40; font-weight: bold; font-size: 15px; padding: 8px 16px; white-space: nowrap;">${title}</span>
+  </section>
 </section>`;
     }
   },
@@ -646,8 +670,10 @@ export const headingTemplates = [
     tag: '极简',
     previewHtml: `<div style="padding:3px 8px;border-left:3px solid #10b981;background:#ecfdf5;font-size:12px;font-weight:bold;color:#065f46;">构建持续交付 SOP</div>`,
     render: (title) => {
-      return `<section style="margin: 22px 0 14px; padding: 8px 16px; border-left: 4px solid #10b981; background: #ecfdf5; border-radius: 0 8px 8px 0; clear: both;">
-  <span style="font-size: 16px; font-weight: bold; color: #065f46;">${title}</span>
+      return `<section style="margin: 22px 0 14px; text-align: center; clear: both;">
+  <section style="display: inline-block; padding: 8px 16px; border-left: 4px solid #10b981; background: #ecfdf5; border-radius: 0 8px 8px 0; text-align: left;">
+    <span style="font-size: 16px; font-weight: bold; color: #065f46;">${title}</span>
+  </section>
 </section>`;
     }
   },
@@ -658,9 +684,11 @@ export const headingTemplates = [
     tag: '科技感',
     previewHtml: `<div style="background:#0f172a;padding:3px 8px;border-left:3px solid #f59e0b;color:#f8fafc;font-size:11px;font-weight:bold;">⚡ GenAI 业务落地痛点</div>`,
     render: (title) => {
-      return `<section style="margin: 24px 0 16px; background: #0f172a; padding: 10px 18px; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0; clear: both; line-height: 1.4;">
-  <span style="display: inline-block; vertical-align: middle; color: #f59e0b; font-size: 18px; margin-right: 8px;">⚡</span>
-  <span style="display: inline-block; vertical-align: middle; font-size: 16px; font-weight: bold; color: #f8fafc; letter-spacing: 0.5px;">${title}</span>
+      return `<section style="margin: 24px 0 16px; text-align: center; clear: both;">
+  <section style="display: inline-block; background: #0f172a; padding: 10px 18px; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0; line-height: 1.4; text-align: left;">
+    <span style="display: inline-block; vertical-align: middle; color: #f59e0b; font-size: 18px; margin-right: 8px;">⚡</span>
+    <span style="display: inline-block; vertical-align: middle; font-size: 16px; font-weight: bold; color: #f8fafc; letter-spacing: 0.5px;">${title}</span>
+  </section>
 </section>`;
     }
   }
