@@ -37,10 +37,14 @@ import {
 const currentView = ref('editor'); // 'editor' | 'templates' | 'materials'
 
 function handleInsertMaterial(htmlSnippet) {
+  let snippet = htmlSnippet ? htmlSnippet.trim() : '';
+  if (snippet && !snippet.includes('data-material="true"')) {
+    snippet = snippet.replace(/^<([a-zA-Z0-9]+)/, '<$1 data-material="true"');
+  }
   if (!markdownContent.value) {
-    markdownContent.value = htmlSnippet;
+    markdownContent.value = snippet;
   } else {
-    markdownContent.value = markdownContent.value.trim() + '\n\n' + htmlSnippet;
+    markdownContent.value = markdownContent.value.trim() + '\n\n' + snippet;
   }
   currentView.value = 'editor';
   soundEngine.playChime();

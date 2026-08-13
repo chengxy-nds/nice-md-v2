@@ -219,13 +219,15 @@ const showToast = (msg) => {
 const handleCopyWeChat = async () => {
   soundEngine.playChime();
   const rawHtml = marked.parse(props.markdown || '');
+  const previewDom = document.querySelector('.article-preview-container') || document.querySelector('.markdown-body') || document.querySelector('#preview-content');
   const success = await copyToWeChat(
     rawHtml,
     props.markdown,
     props.themeId,
     props.codeThemeId,
     activeCustomStyles.value?.customCss || '',
-    activeCustomStyles.value
+    activeCustomStyles.value,
+    previewDom
   );
   if (success) {
     showToast('已复制公众号格式 (带完整样式)');

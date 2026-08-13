@@ -266,6 +266,10 @@ const renderMathAndCharts = async () => {
         const validNodes = [];
         mermaidNodes.forEach((node) => {
           if (!node || !node.isConnected) return;
+          // Skip elements that are completely hidden or detached
+          if (node.offsetWidth === 0 && node.offsetHeight === 0 && node.offsetParent === null) {
+            return;
+          }
           const originalCode = node.getAttribute('data-original-code');
           if (originalCode) {
             node.textContent = decodeURIComponent(originalCode);
@@ -291,6 +295,19 @@ const renderMathAndCharts = async () => {
 watch([() => props.markdown, () => props.themeId, () => props.codeThemeId, () => props.customStyles], () => {
   renderMathAndCharts();
 }, { immediate: true, deep: true });
+
+watch(() => props.isWeChatMode, () => {
+  nextTick(() => {
+    renderMathAndCharts();
+    const el = getScrollableElement();
+    if (el) {
+      const maxScroll = el.scrollHeight - el.clientHeight;
+      if (maxScroll > 0) {
+        el.scrollTop = props.scrollPercentage * maxScroll;
+      }
+    }
+  });
+});
 
 onMounted(() => {
   try {
@@ -425,21 +442,12 @@ function handlePreviewElementClick(e) {
       :data-theme="props.themeId"
       @scroll="handleScroll"
     >
-      <!-- Standard Mode -->
       <div
-        class="markdown-body"
-        :class="{ 'offscreen-pane': props.isWeChatMode }"
-        :style="codeThemeStyles"
-        v-html="wechatStyledHtml"
-      ></div>
-
-      <!-- WeChat Mockup Frame -->
-      <div
-        class="wechat-phone-frame"
-        :class="{ 'offscreen-pane': !props.isWeChatMode }"
+        class="preview-content-frame"
+        :class="{ 'wechat-phone-frame': props.isWeChatMode }"
       >
-        <div class="phone-dynamic-island"></div>
-        <div class="phone-status-bar">
+        <div v-if="props.isWeChatMode" class="phone-dynamic-island"></div>
+        <div v-if="props.isWeChatMode" class="phone-status-bar">
           <span class="phone-time">09:41</span>
           <div class="phone-icons">
             <span class="wifi">📶</span>
@@ -448,10 +456,10 @@ function handlePreviewElementClick(e) {
         </div>
         <div
           ref="wechatFrameRef"
-          class="phone-screen-scroll"
+          :class="{ 'phone-screen-scroll': props.isWeChatMode, 'standard-screen-scroll': !props.isWeChatMode }"
           @scroll="handleScroll"
         >
-          <div class="phone-article-header">
+          <div v-if="props.isWeChatMode" class="phone-article-header">
             <div class="phone-title">{{ docTitle }}</div>
             <div class="phone-meta">
               <span class="phone-author">NiceMD 作者</span>
@@ -459,16 +467,20 @@ function handlePreviewElementClick(e) {
               <span class="phone-account">极简发布平台</span>
             </div>
           </div>
+
+          <!-- Single persistent content element for v-html to prevent Vue VNode unmount errors -->
           <div
-            class="wechat-body"
+            class="markdown-body wechat-body"
+            :style="codeThemeStyles"
             v-html="wechatStyledHtml"
           ></div>
-          <div class="phone-article-footer">
+
+          <div v-if="props.isWeChatMode" class="phone-article-footer">
             <span class="read-more">阅读原文</span>
             <span class="read-count">阅读 100k+</span>
           </div>
         </div>
-        <div class="phone-home-indicator"></div>
+        <div v-if="props.isWeChatMode" class="phone-home-indicator"></div>
       </div>
     </div>
   </div>
@@ -685,6 +697,12 @@ function handlePreviewElementClick(e) {
   text-align: center;
 }
 
+/* Preview Content Frame */
+.preview-content-frame {
+  width: 100%;
+  transition: width 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+}
+
 /* WeChat Simulated Phone Frame */
 .preview-body.is-wechat-wrapper {
   background: rgba(0, 0, 0, 0.04);
@@ -696,7 +714,7 @@ function handlePreviewElementClick(e) {
   min-height: 100%;
 }
 
-.wechat-phone-frame {
+.preview-content-frame.wechat-phone-frame {
   display: flex;
   flex-direction: column;
   width: 23.5rem;
@@ -707,6 +725,11 @@ function handlePreviewElementClick(e) {
   overflow: hidden;
   position: relative;
   flex-shrink: 0;
+  margin: 0 auto;
+}
+
+.standard-screen-scroll {
+  width: 100%;
 }
 
 .phone-dynamic-island {
@@ -733,7 +756,7 @@ function handlePreviewElementClick(e) {
 }
 
 .phone-screen-scroll {
-  padding: 1rem 1.25rem 2rem;
+  padding: 1rem 1rem 2rem;
   max-height: 40rem;
   overflow-y: auto;
   scrollbar-width: thin;
@@ -750,6 +773,10 @@ function handlePreviewElementClick(e) {
 
 .wechat-body {
   width: 100%;
+}
+
+.wechat-phone-frame .markdown-body {
+  padding: 0 !important;
 }
 
 .wechat-body :deep(#nice) {
