@@ -313,16 +313,6 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
   }
   styleEl('h5', wechatTypo.h5 || `
     display: block;
-    font-size: 16px;
-    font-weight: bold;
-    color: #2b2b2b;
-    margin-top: 20px;
-    margin-bottom: 10px;
-    border-left: 3px solid ${colors.primary};
-    padding-left: 8px;
-  `);
-  styleEl('h5', wechatTypo.h5 || `
-    display: block;
     font-size: 15px;
     font-weight: bold;
     color: #2b2b2b;
@@ -338,17 +328,25 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     margin-bottom: 8px;
   `);
 
-  // 3. Paragraphs & Text Elements
-  styleEl('p', wechatTypo.p || `
-    font-size: 16px;
-    line-height: 2em;
-    letter-spacing: 0.08em;
-    color: #0d0d0d;
-    margin-top: 0;
-    margin-bottom: 0;
-    padding: 6px 0;
-    text-align: justify;
-  `);
+  // 3. Paragraphs & Text Elements (preserve explicit alignment if present)
+  root.querySelectorAll('p').forEach(p => {
+    if (isMaterialEl(p)) return;
+    const existingAlign = p.getAttribute('align') || p.style.textAlign;
+    const baseStyle = cleanCss(wechatTypo.p || `
+      font-size: 16px;
+      line-height: 2em;
+      letter-spacing: 0.08em;
+      color: #0d0d0d;
+      margin-top: 0;
+      margin-bottom: 0;
+      padding: 6px 0;
+      text-align: justify;
+    `);
+    p.setAttribute('style', baseStyle);
+    if (existingAlign) {
+      p.style.textAlign = existingAlign;
+    }
+  });
 
   styleEl('strong', (wechatTypo.strong ? wechatTypo.strong + '; display: inline;' : `
     color: ${colors.primary};
@@ -672,6 +670,17 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     styleSpan('.hljs-operator', `color: ${codeStyles.operator || '#56b6c2'};`);
     styleSpan('.hljs-property', `color: ${codeStyles.property || '#abb2bf'};`);
     styleSpan('.hljs-variable', `color: ${codeStyles.variable || '#e06c75'};`);
+    styleSpan('.hljs-function', `color: ${codeStyles.title || '#61afef'};`);
+    styleSpan('.hljs-params', `color: ${codeStyles.text || '#abb2bf'};`);
+    styleSpan('.hljs-class', `color: ${codeStyles.type || '#e5c07b'};`);
+    styleSpan('.hljs-symbol', `color: ${codeStyles.literal || '#56b6c2'};`);
+    styleSpan('.hljs-bullet', `color: ${codeStyles.string || '#98c379'};`);
+    styleSpan('.hljs-subst', `color: ${codeStyles.text || '#abb2bf'};`);
+    styleSpan('.hljs-section', `color: ${codeStyles.title || '#61afef'}; font-weight: bold;`);
+    styleSpan('.hljs-emphasis', `font-style: italic;`);
+    styleSpan('.hljs-strong', `font-weight: bold;`);
+    styleSpan('.hljs-name', `color: ${codeStyles.keyword || '#e06c75'}; font-weight: bold;`);
+    styleSpan('.hljs-tag', `color: ${codeStyles.text || '#abb2bf'};`);
 
     // 4. Rearrange elements in DOM: replace pre with wrapper, then append header and codeContentSection to wrapper
     if (pre.parentNode) {
@@ -681,26 +690,49 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     }
   });
 
-  // 9. Tables
-  styleEl('table', `
-    border-collapse: collapse;
-    width: 100%;
-    margin: 0 0 1.5em 0;
-    font-size: 13px;
-  `);
+  // 9. Tables (wrapped in overflow container with zebra striping and explicit cell alignment)
+  root.querySelectorAll('table').forEach(table => {
+    table.setAttribute('style', cleanCss(`
+      border-collapse: collapse;
+      width: 100%;
+      margin: 0;
+      font-size: 14px;
+      display: table;
+      text-align: left;
+    `));
 
-  styleEl('th', wechatTypo.th || `
-    background-color: ${colors.bgLight};
-    border: 1px solid ${colors.border};
-    padding: 8px 12px;
-    font-weight: bold;
-    text-align: left;
-  `);
+    // Cell explicit styling & alignment
+    table.querySelectorAll('th, td').forEach(cell => {
+      const align = cell.getAttribute('align') || cell.style.textAlign || 'left';
+      const isHeader = cell.tagName.toLowerCase() === 'th';
+      const cellBg = isHeader ? (colors.accentBg || colors.bgLight || '#f0f0f0') : 'inherit';
+      cell.setAttribute('style', cleanCss(`
+        border: 1px solid ${colors.border || '#e1e4e8'};
+        padding: 8px 12px;
+        min-width: 85px;
+        text-align: ${align};
+        background-color: ${cellBg};
+        font-weight: ${isHeader ? 'bold' : 'normal'};
+      `));
+    });
 
-  styleEl('td', `
-    border: 1px solid ${colors.border};
-    padding: 8px 12px;
-  `);
+    // Zebra striping on rows
+    table.querySelectorAll('tbody tr').forEach((tr, i) => {
+      const rowBg = (i % 2 === 1) ? 'rgba(0, 0, 0, 0.02)' : '#ffffff';
+      tr.setAttribute('style', `background-color: ${rowBg};`);
+    });
+
+    // Wrap in section.table-container for mobile horizontal scrolling in WeChat MP Editor
+    const parent = table.parentNode;
+    if (parent && !parent.classList.contains('table-container')) {
+      const container = doc.createElement('section');
+      container.className = 'table-container';
+      container.setAttribute('data-tool', 'NiceMD编辑器');
+      container.setAttribute('style', cleanCss('margin: 16px 0; padding: 0; overflow-x: auto; display: block;'));
+      parent.replaceChild(container, table);
+      container.appendChild(table);
+    }
+  });
 
   // 11. Convert LaTeX Math Formulas (KaTeX) into high-resolution transparent PNG images via CodeCogs
   
@@ -926,6 +958,9 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
   root.setAttribute('id', 'nice');
   root.setAttribute('data-tool', 'NiceMD编辑器');
   root.setAttribute('data-website', 'https://github.com/chengxy-nds/nice-md');
+
+  // Resolve all CSS variables (var(--...)) into explicit color values so WeChat MP UEditor never strips styles
+  resolveAllCssVariables(root, themeStyles);
 
   let finalHtml = root.outerHTML;
   // Clean all whitespace (spaces/tabs/newlines) between list tags so WeChat's parser doesn't create empty list items
@@ -1320,6 +1355,53 @@ function applyCustomCssRules(root, customCss) {
       // Ignore invalid CSS selectors safely
     }
   }
+}
+
+/**
+ * Resolves all CSS variables (e.g. var(--accent-bg), var(--code-bg)) into concrete color strings
+ * because WeChat Official Account UEditor strips styles containing unresolved var() expressions.
+ */
+function resolveAllCssVariables(root, themeStyles = {}) {
+  const defaultVarMap = {
+    '--accent-color': themeStyles['--accent-color'] || '#2775b6',
+    '--accent-bg': themeStyles['--accent-bg'] || 'rgba(39, 117, 182, 0.05)',
+    '--accent-hover': themeStyles['--accent-hover'] || '#1e5d93',
+    '--code-bg': themeStyles['--code-bg'] || 'rgba(27, 31, 35, 0.05)',
+    '--code-text': themeStyles['--code-text'] || '#bb2243',
+    '--border-color': themeStyles['--border-color'] || '#e1e4e8',
+    '--text-main': themeStyles['--text-main'] || '#2b2b2b',
+    '--text-muted': themeStyles['--text-muted'] || '#595959',
+    '--bg-app': themeStyles['--bg-app'] || '#fcfcfc',
+    '--bg-editor': themeStyles['--bg-editor'] || '#ffffff',
+    '--bg-preview': themeStyles['--bg-preview'] || '#fdfdfd',
+    '--shadow-sm': '0 2px 8px rgba(0,0,0,0.02)',
+    '--shadow-md': '0 8px 24px rgba(0,0,0,0.04)'
+  };
+
+  const resolveString = (str) => {
+    if (!str || !str.includes('var(')) return str;
+    let maxPasses = 5;
+    let current = str;
+    while (current.includes('var(') && maxPasses > 0) {
+      maxPasses--;
+      current = current.replace(/var\(--([^,\s)]+)(?:,\s*([^)]+))?\)/g, (match, varName, fallback) => {
+        const fullVarName = '--' + varName;
+        if (themeStyles[fullVarName]) return themeStyles[fullVarName];
+        if (defaultVarMap[fullVarName]) return defaultVarMap[fullVarName];
+        if (fallback) return fallback.trim();
+        return '#2775b6';
+      });
+    }
+    return current;
+  };
+
+  const allElements = [root, ...root.querySelectorAll('*')];
+  allElements.forEach(el => {
+    const styleAttr = el.getAttribute('style');
+    if (styleAttr && styleAttr.includes('var(')) {
+      el.setAttribute('style', resolveString(styleAttr));
+    }
+  });
 }
 
 /**
