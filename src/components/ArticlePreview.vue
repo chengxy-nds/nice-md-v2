@@ -184,6 +184,12 @@ const injectedCustomCss = computed(() => {
         const h = tag.toLowerCase();
         return `.preview-body ${h}, .preview-body [data-heading="${h}"]:not([data-material="true"]), .preview-body [data-heading="${h}"]:not([data-material="true"]) *, .wechat-body ${h}, .wechat-body [data-heading="${h}"]:not([data-material="true"]), .wechat-body [data-heading="${h}"]:not([data-material="true"]) *, .phone-screen-scroll ${h}, .phone-screen-scroll [data-heading="${h}"]:not([data-material="true"]) *, .tc-rendered-paper ${h}`;
       }
+      if (tag === 'blockquote') {
+        return `.preview-body blockquote:not([data-material="true"]), .wechat-body blockquote:not([data-material="true"]), .phone-screen-scroll blockquote:not([data-material="true"]), .tc-rendered-paper blockquote:not([data-material="true"])`;
+      }
+      if (tag === 'hr') {
+        return `.preview-body hr:not([data-material="true"]), .wechat-body hr:not([data-material="true"]), .phone-screen-scroll hr:not([data-material="true"]), .tc-rendered-paper hr:not([data-material="true"])`;
+      }
       return `.preview-body ${tag}, .preview-body .markdown-body ${tag}, .wechat-body ${tag}, .phone-screen-scroll ${tag}, .tc-rendered-paper ${tag}`;
     }).filter(Boolean);
 

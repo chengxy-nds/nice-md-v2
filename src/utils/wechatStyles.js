@@ -20,17 +20,18 @@ import { buildWechatTypo } from './themeTypography';
 import { allMaterialTemplatesMap } from './materialLibrary';
 
 function isMaterialEl(el) {
-  if (!el) return false;
-  if (el.closest && el.closest('[data-material="true"], [data-material], .material-block, [data-heading][data-material]')) {
-    return true;
-  }
-  if (el.getAttribute) {
-    if (el.hasAttribute('data-material') || el.hasAttribute('data-heading')) return true;
-    const style = el.getAttribute('style') || '';
-    if (style.includes('rotate(') || style.includes('box-shadow') || style.includes('border-left: 4px solid') || style.includes('background: #fef08a') || style.includes('background:#fef08a') || style.includes('background: #f1f5f9')) {
+  if (!el || el.nodeType !== 1) return false;
+  try {
+    if (el.getAttribute && (el.getAttribute('data-material') === 'true' || el.hasAttribute('data-material'))) {
       return true;
     }
-  }
+    if (el.classList && el.classList.contains('material-block')) {
+      return true;
+    }
+    if (el.closest && el.closest('[data-material="true"], [data-material], .material-block, [data-heading][data-material="true"]')) {
+      return true;
+    }
+  } catch (e) {}
   return false;
 }
 
@@ -123,8 +124,8 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
       root.querySelectorAll(tag).forEach(el => {
         if (isMaterialEl(el)) return;
         index++;
-        const titleText = el.textContent.trim();
-        const renderedHtml = tmpl.render ? tmpl.render(titleText, index, { prefix }) : null;
+        const titleHtml = el.innerHTML.trim();
+        const renderedHtml = tmpl.render ? tmpl.render(titleHtml, index, { prefix }) : null;
         if (renderedHtml) {
           const tempContainer = doc.createElement('div');
           tempContainer.innerHTML = renderedHtml;
@@ -145,7 +146,12 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     const tmpl = allMaterialTemplatesMap[bqMatId];
     root.querySelectorAll('blockquote').forEach(el => {
       if (isMaterialEl(el)) return;
-      const contentHtml = el.innerHTML.trim();
+      let contentHtml = el.innerHTML.trim();
+      // If content is a single <p>...</p>, unwrap it to keep it inline with icons/quotes
+      const pMatch = contentHtml.match(/^<p(?:\s+[^>]*)?>([\s\S]*?)<\/p>$/i);
+      if (pMatch) {
+        contentHtml = pMatch[1].trim();
+      }
       const renderedHtml = tmpl.render ? tmpl.render(contentHtml) : null;
       if (renderedHtml) {
         const tempContainer = doc.createElement('div');
@@ -539,24 +545,8 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     word-break: break-word;
   `);
 
-  // 8. Code Blocks
-  // Handled separately because marked wraps code inside pre
+  // 8. Code Blocks (Atomic <pre class="custom"> with non-breaking spaces, <br> linebreaks, and -webkit-box)
   root.querySelectorAll('pre').forEach(pre => {
-    // 1. Create a wrapper section for styling and Mac header
-    const wrapper = doc.createElement('section');
-    wrapper.setAttribute('style', cleanCss(`
-      margin: 0 0 1.5em 0;
-      border-radius: 5px;
-      box-shadow: rgba(0, 0, 0, 0.55) 0px 2px 10px;
-      text-align: left;
-      overflow: hidden;
-      background-color: ${codeStyles.macBg || codeStyles.bg || '#282c34'};
-      display: block;
-      width: 100% !important;
-      max-width: 100% !important;
-      box-sizing: border-box !important;
-    `));
-
     // Extract language name from class
     let langName = 'Code';
     const codeTag = pre.querySelector('code');
@@ -567,78 +557,68 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
       }
     }
 
-    // 2. Create the Mac terminal dots header with language label on the right.
-    // Uses an inline SVG background for the three dots — much more robust than
-    // empty <span> elements which WeChat's editor would strip out.
-    // Inline SVG data URI for the Mac dots — identical to /public/mac.svg
-    // Inline SVG data URI. Use hex colours (not rgb()) so parentheses don't
-    // break the CSS url() token. Quote the URL so special chars are safe.
+    // 1. Configure the pre container
+    pre.className = 'custom';
+    pre.setAttribute('data-tool', 'NiceMD编辑器');
+    pre.setAttribute('style', cleanCss(`
+      border-radius: 5px;
+      box-shadow: rgba(0, 0, 0, 0.55) 0px 2px 10px;
+      text-align: left;
+      margin: 14px 0;
+      padding: 0;
+      background-color: ${codeStyles.macBg || codeStyles.bg || '#282c34'};
+      display: block;
+      width: 100% !important;
+      max-width: 100% !important;
+      box-sizing: border-box !important;
+    `));
+
+    // 2. Create the Mac terminal dots header
     const dotsSvg = 'data:image/svg+xml,' + encodeURIComponent(
       '<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="450px" height="130px">' +
       '<ellipse cx="65" cy="65" rx="50" ry="52" stroke="#dc3c36" stroke-width="2" fill="#ed6c60"/>' +
       '<ellipse cx="225" cy="65" rx="50" ry="52" stroke="#da9721" stroke-width="2" fill="#f7c151"/>' +
       '<ellipse cx="385" cy="65" rx="50" ry="52" stroke="#1ba125" stroke-width="2" fill="#64c856"/>' +
       '</svg>');
-    const header = doc.createElement('section');
+
+    const header = doc.createElement('span');
     header.setAttribute('style', cleanCss(`
-      height: 30px;
-      padding: 0 14px;
-      background-color: ${codeStyles.macBg || codeStyles.bg || '#282c34'};
+      display: block;
       background-image: url("${dotsSvg}");
+      height: 30px;
+      width: 100%;
       background-size: 40px;
       background-repeat: no-repeat;
-      background-position: 10px 10px;
-      border-radius: 5px;
+      background-color: ${codeStyles.macBg || codeStyles.bg || '#282c34'};
       margin-bottom: -7px;
-      width: 100% !important;
-      max-width: 100% !important;
-      box-sizing: border-box !important;
-      display: block !important;
-      text-align: left;
+      border-radius: 5px 5px 0 0;
+      background-position: 10px 10px;
+      padding: 0 14px;
+      box-sizing: border-box;
     `));
     header.innerHTML = `
       <span style="display: block; float: right; line-height: 30px; color: ${codeStyles.macText || '#5c6370'}; font-family: -apple-system-font, sans-serif; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">${langName}</span>
     `;
 
-    // 3. Create a pre tag for the code block.
-    // NOTE: width is deliberately NOT set so the pre can expand to fit the
-    // longest code line. Combined with white-space: pre this prevents
-    // wrapping. The wrapper section's overflow:hidden clips the overflow
-    // visually; the preview CSS adds overflow-x:auto for a scrollbar.
-    const codeContentSection = doc.createElement('pre');
-    codeContentSection.setAttribute('style', cleanCss(`
-      margin: 0;
-      padding: 8px 14px 14px 14px;
-      background-color: ${codeStyles.bg || '#282c34'};
-      border-bottom-left-radius: 5px;
-      border-bottom-right-radius: 5px;
-      overflow-x: auto !important;
-      -ms-overflow-style: none !important;
-      scrollbar-width: none !important;
-      -webkit-overflow-scrolling: touch;
-      white-space: pre !important;
-      word-break: normal !important;
-      word-wrap: normal !important;
-      display: block;
-      width: 100% !important;
-      box-sizing: border-box !important;
+    // 3. Create the code element with display: -webkit-box for WeChat UEditor atomic line preservation
+    const codeTagNew = doc.createElement('code');
+    codeTagNew.className = 'hljs';
+    codeTagNew.setAttribute('style', cleanCss(`
+      overflow-x: auto;
+      padding: 16px;
+      padding-top: 15px;
+      color: ${codeStyles.text || '#abb2bf'};
+      background: ${codeStyles.bg || '#282c34'};
+      border-radius: 5px;
+      display: -webkit-box;
+      font-family: Consolas, Monaco, Menlo, monospace;
+      font-size: 12.5px;
+      line-height: 26px;
+      width: 100%;
+      box-sizing: border-box;
     `));
 
-    const codeTagNew = doc.createElement('code');
-    codeTagNew.setAttribute('style', cleanCss(`
-      display: block !important;
-      font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace !important;
-      font-size: 13px !important;
-      color: ${codeStyles.text || '#abb2bf'};
-      white-space: pre !important;
-      word-break: normal !important;
-      word-wrap: normal !important;
-      background: transparent !important;
-      padding: 0 !important;
-      margin: 0 !important;
-    `));
-    
-    // Copy the children of code tag (which has highlights) to the new code tag
+    // Copy the children of code tag (which has highlight.js markup) to the new code tag
     if (codeTag) {
       while (codeTag.firstChild) {
         codeTagNew.appendChild(codeTag.firstChild);
@@ -648,46 +628,64 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         codeTagNew.appendChild(pre.firstChild);
       }
     }
-    codeContentSection.appendChild(codeTagNew);
 
-    // Inline highlight.js colors inside code block
+    // 4. Transform text nodes: convert all '\n' into <br> and all spaces into non-breaking spaces (\u00a0)
+    // This makes the code immune to WeChat UEditor whitespace collapsing and arbitrary paragraph wrapping!
+    const processNode = (node) => {
+      if (node.nodeType === 3) {
+        const raw = (node.nodeValue || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+        if (raw.includes('\n')) {
+          const parts = raw.split('\n');
+          const frag = doc.createDocumentFragment();
+          for (let i = 0; i < parts.length; i++) {
+            if (i > 0) {
+              frag.appendChild(doc.createElement('br'));
+            }
+            if (parts[i].length > 0) {
+              frag.appendChild(doc.createTextNode(parts[i].replace(/ /g, '\u00a0')));
+            }
+          }
+          node.parentNode.replaceChild(frag, node);
+        } else {
+          node.nodeValue = raw.replace(/ /g, '\u00a0');
+        }
+      } else if (node.nodeType === 1) {
+        Array.from(node.childNodes).forEach(child => processNode(child));
+      }
+    };
+    Array.from(codeTagNew.childNodes).forEach(child => processNode(child));
+
+    // 5. Inline highlight.js styles inside code block with explicit line-height: 26px
     const styleSpan = (selector, styleStr) => {
-      codeContentSection.querySelectorAll(selector).forEach(el => {
-        el.setAttribute('style', styleStr);
+      codeTagNew.querySelectorAll(selector).forEach(el => {
+        const existing = el.getAttribute('style') || '';
+        el.setAttribute('style', cleanCss(`${existing}; ${styleStr}`));
       });
     };
     
-    styleSpan('.hljs-keyword', `color: ${codeStyles.keyword || '#c678dd'}; font-weight: bold;`);
-    styleSpan('.hljs-string', `color: ${codeStyles.string || '#98c379'};`);
-    styleSpan('.hljs-number', `color: ${codeStyles.number || '#d19a66'};`);
-    styleSpan('.hljs-literal', `color: ${codeStyles.literal || '#56b6c2'};`);
-    styleSpan('.hljs-built_in', `color: ${codeStyles.type || '#e5c07b'};`);
-    styleSpan('.hljs-type', `color: ${codeStyles.type || '#e5c07b'};`);
-    styleSpan('.hljs-title', `color: ${codeStyles.title || '#61afef'};`);
-    styleSpan('.hljs-attr', `color: ${codeStyles.attr || '#d19a66'};`);
-    styleSpan('.hljs-comment', `color: ${codeStyles.comment || '#7f848e'}; font-style: italic;`);
-    styleSpan('.hljs-meta', `color: ${codeStyles.meta || '#61afef'};`);
-    styleSpan('.hljs-operator', `color: ${codeStyles.operator || '#56b6c2'};`);
-    styleSpan('.hljs-property', `color: ${codeStyles.property || '#abb2bf'};`);
-    styleSpan('.hljs-variable', `color: ${codeStyles.variable || '#e06c75'};`);
-    styleSpan('.hljs-function', `color: ${codeStyles.title || '#61afef'};`);
-    styleSpan('.hljs-params', `color: ${codeStyles.text || '#abb2bf'};`);
-    styleSpan('.hljs-class', `color: ${codeStyles.type || '#e5c07b'};`);
-    styleSpan('.hljs-symbol', `color: ${codeStyles.literal || '#56b6c2'};`);
-    styleSpan('.hljs-bullet', `color: ${codeStyles.string || '#98c379'};`);
-    styleSpan('.hljs-subst', `color: ${codeStyles.text || '#abb2bf'};`);
-    styleSpan('.hljs-section', `color: ${codeStyles.title || '#61afef'}; font-weight: bold;`);
-    styleSpan('.hljs-emphasis', `font-style: italic;`);
-    styleSpan('.hljs-strong', `font-weight: bold;`);
-    styleSpan('.hljs-name', `color: ${codeStyles.keyword || '#e06c75'}; font-weight: bold;`);
-    styleSpan('.hljs-tag', `color: ${codeStyles.text || '#abb2bf'};`);
+    // Set line-height on all spans to maintain uniform baseline
+    codeTagNew.querySelectorAll('span').forEach(span => {
+      span.style.lineHeight = '26px';
+    });
 
-    // 4. Rearrange elements in DOM: replace pre with wrapper, then append header and codeContentSection to wrapper
-    if (pre.parentNode) {
-      pre.parentNode.replaceChild(wrapper, pre);
-      wrapper.appendChild(header);
-      wrapper.appendChild(codeContentSection);
-    }
+    styleSpan('.hljs-keyword, .hljs-selector-tag', `color: ${codeStyles.keyword || '#c678dd'}; font-weight: bold; line-height: 26px;`);
+    styleSpan('.hljs-string, .hljs-regexp, .hljs-addition, .hljs-attribute, .hljs-template-variable', `color: ${codeStyles.string || '#98c379'}; line-height: 26px;`);
+    styleSpan('.hljs-number, .hljs-literal', `color: ${codeStyles.number || '#d19a66'}; line-height: 26px;`);
+    styleSpan('.hljs-type, .hljs-built_in, .hljs-class', `color: ${codeStyles.type || '#e5c07b'}; line-height: 26px;`);
+    styleSpan('.hljs-title, .hljs-function, .hljs-section', `color: ${codeStyles.title || '#61afef'}; line-height: 26px;`);
+    styleSpan('.hljs-attr', `color: ${codeStyles.attr || '#d19a66'}; line-height: 26px;`);
+    styleSpan('.hljs-comment, .hljs-quote', `color: ${codeStyles.comment || '#7f848e'}; font-style: italic; line-height: 26px;`);
+    styleSpan('.hljs-meta, .hljs-operator, .hljs-symbol', `color: ${codeStyles.meta || '#56b6c2'}; line-height: 26px;`);
+    styleSpan('.hljs-property, .hljs-variable, .hljs-params, .hljs-subst, .hljs-tag', `color: ${codeStyles.property || codeStyles.text || '#abb2bf'}; line-height: 26px;`);
+    styleSpan('.hljs-bullet', `color: ${codeStyles.string || '#98c379'}; line-height: 26px;`);
+    styleSpan('.hljs-emphasis', `font-style: italic; line-height: 26px;`);
+    styleSpan('.hljs-strong', `font-weight: bold; line-height: 26px;`);
+    styleSpan('.hljs-name', `color: ${codeStyles.keyword || '#e06c75'}; font-weight: bold; line-height: 26px;`);
+
+    // 6. Assemble inside <pre class="custom">
+    pre.innerHTML = '';
+    pre.appendChild(header);
+    pre.appendChild(codeTagNew);
   });
 
   // 9. Tables (wrapped in overflow container with zebra striping and explicit cell alignment)
@@ -1280,6 +1278,7 @@ function convertNonStandardInlineTagsToSpans(root) {
 
   // 2. Ensure native inline formatting tags carry explicit inline styles for WeChat compatibility
   root.querySelectorAll('strong, b').forEach(el => {
+    if (isMaterialEl(el)) return;
     const existing = el.getAttribute('style') || '';
     if (!/font-weight/i.test(existing)) {
       el.setAttribute('style', (existing ? existing + '; ' : '') + 'font-weight: bold;');
@@ -1287,6 +1286,7 @@ function convertNonStandardInlineTagsToSpans(root) {
   });
 
   root.querySelectorAll('em, i').forEach(el => {
+    if (isMaterialEl(el)) return;
     const existing = el.getAttribute('style') || '';
     if (!/font-style/i.test(existing)) {
       el.setAttribute('style', (existing ? existing + '; ' : '') + 'font-style: italic;');
@@ -1294,6 +1294,7 @@ function convertNonStandardInlineTagsToSpans(root) {
   });
 
   root.querySelectorAll('u, ins').forEach(el => {
+    if (isMaterialEl(el)) return;
     const existing = el.getAttribute('style') || '';
     if (!/text-decoration/i.test(existing)) {
       el.setAttribute('style', (existing ? existing + '; ' : '') + 'text-decoration: underline;');
@@ -1301,6 +1302,7 @@ function convertNonStandardInlineTagsToSpans(root) {
   });
 
   root.querySelectorAll('del, s, strike').forEach(el => {
+    if (isMaterialEl(el)) return;
     const existing = el.getAttribute('style') || '';
     if (!/text-decoration/i.test(existing)) {
       el.setAttribute('style', (existing ? existing + '; ' : '') + 'text-decoration: line-through;');
@@ -1334,6 +1336,10 @@ function applyCustomCssRules(root, customCss) {
     if (/^h[1-6]$/i.test(cleanSelector)) {
       const h = cleanSelector.toLowerCase();
       cleanSelector = `${h}, [data-heading="${h}"]:not([data-material="true"]), [data-heading="${h}"]:not([data-material="true"]) *`;
+    } else if (cleanSelector === 'blockquote') {
+      cleanSelector = 'blockquote:not([data-material="true"])';
+    } else if (cleanSelector === 'hr') {
+      cleanSelector = 'hr:not([data-material="true"])';
     }
 
     try {

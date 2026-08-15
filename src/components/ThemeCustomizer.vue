@@ -232,10 +232,10 @@ function generateCssFromStyles(styles) {
   if (S.h2 && (!S.h2.materialTemplateId || S.h2.materialTemplateId === 'none')) {
     css += addRule('#nice h2, xiaofu h2', { color: cleanColor(S.h2.color, '#2775b6'), fontSize: S.h2.fontSize, fontWeight: S.h2.fontWeight, borderLeft: S.h2.borderLeft, paddingLeft: S.h2.paddingLeft });
   }
-  if (S.h3) css += addRule('#nice h3, xiaofu h3', { color: cleanColor(S.h3.color, '#2b2b2b'), fontSize: S.h3.fontSize, fontWeight: S.h3.fontWeight });
-  if (S.h4) css += addRule('#nice h4, xiaofu h4', { color: cleanColor(S.h4.color, '#2b2b2b'), fontSize: S.h4.fontSize, fontWeight: S.h4.fontWeight });
-  if (S.h5) css += addRule('#nice h5, xiaofu h5', { color: cleanColor(S.h5.color, '#2b2b2b'), fontSize: S.h5.fontSize, fontWeight: S.h5.fontWeight });
-  if (S.h6) css += addRule('#nice h6, xiaofu h6', { color: cleanColor(S.h6.color, '#2b2b2b'), fontSize: S.h6.fontSize, fontWeight: S.h6.fontWeight });
+  if (S.h3 && (!S.h3.materialTemplateId || S.h3.materialTemplateId === 'none')) css += addRule('#nice h3, xiaofu h3', { color: cleanColor(S.h3.color, '#2b2b2b'), fontSize: S.h3.fontSize, fontWeight: S.h3.fontWeight });
+  if (S.h4 && (!S.h4.materialTemplateId || S.h4.materialTemplateId === 'none')) css += addRule('#nice h4, xiaofu h4', { color: cleanColor(S.h4.color, '#2b2b2b'), fontSize: S.h4.fontSize, fontWeight: S.h4.fontWeight });
+  if (S.h5 && (!S.h5.materialTemplateId || S.h5.materialTemplateId === 'none')) css += addRule('#nice h5, xiaofu h5', { color: cleanColor(S.h5.color, '#2b2b2b'), fontSize: S.h5.fontSize, fontWeight: S.h5.fontWeight });
+  if (S.h6 && (!S.h6.materialTemplateId || S.h6.materialTemplateId === 'none')) css += addRule('#nice h6, xiaofu h6', { color: cleanColor(S.h6.color, '#2b2b2b'), fontSize: S.h6.fontSize, fontWeight: S.h6.fontWeight });
 
   if (S.p) css += addRule('#nice p, xiaofu p', { color: S.p.color, fontSize: S.p.fontSize, lineHeight: S.p.lineHeight });
   if (S.strong) css += addRule('#nice strong, xiaofu strong', { color: S.strong.color, fontWeight: S.strong.fontWeight });
@@ -259,7 +259,7 @@ function generateCssFromStyles(styles) {
   }
 
   if (S.pre) css += addRule('#nice pre, xiaofu pre', { backgroundColor: S.pre.backgroundColor });
-  if (S.blockquote) {
+  if (S.blockquote && (!S.blockquote.materialTemplateId || S.blockquote.materialTemplateId === 'none')) {
     css += addRule('#nice blockquote, xiaofu blockquote', {
       borderLeft: S.blockquote.borderLeftColor ? `4px solid ${S.blockquote.borderLeftColor}` : undefined,
       backgroundColor: S.blockquote.backgroundColor,
@@ -275,7 +275,7 @@ function generateCssFromStyles(styles) {
   if (S.th) css += addRule('#nice th, xiaofu th', { backgroundColor: S.th.backgroundColor, color: S.th.color, fontWeight: S.th.fontWeight });
   if (S.td) css += addRule('#nice td, xiaofu td', { borderColor: S.td.borderColor, color: S.td.color });
 
-  if (S.hr) css += addRule('#nice hr, xiaofu hr', { borderTop: '1px solid ' + (S.hr.borderColor || '#eaeef2'), margin: '24px 0' });
+  if (S.hr && (!S.hr.materialTemplateId || S.hr.materialTemplateId === 'none')) css += addRule('#nice hr, xiaofu hr', { borderTop: '1px solid ' + (S.hr.borderColor || '#eaeef2'), margin: '24px 0' });
   if (S.a) css += addRule('#nice a, xiaofu a', { color: S.a.color, textDecoration: S.a.textDecoration || 'none' });
   if (S.img) {
     css += addRule('#nice img, xiaofu img, .markdown-body img', {
