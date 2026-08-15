@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
-import { Palette, X, Save, Sliders, Code2, RotateCcw, Check, Sparkles } from 'lucide-vue-next';
+import { Palette, X, Save, Sliders, Code2, RotateCcw, Check, Sparkles, Hash, FileType } from 'lucide-vue-next';
 import { getThemeDefaultStyles } from '../utils/themePresets';
 import { allMaterialTemplatesMap, getMaterialTemplatesForKey } from '../utils/materialLibrary';
 import { EditorView, basicSetup } from 'codemirror';
@@ -31,7 +31,7 @@ const materialModalOpen = ref(false);
 const currentModalKey = ref('h1');
 
 function hasMaterialSupport(key) {
-  return ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'hr'].includes(key);
+  return ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'hr', 'ul', 'ol', 'li', 'header_widget', 'footer_widget'].includes(key);
 }
 
 function getMaterialTypeLabel(key) {
@@ -43,7 +43,12 @@ function getMaterialTypeLabel(key) {
     h5: 'H5 五级标题',
     h6: 'H6 六级标题',
     blockquote: '引用 / 引入',
-    hr: '分割线'
+    hr: '分割线',
+    ul: '无序列表 (UL)',
+    ol: '有序列表 (OL)',
+    li: '列表项 (LI)',
+    header_widget: '文章头部导读挂件',
+    footer_widget: '文末三连/作者名片'
   };
   return map[key] || '素材';
 }
@@ -55,8 +60,23 @@ function openMaterialModal(key) {
 
 function selectMaterialTemplate(templateId) {
   const key = currentModalKey.value;
-  updateStyle(key, 'materialTemplateId', templateId);
+  if (key === 'header_widget') {
+    updateGlobalWidget('headerWidgetId', templateId);
+  } else if (key === 'footer_widget') {
+    updateGlobalWidget('footerWidgetId', templateId);
+  } else {
+    updateStyle(key, 'materialTemplateId', templateId);
+  }
   materialModalOpen.value = false;
+}
+
+function updateGlobalWidget(prop, value) {
+  if (!localStyles.value) localStyles.value = {};
+  if (!localStyles.value.globalWidgets) {
+    localStyles.value.globalWidgets = {};
+  }
+  localStyles.value.globalWidgets[prop] = value;
+  emitUpdate();
 }
 
 function getMaterialTemplateName(id) {
@@ -535,6 +555,58 @@ const cssLineCount = computed(() => {
 
     <!-- Mode 1: Form View (可视化配置) -->
     <div v-show="activeTab === 'form'" class="customizer-body" ref="customizerBodyRef">
+      <!-- 0. Global Header & Footer Widgets Card (文章头尾挂件预设) -->
+      <div class="style-section global-widgets-card" data-section="global-widgets">
+        <div class="section-label">
+          <span class="section-icon">🎴</span>
+          <span class="section-title-text">文章头尾挂件 (全局预设)</span>
+          <div class="header-action-group">
+            <span class="global-badge">自动注入头尾</span>
+          </div>
+        </div>
+        <p class="global-widget-subtext">
+          在此设置文章开头导读卡与文末三连/作者名片，复制至微信公众号或预览时将自动拼装于文章最前与最后。
+        </p>
+
+        <!-- Header Widget Picker -->
+        <div class="widget-row-box">
+          <div class="widget-row-header">
+            <div class="widget-title">
+              <Sparkles class="w-3.5 h-3.5 text-emerald-500 inline" />
+              <span>文章头部引导关注 / 导读卡片</span>
+            </div>
+            <button class="widget-choose-btn" @click="openMaterialModal('header_widget')">
+              {{ localStyles?.globalWidgets?.headerWidgetId && localStyles?.globalWidgets?.headerWidgetId !== 'none' ? '更换模版' : '选择素材' }}
+            </button>
+          </div>
+          <div v-if="localStyles?.globalWidgets?.headerWidgetId && localStyles?.globalWidgets?.headerWidgetId !== 'none'" class="active-widget-banner">
+            <span class="widget-active-name">{{ getMaterialTemplateName(localStyles.globalWidgets.headerWidgetId) }}</span>
+            <button class="clear-widget-btn" @click="updateGlobalWidget('headerWidgetId', 'none')">
+              <X class="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+
+        <!-- Footer Widget Picker -->
+        <div class="widget-row-box">
+          <div class="widget-row-header">
+            <div class="widget-title">
+              <Sparkles class="w-3.5 h-3.5 text-amber-500 inline" />
+              <span>文末三连 / 作者名片 / 二维码关注</span>
+            </div>
+            <button class="widget-choose-btn" @click="openMaterialModal('footer_widget')">
+              {{ localStyles?.globalWidgets?.footerWidgetId && localStyles?.globalWidgets?.footerWidgetId !== 'none' ? '更换模版' : '选择素材' }}
+            </button>
+          </div>
+          <div v-if="localStyles?.globalWidgets?.footerWidgetId && localStyles?.globalWidgets?.footerWidgetId !== 'none'" class="active-widget-banner">
+            <span class="widget-active-name">{{ getMaterialTemplateName(localStyles.globalWidgets.footerWidgetId) }}</span>
+            <button class="clear-widget-btn" @click="updateGlobalWidget('footerWidgetId', 'none')">
+              <X class="w-3 h-3" />
+            </button>
+          </div>
+        </div>
+      </div>
+
       <div
         v-for="el in elements"
         :key="el.key"
@@ -897,40 +969,22 @@ const cssLineCount = computed(() => {
           </button>
         </div>
 
-        <div class="heading-modal-subtext">
-          <template v-if="currentModalKey === 'blockquote'">
-            选择后，全篇 Markdown 文章的 <strong>> 引用 / 引入块</strong> 将统一替换为此素材视觉风格，呈现爆款公众号金句与卡片效果。
-          </template>
-          <template v-else-if="currentModalKey === 'hr'">
-            选择后，全篇 Markdown 文章的 <strong>--- 分割线</strong> 将统一替换为此素材视觉风格。
-          </template>
-          <template v-else>
-            选择后，全篇 Markdown 文章的 <strong>{{ getMaterialTypeLabel(currentModalKey) }}</strong> 将统一替换为此素材视觉风格，标题文字与序号（如 PART.01, PART.02）将按顺序自动带入，无需改动 Markdown 源码。
-          </template>
-        </div>
-
         <div class="heading-materials-grid">
           <div
             v-for="item in getMaterialTemplatesForKey(currentModalKey)"
             :key="item.id"
             class="heading-material-card"
-            :class="{ 'is-selected': (getStyle(currentModalKey).materialTemplateId || 'none') === item.id }"
+            :class="{ 'is-selected': (currentModalKey === 'header_widget' ? (localStyles?.globalWidgets?.headerWidgetId || 'none') : (currentModalKey === 'footer_widget' ? (localStyles?.globalWidgets?.footerWidgetId || 'none') : (getStyle(currentModalKey).materialTemplateId || 'none'))) === item.id }"
             @click="selectMaterialTemplate(item.id)"
           >
             <div class="card-top">
-              <span class="tag-badge" :class="{ 'is-none': item.id === 'none' }">{{ item.tag }}</span>
               <span class="card-name">{{ item.name }}</span>
+              <span v-if="(currentModalKey === 'header_widget' ? (localStyles?.globalWidgets?.headerWidgetId || 'none') : (currentModalKey === 'footer_widget' ? (localStyles?.globalWidgets?.footerWidgetId || 'none') : (getStyle(currentModalKey).materialTemplateId || 'none'))) === item.id" class="tag-badge is-active">
+                <Check class="w-3 h-3 inline mr-0.5" /> 已选用
+              </span>
+              <span v-else class="tag-badge" :class="{ 'is-none': item.id === 'none' }">{{ item.tag }}</span>
             </div>
             <div class="card-preview-area" v-html="item.previewHtml"></div>
-            <div class="card-bottom">
-              <p class="card-desc">{{ item.description }}</p>
-              <button
-                class="apply-btn"
-                :class="(getStyle(currentModalKey).materialTemplateId || 'none') === item.id ? 'active' : ''"
-              >
-                {{ (getStyle(currentModalKey).materialTemplateId || 'none') === item.id ? '当前在用' : '替换为此素材' }}
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -1665,5 +1719,157 @@ const cssLineCount = computed(() => {
   background: #f59e0b !important;
   border-color: #f59e0b !important;
   color: #ffffff !important;
+}
+
+/* Global Widgets Card & Feature Guide Styles */
+.global-widgets-card {
+  background: #f0fdf4 !important;
+  border: 1px solid #bbf7d0 !important;
+}
+
+.global-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #15803d;
+  background: #dcfce7;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.global-widget-subtext {
+  font-size: 11.5px;
+  color: #166534;
+  line-height: 1.4;
+  margin: 0 0 10px 0;
+}
+
+.widget-row-box {
+  background: #ffffff;
+  border: 1px solid #dcfce7;
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 8px;
+}
+
+.widget-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.widget-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #0f172a;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.widget-choose-btn {
+  font-size: 11px;
+  font-weight: 600;
+  color: #15803d;
+  background: #f0fdf4;
+  border: 1px solid #86efac;
+  padding: 3px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.widget-choose-btn:hover {
+  background: #dcfce7;
+}
+
+.active-widget-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  padding: 4px 8px;
+  border-radius: 6px;
+  margin-top: 6px;
+}
+
+.widget-active-name {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #065f46;
+}
+
+.clear-widget-btn {
+  background: transparent;
+  border: none;
+  color: #059669;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+}
+
+.modal-feature-guide {
+  display: flex;
+  gap: 12px;
+  padding: 8px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  flex-wrap: wrap;
+}
+
+.guide-tag-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.guide-chip {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.num-chip {
+  background: #dbeafe;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+}
+
+.prefix-chip {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+}
+
+.guide-chip-desc {
+  font-size: 11px;
+  color: var(--text-muted, #64748b);
+}
+
+.card-badges-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.visual-guide-tag {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.num-tag {
+  background: #dbeafe;
+  color: #1e40af;
+}
+
+.prefix-tag {
+  background: #fef3c7;
+  color: #92400e;
 }
 </style>

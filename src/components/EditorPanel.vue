@@ -855,6 +855,7 @@ function initCodeMirror() {
     extensions: [
       basicSetup,
       markdown(),
+      EditorView.lineWrapping,
       customMarkdownTheme,
       keymap.of([indentWithTab]),
       updateListener

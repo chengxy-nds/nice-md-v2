@@ -304,6 +304,8 @@ const handleCopyMarkdownText = async () => {
         :scrollPercentage="props.scrollPercentage"
         :activePane="props.activePane"
         @element-click="handleElementClick"
+        @update:customStyles="handleLiveStyleUpdate"
+        @open-customizer="handleElementClick"
         @scroll="p => emit('scroll', p)"
         @focusActive="p => emit('focusActive', p)"
       />

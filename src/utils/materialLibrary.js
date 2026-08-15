@@ -1,6 +1,13 @@
 /**
- * WeChat Preset Styling Material Library
- * Inspired by 135 Editor, Xiumi, Yiban, and NewRank.
+ * WeChat Rich Material Library
+ * Includes templates for:
+ * 1. Headings (H1-H6)
+ * 2. Blockquotes / Callouts
+ * 3. Dividers (HR)
+ * 4. Lists (UL / OL / Step numbers / Checklists)
+ * 5. Tables (Modern WeChat table styles)
+ * 6. Header Widgets (文章头部导读 / 关注头卡)
+ * 7. Footer Widgets (文末三连 / 往期推荐 / 二维码关注卡片)
  */
 
 export const materialCategories = [
@@ -9,18 +16,19 @@ export const materialCategories = [
   { id: 'quotes', name: '金句/引用' },
   { id: 'callouts', name: '提示/卡片' },
   { id: 'dividers', name: '分割线' },
-  { id: 'lists', name: '步骤/时间轴' },
-  { id: 'footer', name: '关注/引导' }
+  { id: 'lists', name: '步骤/列表' },
+  { id: 'header_widgets', name: '顶部导读' },
+  { id: 'footer_widgets', name: '文末三连' }
 ];
 
 export const materials = [
-  // ── 135 爆款精选 (图二同款及延伸) ──
+  // ── 135 爆款精选 ──
   {
     id: 'h-135-part01-leaf',
     category: 'headings',
     tag: '135爆款',
     title: '135 PART.01 黄绿夏风标题',
-    description: '图二同款：倾斜 PART.01 标牌 + 弧形手绘箭头 + 绿叶波浪划线标题',
+    description: '倾斜 PART.01 标牌 + 弧形手绘箭头 + 绿叶波浪划线标题',
     tags: ['135爆款', 'PART.01', '绿叶'],
     html: `<section style="margin: 24px 0 16px; padding: 10px 4px; clear: both; text-align: center;" data-material="true">
   <section style="display: inline-block; text-align: left; max-width: 100%; box-sizing: border-box;">
@@ -107,7 +115,7 @@ export const materials = [
     category: 'headings',
     tag: '135爆款',
     title: '135双重气泡块序号标题',
-    description: '135编辑器热门爆款：实心与淡色双层圆圈序号，搭配加粗标题',
+    description: '实心与淡色双层圆圈序号，搭配加粗标题',
     tags: ['135热选', '序号标题', '蓝色'],
     html: `<section style="margin: 24px 0 16px; text-align: center; clear: both;" data-material="true">
   <section style="display: inline-flex; align-items: center; text-align: left; max-width: 100%; box-sizing: border-box;">
@@ -340,18 +348,6 @@ export const materials = [
   推荐采用同城双活 + 异地多活部署架构，确保单机房故障时服务零中断。
 </section>`
   },
-  {
-    id: 'c-135-faq-card',
-    category: 'callouts',
-    tag: 'Q&A',
-    title: '135问答 Q&A 对话卡片',
-    description: '清晰的问答双色区分，适合 FAQ 答疑',
-    tags: ['Q&A', '问答', 'FAQ'],
-    html: `<section style="margin: 20px 0; padding: 16px; background: #f1f5f9; border-radius: 10px; word-break: break-word;" data-material="true">
-  <div style="font-weight: 700; color: #2563eb; margin-bottom: 6px; font-size: 14.5px;">Q: 这套排版主题支持直接复制到微信公众号后台吗？</div>
-  <div style="color: #334155; font-size: 14px; line-height: 1.7;">A: 完全支持！点击右上角“一键复制”后，在公众号编辑器中按下 Ctrl+V (Cmd+V) 即可精准贴入，100% 保持排版无缝对齐。</div>
-</section>`
-  },
 
   // ── 分割线素材 ──
   {
@@ -398,7 +394,7 @@ export const materials = [
     html: `<section data-material="true" style="margin: 26px auto; width: 100%; text-align: center; clear: both;"><hr style="border: none; border-top: 2px dashed #93c5fd; margin: 0 auto; width: 100%;" /></section>`
   },
 
-  // ── 步骤/时间轴素材 ──
+  // ── 步骤/列表素材 ──
   {
     id: 'l-135-timeline',
     category: 'lists',
@@ -436,10 +432,48 @@ export const materials = [
 </section>`
   },
 
-  // ── 关注/引导卡片素材 ──
+  // ── 顶部导读/关注头卡素材 ──
+  {
+    id: 'hdr-135-guide-card',
+    category: 'header_widgets',
+    tag: '135爆款',
+    title: '135爆款文章导读与作者头卡',
+    description: '包含发刊词、阅读时长与关注按钮的精致头部挂件',
+    tags: ['头部导读', '关注头卡', '135爆款'],
+    html: `<section style="margin: 0 0 24px 0; padding: 18px 20px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; border-radius: 12px; box-sizing: border-box;" data-material="true">
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="background: #16a34a; color: #ffffff; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.5px;">独家专栏</span>
+      <span style="font-size: 13px; font-weight: 700; color: #166534;">深度复盘 · 值得精读</span>
+    </div>
+    <span style="font-size: 12px; color: #15803d; background: #ffffff; padding: 2px 8px; border-radius: 12px; border: 1px solid #86efac;">⏱️ 预计精读 5 分钟</span>
+  </div>
+  <p style="font-size: 13.5px; line-height: 1.7; color: #14532d; margin: 0; word-break: break-word;">
+    💡 <strong>导读摘要：</strong> 本文系统梳理了从底层原理到工程落地的完整方法论，建议收藏后反复研读与实操实践。
+  </p>
+</section>`
+  },
+  {
+    id: 'hdr-simple-indigo',
+    category: 'header_widgets',
+    tag: '商务极简',
+    title: '青黛极简文章导读栏',
+    description: '蓝调商务极简导读，带阅读建议与专题标识',
+    tags: ['极简导读', '商务', '青黛'],
+    html: `<section style="margin: 0 0 22px 0; padding: 14px 18px; background: #f8fafc; border-left: 4px solid #2563eb; border-radius: 0 8px 8px 0; box-sizing: border-box;" data-material="true">
+  <div style="font-size: 14px; font-weight: 700; color: #1e3a8a; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+    <span>📌</span> <span>阅读指引 / Reading Guide</span>
+  </div>
+  <div style="font-size: 13px; color: #475569; line-height: 1.6;">
+    本文已同步收录至全网知识库合集，点击右上角关注公众号不错过每周硬核干货。
+  </div>
+</section>`
+  },
+
+  // ── 关注/文末三连卡片素材 ──
   {
     id: 'f-135-triple-like',
-    category: 'footer',
+    category: 'footer_widgets',
     tag: '135爆款',
     title: '135爆款文末三连交互卡片',
     description: '包含“点赞 · 在看 · 分享”互动提醒',
@@ -455,7 +489,7 @@ export const materials = [
   },
   {
     id: 'f-135-qrcode-card',
-    category: 'footer',
+    category: 'footer_widgets',
     tag: '135爆款',
     title: '135经典二维码关注引导卡片',
     description: '高转化微信公众号二维码关注框，带有扫码提示手势',
@@ -472,7 +506,7 @@ export const materials = [
   },
   {
     id: 'f-author-cta',
-    category: 'footer',
+    category: 'footer_widgets',
     tag: '名片',
     title: '壹伴极简作者名片与关注卡片',
     description: '包含作者介绍、关注引导与高质感圆角边框',
@@ -485,12 +519,16 @@ export const materials = [
   }
 ];
 
+// ── 标题模版定义（H1 / H2 / H3 / H4 / H5 / H6）──
 export const headingTemplates = [
   {
     id: 'none',
     name: '默认主题样式',
     description: '使用当前主题预设的标题 CSS 渲染，不使用固定素材图块',
     tag: '默认',
+    styleCategory: 'all',
+    hasAutoNumber: false,
+    hasCustomPrefix: false,
     previewHtml: `<div style="font-size: 15px; font-weight: bold; color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 4px;">默认主题标题</div>`,
     render: () => null
   },
@@ -499,6 +537,9 @@ export const headingTemplates = [
     name: '135 PART.01 黄绿夏风标牌',
     description: '倾斜 PART.01 标牌 + 弧形手绘箭头 + 绿叶波浪划线标题',
     tag: '135爆款',
+    styleCategory: 'fresh',
+    hasAutoNumber: true,
+    hasCustomPrefix: true,
     previewHtml: `<div style="display:flex;align-items:flex-end;gap:4px;margin-bottom:2px;"><div style="background:#facc15;color:#fff;font-weight:800;font-size:10px;padding:1px 6px;border-radius:3px;transform:rotate(-6deg);">PART.01</div></div><div style="font-size:13px;font-weight:800;color:#2e8b57;">八月拾夏 静待秋风 🌿</div>`,
     render: (title, index, options = {}) => {
       const prefix = options.prefix || 'PART';
@@ -533,6 +574,9 @@ export const headingTemplates = [
     name: '135 PART.02 蜜桃浪漫',
     description: '倾斜粉红标牌 + 甜美蜜桃与粉色下划线',
     tag: '135热选',
+    styleCategory: 'fresh',
+    hasAutoNumber: true,
+    hasCustomPrefix: true,
     previewHtml: `<div style="display:flex;align-items:flex-end;gap:4px;margin-bottom:2px;"><div style="background:#f43f5e;color:#fff;font-weight:800;font-size:10px;padding:1px 6px;border-radius:3px;transform:rotate(-5deg);">PART.02</div></div><div style="font-size:13px;font-weight:800;color:#be123c;">关于生活中的温柔 🍑</div>`,
     render: (title, index, options = {}) => {
       const prefix = options.prefix || 'PART';
@@ -563,6 +607,9 @@ export const headingTemplates = [
     name: '135 PART.03 香草薰衣草紫',
     description: '倾斜紫色标牌 + 优雅星月点缀 + 香草紫下划线',
     tag: '135热选',
+    styleCategory: 'fresh',
+    hasAutoNumber: true,
+    hasCustomPrefix: true,
     previewHtml: `<div style="display:flex;align-items:flex-end;gap:4px;margin-bottom:2px;"><div style="background:#8b5cf6;color:#fff;font-weight:800;font-size:10px;padding:1px 6px;border-radius:3px;transform:rotate(-4deg);">PART.03</div></div><div style="font-size:13px;font-weight:800;color:#5b21b6;">枕着星河入梦 🌙</div>`,
     render: (title, index, options = {}) => {
       const prefix = options.prefix || 'PART';
@@ -593,6 +640,9 @@ export const headingTemplates = [
     name: '135 气泡圆圈序号标题',
     description: '实心蓝色圆圈数字 01, 02 + 悬浮阴影标题',
     tag: '135爆款',
+    styleCategory: 'business',
+    hasAutoNumber: true,
+    hasCustomPrefix: false,
     previewHtml: `<div style="display:flex;align-items:center;gap:6px;"><span style="background:#2563eb;color:#fff;font-size:11px;font-weight:800;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;">01</span><span style="font-size:13px;font-weight:700;color:#1e293b;">战略思维与底层认知</span></div>`,
     render: (title, index) => {
       const indexPadded = String(index).padStart(2, '0');
@@ -609,6 +659,9 @@ export const headingTemplates = [
     name: '135 经典立体明黄浮雕',
     description: '黄色立体沉底图层 + 左侧亮黄方块',
     tag: '135爆款',
+    styleCategory: 'fresh',
+    hasAutoNumber: false,
+    hasCustomPrefix: false,
     previewHtml: `<div style="background:#fef08a;padding:4px 8px;border-radius:4px;box-shadow:2px 2px 0 #f59e0b;font-size:12px;font-weight:800;color:#78350f;">打造高转化率结构</div>`,
     render: (title) => {
       return `<section style="margin: 24px 0 16px; text-align: center; clear: both;" data-material="true">
@@ -624,6 +677,9 @@ export const headingTemplates = [
     name: '135 薄荷绿立体 02 序号',
     description: '薄荷绿圆角方块 + 侧阴影 01, 02 序号块',
     tag: '135热选',
+    styleCategory: 'fresh',
+    hasAutoNumber: true,
+    hasCustomPrefix: false,
     previewHtml: `<div style="display:flex;align-items:center;gap:6px;"><div style="background:#10b981;color:#fff;font-size:10px;font-weight:bold;padding:2px 5px;border-radius:4px;box-shadow:2px 2px 0 #047857;">02</div><span style="font-size:12px;font-weight:bold;color:#064e3b;">突破认知瓶颈</span></div>`,
     render: (title, index) => {
       const indexPadded = String(index).padStart(2, '0');
@@ -644,6 +700,9 @@ export const headingTemplates = [
     name: '135 莫兰迪双色拼接',
     description: '低饱和度莫兰迪色系拼接，高级沉稳',
     tag: '莫兰迪',
+    styleCategory: 'minimal',
+    hasAutoNumber: false,
+    hasCustomPrefix: true,
     previewHtml: `<div style="display:inline-flex;border-radius:4px;overflow:hidden;font-size:11px;"><span style="background:#a3b18a;color:#fff;padding:2px 5px;font-weight:bold;">SECTION</span><span style="background:#dad7cd;color:#3a5a40;padding:2px 6px;font-weight:bold;">发现闪光日常</span></div>`,
     render: (title, index, options = {}) => {
       const prefix = options.prefix || 'SECTION';
@@ -660,6 +719,9 @@ export const headingTemplates = [
     name: '135 国风古韵红木印章',
     description: '浓郁中国风红木上下边框 + ❖ 符号',
     tag: '国风',
+    styleCategory: 'guofeng',
+    hasAutoNumber: false,
+    hasCustomPrefix: false,
     previewHtml: `<div style="padding:2px 8px;border-top:1px solid #991b1b;border-bottom:1px solid #991b1b;color:#991b1b;font-size:11px;font-weight:bold;text-align:center;">❖ 岁时节气 ❖</div>`,
     render: (title) => {
       return `<section style="margin: 26px 0 16px; text-align: center; clear: both;" data-material="true">
@@ -674,6 +736,9 @@ export const headingTemplates = [
     name: '135 极简翡翠绿包边',
     description: '带有柔和绿底色与 4px 左侧修饰条',
     tag: '极简',
+    styleCategory: 'minimal',
+    hasAutoNumber: false,
+    hasCustomPrefix: false,
     previewHtml: `<div style="padding:3px 8px;border-left:3px solid #10b981;background:#ecfdf5;font-size:12px;font-weight:bold;color:#065f46;">构建持续交付 SOP</div>`,
     render: (title) => {
       return `<section style="margin: 22px 0 14px; text-align: center; clear: both;" data-material="true">
@@ -688,6 +753,9 @@ export const headingTemplates = [
     name: '135 赛博黑金科技感',
     description: '黑底金边科技光感标题，带琥珀闪电图标',
     tag: '科技感',
+    styleCategory: 'tech',
+    hasAutoNumber: false,
+    hasCustomPrefix: false,
     previewHtml: `<div style="background:#0f172a;padding:3px 8px;border-left:3px solid #f59e0b;color:#f8fafc;font-size:11px;font-weight:bold;">⚡ GenAI 业务落地痛点</div>`,
     render: (title) => {
       return `<section style="margin: 24px 0 16px; text-align: center; clear: both;" data-material="true">
@@ -695,6 +763,44 @@ export const headingTemplates = [
     <span style="flex-shrink: 0; color: #f59e0b; font-size: 18px; margin-right: 8px;">⚡</span>
     <span style="font-size: 16px; font-weight: bold; color: #f8fafc; letter-spacing: 0.5px; word-break: break-word;">${title}</span>
   </section>
+</section>`;
+    }
+  },
+  // 新增小标牌微素材（特别适合 H3 / H4 / H5 / H6）
+  {
+    id: 'h-micro-badge-indigo',
+    name: '极简青黛序号微标牌',
+    description: '轻量级小标题标牌，自带 01/02 微型数字标签',
+    tag: '小标题精选',
+    styleCategory: 'business',
+    hasAutoNumber: true,
+    hasCustomPrefix: false,
+    previewHtml: `<div style="display:flex;align-items:center;gap:4px;"><span style="background:#2563eb;color:#fff;font-size:10px;font-weight:700;padding:1px 5px;border-radius:3px;">01</span><span style="font-size:12px;font-weight:bold;color:#1e293b;">核心实现方案</span></div>`,
+    render: (title, index) => {
+      const indexPadded = String(index).padStart(2, '0');
+      return `<section style="margin: 18px 0 10px; text-align: left; clear: both;" data-material="true">
+  <section style="display: inline-flex; align-items: center; max-width: 100%;">
+    <span style="flex-shrink: 0; background: #2563eb; color: #ffffff; font-size: 12px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-right: 8px;">${indexPadded}</span>
+    <span style="font-size: 15px; font-weight: 700; color: #1e293b; line-height: 1.4;">${title}</span>
+  </section>
+</section>`;
+    }
+  },
+  {
+    id: 'h-micro-leaf',
+    name: '清新草木小标题',
+    description: '小巧绿叶图标修饰的清新小标题',
+    tag: '小清新',
+    styleCategory: 'fresh',
+    hasAutoNumber: false,
+    hasCustomPrefix: false,
+    previewHtml: `<div style="font-size:12px;font-weight:bold;color:#15803d;display:flex;align-items:center;gap:4px;"><span>🌱</span><span>关键设计原则</span></div>`,
+    render: (title) => {
+      return `<section style="margin: 18px 0 10px; text-align: left; clear: both;" data-material="true">
+  <div style="font-size: 15px; font-weight: 700; color: #15803d; display: inline-flex; align-items: center; gap: 6px; border-bottom: 2px solid #86efac; padding-bottom: 2px;">
+    <span>🌱</span>
+    <span>${title}</span>
+  </div>
 </section>`;
     }
   }
@@ -705,12 +811,14 @@ export const headingTemplatesMap = headingTemplates.reduce((acc, cur) => {
   return acc;
 }, {});
 
+// ── 引用金句模版 ──
 export const quoteTemplates = [
   {
     id: 'none',
     name: '默认主题引用样式',
     description: '使用当前主题预设的引用 CSS 渲染',
     tag: '默认',
+    styleCategory: 'all',
     previewHtml: `<div style="padding: 8px 12px; background: #f1f5f9; border-left: 4px solid #3b82f6; font-size: 12px; color: #334155;">默认引用块 preview...</div>`,
     render: () => null
   },
@@ -719,6 +827,7 @@ export const quoteTemplates = [
     name: '135 经典大型对话双引号框',
     description: '包含优雅的放大双引号与微阴影圆角边框',
     tag: '135热选',
+    styleCategory: 'business',
     previewHtml: `<div style="padding: 10px 14px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; font-size: 12px; color: #334155;"><span style="font-size: 18px; color: #2563eb; font-family: Georgia;">“</span> 经典名言与深度引语 <span style="font-size: 18px; color: #2563eb; font-family: Georgia;">”</span></div>`,
     render: (content) => `<blockquote style="margin: 20px 0; padding: 18px 22px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; color: #334155; font-size: 14.5px; line-height: 1.8; position: relative;" data-material="true">
   <span style="font-size: 32px; color: #2563eb; font-family: Georgia, serif; line-height: 1; vertical-align: -8px; margin-right: 4px;">“</span>${content}<span style="font-size: 32px; color: #2563eb; font-family: Georgia, serif; line-height: 1; vertical-align: -8px; margin-left: 4px;">”</span>
@@ -729,6 +838,7 @@ export const quoteTemplates = [
     name: '135 极简对话气泡框',
     description: '对话气泡底色 + 💬 深度洞察图标',
     tag: '135爆款',
+    styleCategory: 'fresh',
     previewHtml: `<div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 8px; padding: 8px 12px; font-size: 12px; color: #1e40af;">💬 深度洞察：把时间浪费在值得的事情上</div>`,
     render: (content) => `<section style="margin: 22px 0; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 16px 20px; color: #1e40af; font-size: 14.5px; line-height: 1.8;" data-material="true">
   <strong style="display: block; margin-bottom: 6px; font-size: 15px; color: #1d4ed8;">💬 深度洞察：</strong>${content}
@@ -739,6 +849,7 @@ export const quoteTemplates = [
     name: '135 便签折角贴纸引用框',
     description: '暖黄便签底色 + 5px 亮黄左边框',
     tag: '便签风',
+    styleCategory: 'fresh',
     previewHtml: `<div style="padding: 8px 12px; background: #fefce8; border-left: 4px solid #eab308; font-size: 12px; color: #854d0e;">📖 读书札记：生活原本沉闷，但跑起来就有风</div>`,
     render: (content) => `<blockquote style="margin: 20px 0; padding: 16px 20px; background: #fefce8; border: 1px solid #fef08a; border-left: 5px solid #eab308; border-radius: 8px; color: #854d0e; font-size: 14px; line-height: 1.8;" data-material="true">
   📖 <strong>读书札记：</strong>${content}
@@ -749,6 +860,7 @@ export const quoteTemplates = [
     name: '135 渐变蓝条优雅导读',
     description: '左侧采用 5px 蓝紫渐变条与浅灰卡片',
     tag: '推荐',
+    styleCategory: 'business',
     previewHtml: `<div style="padding: 8px 12px; background: #f1f5f9; border-left: 4px solid #3b82f6; font-size: 12px; color: #475569;">💡 导读摘要：用杠杆思维做选择</div>`,
     render: (content) => `<blockquote style="margin: 20px 0; padding: 14px 18px; background: #f1f5f9; border-left: 5px solid #3b82f6; border-radius: 0 8px 8px 0; color: #475569; font-size: 14px; line-height: 1.75;" data-material="true">
   <strong>💡 导读摘要：</strong>${content}
@@ -759,6 +871,7 @@ export const quoteTemplates = [
     name: '135 深灰极简黑金框',
     description: '深色质感引用框，高级沉稳',
     tag: '高级感',
+    styleCategory: 'tech',
     previewHtml: `<div style="padding: 8px 12px; background: #0f172a; border-radius: 6px; font-size: 12px; color: #f8fafc;">📌 架构法则：不要为了设计而设计</div>`,
     render: (content) => `<blockquote style="margin: 20px 0; padding: 16px 20px; background: #0f172a; border-radius: 10px; color: #f8fafc; font-size: 14px; line-height: 1.8; box-shadow: 0 4px 12px rgba(15,23,42,0.15);" data-material="true">
   📌 <strong>核心要点：</strong>${content}
@@ -769,6 +882,7 @@ export const quoteTemplates = [
     name: '135 橙色热度关注框',
     description: '橙色高光底色 + 🔥 热度图标',
     tag: '135爆款',
+    styleCategory: 'fresh',
     previewHtml: `<div style="padding: 8px 12px; background: #fff7ed; border-left: 4px solid #f97316; font-size: 12px; color: #c2410c;">🔥 核心干货要点...</div>`,
     render: (content) => `<section style="margin: 20px 0; padding: 16px 20px; background: #fff7ed; border: 1px solid #ffedd5; border-left: 5px solid #f97316; border-radius: 8px; color: #c2410c; font-size: 14px; line-height: 1.75;" data-material="true">
   <strong style="display: block; margin-bottom: 6px; font-size: 15px; color: #ea580c;">🔥 核心干货：</strong>${content}
@@ -779,6 +893,7 @@ export const quoteTemplates = [
     name: '💡 蓝色 Note 提示卡片',
     description: '柔和浅蓝背景 + 💡 图标 header',
     tag: '提示',
+    styleCategory: 'business',
     previewHtml: `<div style="padding: 8px 12px; background: #eff6ff; border-left: 4px solid #3b82f6; font-size: 12px; color: #1e40af;">💡 温馨提示...</div>`,
     render: (content) => `<section style="margin: 20px 0; padding: 14px 18px; background: #eff6ff; border-left: 4px solid #3b82f6; border-radius: 0 8px 8px 0; color: #1e40af; font-size: 14px; line-height: 1.7;" data-material="true">
   <strong style="display: block; margin-bottom: 4px; font-size: 14.5px;">💡 温馨提示：</strong>${content}
@@ -789,6 +904,7 @@ export const quoteTemplates = [
     name: '⚠️ 红色 Warning 警告卡片',
     description: '淡红背景 + ⚠️ 图标',
     tag: '警告',
+    styleCategory: 'minimal',
     previewHtml: `<div style="padding: 8px 12px; background: #fef2f2; border-left: 4px solid #ef4444; font-size: 12px; color: #991b1b;">⚠️ 注意事项...</div>`,
     render: (content) => `<section style="margin: 20px 0; padding: 14px 18px; background: #fef2f2; border-left: 4px solid #ef4444; border-radius: 0 8px 8px 0; color: #991b1b; font-size: 14px; line-height: 1.7;" data-material="true">
   <strong style="display: block; margin-bottom: 4px; font-size: 14.5px;">⚠️ 注意事项：</strong>${content}
@@ -799,6 +915,7 @@ export const quoteTemplates = [
     name: '✅ 绿色 Success 推荐卡片',
     description: '淡绿背景 + ✅ 图标',
     tag: '推荐',
+    styleCategory: 'fresh',
     previewHtml: `<div style="padding: 8px 12px; background: #ecfdf5; border-left: 4px solid #10b981; font-size: 12px; color: #065f46;">✅ 推荐方案...</div>`,
     render: (content) => `<section style="margin: 20px 0; padding: 14px 18px; background: #ecfdf5; border-left: 4px solid #10b981; border-radius: 0 8px 8px 0; color: #065f46; font-size: 14px; line-height: 1.7;" data-material="true">
   <strong style="display: block; margin-bottom: 4px; font-size: 14.5px;">✅ 推荐方案：</strong>${content}
@@ -806,12 +923,14 @@ export const quoteTemplates = [
   }
 ];
 
+// ── 分割线模版 ──
 export const dividerTemplates = [
   {
     id: 'none',
     name: '默认主题分割线',
     description: '使用当前主题预设的分割线样式',
     tag: '默认',
+    styleCategory: 'all',
     previewHtml: `<div style="border-top: 1px solid #cbd5e1; margin: 8px 0;"></div>`,
     render: () => null
   },
@@ -820,6 +939,7 @@ export const dividerTemplates = [
     name: '135 剪刀裁剪虚线分割线',
     description: '趣味剪刀图标 + 虚线切割',
     tag: '135爆款',
+    styleCategory: 'fresh',
     previewHtml: `<div style="color: #94a3b8; font-size: 12px;">✂️ ------------------</div>`,
     render: () => `<section data-material="true" style="margin: 26px auto; color: #94a3b8; font-size: 14px; line-height: 1; display: flex; align-items: center; width: 100%; box-sizing: border-box;">
   <span style="flex-shrink: 0; margin-right: 8px;">✂️</span>
@@ -831,6 +951,7 @@ export const dividerTemplates = [
     name: '135 暖黄浪漫浪花分割线',
     description: '优雅手绘双重浪花线条',
     tag: '135热选',
+    styleCategory: 'fresh',
     previewHtml: `<div style="text-align: center; color: #f59e0b; font-size: 12px;">〰〰〰〰〰</div>`,
     render: () => `<section data-material="true" style="text-align: center; margin: 26px auto; width: 100%; display: block; clear: both;">
   <svg width="200" height="12" viewBox="0 0 200 12" fill="none" style="display: inline-block; margin: 0 auto; max-width: 100%;">
@@ -843,6 +964,7 @@ export const dividerTemplates = [
     name: '三点星光居中分割线',
     description: '居中修饰三个优雅圆点',
     tag: '极简',
+    styleCategory: 'minimal',
     previewHtml: `<div style="text-align: center; color: #cbd5e1; font-size: 14px;">• • •</div>`,
     render: () => `<section data-material="true" style="text-align: center; margin: 26px auto; color: #cbd5e1; font-size: 18px; letter-spacing: 12px; width: 100%; clear: both;">• • •</section>`
   },
@@ -851,15 +973,200 @@ export const dividerTemplates = [
     name: '蓝色淡雅虚线分割线',
     description: '轻盈的蓝色虚线',
     tag: '蓝色',
+    styleCategory: 'business',
     previewHtml: `<div style="border-top: 2px dashed #93c5fd; margin: 8px 0;"></div>`,
     render: () => `<section data-material="true" style="margin: 26px auto; width: 100%; text-align: center; clear: both;"><hr style="border: none; border-top: 2px dashed #93c5fd; margin: 0 auto; width: 100%;" /></section>`
+  }
+];
+
+// ── 列表模版（UL / OL / LI）──
+export const listTemplates = [
+  {
+    id: 'none',
+    name: '默认主题列表',
+    description: '使用当前主题的原生列表符号与样式',
+    tag: '默认',
+    styleCategory: 'all',
+    previewHtml: `<div style="font-size:12px;color:#334155;">• 第一项清单内容<br/>• 第二项清单内容</div>`,
+    render: () => null
+  },
+  {
+    id: 'list-badge-step',
+    name: '彩色徽章数字序号列表',
+    description: '将有序列表项转化为圆形彩色数字徽章卡片',
+    tag: '热门推荐',
+    styleCategory: 'business',
+    hasAutoNumber: true,
+    previewHtml: `<div style="font-size:12px;display:flex;flex-direction:column;gap:3px;"><div style="display:flex;gap:4px;"><span style="background:#2563eb;color:#fff;border-radius:50%;width:14px;height:14px;font-size:9px;display:inline-flex;align-items:center;justify-content:center;">1</span><span>第一步方案</span></div><div style="display:flex;gap:4px;"><span style="background:#2563eb;color:#fff;border-radius:50%;width:14px;height:14px;font-size:9px;display:inline-flex;align-items:center;justify-content:center;">2</span><span>第二步实施</span></div></div>`,
+    render: (itemHtml, index) => {
+      return `<li style="list-style: none; margin-bottom: 10px; display: flex; align-items: flex-start;" data-material="true">
+  <span style="flex-shrink: 0; background: #2563eb; color: #ffffff; font-size: 12px; font-weight: 700; width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 50%; margin-right: 10px; margin-top: 2px;">${index}</span>
+  <div style="flex: 1; font-size: 15px; line-height: 1.7; color: #334155; word-break: break-word;">${itemHtml}</div>
+</li>`;
+    }
+  },
+  {
+    id: 'list-leaf-bullet',
+    name: '清新绿叶清单列表',
+    description: '将无序列表圆点转化为清新小绿叶 🌱 图标',
+    tag: '小清新',
+    styleCategory: 'fresh',
+    previewHtml: `<div style="font-size:12px;color:#15803d;">🌱 核心要点清单一<br/>🌱 核心要点清单二</div>`,
+    render: (itemHtml) => {
+      return `<li style="list-style: none; margin-bottom: 10px; display: flex; align-items: flex-start;" data-material="true">
+  <span style="flex-shrink: 0; font-size: 16px; margin-right: 8px; line-height: 1.6;">🌱</span>
+  <div style="flex: 1; font-size: 15px; line-height: 1.7; color: #2b2b2b; word-break: break-word;">${itemHtml}</div>
+</li>`;
+    }
+  },
+  {
+    id: 'list-check-card',
+    name: '对勾清单卡片',
+    description: '带绿色小对勾 ✅ 与微底色的 Checklist 列表',
+    tag: 'Checklist',
+    styleCategory: 'fresh',
+    previewHtml: `<div style="font-size:12px;color:#065f46;background:#ecfdf5;padding:3px 6px;border-radius:4px;">✅ 已完成测试项</div>`,
+    render: (itemHtml) => {
+      return `<li style="list-style: none; margin-bottom: 8px; padding: 8px 12px; background: #f8fafc; border-left: 3px solid #10b981; border-radius: 0 6px 6px 0; display: flex; align-items: center;" data-material="true">
+  <span style="flex-shrink: 0; font-size: 14px; margin-right: 8px;">✅</span>
+  <div style="flex: 1; font-size: 14.5px; color: #334155; word-break: break-word;">${itemHtml}</div>
+</li>`;
+    }
+  }
+];
+
+// ── 文章全局头尾挂件模版 ──
+export const headerWidgetTemplates = [
+  {
+    id: 'none',
+    name: '无顶部导读',
+    description: '文章最上方不插入导读卡片',
+    tag: '默认',
+    styleCategory: 'all',
+    previewHtml: `<div style="color:#94a3b8;font-size:12px;text-align:center;padding:6px;">不添加顶部导读挂件</div>`,
+    render: () => ''
+  },
+  {
+    id: 'hdr-135-guide-card',
+    name: '135 爆款绿色文章导读卡',
+    description: '包含发刊词、阅读时长标签与精读摘要',
+    tag: '135爆款',
+    styleCategory: 'fresh',
+    previewHtml: `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:6px;font-size:11px;color:#166534;"><strong>独家专栏</strong> · ⏱️ 预计精读 5 分钟</div>`,
+    render: (options = {}) => {
+      const summary = options.summary || '本文系统梳理了从底层逻辑到实操落地的完整方法论，建议收藏后反复研读与实践。';
+      const readTime = options.readTime || '5 分钟';
+      return `<section style="margin: 0 0 24px 0; padding: 18px 20px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; border-radius: 12px; box-sizing: border-box;" data-material="true">
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <span style="background: #16a34a; color: #ffffff; font-size: 11px; font-weight: 800; padding: 2px 8px; border-radius: 4px; letter-spacing: 0.5px;">独家专栏</span>
+      <span style="font-size: 13px; font-weight: 700; color: #166534;">深度复盘 · 值得精读</span>
+    </div>
+    <span style="font-size: 12px; color: #15803d; background: #ffffff; padding: 2px 8px; border-radius: 12px; border: 1px solid #86efac;">⏱️ 预计精读 ${readTime}</span>
+  </div>
+  <p style="font-size: 13.5px; line-height: 1.7; color: #14532d; margin: 0; word-break: break-word;">
+    💡 <strong>导读摘要：</strong> ${summary}
+  </p>
+</section>`;
+    }
+  },
+  {
+    id: 'hdr-simple-indigo',
+    name: '青黛极简商务导读栏',
+    description: '蓝调商务极简导读，带阅读指引与全网知识库标识',
+    tag: '商务极简',
+    styleCategory: 'business',
+    previewHtml: `<div style="background:#eff6ff;border-left:3px solid #2563eb;padding:6px;font-size:11px;color:#1e40af;">📌 <strong>阅读指引</strong>：硬核干货合集</div>`,
+    render: (options = {}) => {
+      const guideText = options.guideText || '本文已同步收录至全网知识库合集，点击右上角关注公众号不错过每周硬核干货。';
+      return `<section style="margin: 0 0 22px 0; padding: 14px 18px; background: #f8fafc; border-left: 4px solid #2563eb; border-radius: 0 8px 8px 0; box-sizing: border-box;" data-material="true">
+  <div style="font-size: 14px; font-weight: 700; color: #1e3a8a; margin-bottom: 4px; display: flex; align-items: center; gap: 6px;">
+    <span>📌</span> <span>阅读指引 / Reading Guide</span>
+  </div>
+  <div style="font-size: 13px; color: #475569; line-height: 1.6;">
+    ${guideText}
+  </div>
+</section>`;
+    }
+  }
+];
+
+export const footerWidgetTemplates = [
+  {
+    id: 'none',
+    name: '无文末挂件',
+    description: '文章最下方不插入额外挂件',
+    tag: '默认',
+    styleCategory: 'all',
+    previewHtml: `<div style="color:#94a3b8;font-size:12px;text-align:center;padding:6px;">不添加文末挂件</div>`,
+    render: () => ''
+  },
+  {
+    id: 'f-135-triple-like',
+    name: '135 爆款文末三连交互卡片',
+    description: '包含“👍 点赞 · 👀 在看 · 🚀 分享”互动按钮',
+    tag: '135爆款',
+    styleCategory: 'business',
+    previewHtml: `<div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:6px;padding:6px;font-size:11px;text-align:center;color:#334155;">👍 点赞 · 👀 在看 · 🚀 分享</div>`,
+    render: (options = {}) => {
+      const tip = options.tip || '如果这篇文章对你有启发，欢迎转发分享！';
+      return `<section style="margin: 32px 0 16px; padding: 20px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; text-align: center;" data-material="true">
+  <p style="font-size: 14.5px; font-weight: 700; color: #1e293b; margin-bottom: 12px; word-break: break-word;">${tip}</p>
+  <div style="text-align: center; color: #475569; font-size: 13px; font-weight: 600; display: flex; justify-content: center; flex-wrap: wrap; gap: 8px;">
+    <span style="background: #ffffff; padding: 6px 14px; border-radius: 20px; border: 1px solid #e2e8f0; -webkit-box-shadow: 0 2px 6px rgba(0,0,0,0.03); box-shadow: 0 2px 6px rgba(0,0,0,0.03);">👍 点赞</span>
+    <span style="background: #ffffff; padding: 6px 14px; border-radius: 20px; border: 1px solid #e2e8f0; -webkit-box-shadow: 0 2px 6px rgba(0,0,0,0.03); box-shadow: 0 2px 6px rgba(0,0,0,0.03);">👀 在看</span>
+    <span style="background: #ffffff; padding: 6px 14px; border-radius: 20px; border: 1px solid #e2e8f0; -webkit-box-shadow: 0 2px 6px rgba(0,0,0,0.03); box-shadow: 0 2px 6px rgba(0,0,0,0.03);">🚀 分享</span>
+  </div>
+</section>`;
+    }
+  },
+  {
+    id: 'f-135-qrcode-card',
+    name: '135 经典二维码关注引导卡片',
+    description: '高转化微信公众号二维码关注框，带有扫码提示手势',
+    tag: '135爆款',
+    styleCategory: 'fresh',
+    previewHtml: `<div style="background:#faf5ff;border:1px dashed #d8b4fe;border-radius:6px;padding:6px;font-size:11px;text-align:center;color:#6b21a8;">👇 长按识别二维码 · 关注公众号</div>`,
+    render: (options = {}) => {
+      const title = options.title || '👇 长按识别二维码 · 关注公众号';
+      const subTitle = options.subTitle || '每周日晚 20:00 准时推送独家深度复盘';
+      return `<section style="margin: 32px 0 16px; padding: 22px; background: #faf5ff; border: 1px dashed #d8b4fe; border-radius: 16px; text-align: center;" data-material="true">
+  <div style="font-size: 16px; font-weight: 800; color: #6b21a8; margin-bottom: 4px;">${title}</div>
+  <p style="font-size: 13px; color: #7e22ce; margin-bottom: 14px;">${subTitle}</p>
+  <div style="display: inline-block; padding: 10px; background: #ffffff; border-radius: 12px; -webkit-box-shadow: 0 4px 12px rgba(107,33,168,0.08); box-shadow: 0 4px 12px rgba(107,33,168,0.08);">
+    <div style="width: 110px; height: 110px; line-height: 110px; text-align: center; background: #f3e8ff; border: 2px dashed #c084fc; border-radius: 8px; color: #9333ea; font-size: 12px; font-weight: 600;">
+      [ 二维码区域 ]
+    </div>
+  </div>
+</section>`;
+    }
+  },
+  {
+    id: 'f-author-cta',
+    name: '壹伴极简作者名片',
+    description: '包含作者介绍、关注引导与高质感圆角边框',
+    tag: '作者名片',
+    styleCategory: 'business',
+    previewHtml: `<div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:6px;padding:6px;font-size:11px;text-align:center;color:#0f172a;">✍️ 作者名片与关注引导</div>`,
+    render: (options = {}) => {
+      const author = options.author || '✍️ 程序员小富';
+      const desc = options.desc || '专注分享后端高并发架构、前端高颜值排版与职场成长思考';
+      return `<section style="margin: 32px 0 16px; padding: 20px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.03); text-align: center;" data-material="true">
+  <p style="font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">${author}</p>
+  <p style="font-size: 13px; color: #64748b; margin-bottom: 12px; line-height: 1.5;">${desc}</p>
+  <span style="display: inline-block; padding: 8px 22px; background: #2563eb; color: #ffffff; font-size: 13px; font-weight: 600; border-radius: 24px; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">欢迎关注本公众号 · 获取精选深度干货</span>
+</section>`;
+    }
   }
 ];
 
 export const allMaterialTemplatesMap = {
   ...headingTemplatesMap,
   ...quoteTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {}),
-  ...dividerTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {})
+  ...dividerTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {}),
+  ...listTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {}),
+  ...headerWidgetTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {}),
+  ...footerWidgetTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {})
 };
 
 export function getMaterialTemplatesForKey(key) {
@@ -872,7 +1179,14 @@ export function getMaterialTemplatesForKey(key) {
   if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(key)) {
     return headingTemplates;
   }
+  if (['ul', 'ol', 'li'].includes(key)) {
+    return listTemplates;
+  }
+  if (key === 'header_widget') {
+    return headerWidgetTemplates;
+  }
+  if (key === 'footer_widget') {
+    return footerWidgetTemplates;
+  }
   return [];
 }
-
-

@@ -184,6 +184,28 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     });
   }
 
+  // Lists (列表 ul/ol/li) Material Replacement
+  const listMatId = customStyles?.li?.materialTemplateId || customStyles?.ul?.materialTemplateId || customStyles?.ol?.materialTemplateId || themeStyles?.li?.materialTemplateId;
+  if (listMatId && listMatId !== 'none' && allMaterialTemplatesMap[listMatId]) {
+    const tmpl = allMaterialTemplatesMap[listMatId];
+    let liIndex = 0;
+    root.querySelectorAll('li').forEach(el => {
+      if (isMaterialEl(el)) return;
+      liIndex++;
+      const itemHtml = el.innerHTML.trim();
+      const renderedHtml = tmpl.render ? tmpl.render(itemHtml, liIndex) : null;
+      if (renderedHtml) {
+        const tempContainer = doc.createElement('div');
+        tempContainer.innerHTML = renderedHtml;
+        const replacement = tempContainer.firstElementChild;
+        if (replacement) {
+          replacement.setAttribute('data-material', 'true');
+          el.parentNode.replaceChild(replacement, el);
+        }
+      }
+    });
+  }
+
   // 2. Headings decoration matching theme personalities
   const isMountain = theme.id === 'classic-indigo' || theme.id.startsWith('mountain-') || !theme.typography;
 
@@ -937,6 +959,45 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
 
   // Convert inline non-standard tags (mark, del, kbd, sub, sup, code) & li p to <span> for WeChat
   convertNonStandardInlineTagsToSpans(root);
+
+  // Insert Global Header and Footer Widgets if configured in customStyles or themeStyles
+  const headerWidgetId = customStyles?.globalWidgets?.headerWidgetId || themeStyles?.globalWidgets?.headerWidgetId;
+  if (headerWidgetId && headerWidgetId !== 'none' && allMaterialTemplatesMap[headerWidgetId]) {
+    const tmpl = allMaterialTemplatesMap[headerWidgetId];
+    const headerHtml = tmpl.render ? tmpl.render({
+      summary: customStyles?.globalWidgets?.headerSummary,
+      readTime: customStyles?.globalWidgets?.headerReadTime,
+      guideText: customStyles?.globalWidgets?.headerGuideText
+    }) : '';
+    if (headerHtml) {
+      const temp = doc.createElement('div');
+      temp.innerHTML = headerHtml;
+      if (temp.firstElementChild) {
+        temp.firstElementChild.setAttribute('data-material', 'true');
+        root.insertBefore(temp.firstElementChild, root.firstChild);
+      }
+    }
+  }
+
+  const footerWidgetId = customStyles?.globalWidgets?.footerWidgetId || themeStyles?.globalWidgets?.footerWidgetId;
+  if (footerWidgetId && footerWidgetId !== 'none' && allMaterialTemplatesMap[footerWidgetId]) {
+    const tmpl = allMaterialTemplatesMap[footerWidgetId];
+    const footerHtml = tmpl.render ? tmpl.render({
+      author: customStyles?.globalWidgets?.footerAuthor,
+      desc: customStyles?.globalWidgets?.footerDesc,
+      tip: customStyles?.globalWidgets?.footerTip,
+      title: customStyles?.globalWidgets?.footerTitle,
+      subTitle: customStyles?.globalWidgets?.footerSubTitle
+    }) : '';
+    if (footerHtml) {
+      const temp = doc.createElement('div');
+      temp.innerHTML = footerHtml;
+      if (temp.firstElementChild) {
+        temp.firstElementChild.setAttribute('data-material', 'true');
+        root.appendChild(temp.firstElementChild);
+      }
+    }
+  }
 
   // Remove top margin on first element inside article body to prevent massive blank header gap
   if (root.firstElementChild) {

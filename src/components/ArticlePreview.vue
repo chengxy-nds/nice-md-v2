@@ -8,6 +8,7 @@ import { compileToWeChatHtml, cleanEmptyListItems } from '../utils/wechatStyles'
 import { themes } from '../utils/themePresets';
 import { getCodeThemeStyles } from '../utils/codeThemes';
 import { defaultMarkdown } from '../utils/defaultMarkdown';
+import MaterialPopup from './MaterialPopup.vue';
 
 marked.setOptions({
   gfm: true,
@@ -108,10 +109,37 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['element-click', 'scroll', 'focusActive']);
+const emit = defineEmits(['element-click', 'scroll', 'focusActive', 'update:customStyles', 'open-customizer']);
 
 const previewContainerRef = ref(null);
 const wechatFrameRef = ref(null);
+
+// Material Replacement Popup state
+const materialPopupVisible = ref(false);
+const currentPopupKey = ref('h1');
+const currentPopupPos = ref({ x: 0, y: 0 });
+
+const materialSupportedTags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'hr', 'ul', 'ol', 'li'];
+
+function handlePopupSelect({ key, templateId }) {
+  const newStyles = JSON.parse(JSON.stringify(props.customStyles || {}));
+  if (!newStyles[key]) newStyles[key] = {};
+  newStyles[key].materialTemplateId = templateId;
+  emit('update:customStyles', newStyles);
+  materialPopupVisible.value = false;
+}
+
+function handlePopupPrefixUpdate({ key, prefix }) {
+  const newStyles = JSON.parse(JSON.stringify(props.customStyles || {}));
+  if (!newStyles[key]) newStyles[key] = {};
+  newStyles[key].materialPrefix = prefix;
+  emit('update:customStyles', newStyles);
+}
+
+function handlePopupOpenCustomizer(key) {
+  materialPopupVisible.value = false;
+  emit('open-customizer', key);
+}
 
 const activeCustomStyles = computed(() => props.customStyles || {});
 
@@ -409,7 +437,13 @@ function handlePreviewElementClick(e) {
   for (const [tag, section, extraSelector] of blockTags) {
     const sel = `${tag}, ${extraSelector}`;
     if (target.closest(sel)) {
-      emit('element-click', section);
+      if (materialSupportedTags.includes(section)) {
+        currentPopupKey.value = section;
+        currentPopupPos.value = { x: e.clientX, y: e.clientY };
+        materialPopupVisible.value = true;
+      } else {
+        emit('element-click', section);
+      }
       return;
     }
   }
@@ -419,11 +453,23 @@ function handlePreviewElementClick(e) {
     const parentHeading = target.closest('[data-heading], h1, h2, h3, h4, h5, h6');
     if (parentHeading) {
       const headingTag = parentHeading.getAttribute('data-heading') || parentHeading.tagName.toLowerCase();
-      emit('element-click', headingTag);
+      if (materialSupportedTags.includes(headingTag)) {
+        currentPopupKey.value = headingTag;
+        currentPopupPos.value = { x: e.clientX, y: e.clientY };
+        materialPopupVisible.value = true;
+      } else {
+        emit('element-click', headingTag);
+      }
       return;
     }
     const parentBlock = target.closest('li') ? 'li' : (target.closest('blockquote') ? 'blockquote' : (target.closest('p') ? 'p' : 'body'));
-    emit('element-click', parentBlock);
+    if (materialSupportedTags.includes(parentBlock)) {
+      currentPopupKey.value = parentBlock;
+      currentPopupPos.value = { x: e.clientX, y: e.clientY };
+      materialPopupVisible.value = true;
+    } else {
+      emit('element-click', parentBlock);
+    }
     return;
   }
 
@@ -489,6 +535,19 @@ function handlePreviewElementClick(e) {
         <div v-if="props.isWeChatMode" class="phone-home-indicator"></div>
       </div>
     </div>
+
+    <!-- Click-to-Replace Material Popup -->
+    <MaterialPopup
+      :visible="materialPopupVisible"
+      :elementKey="currentPopupKey"
+      :currentMaterialId="props.customStyles?.[currentPopupKey]?.materialTemplateId || 'none'"
+      :currentPrefix="props.customStyles?.[currentPopupKey]?.materialPrefix || ''"
+      :position="currentPopupPos"
+      @select="handlePopupSelect"
+      @update-prefix="handlePopupPrefixUpdate"
+      @open-customizer="handlePopupOpenCustomizer"
+      @close="materialPopupVisible = false"
+    />
   </div>
 </template>
 
