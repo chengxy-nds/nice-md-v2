@@ -80,10 +80,17 @@ watch(() => props.customStyles, (newVal) => {
 
 function handleLiveStyleUpdate(val) {
   activeCustomStyles.value = val;
+  if (val?.code?.codeThemeId && val.code.codeThemeId !== props.codeThemeId) {
+    emit('update:codeThemeId', val.code.codeThemeId);
+  }
+  emit('update:customStyles', val);
 }
 
 function handleSaveCustomStyles(val) {
   activeCustomStyles.value = val;
+  if (val?.code?.codeThemeId && val.code.codeThemeId !== props.codeThemeId) {
+    emit('update:codeThemeId', val.code.codeThemeId);
+  }
   emit('update:customStyles', val);
 }
 
@@ -183,11 +190,14 @@ const codeThemeStyles = computed(() => getCodeThemeStyles(props.codeThemeId));
 const themeCustomizerRef = ref(null);
 
 async function handleElementClick(sectionName) {
+  const targetKey = (sectionName === 'pre' || sectionName === 'code') ? 'code' : sectionName;
   if (!props.themePanelVisible) {
     emit('update:themePanelVisible', true);
-    await nextTick();
   }
-  themeCustomizerRef.value?.scrollToSection(sectionName);
+  await nextTick();
+  setTimeout(() => {
+    themeCustomizerRef.value?.scrollToSection(targetKey);
+  }, 60);
 }
 
 const isWeChatMode = ref(localStorage.getItem('nicemd_wechat_mode') === 'true');
@@ -220,11 +230,12 @@ const handleCopyWeChat = async () => {
   soundEngine.playChime();
   const rawHtml = marked.parse(props.markdown || '');
   const previewDom = document.querySelector('.article-preview-container') || document.querySelector('.markdown-body') || document.querySelector('#preview-content');
+  const targetCodeTheme = activeCustomStyles.value?.code?.codeThemeId || props.codeThemeId || 'mdnice-classic';
   const success = await copyToWeChat(
     rawHtml,
     props.markdown,
     props.themeId,
-    props.codeThemeId,
+    targetCodeTheme,
     activeCustomStyles.value?.customCss || '',
     activeCustomStyles.value,
     previewDom
@@ -317,8 +328,10 @@ const handleCopyMarkdownText = async () => {
         ref="themeCustomizerRef"
         :modelValue="activeCustomStyles"
         :themeId="props.themeId"
+        :codeThemeId="props.codeThemeId"
         :open="true"
         @update:modelValue="handleLiveStyleUpdate"
+        @update:codeThemeId="val => emit('update:codeThemeId', val)"
         @save-custom-styles="handleSaveCustomStyles"
         @save-theme="v => emit('save-theme', v)"
         @close="$emit('update:themePanelVisible', false)"

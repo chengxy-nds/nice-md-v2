@@ -3,6 +3,7 @@ import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { Palette, X, Save, Sliders, Code2, RotateCcw, Check, Sparkles, Hash, FileType } from 'lucide-vue-next';
 import { getThemeDefaultStyles } from '../utils/themePresets';
 import { allMaterialTemplatesMap, getMaterialTemplatesForKey } from '../utils/materialLibrary';
+import { codeThemes } from '../utils/codeThemes';
 import { EditorView, basicSetup } from 'codemirror';
 import { css } from '@codemirror/lang-css';
 import { keymap } from '@codemirror/view';
@@ -11,10 +12,11 @@ import { indentWithTab } from '@codemirror/commands';
 const props = defineProps({
   modelValue: { type: Object, default: () => ({}) },
   themeId: { type: String, default: 'classic-indigo' },
+  codeThemeId: { type: String, default: 'atom-one-dark' },
   open: { type: Boolean, default: false }
 });
 
-const emit = defineEmits(['update:modelValue', 'update:open', 'save-custom-styles', 'save-theme', 'close']);
+const emit = defineEmits(['update:modelValue', 'update:codeThemeId', 'update:open', 'save-custom-styles', 'save-theme', 'close']);
 
 // Tab Mode: 'form' (可视化配置) | 'code' (源码编辑)
 const activeTab = ref('form');
@@ -88,7 +90,7 @@ function hasPrefixOption(id) {
   return ['h-135-part01-leaf', 'h-135-part02-peach', 'h-135-part03-purple', 'h-135-morandi-block'].includes(id);
 }
 
-// Full list of all 28 Markdown syntax element definitions
+// Full list of all 27 Markdown syntax element definitions
 const elements = [
   { key: 'body', label: '整体背景 / 文字 ( body )', icon: '◻' },
   { key: 'h1', label: '标题 H1 ( # )', icon: 'H1' },
@@ -97,6 +99,7 @@ const elements = [
   { key: 'h4', label: '标题 H4 ( #### )', icon: 'H4' },
   { key: 'h5', label: '标题 H5 ( ##### )', icon: 'H5' },
   { key: 'h6', label: '标题 H6 ( ###### )', icon: 'H6' },
+  { key: 'code', label: '代码块设置 ( code / pre )', icon: '</>' },
   { key: 'p', label: '正文段落 ( p )', icon: 'P' },
   { key: 'strong', label: '加粗强调 ( **bold** )', icon: 'B' },
   { key: 'em', label: '斜体文本 ( *italic* )', icon: 'I' },
@@ -106,8 +109,6 @@ const elements = [
   { key: 'kbd', label: '按键标签 ( <kbd>Ctrl</kbd> )', icon: 'K' },
   { key: 'sub', label: '下标 ( H<sub>2</sub>O )', icon: 'sub' },
   { key: 'sup', label: '上标 ( X<sup>2</sup> )', icon: 'sup' },
-  { key: 'code', label: '行内代码 ( `code` )', icon: '<>' },
-  { key: 'pre', label: '代码块包裹 ( pre )', icon: '▣' },
   { key: 'blockquote', label: '引用块 ( > quote )', icon: '❝' },
   { key: 'ul', label: '无序列表 ( - / * )', icon: '•' },
   { key: 'ol', label: '有序列表 ( 1. 2. )', icon: '1.' },
@@ -127,24 +128,42 @@ const effectiveStyles = computed(() => {
   const merged = {};
 
   // Ensure defaults exist for all elements
-  const allKeys = elements.map(e => e.key);
+  const allKeys = [...elements.map(e => e.key), 'pre'];
   for (const k of allKeys) {
     merged[k] = { ...(defaults[k] || {}), ...(userStyles[k] || {}) };
   }
   return merged;
 });
 
-// Sync props.modelValue & themeId into localState
-watch([() => props.modelValue, () => props.themeId], ([val, themeId]) => {
+// Sync props.modelValue, themeId & codeThemeId into localState
+watch([() => props.modelValue, () => props.themeId, () => props.codeThemeId], ([val, themeId, codeThemeId]) => {
   localStyles.value = JSON.parse(JSON.stringify(val || {}));
+  if (codeThemeId) {
+    if (!localStyles.value.code) localStyles.value.code = {};
+    if (!localStyles.value.code.codeThemeId) {
+      localStyles.value.code.codeThemeId = codeThemeId;
+    }
+  }
   syncFormToCssText();
 }, { immediate: true, deep: true });
+
+watch(() => props.codeThemeId, (newCodeThemeId) => {
+  if (newCodeThemeId) {
+    if (!localStyles.value) localStyles.value = {};
+    if (!localStyles.value.code) localStyles.value.code = {};
+    if (localStyles.value.code.codeThemeId !== newCodeThemeId) {
+      localStyles.value.code.codeThemeId = newCodeThemeId;
+      syncFormToCssText(true);
+      emitUpdate();
+    }
+  }
+});
 
 function getStyle(category) {
   return effectiveStyles.value[category] || {};
 }
 
-const knownProps = ['color', 'backgroundColor', 'borderLeftColor', 'borderColor', 'textColor', 'headerBg', 'fontSize', 'fontWeight', 'lineHeight', 'margin', 'borderRadius', 'maxWidth', 'boxShadow', 'border', 'display'];
+const knownProps = ['color', 'backgroundColor', 'borderLeftColor', 'borderColor', 'textColor', 'headerBg', 'fontSize', 'fontWeight', 'lineHeight', 'margin', 'borderRadius', 'maxWidth', 'boxShadow', 'border', 'display', 'materialTemplateId', 'materialPrefix', 'codeThemeId', 'macStyle', 'showLang', 'letterSpacing', 'fontFamily'];
 
 function otherProps(category) {
   const style = getStyle(category);
@@ -206,13 +225,28 @@ function emitUpdate() {
   emit('update:modelValue', payload);
 }
 
-// Convert all 28 Markdown syntax element styles into formatted CSS rules
+// Convert all Markdown syntax element styles and material directives into standard CSS
 function generateCssFromStyles(styles) {
   const S = styles || {};
   let css = `/* ============================================================ */\n`;
   css += `/* NiceMD 文章全量 Markdown 模版 CSS 规则 (标准 CSS 语法)          */\n`;
   css += `/* 支持 #nice、xiaofu 或 .markdown-body 等全局选择器            */\n`;
   css += `/* ============================================================ */\n\n`;
+
+  // Global widgets & Code themes directives
+  const gWidgets = localStyles.value?.globalWidgets || {};
+  if (gWidgets.headerWidgetId && gWidgets.headerWidgetId !== 'none') {
+    css += `/* @header_widget: ${gWidgets.headerWidgetId} */\n`;
+  }
+  if (gWidgets.footerWidgetId && gWidgets.footerWidgetId !== 'none') {
+    css += `/* @footer_widget: ${gWidgets.footerWidgetId} */\n`;
+  }
+  const codeThemeVal = S.code?.codeThemeId || localStyles.value?.code?.codeThemeId || props.codeThemeId || 'atom-one-dark';
+  const codeMacStyleVal = (S.code?.macStyle !== false && localStyles.value?.code?.macStyle !== false);
+  const codeShowLangVal = (S.code?.showLang === true || localStyles.value?.code?.showLang === true);
+  css += `/* @code_theme: ${codeThemeVal} */\n`;
+  css += `/* @code_mac_style: ${codeMacStyleVal} */\n`;
+  css += `/* @code_show_lang: ${codeShowLangVal} */\n\n`;
 
   const cleanColor = (c, fallback) => {
     if (!c || typeof c !== 'string') return fallback;
@@ -221,8 +255,14 @@ function generateCssFromStyles(styles) {
     return v;
   };
 
-  const addRule = (selectors, propsMap) => {
+  const addRule = (selectors, propsMap, meta = {}) => {
     const lines = [];
+    if (meta.material && meta.material !== 'none') {
+      lines.push(`  /* @material: ${meta.material} */`);
+    }
+    if (meta.prefix) {
+      lines.push(`  /* @prefix: ${meta.prefix} */`);
+    }
     for (const [k, v] of Object.entries(propsMap)) {
       if (v !== undefined && v !== null && v !== '') {
         const cssKey = k.replace(/([A-Z])/g, '-$1').toLowerCase();
@@ -235,68 +275,114 @@ function generateCssFromStyles(styles) {
     return '';
   };
 
-  if (S.body) css += addRule('#nice, xiaofu, .markdown-body', { color: cleanColor(S.body.color, '#2b2b2b'), backgroundColor: S.body.backgroundColor });
-  if (S.h1 && (!S.h1.materialTemplateId || S.h1.materialTemplateId === 'none')) {
-    const h1Color = cleanColor(S.h1.color, '#2775b6');
-    css += addRule('#nice h1, xiaofu h1', {
-      color: (h1Color === '#ffffff' && !S.h1.backgroundColor) ? '#2775b6' : h1Color,
-      fontSize: S.h1.fontSize,
-      fontWeight: S.h1.fontWeight,
-      backgroundColor: S.h1.backgroundColor,
-      padding: S.h1.padding,
-      borderRadius: S.h1.borderRadius,
-      textAlign: S.h1.textAlign,
-      display: S.h1.display
+  // Body
+  if (S.body) {
+    css += addRule('#nice, xiaofu, .markdown-body', {
+      color: cleanColor(S.body.color, '#2b2b2b'),
+      backgroundColor: S.body.backgroundColor
     });
   }
-  if (S.h2 && (!S.h2.materialTemplateId || S.h2.materialTemplateId === 'none')) {
-    css += addRule('#nice h2, xiaofu h2', { color: cleanColor(S.h2.color, '#2775b6'), fontSize: S.h2.fontSize, fontWeight: S.h2.fontWeight, borderLeft: S.h2.borderLeft, paddingLeft: S.h2.paddingLeft });
+
+  // Headings H1 ~ H6
+  const headings = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
+  headings.forEach(h => {
+    if (S[h]) {
+      const matId = S[h].materialTemplateId || 'none';
+      const meta = {};
+      if (matId && matId !== 'none') {
+        meta.material = matId;
+        if (S[h].materialPrefix) meta.prefix = S[h].materialPrefix;
+      }
+      const hColor = cleanColor(S[h].color, '#2775b6');
+      css += addRule(`#nice ${h}, xiaofu ${h}, .markdown-body ${h}`, {
+        color: (hColor === '#ffffff' && !S[h].backgroundColor) ? '#2775b6' : hColor,
+        fontSize: S[h].fontSize,
+        fontWeight: S[h].fontWeight,
+        backgroundColor: S[h].backgroundColor,
+        padding: S[h].padding,
+        borderRadius: S[h].borderRadius,
+        borderLeft: S[h].borderLeft,
+        paddingLeft: S[h].paddingLeft,
+        textAlign: S[h].textAlign,
+        display: S[h].display
+      }, meta);
+    }
+  });
+
+  // Paragraph
+  if (S.p) {
+    css += addRule('#nice p, xiaofu p, .markdown-body p', {
+      color: S.p.color,
+      fontSize: S.p.fontSize,
+      lineHeight: S.p.lineHeight
+    });
   }
-  if (S.h3 && (!S.h3.materialTemplateId || S.h3.materialTemplateId === 'none')) css += addRule('#nice h3, xiaofu h3', { color: cleanColor(S.h3.color, '#2b2b2b'), fontSize: S.h3.fontSize, fontWeight: S.h3.fontWeight });
-  if (S.h4 && (!S.h4.materialTemplateId || S.h4.materialTemplateId === 'none')) css += addRule('#nice h4, xiaofu h4', { color: cleanColor(S.h4.color, '#2b2b2b'), fontSize: S.h4.fontSize, fontWeight: S.h4.fontWeight });
-  if (S.h5 && (!S.h5.materialTemplateId || S.h5.materialTemplateId === 'none')) css += addRule('#nice h5, xiaofu h5', { color: cleanColor(S.h5.color, '#2b2b2b'), fontSize: S.h5.fontSize, fontWeight: S.h5.fontWeight });
-  if (S.h6 && (!S.h6.materialTemplateId || S.h6.materialTemplateId === 'none')) css += addRule('#nice h6, xiaofu h6', { color: cleanColor(S.h6.color, '#2b2b2b'), fontSize: S.h6.fontSize, fontWeight: S.h6.fontWeight });
 
-  if (S.p) css += addRule('#nice p, xiaofu p', { color: S.p.color, fontSize: S.p.fontSize, lineHeight: S.p.lineHeight });
-  if (S.strong) css += addRule('#nice strong, xiaofu strong', { color: S.strong.color, fontWeight: S.strong.fontWeight });
-  if (S.em) css += addRule('#nice em, xiaofu em', { color: S.em.color, fontStyle: S.em.fontStyle || 'italic' });
-  if (S.del) css += addRule('#nice del, xiaofu del', { color: S.del.color, textDecoration: S.del.textDecoration || 'line-through' });
-  if (S.u) css += addRule('#nice u, xiaofu u', { color: S.u.color, textDecoration: 'underline' });
-  if (S.mark) css += addRule('#nice mark, xiaofu mark', { backgroundColor: S.mark.backgroundColor, color: S.mark.color, padding: '2px 5px', borderRadius: '3px' });
-  if (S.kbd) css += addRule('#nice kbd, xiaofu kbd', { backgroundColor: S.kbd.backgroundColor, color: S.kbd.color, border: '1px solid ' + (S.kbd.borderColor || '#d1d5da'), padding: '2px 5px', borderRadius: '3px', fontSize: '12px' });
-  if (S.sub) css += addRule('#nice sub, xiaofu sub', { fontSize: S.sub.fontSize || '11px', verticalAlign: 'sub' });
-  if (S.sup) css += addRule('#nice sup, xiaofu sup', { fontSize: S.sup.fontSize || '11px', verticalAlign: 'super' });
+  // Blockquote
+  if (S.blockquote) {
+    const matId = S.blockquote.materialTemplateId || 'none';
+    const meta = matId && matId !== 'none' ? { material: matId } : {};
+    css += addRule('#nice blockquote, xiaofu blockquote, .markdown-body blockquote', {
+      borderLeft: S.blockquote.borderLeftColor ? `4px solid ${S.blockquote.borderLeftColor}` : undefined,
+      backgroundColor: S.blockquote.backgroundColor,
+      color: S.blockquote.textColor
+    }, meta);
+  }
 
-  if (S.code) {
-    css += addRule('#nice code, xiaofu code', {
-      color: S.code.color,
-      backgroundColor: S.code.backgroundColor,
-      fontSize: S.code.fontSize,
-      fontFamily: '"SF Mono", Consolas, Monaco, monospace',
+  // HR
+  if (S.hr) {
+    const matId = S.hr.materialTemplateId || 'none';
+    const meta = matId && matId !== 'none' ? { material: matId } : {};
+    css += addRule('#nice hr, xiaofu hr, .markdown-body hr', {
+      borderTop: '1px solid ' + (S.hr.borderColor || '#eaeef2'),
+      margin: '24px 0'
+    }, meta);
+  }
+
+  // List (UL, OL, LI)
+  if (S.ul || S.ol || S.li) {
+    const listMatId = S.li?.materialTemplateId || S.ul?.materialTemplateId || S.ol?.materialTemplateId || 'none';
+    const meta = listMatId && listMatId !== 'none' ? { material: listMatId } : {};
+    if (S.ul) css += addRule('#nice ul, xiaofu ul, .markdown-body ul', { listStyleType: S.ul.listStyleType || 'disc', paddingLeft: '18px' }, meta);
+    if (S.ol) css += addRule('#nice ol, xiaofu ol, .markdown-body ol', { listStyleType: S.ol.listStyleType || 'decimal', paddingLeft: '18px' });
+    if (S.li) css += addRule('#nice li, xiaofu li, .markdown-body li', { color: S.li.color, fontSize: S.li.fontSize, lineHeight: S.li.lineHeight });
+  }
+
+  // Inline styling
+  if (S.strong) css += addRule('#nice strong, xiaofu strong, .markdown-body strong', { color: S.strong.color, fontWeight: S.strong.fontWeight });
+  if (S.em) css += addRule('#nice em, xiaofu em, .markdown-body em', { color: S.em.color, fontStyle: S.em.fontStyle || 'italic' });
+  if (S.del) css += addRule('#nice del, xiaofu del, .markdown-body del', { color: S.del.color, textDecoration: S.del.textDecoration || 'line-through' });
+  if (S.u) css += addRule('#nice u, xiaofu u, .markdown-body u', { color: S.u.color, textDecoration: 'underline' });
+  if (S.mark) css += addRule('#nice mark, xiaofu mark, .markdown-body mark', { backgroundColor: S.mark.backgroundColor, color: S.mark.color, padding: '2px 5px', borderRadius: '3px' });
+  if (S.kbd) css += addRule('#nice kbd, xiaofu kbd, .markdown-body kbd', { backgroundColor: S.kbd.backgroundColor, color: S.kbd.color, border: '1px solid ' + (S.kbd.borderColor || '#d1d5da'), padding: '2px 5px', borderRadius: '3px', fontSize: '12px' });
+  if (S.sub) css += addRule('#nice sub, xiaofu sub, .markdown-body sub', { fontSize: S.sub.fontSize || '11px', verticalAlign: 'sub' });
+  if (S.sup) css += addRule('#nice sup, xiaofu sup, .markdown-body sup', { fontSize: S.sup.fontSize || '11px', verticalAlign: 'super' });
+
+  // Code blocks & Inline code
+  if (S.code || S.pre) {
+    css += addRule('#nice pre, xiaofu pre, .markdown-body pre', {
+      fontSize: S.code?.fontSize || S.pre?.fontSize || '13px',
+      lineHeight: S.code?.lineHeight || S.pre?.lineHeight || '1.6',
+      letterSpacing: S.code?.letterSpacing || S.pre?.letterSpacing || '0px',
+      fontFamily: S.code?.fontFamily || S.pre?.fontFamily || '"SF Mono", Consolas, Monaco, monospace'
+    });
+    css += addRule('#nice :not(pre) > code, xiaofu :not(pre) > code, .markdown-body :not(pre) > code', {
+      color: S.code?.color || '#bb2243',
+      backgroundColor: S.code?.backgroundColor || 'rgba(27, 31, 35, 0.05)',
+      fontSize: S.code?.fontSize || '13px',
+      fontFamily: S.code?.fontFamily || '"SF Mono", Consolas, Monaco, monospace',
       padding: '2px 5px',
       borderRadius: '4px'
     });
   }
 
-  if (S.pre) css += addRule('#nice pre, xiaofu pre', { backgroundColor: S.pre.backgroundColor });
-  if (S.blockquote && (!S.blockquote.materialTemplateId || S.blockquote.materialTemplateId === 'none')) {
-    css += addRule('#nice blockquote, xiaofu blockquote', {
-      borderLeft: S.blockquote.borderLeftColor ? `4px solid ${S.blockquote.borderLeftColor}` : undefined,
-      backgroundColor: S.blockquote.backgroundColor,
-      color: S.blockquote.textColor
-    });
-  }
+  // Table
+  if (S.table) css += addRule('#nice table, xiaofu table, .markdown-body table', { borderColor: S.table.borderColor, width: '100%' });
+  if (S.th) css += addRule('#nice th, xiaofu th, .markdown-body th', { backgroundColor: S.th.backgroundColor, color: S.th.color, fontWeight: S.th.fontWeight });
+  if (S.td) css += addRule('#nice td, xiaofu td, .markdown-body td', { borderColor: S.td.borderColor, color: S.td.color });
 
-  if (S.ul) css += addRule('#nice ul, xiaofu ul', { listStyleType: S.ul.listStyleType || 'disc', paddingLeft: '18px' });
-  if (S.ol) css += addRule('#nice ol, xiaofu ol', { listStyleType: S.ol.listStyleType || 'decimal', paddingLeft: '18px' });
-  if (S.li) css += addRule('#nice li, xiaofu li', { color: S.li.color, fontSize: S.li.fontSize, lineHeight: S.li.lineHeight });
-
-  if (S.table) css += addRule('#nice table, xiaofu table', { borderColor: S.table.borderColor, width: '100%' });
-  if (S.th) css += addRule('#nice th, xiaofu th', { backgroundColor: S.th.backgroundColor, color: S.th.color, fontWeight: S.th.fontWeight });
-  if (S.td) css += addRule('#nice td, xiaofu td', { borderColor: S.td.borderColor, color: S.td.color });
-
-  if (S.hr && (!S.hr.materialTemplateId || S.hr.materialTemplateId === 'none')) css += addRule('#nice hr, xiaofu hr', { borderTop: '1px solid ' + (S.hr.borderColor || '#eaeef2'), margin: '24px 0' });
-  if (S.a) css += addRule('#nice a, xiaofu a', { color: S.a.color, textDecoration: S.a.textDecoration || 'none' });
+  // Links & Images
+  if (S.a) css += addRule('#nice a, xiaofu a, .markdown-body a', { color: S.a.color, textDecoration: S.a.textDecoration || 'none' });
   if (S.img) {
     css += addRule('#nice img, xiaofu img, .markdown-body img', {
       borderRadius: S.img.borderRadius,
@@ -321,39 +407,123 @@ function syncFormToCssText(forceRegenerate = false) {
   }
 }
 
-// When user types in CSS Source Mode, update customCss and emit in real-time
+// When user types in CSS Source Mode, update customCss and sync back to visual state
 function handleCssTextChange(val) {
   rawCssText.value = val;
   if (!localStyles.value) localStyles.value = {};
   localStyles.value.customCss = val;
 
-  // Simple regex parser to update visual form pickers when CSS is edited directly
-  const colorMatch = (selector, prop) => {
-    const reg = new RegExp(`${selector}[^{]*?{[^}]*?${prop}:\\s*([^;\\n]+)`, 'i');
+  // 1. Parse Global Widgets
+  const hwMatch = val.match(/@header_widget:\s*([a-zA-Z0-9_-]+)/i);
+  if (!localStyles.value.globalWidgets) localStyles.value.globalWidgets = {};
+  localStyles.value.globalWidgets.headerWidgetId = hwMatch ? hwMatch[1].trim() : 'none';
+
+  const fwMatch = val.match(/@footer_widget:\s*([a-zA-Z0-9_-]+)/i);
+  localStyles.value.globalWidgets.footerWidgetId = fwMatch ? fwMatch[1].trim() : 'none';
+
+  // 2. Parse Code Theme & Mac Style
+  const ctMatch = val.match(/@code_theme:\s*([a-zA-Z0-9_-]+)/i);
+  if (ctMatch) {
+    if (!localStyles.value.code) localStyles.value.code = {};
+    localStyles.value.code.codeThemeId = ctMatch[1].trim();
+    emit('update:codeThemeId', ctMatch[1].trim());
+  }
+  const macMatch = val.match(/@code_mac_style:\s*(true|false)/i);
+  if (macMatch) {
+    if (!localStyles.value.code) localStyles.value.code = {};
+    localStyles.value.code.macStyle = macMatch[1].toLowerCase() === 'true';
+  }
+  const showLangMatch = val.match(/@code_show_lang:\s*(true|false)/i);
+  if (showLangMatch) {
+    if (!localStyles.value.code) localStyles.value.code = {};
+    localStyles.value.code.showLang = showLangMatch[1].toLowerCase() === 'true';
+  }
+
+  // 3. Helper to extract CSS rule block and properties
+  const extractBlock = (tagPattern) => {
+    const reg = new RegExp(`(?:#nice|xiaofu|\\.markdown-body)?\\s*${tagPattern}[^{]*?\\{([^}]+)\\}`, 'i');
     const m = val.match(reg);
-    if (!m) return null;
-    const extracted = m[m.length - 1].trim();
-    if (extracted === 'xiaofu' || extracted === '#nice' || extracted.includes('markdown-body')) {
-      return null;
-    }
-    return extracted;
+    return m ? m[1] : '';
   };
 
-  const updateMatchedProp = (cat, field, cssProp, sel) => {
-    const found = colorMatch(sel, cssProp);
-    if (found) {
-      if (!localStyles.value[cat]) localStyles.value[cat] = {};
-      localStyles.value[cat][field] = found;
-    }
+  const getPropFromBlock = (block, prop) => {
+    const reg = new RegExp(`(?:^|[;\\s])${prop}:\\s*([^;\\n]+)`, 'i');
+    const m = block.match(reg);
+    return m ? m[1].trim() : null;
   };
 
-  updateMatchedProp('h1', 'color', 'color', '(?:#nice|xiaofu|\\.markdown-body)\\s+h1');
-  updateMatchedProp('h2', 'color', 'color', '(?:#nice|xiaofu|\\.markdown-body)\\s+h2');
-  updateMatchedProp('h3', 'color', 'color', '(?:#nice|xiaofu|\\.markdown-body)\\s+h3');
-  updateMatchedProp('p', 'color', 'color', '(?:#nice|xiaofu|\\.markdown-body)\\s+p');
-  updateMatchedProp('code', 'color', 'color', '(?:#nice|xiaofu|\\.markdown-body)\\s+code');
-  updateMatchedProp('code', 'backgroundColor', 'background-color', '(?:#nice|xiaofu|\\.markdown-body)\\s+code');
-  updateMatchedProp('mark', 'backgroundColor', 'background-color', '(?:#nice|xiaofu|\\.markdown-body)\\s+mark');
+  const getMetaFromBlock = (block, metaKey) => {
+    const reg = new RegExp(`@${metaKey}:\\s*([^\\s*;]+)`, 'i');
+    const m = block.match(reg);
+    return m ? m[1].trim() : null;
+  };
+
+  // 4. Update tags with material template support & CSS properties
+  const tagsWithMaterial = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'hr', 'ul', 'ol', 'li'];
+  tagsWithMaterial.forEach(tag => {
+    const block = extractBlock(tag);
+    if (!localStyles.value[tag]) localStyles.value[tag] = {};
+    
+    // Material ID: if @material is specified, apply it; if block exists and @material is removed or 'none', clear material
+    const matId = getMetaFromBlock(block, 'material');
+    if (matId) {
+      localStyles.value[tag].materialTemplateId = matId;
+    } else if (block) {
+      localStyles.value[tag].materialTemplateId = 'none';
+    }
+
+    const prefix = getMetaFromBlock(block, 'prefix');
+    if (prefix) {
+      localStyles.value[tag].materialPrefix = prefix;
+    }
+
+    if (block) {
+      const color = getPropFromBlock(block, 'color');
+      if (color) localStyles.value[tag].color = color;
+
+      const bg = getPropFromBlock(block, 'background-color') || getPropFromBlock(block, 'background');
+      if (bg) localStyles.value[tag].backgroundColor = bg;
+
+      const fs = getPropFromBlock(block, 'font-size');
+      if (fs) localStyles.value[tag].fontSize = fs;
+
+      const fw = getPropFromBlock(block, 'font-weight');
+      if (fw) localStyles.value[tag].fontWeight = fw;
+
+      const lh = getPropFromBlock(block, 'line-height');
+      if (lh) localStyles.value[tag].lineHeight = lh;
+
+      const ls = getPropFromBlock(block, 'letter-spacing');
+      if (ls) localStyles.value[tag].letterSpacing = ls;
+    }
+  });
+
+  // Paragraph, Code, & Other Tags
+  const otherTags = ['p', 'strong', 'em', 'del', 'u', 'mark', 'kbd', 'code', 'pre', 'img', 'table', 'th', 'td', 'a'];
+  otherTags.forEach(tag => {
+    const block = extractBlock(tag);
+    if (block) {
+      if (!localStyles.value[tag]) localStyles.value[tag] = {};
+      const color = getPropFromBlock(block, 'color');
+      if (color) localStyles.value[tag].color = color;
+      const bg = getPropFromBlock(block, 'background-color') || getPropFromBlock(block, 'background');
+      if (bg) localStyles.value[tag].backgroundColor = bg;
+      const fs = getPropFromBlock(block, 'font-size');
+      if (fs) localStyles.value[tag].fontSize = fs;
+      const fw = getPropFromBlock(block, 'font-weight');
+      if (fw) localStyles.value[tag].fontWeight = fw;
+      const lh = getPropFromBlock(block, 'line-height');
+      if (lh) localStyles.value[tag].lineHeight = lh;
+      const ls = getPropFromBlock(block, 'letter-spacing');
+      if (ls) localStyles.value[tag].letterSpacing = ls;
+      const ff = getPropFromBlock(block, 'font-family');
+      if (ff) localStyles.value[tag].fontFamily = ff;
+      const br = getPropFromBlock(block, 'border-radius');
+      if (br) localStyles.value[tag].borderRadius = br;
+      const m = getPropFromBlock(block, 'margin');
+      if (m) localStyles.value[tag].margin = m;
+    }
+  });
 
   emitUpdate();
 }
@@ -487,30 +657,42 @@ const customizerBodyRef = ref(null);
 const highlightedKey = ref('');
 
 function scrollToSection(key) {
+  const targetKey = (key === 'pre' || key === 'code') ? 'code' : key;
   activeTab.value = 'form';
-  if (!customizerBodyRef.value) return;
-  const el = customizerBodyRef.value.querySelector(`[data-section="${key}"]`);
-  if (el) {
-    const container = customizerBodyRef.value;
-    const containerRect = container.getBoundingClientRect();
-    const elRect = el.getBoundingClientRect();
 
-    // Calculate exact scroll top needed to center the section in the drawer viewport
-    const relativeTop = elRect.top - containerRect.top + container.scrollTop;
-    const targetScrollTop = relativeTop - (container.clientHeight / 2) + (el.clientHeight / 2);
+  const doScroll = () => {
+    if (!customizerBodyRef.value) return false;
+    const el = customizerBodyRef.value.querySelector(`[data-section="${targetKey}"]`);
+    if (el) {
+      const container = customizerBodyRef.value;
+      const containerRect = container.getBoundingClientRect();
+      const elRect = el.getBoundingClientRect();
 
-    container.scrollTo({
-      top: Math.max(0, targetScrollTop),
-      behavior: 'smooth'
-    });
+      // Calculate exact scroll top needed to center the section in the drawer viewport
+      const relativeTop = elRect.top - containerRect.top + container.scrollTop;
+      const targetScrollTop = relativeTop - (container.clientHeight / 2) + (el.clientHeight / 2);
 
-    highlightedKey.value = key;
-    setTimeout(() => {
-      if (highlightedKey.value === key) {
-        highlightedKey.value = '';
-      }
-    }, 1500);
-  }
+      container.scrollTo({
+        top: Math.max(0, targetScrollTop),
+        behavior: 'smooth'
+      });
+
+      highlightedKey.value = targetKey;
+      setTimeout(() => {
+        if (highlightedKey.value === targetKey) {
+          highlightedKey.value = '';
+        }
+      }, 2000);
+      return true;
+    }
+    return false;
+  };
+
+  nextTick(() => {
+    if (!doScroll()) {
+      setTimeout(doScroll, 100);
+    }
+  });
 }
 
 defineExpose({ scrollToSection });
@@ -668,257 +850,416 @@ const cssLineCount = computed(() => {
           </div>
         </div>
         <div class="style-controls">
-          <!-- Color (文字色) -->
-          <label class="style-field" v-if="getStyle(el.key).color !== undefined">
-            <span class="field-label">文字色</span>
-            <div class="color-row">
-              <input
-                type="color"
-                :value="getStyle(el.key).color"
-                @input="updateStyle(el.key, 'color', $event.target.value)"
-                class="color-picker"
-              />
-              <input
-                type="text"
-                :value="getStyle(el.key).color"
-                @input="updateStyle(el.key, 'color', $event.target.value)"
-                class="value-input"
-              />
-            </div>
-          </label>
-
-          <!-- Background -->
-          <label class="style-field" v-if="getStyle(el.key).backgroundColor !== undefined">
-            <span class="field-label">背景色</span>
-            <div class="color-row">
-              <input
-                type="color"
-                :value="getStyle(el.key).backgroundColor"
-                @input="updateStyle(el.key, 'backgroundColor', $event.target.value)"
-                class="color-picker"
-              />
-              <input
-                type="text"
-                :value="getStyle(el.key).backgroundColor"
-                @input="updateStyle(el.key, 'backgroundColor', $event.target.value)"
-                class="value-input"
-              />
-            </div>
-          </label>
-
-          <!-- Border color -->
-          <label class="style-field" v-if="getStyle(el.key).borderLeftColor !== undefined || getStyle(el.key).borderColor !== undefined">
-            <span class="field-label">边框色</span>
-            <div class="color-row">
-              <input
-                type="color"
-                :value="getStyle(el.key).borderLeftColor || getStyle(el.key).borderColor"
-                @input="updateStyle(el.key, getStyle(el.key).borderLeftColor ? 'borderLeftColor' : 'borderColor', $event.target.value)"
-                class="color-picker"
-              />
-              <input
-                type="text"
-                :value="getStyle(el.key).borderLeftColor || getStyle(el.key).borderColor"
-                @input="updateStyle(el.key, getStyle(el.key).borderLeftColor ? 'borderLeftColor' : 'borderColor', $event.target.value)"
-                class="value-input"
-              />
-            </div>
-          </label>
-
-          <!-- Table Header / Accent Background -->
-          <label class="style-field" v-if="getStyle(el.key).headerBg !== undefined">
-            <span class="field-label">表头背景色</span>
-            <div class="color-row">
-              <input
-                type="color"
-                :value="getStyle(el.key).headerBg"
-                @input="updateStyle(el.key, 'headerBg', $event.target.value)"
-                class="color-picker"
-              />
-              <input
-                type="text"
-                :value="getStyle(el.key).headerBg"
-                @input="updateStyle(el.key, 'headerBg', $event.target.value)"
-                class="value-input"
-              />
-            </div>
-          </label>
-
-          <!-- Blockquote text color -->
-          <label class="style-field" v-if="getStyle(el.key).textColor !== undefined">
-            <span class="field-label">引用文字色</span>
-            <div class="color-row">
-              <input
-                type="color"
-                :value="getStyle(el.key).textColor"
-                @input="updateStyle(el.key, 'textColor', $event.target.value)"
-                class="color-picker"
-              />
-              <input
-                type="text"
-                :value="getStyle(el.key).textColor"
-                @input="updateStyle(el.key, 'textColor', $event.target.value)"
-                class="value-input"
-              />
-            </div>
-          </label>
-
-          <!-- Font size -->
-          <label class="style-field" v-if="getStyle(el.key).fontSize !== undefined">
-            <span class="field-label">字号</span>
-            <select
-              :value="getStyle(el.key).fontSize"
-              @change="updateStyle(el.key, 'fontSize', $event.target.value)"
-              class="style-select"
-            >
-              <option v-if="getStyle(el.key).fontSize && !['11px','12px','13px','14px','15px','16px','18px','20px','22px','24px','26px','28px','32px'].includes(getStyle(el.key).fontSize)" :value="getStyle(el.key).fontSize">
-                {{ getStyle(el.key).fontSize }}
-              </option>
-              <option value="11px">11px</option>
-              <option value="12px">12px</option>
-              <option value="13px">13px</option>
-              <option value="14px">14px</option>
-              <option value="15px">15px</option>
-              <option value="16px">16px</option>
-              <option value="18px">18px</option>
-              <option value="20px">20px</option>
-              <option value="22px">22px</option>
-              <option value="24px">24px</option>
-              <option value="26px">26px</option>
-              <option value="28px">28px</option>
-              <option value="32px">32px</option>
-            </select>
-          </label>
-
-          <!-- Font weight -->
-          <label class="style-field" v-if="getStyle(el.key).fontWeight !== undefined">
-            <span class="field-label">字重</span>
-            <select
-              :value="getStyle(el.key).fontWeight"
-              @change="updateStyle(el.key, 'fontWeight', $event.target.value)"
-              class="style-select"
-            >
-              <option value="400">Normal (400)</option>
-              <option value="500">Medium (500)</option>
-              <option value="600">Semi Bold (600)</option>
-              <option value="700">Bold (700)</option>
-              <option value="800">Extra Bold (800)</option>
-            </select>
-          </label>
-
-          <!-- Line height -->
-          <label class="style-field" v-if="getStyle(el.key).lineHeight !== undefined">
-            <span class="field-label">行高</span>
-            <select
-              :value="getStyle(el.key).lineHeight"
-              @change="updateStyle(el.key, 'lineHeight', $event.target.value)"
-              class="style-select"
-            >
-              <option value="1.4">1.4</option>
-              <option value="1.6">1.6</option>
-              <option value="1.8">1.8</option>
-              <option value="2.0">2.0</option>
-            </select>
-          </label>
-
-          <!-- Image controls (for img element) -->
-          <template v-if="el.key === 'img'">
-            <!-- Image alignment -->
+          <!-- 1. Dedicated Code Block Customizer (只支持代码主题、Mac风格、字号、行高、字间距、字体族、行内代码配色) -->
+          <template v-if="el.key === 'code' || el.key === 'pre'">
+            <!-- Code Theme Selector -->
             <label class="style-field">
-              <span class="field-label">对齐方式</span>
+              <span class="field-label">代码高亮主题</span>
               <select
-                :value="getStyle('img').margin || '0 auto'"
-                @change="updateStyle('img', 'margin', $event.target.value)"
+                :value="localStyles.code?.codeThemeId || props.codeThemeId || 'mdnice-classic'"
+                @change="e => { updateStyle('code', 'codeThemeId', e.target.value); emit('update:codeThemeId', e.target.value); }"
                 class="style-select"
               >
-                <option value="0 auto">居中对齐</option>
-                <option value="0 auto 0 0">左对齐</option>
-                <option value="0 0 0 auto">右对齐</option>
+                <option v-for="ct in codeThemes" :key="ct.id" :value="ct.id">
+                  {{ ct.name }}
+                </option>
               </select>
             </label>
 
-            <!-- Image border radius -->
+            <!-- Mac Style Terminal Dots Toggle -->
             <label class="style-field">
-              <span class="field-label">圆角</span>
+              <span class="field-label">Mac 顶栏风格</span>
+              <div class="mac-style-toggle-row">
+                <button
+                  type="button"
+                  class="mac-toggle-btn"
+                  :class="{ 'is-active': localStyles.code?.macStyle !== false }"
+                  @click="updateStyle('code', 'macStyle', !(localStyles.code?.macStyle !== false))"
+                >
+                  <span class="mac-dots-preview">
+                    <span class="mac-dot red"></span>
+                    <span class="mac-dot yellow"></span>
+                    <span class="mac-dot green"></span>
+                  </span>
+                  <span>{{ (localStyles.code?.macStyle !== false) ? '已启用 Mac 终端顶栏' : '已关闭 (简约代码块)' }}</span>
+                </button>
+              </div>
+            </label>
+
+            <!-- Language Badge Toggle -->
+            <label class="style-field">
+              <span class="field-label">代码语言标识</span>
+              <div class="mac-style-toggle-row">
+                <button
+                  type="button"
+                  class="mac-toggle-btn"
+                  :class="{ 'is-active': localStyles.code?.showLang === true }"
+                  @click="updateStyle('code', 'showLang', !(localStyles.code?.showLang === true))"
+                >
+                  <span style="font-size: 11px; font-weight: 700; background: #e2e8f0; color: #475569; padding: 1px 6px; border-radius: 3px; margin-right: 8px;">JS</span>
+                  <span>{{ (localStyles.code?.showLang === true) ? '已显示语言标识 (右上角)' : '已隐藏语言标识 (默认纯净)' }}</span>
+                </button>
+              </div>
+            </label>
+
+            <!-- Code Font Size -->
+            <label class="style-field">
+              <span class="field-label">代码字号</span>
               <select
-                :value="getStyle('img').borderRadius || '8px'"
-                @change="updateStyle('img', 'borderRadius', $event.target.value)"
+                :value="getStyle('code').fontSize || '13px'"
+                @change="updateStyle('code', 'fontSize', $event.target.value)"
                 class="style-select"
               >
-                <option value="0px">直角 (0px)</option>
-                <option value="4px">小圆角 (4px)</option>
-                <option value="8px">标准圆角 (8px)</option>
-                <option value="12px">大圆角 (12px)</option>
-                <option value="16px">特大圆角 (16px)</option>
-                <option value="50%">圆形 (50%)</option>
+                <option value="11px">11px (紧凑)</option>
+                <option value="12px">12px</option>
+                <option value="12.5px">12.5px</option>
+                <option value="13px">13px (推荐)</option>
+                <option value="14px">14px</option>
+                <option value="15px">15px</option>
+                <option value="16px">16px (醒目)</option>
               </select>
             </label>
 
-            <!-- Image max width -->
+            <!-- Code Line Height -->
             <label class="style-field">
-              <span class="field-label">最大宽度</span>
+              <span class="field-label">代码行高</span>
               <select
-                :value="getStyle('img').maxWidth || '100%'"
-                @change="updateStyle('img', 'maxWidth', $event.target.value)"
+                :value="getStyle('code').lineHeight || '1.6'"
+                @change="updateStyle('code', 'lineHeight', $event.target.value)"
                 class="style-select"
               >
-                <option value="100%">100% (全宽)</option>
-                <option value="90%">90% (居中缩进)</option>
-                <option value="80%">80% (标准缩进)</option>
-                <option value="70%">70% (70% 宽)</option>
-                <option value="50%">50% (半宽)</option>
+                <option value="1.4">1.4 (紧凑)</option>
+                <option value="1.6">1.6 (标准推荐)</option>
+                <option value="1.8">1.8 (宽松)</option>
+                <option value="2.0">2.0</option>
+                <option value="24px">24px</option>
+                <option value="26px">26px</option>
+                <option value="28px">28px</option>
               </select>
             </label>
 
-            <!-- Image box shadow -->
+            <!-- Code Letter Spacing -->
             <label class="style-field">
-              <span class="field-label">悬浮阴影</span>
+              <span class="field-label">字间距</span>
               <select
-                :value="getStyle('img').boxShadow || 'none'"
-                @change="updateStyle('img', 'boxShadow', $event.target.value)"
+                :value="getStyle('code').letterSpacing || '0px'"
+                @change="updateStyle('code', 'letterSpacing', $event.target.value)"
                 class="style-select"
               >
-                <option value="none">无阴影</option>
-                <option value="0 4px 12px rgba(0,0,0,0.08)">柔和浅阴影</option>
-                <option value="0 8px 24px rgba(0,0,0,0.15)">立体卡片阴影</option>
-                <option value="0 12px 32px rgba(0,0,0,0.22)">悬浮高光阴影</option>
-                <option value="0 0 0 1px rgba(0,0,0,0.08)">细线边框阴影</option>
+                <option value="0px">0px (标准)</option>
+                <option value="0.5px">0.5px (微宽)</option>
+                <option value="1px">1.0px (宽松)</option>
+                <option value="1.5px">1.5px</option>
               </select>
             </label>
 
-            <!-- Image border -->
+            <!-- Code Font Family -->
             <label class="style-field">
-              <span class="field-label">相框边框</span>
+              <span class="field-label">字体族</span>
               <select
-                :value="getStyle('img').border || 'none'"
-                @change="updateStyle('img', 'border', $event.target.value)"
+                :value="getStyle('code').fontFamily || '&quot;SF Mono&quot;, Consolas, Monaco, monospace'"
+                @change="updateStyle('code', 'fontFamily', $event.target.value)"
                 class="style-select"
               >
-                <option value="none">无边框</option>
-                <option value="1px solid #e1e4e8">细灰框 (1px)</option>
-                <option value="2px solid var(--accent-color, #2775b6)">主题调性框 (2px)</option>
-                <option value="4px solid #ffffff">拍立得白框 (4px)</option>
-                <option value="2px dashed #cccccc">复古虚线框 (2px)</option>
+                <option value="&quot;SF Mono&quot;, Consolas, Monaco, monospace">SF Mono (苹果风格)</option>
+                <option value="&quot;Fira Code&quot;, Menlo, monospace">Fira Code (编程连字)</option>
+                <option value="&quot;JetBrains Mono&quot;, monospace">JetBrains Mono (极客字体)</option>
+                <option value="Consolas, Monaco, monospace">Consolas (经典 Windows)</option>
               </select>
+            </label>
+
+            <!-- Inline Code Colors -->
+            <label class="style-field">
+              <span class="field-label">行内代码文字色</span>
+              <div class="color-row">
+                <input
+                  type="color"
+                  :value="getStyle('code').color || '#bb2243'"
+                  @input="updateStyle('code', 'color', $event.target.value)"
+                  class="color-picker"
+                />
+                <input
+                  type="text"
+                  :value="getStyle('code').color || '#bb2243'"
+                  @input="updateStyle('code', 'color', $event.target.value)"
+                  class="value-input"
+                />
+              </div>
+            </label>
+
+            <label class="style-field">
+              <span class="field-label">行内代码背景色</span>
+              <div class="color-row">
+                <input
+                  type="color"
+                  :value="getStyle('code').backgroundColor || '#f5f7fa'"
+                  @input="updateStyle('code', 'backgroundColor', $event.target.value)"
+                  class="color-picker"
+                />
+                <input
+                  type="text"
+                  :value="getStyle('code').backgroundColor || 'rgba(27, 31, 35, 0.05)'"
+                  @input="updateStyle('code', 'backgroundColor', $event.target.value)"
+                  class="value-input"
+                />
+              </div>
             </label>
           </template>
 
-          <!-- Generic custom properties -->
-          <label
-            v-for="prop in otherProps(el.key)"
-            :key="prop"
-            class="style-field"
-          >
-            <span class="field-label">{{ propLabel(prop) }}</span>
-            <div class="color-row">
-              <input
-                type="text"
-                :value="getStyle(el.key)[prop]"
-                @input="updateStyle(el.key, prop, $event.target.value)"
-                class="value-input"
-              />
-            </div>
-          </label>
+          <!-- 2. Standard Element Controls (For other elements) -->
+          <template v-else>
+            <!-- Color (文字色) -->
+            <label class="style-field" v-if="getStyle(el.key).color !== undefined">
+              <span class="field-label">文字色</span>
+              <div class="color-row">
+                <input
+                  type="color"
+                  :value="getStyle(el.key).color"
+                  @input="updateStyle(el.key, 'color', $event.target.value)"
+                  class="color-picker"
+                />
+                <input
+                  type="text"
+                  :value="getStyle(el.key).color"
+                  @input="updateStyle(el.key, 'color', $event.target.value)"
+                  class="value-input"
+                />
+              </div>
+            </label>
+
+            <!-- Background -->
+            <label class="style-field" v-if="getStyle(el.key).backgroundColor !== undefined">
+              <span class="field-label">背景色</span>
+              <div class="color-row">
+                <input
+                  type="color"
+                  :value="getStyle(el.key).backgroundColor"
+                  @input="updateStyle(el.key, 'backgroundColor', $event.target.value)"
+                  class="color-picker"
+                />
+                <input
+                  type="text"
+                  :value="getStyle(el.key).backgroundColor"
+                  @input="updateStyle(el.key, 'backgroundColor', $event.target.value)"
+                  class="value-input"
+                />
+              </div>
+            </label>
+
+            <!-- Border color -->
+            <label class="style-field" v-if="getStyle(el.key).borderLeftColor !== undefined || getStyle(el.key).borderColor !== undefined">
+              <span class="field-label">边框色</span>
+              <div class="color-row">
+                <input
+                  type="color"
+                  :value="getStyle(el.key).borderLeftColor || getStyle(el.key).borderColor"
+                  @input="updateStyle(el.key, getStyle(el.key).borderLeftColor ? 'borderLeftColor' : 'borderColor', $event.target.value)"
+                  class="color-picker"
+                />
+                <input
+                  type="text"
+                  :value="getStyle(el.key).borderLeftColor || getStyle(el.key).borderColor"
+                  @input="updateStyle(el.key, getStyle(el.key).borderLeftColor ? 'borderLeftColor' : 'borderColor', $event.target.value)"
+                  class="value-input"
+                />
+              </div>
+            </label>
+
+            <!-- Table Header / Accent Background -->
+            <label class="style-field" v-if="getStyle(el.key).headerBg !== undefined">
+              <span class="field-label">表头背景色</span>
+              <div class="color-row">
+                <input
+                  type="color"
+                  :value="getStyle(el.key).headerBg"
+                  @input="updateStyle(el.key, 'headerBg', $event.target.value)"
+                  class="color-picker"
+                />
+                <input
+                  type="text"
+                  :value="getStyle(el.key).headerBg"
+                  @input="updateStyle(el.key, 'headerBg', $event.target.value)"
+                  class="value-input"
+                />
+              </div>
+            </label>
+
+            <!-- Blockquote text color -->
+            <label class="style-field" v-if="getStyle(el.key).textColor !== undefined">
+              <span class="field-label">引用文字色</span>
+              <div class="color-row">
+                <input
+                  type="color"
+                  :value="getStyle(el.key).textColor"
+                  @input="updateStyle(el.key, 'textColor', $event.target.value)"
+                  class="color-picker"
+                />
+                <input
+                  type="text"
+                  :value="getStyle(el.key).textColor"
+                  @input="updateStyle(el.key, 'textColor', $event.target.value)"
+                  class="value-input"
+                />
+              </div>
+            </label>
+
+            <!-- Font size -->
+            <label class="style-field" v-if="getStyle(el.key).fontSize !== undefined">
+              <span class="field-label">字号</span>
+              <select
+                :value="getStyle(el.key).fontSize"
+                @change="updateStyle(el.key, 'fontSize', $event.target.value)"
+                class="style-select"
+              >
+                <option v-if="getStyle(el.key).fontSize && !['11px','12px','13px','14px','15px','16px','18px','20px','22px','24px','26px','28px','32px'].includes(getStyle(el.key).fontSize)" :value="getStyle(el.key).fontSize">
+                  {{ getStyle(el.key).fontSize }}
+                </option>
+                <option value="11px">11px</option>
+                <option value="12px">12px</option>
+                <option value="13px">13px</option>
+                <option value="14px">14px</option>
+                <option value="15px">15px</option>
+                <option value="16px">16px</option>
+                <option value="18px">18px</option>
+                <option value="20px">20px</option>
+                <option value="22px">22px</option>
+                <option value="24px">24px</option>
+                <option value="26px">26px</option>
+                <option value="28px">28px</option>
+                <option value="32px">32px</option>
+              </select>
+            </label>
+
+            <!-- Font weight -->
+            <label class="style-field" v-if="getStyle(el.key).fontWeight !== undefined">
+              <span class="field-label">字重</span>
+              <select
+                :value="getStyle(el.key).fontWeight"
+                @change="updateStyle(el.key, 'fontWeight', $event.target.value)"
+                class="style-select"
+              >
+                <option value="400">Normal (400)</option>
+                <option value="500">Medium (500)</option>
+                <option value="600">Semi Bold (600)</option>
+                <option value="700">Bold (700)</option>
+                <option value="800">Extra Bold (800)</option>
+              </select>
+            </label>
+
+            <!-- Line height -->
+            <label class="style-field" v-if="getStyle(el.key).lineHeight !== undefined">
+              <span class="field-label">行高</span>
+              <select
+                :value="getStyle(el.key).lineHeight"
+                @change="updateStyle(el.key, 'lineHeight', $event.target.value)"
+                class="style-select"
+              >
+                <option value="1.4">1.4</option>
+                <option value="1.6">1.6</option>
+                <option value="1.8">1.8</option>
+                <option value="2.0">2.0</option>
+              </select>
+            </label>
+
+            <!-- Image controls (for img element) -->
+            <template v-if="el.key === 'img'">
+              <!-- Image alignment -->
+              <label class="style-field">
+                <span class="field-label">对齐方式</span>
+                <select
+                  :value="getStyle('img').margin || '0 auto'"
+                  @change="updateStyle('img', 'margin', $event.target.value)"
+                  class="style-select"
+                >
+                  <option value="0 auto">居中对齐</option>
+                  <option value="0 auto 0 0">左对齐</option>
+                  <option value="0 0 0 auto">右对齐</option>
+                </select>
+              </label>
+
+              <!-- Image border radius -->
+              <label class="style-field">
+                <span class="field-label">圆角</span>
+                <select
+                  :value="getStyle('img').borderRadius || '8px'"
+                  @change="updateStyle('img', 'borderRadius', $event.target.value)"
+                  class="style-select"
+                >
+                  <option value="0px">直角 (0px)</option>
+                  <option value="4px">小圆角 (4px)</option>
+                  <option value="8px">标准圆角 (8px)</option>
+                  <option value="12px">大圆角 (12px)</option>
+                  <option value="16px">特大圆角 (16px)</option>
+                  <option value="50%">圆形 (50%)</option>
+                </select>
+              </label>
+
+              <!-- Image max width -->
+              <label class="style-field">
+                <span class="field-label">最大宽度</span>
+                <select
+                  :value="getStyle('img').maxWidth || '100%'"
+                  @change="updateStyle('img', 'maxWidth', $event.target.value)"
+                  class="style-select"
+                >
+                  <option value="100%">100% (全宽)</option>
+                  <option value="90%">90% (居中缩进)</option>
+                  <option value="80%">80% (标准缩进)</option>
+                  <option value="70%">70% (70% 宽)</option>
+                  <option value="50%">50% (半宽)</option>
+                </select>
+              </label>
+
+              <!-- Image box shadow -->
+              <label class="style-field">
+                <span class="field-label">悬浮阴影</span>
+                <select
+                  :value="getStyle('img').boxShadow || 'none'"
+                  @change="updateStyle('img', 'boxShadow', $event.target.value)"
+                  class="style-select"
+                >
+                  <option value="none">无阴影</option>
+                  <option value="0 4px 12px rgba(0,0,0,0.08)">柔和浅阴影</option>
+                  <option value="0 8px 24px rgba(0,0,0,0.15)">立体卡片阴影</option>
+                  <option value="0 12px 32px rgba(0,0,0,0.22)">悬浮高光阴影</option>
+                  <option value="0 0 0 1px rgba(0,0,0,0.08)">细线边框阴影</option>
+                </select>
+              </label>
+
+              <!-- Image border -->
+              <label class="style-field">
+                <span class="field-label">相框边框</span>
+                <select
+                  :value="getStyle('img').border || 'none'"
+                  @change="updateStyle('img', 'border', $event.target.value)"
+                  class="style-select"
+                >
+                  <option value="none">无边框</option>
+                  <option value="1px solid #e1e4e8">细灰框 (1px)</option>
+                  <option value="2px solid var(--accent-color, #2775b6)">主题调性框 (2px)</option>
+                  <option value="4px solid #ffffff">拍立得白框 (4px)</option>
+                  <option value="2px dashed #cccccc">复古虚线框 (2px)</option>
+                </select>
+              </label>
+            </template>
+
+            <!-- Generic custom properties -->
+            <label
+              v-for="prop in otherProps(el.key)"
+              :key="prop"
+              class="style-field"
+            >
+              <span class="field-label">{{ propLabel(prop) }}</span>
+              <div class="color-row">
+                <input
+                  type="text"
+                  :value="getStyle(el.key)[prop]"
+                  @input="updateStyle(el.key, prop, $event.target.value)"
+                  class="value-input"
+                />
+              </div>
+            </label>
+          </template>
         </div>
       </div>
     </div>
@@ -1273,6 +1614,57 @@ const cssLineCount = computed(() => {
 .style-select:focus {
   border-color: var(--accent-color);
 }
+
+/* Mac Style Toggle */
+.mac-style-toggle-row {
+  display: flex;
+  width: 100%;
+}
+
+.mac-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 10px;
+  background: var(--bg-preview);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mac-toggle-btn:hover {
+  border-color: var(--accent-color);
+  color: var(--text-main);
+}
+
+.mac-toggle-btn.is-active {
+  background: rgba(39, 117, 182, 0.08);
+  border-color: var(--accent-color);
+  color: var(--accent-color);
+  font-weight: 600;
+}
+
+.mac-dots-preview {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mac-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.mac-dot.red { background-color: #ff5f56; }
+.mac-dot.yellow { background-color: #ffbd2e; }
+.mac-dot.green { background-color: #27c93f; }
 
 /* CSS Source Code Mode */
 .css-source-container {

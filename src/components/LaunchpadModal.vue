@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { ref, reactive, onMounted, computed, watch } from 'vue';
 import { 
   X, 
@@ -32,7 +32,7 @@ const props = defineProps({
   },
   codeThemeId: {
     type: String,
-    default: 'atom-one-dark'
+    default: 'mdnice-classic'
   }
 });
 

@@ -4,6 +4,7 @@ import { marked } from 'marked';
 import renderMathInElement from 'katex/dist/contrib/auto-render.js';
 import 'katex/dist/katex.min.css';
 import mermaid from 'mermaid';
+import hljs from 'highlight.js';
 import { compileToWeChatHtml, cleanEmptyListItems } from '../utils/wechatStyles';
 import { themes } from '../utils/themePresets';
 import { getCodeThemeStyles } from '../utils/codeThemes';
@@ -31,7 +32,27 @@ marked.use({
         const escapedCode = encodeURIComponent(code);
         return `<div class="mermaid" data-original-code="${escapedCode}">${code}</div>`;
       }
-      return false;
+      
+      let highlighted = '';
+      if (lang && hljs.getLanguage(lang)) {
+        try {
+          highlighted = hljs.highlight(code, { language: lang, ignoreIllegals: true }).value;
+        } catch (e) {
+          try {
+            highlighted = hljs.highlightAuto(code).value;
+          } catch (err) {
+            highlighted = code;
+          }
+        }
+      } else {
+        try {
+          highlighted = hljs.highlightAuto(code).value;
+        } catch (e) {
+          highlighted = code;
+        }
+      }
+
+      return `<pre class="custom" data-lang="${lang || ''}"><code class="hljs language-${lang || 'text'}">${highlighted}</code></pre>`;
     }
   },
   extensions: [
@@ -89,7 +110,7 @@ const props = defineProps({
   },
   codeThemeId: {
     type: String,
-    default: 'atom-one-dark'
+    default: 'mdnice-classic'
   },
   customStyles: {
     type: Object,
@@ -184,6 +205,9 @@ const customStyleVars = computed(() => {
   if (s.code?.backgroundColor) vars['--ct-code-bg'] = s.code.backgroundColor;
   if (s.code?.color) vars['--ct-code-color'] = s.code.color;
   if (s.code?.fontSize) vars['--ct-code-size'] = s.code.fontSize;
+  if (s.code?.lineHeight) vars['--ct-code-lineheight'] = s.code.lineHeight;
+  if (s.code?.letterSpacing) vars['--ct-code-spacing'] = s.code.letterSpacing;
+  if (s.code?.fontFamily) vars['--ct-code-font'] = s.code.fontFamily;
 
   if (s.pre?.backgroundColor) vars['--ct-pre-bg'] = s.pre.backgroundColor;
 
@@ -241,7 +265,11 @@ const activeThemeStyles = computed(() => {
   return theme.styles;
 });
 
-const codeThemeStyles = computed(() => getCodeThemeStyles(props.codeThemeId));
+const effectiveCodeThemeId = computed(() => {
+  return props.customStyles?.code?.codeThemeId || props.codeThemeId || 'mdnice-classic';
+});
+
+const codeThemeStyles = computed(() => getCodeThemeStyles(effectiveCodeThemeId.value));
 
 const compiledHtml = computed(() => {
   if (!props.markdown) return '';
@@ -254,7 +282,7 @@ const wechatStyledHtml = computed(() => {
   return compileToWeChatHtml(
     compiledHtml.value,
     props.themeId,
-    props.codeThemeId,
+    effectiveCodeThemeId.value,
     activeCustomStyles.value?.customCss || '',
     activeCustomStyles.value
   );
@@ -390,9 +418,9 @@ function handlePreviewElementClick(e) {
   // Only trigger for clicks inside rendered content
   if (!target.closest('.preview-body') && !target.closest('.wechat-phone-frame') && !target.closest('.tc-rendered-paper')) return;
 
-  // 1. Check pre first for code blocks
-  if (target.closest('pre')) {
-    emit('element-click', 'pre');
+  // 1. Check pre / code block / hljs first
+  if (target.closest('pre, code, .hljs')) {
+    emit('element-click', 'code');
     return;
   }
 
@@ -678,49 +706,81 @@ function handlePreviewElementClick(e) {
   border-radius: 5px;
 }
 
+.markdown-body :deep(pre.custom),
 .markdown-body :deep(pre) {
-  position: relative;
-  background-color: var(--ct-pre-bg, var(--hljs-bg, #282c34));
-  color: var(--hljs-text, #abb2bf);
-  padding: 16px 16px 16px 16px;
-  border-radius: 8px;
-  box-shadow: rgba(0, 0, 0, 0.2) 0px 6px 18px;
-  text-align: left;
-  overflow-x: auto !important;
-  -ms-overflow-style: none !important;
-  scrollbar-width: none !important;
-  margin-bottom: 1.2em;
-}
-
-.markdown-body :deep(pre::-webkit-scrollbar) {
-  display: none !important;
-  width: 0 !important;
-  height: 0 !important;
-}
-
-.markdown-body :deep(pre)::after {
-  content: attr(data-lang);
-  position: absolute;
-  top: 7px;
-  right: 16px;
-  color: var(--hljs-mac-text, #5c6370);
-  font-family: var(--font-heading), sans-serif;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.markdown-body :deep(pre code) {
-  font-family: Consolas, Monaco, "Andale Mono", "Ubuntu Mono", monospace !important;
-  background: transparent;
-  color: inherit;
+  margin: 0;
   padding: 0;
-  border-radius: 0;
-  font-size: 13px !important;
-  display: -webkit-box !important;
-  min-width: 100%;
-  white-space: pre;
+  text-align: left;
+}
+
+.markdown-body :deep(.code-snippet__fix) {
+  margin-top: 16px !important;
+  margin-bottom: 16px !important;
+  border-radius: 8px !important;
+  overflow: hidden !important;
+}
+
+.markdown-body :deep(.code-snippet__fix pre) {
+  margin: 0 !important;
+  overflow-x: auto !important;
+  scrollbar-width: thin;
+}
+
+/* Syntax Highlighting Tokens in Preview */
+.markdown-body :deep(.hljs-keyword),
+.markdown-body :deep(.hljs-selector-tag) {
+  color: var(--hljs-keyword, #c678dd);
+  font-weight: 600;
+}
+
+.markdown-body :deep(.hljs-string),
+.markdown-body :deep(.hljs-regexp),
+.markdown-body :deep(.hljs-addition),
+.markdown-body :deep(.hljs-attribute),
+.markdown-body :deep(.hljs-template-variable) {
+  color: var(--hljs-string, #98c379);
+}
+
+.markdown-body :deep(.hljs-number),
+.markdown-body :deep(.hljs-literal) {
+  color: var(--hljs-number, #d19a66);
+}
+
+.markdown-body :deep(.hljs-type),
+.markdown-body :deep(.hljs-built_in),
+.markdown-body :deep(.hljs-class) {
+  color: var(--hljs-type, #e5c07b);
+}
+
+.markdown-body :deep(.hljs-title),
+.markdown-body :deep(.hljs-function),
+.markdown-body :deep(.hljs-section) {
+  color: var(--hljs-title, #61afef);
+  font-weight: 500;
+}
+
+.markdown-body :deep(.hljs-attr),
+.markdown-body :deep(.hljs-variable),
+.markdown-body :deep(.hljs-property) {
+  color: var(--hljs-attr, #d19a66);
+}
+
+.markdown-body :deep(.hljs-comment),
+.markdown-body :deep(.hljs-quote) {
+  color: var(--hljs-comment, #7f848e);
+  font-style: italic;
+}
+
+.markdown-body :deep(.hljs-meta),
+.markdown-body :deep(.hljs-operator),
+.markdown-body :deep(.hljs-symbol) {
+  color: var(--hljs-meta, #56b6c2);
+}
+
+.markdown-body :deep(.hljs-params),
+.markdown-body :deep(.hljs-subst),
+.markdown-body :deep(.hljs-tag) {
+  color: var(--hljs-text, #abb2bf);
 }
 
 .markdown-body :deep(table) {

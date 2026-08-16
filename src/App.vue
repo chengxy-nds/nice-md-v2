@@ -7,8 +7,7 @@ import {
   Link2, Link2Off, Eye, EyeOff, Download, Undo2, Redo2, Palette, Code2,
   ChevronDown, FileCode, FileText, Globe
 } from '@lucide/vue';
-import { applyTheme } from './utils/themePresets';
-import { themes as themePresets } from './utils/themePresets';
+import { applyTheme, getThemeDefaultStyles, themes as themePresets } from './utils/themePresets';
 import { codeThemes } from './utils/codeThemes';
 import { htmlToMarkdown } from './utils/htmlToMarkdown';
 import { soundEngine } from './utils/synthAudio';
@@ -227,7 +226,7 @@ function handleReorderGroups({ groupId, targetGroupId }) {
 }
 
 const currentTheme = ref(localStorage.getItem('nicemd_theme') || 'classic-indigo');
-const currentCodeTheme = ref(localStorage.getItem('nicemd_code_theme') || 'atom-one-dark');
+const currentCodeTheme = ref(localStorage.getItem('nicemd_code_theme') || 'mdnice-classic');
 const activeThemeName = computed(() =>
   themePresets.find(t => t.id === currentTheme.value)?.name || '山海'
 );
@@ -287,6 +286,33 @@ function handleSaveTheme(styles) {
 }
 
 const isExtensionConnected = ref(false);
+
+function handleCodeThemeSelect(id) {
+  soundEngine.playClick();
+  currentCodeTheme.value = id;
+  showCodeThemeMenu.value = false;
+  localStorage.setItem('nicemd_code_theme', id);
+  const newStyles = JSON.parse(JSON.stringify(customStyles.value || {}));
+  if (!newStyles.code) newStyles.code = {};
+  newStyles.code.codeThemeId = id;
+  customStyles.value = newStyles;
+}
+
+function handleCodeThemeChangeFromPreview(id) {
+  currentCodeTheme.value = id;
+  localStorage.setItem('nicemd_code_theme', id);
+  const newStyles = JSON.parse(JSON.stringify(customStyles.value || {}));
+  if (!newStyles.code) newStyles.code = {};
+  newStyles.code.codeThemeId = id;
+  customStyles.value = newStyles;
+}
+
+// Watch activeDocument to sync codeThemeId if stored in document
+watch(activeDocument, (doc) => {
+  if (doc?.customStyles?.code?.codeThemeId) {
+    currentCodeTheme.value = doc.customStyles.code.codeThemeId;
+  }
+}, { immediate: true });
 
 watch(currentCodeTheme, (newVal) => {
   localStorage.setItem('nicemd_code_theme', newVal);
@@ -348,7 +374,8 @@ function getStyledHtml() {
   if (!markdownContent.value) return '';
   const rawHtml = marked.parse(markdownContent.value);
   const cleaned = cleanEmptyListItems(rawHtml);
-  return compileToWeChatHtml(cleaned, currentTheme.value, currentCodeTheme.value);
+  const effectiveCodeTheme = customStyles.value?.code?.codeThemeId || currentCodeTheme.value || 'mdnice-classic';
+  return compileToWeChatHtml(cleaned, currentTheme.value, effectiveCodeTheme, customStyles.value?.customCss || '', customStyles.value);
 }
 
 function exportMD() {
@@ -1188,7 +1215,7 @@ watch(customStyles, () => {
                     :key="ct.id"
                     class="popout-item"
                     :class="{ 'is-active': ct.id === currentCodeTheme }"
-                    @click="currentCodeTheme = ct.id; showCodeThemeMenu = false"
+                    @click="handleCodeThemeSelect(ct.id)"
                   >
                     <span>代码: {{ ct.name }}</span>
                   </button>
@@ -1230,7 +1257,8 @@ watch(customStyles, () => {
                 @update:customStyles="customStyles = $event"
                 @save-theme="handleSaveTheme"
                 @update:themePanelVisible="showThemePanel = $event"
-                v-model:codeThemeId="currentCodeTheme"
+                :codeThemeId="currentCodeTheme"
+                @update:codeThemeId="handleCodeThemeChangeFromPreview"
                 @scroll="handleScroll"
                 @focusActive="handleFocusActive"
                 @togglePreview="togglePreview"

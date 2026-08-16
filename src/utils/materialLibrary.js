@@ -40,16 +40,18 @@ export const materials = [
         <path d="M2 3 C10 0, 18 3, 24 13 M18 11 L24 13 L22 7" stroke="#facc15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </section>
-    <section style="display: inline-flex; align-items: center; max-width: 100%; line-height: 1.3;">
-      <section style="display: inline-block; margin-right: 8px; word-break: break-word;">
-        <span style="font-size: 18px; font-weight: 800; color: #2e8b57; letter-spacing: 1px; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; display: inline-block; word-break: break-word;">
-          八月拾夏 静待秋风
-        </span>
-        <svg width="100%" height="8" viewBox="0 0 140 8" preserveAspectRatio="none" fill="none" style="display: block; margin-top: 3px;">
-          <path d="M0 2 Q 10 7, 20 2 T 40 2 T 60 2 T 80 2 T 100 2 T 120 2 T 140 2 M0 6 Q 10 11, 20 6 T 40 6 T 60 6 T 80 6 T 100 6 T 120 6 T 140 6" stroke="#facc15" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
+    <section style="display: inline-table; vertical-align: middle; max-width: 100%; line-height: 1.3;">
+      <section style="display: table-row;">
+        <section style="display: table-cell; vertical-align: middle; padding-right: 8px; word-break: break-word;">
+          <span style="font-size: 18px; font-weight: 800; color: #2e8b57; letter-spacing: 1px; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; display: inline-block; word-break: break-word;">
+            八月拾夏 静待秋风
+          </span>
+          <svg width="100%" height="8" viewBox="0 0 140 8" preserveAspectRatio="none" fill="none" style="display: block; margin-top: 3px;">
+            <path d="M0 2 Q 10 7, 20 2 T 40 2 T 60 2 T 80 2 T 100 2 T 120 2 T 140 2 M0 6 Q 10 11, 20 6 T 40 6 T 60 6 T 80 6 T 100 6 T 120 6 T 140 6" stroke="#facc15" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </section>
+        <section style="display: table-cell; vertical-align: middle; width: 24px; font-size: 20px; line-height: 1;">🌿</section>
       </section>
-      <span style="flex-shrink: 0; font-size: 20px; line-height: 1;">🌿</span>
     </section>
   </section>
 </section>`
@@ -69,14 +71,16 @@ export const materials = [
       </section>
       <span style="display: inline-block; vertical-align: bottom; font-size: 16px;">✨</span>
     </section>
-    <section style="display: inline-flex; align-items: center; max-width: 100%; line-height: 1.3;">
-      <section style="display: inline-block; margin-right: 8px; word-break: break-word;">
-        <span style="font-size: 18px; font-weight: 800; color: #be123c; letter-spacing: 0.8px; display: inline-block; word-break: break-word;">
-          关于生活中的温柔复苏
-        </span>
-        <section style="height: 3px; background: #fecdd3; border-radius: 2px; margin-top: 4px;"></section>
+    <section style="display: inline-table; vertical-align: middle; max-width: 100%; line-height: 1.3;">
+      <section style="display: table-row;">
+        <section style="display: table-cell; vertical-align: middle; padding-right: 8px; word-break: break-word;">
+          <span style="font-size: 18px; font-weight: 800; color: #be123c; letter-spacing: 0.8px; display: inline-block; word-break: break-word;">
+            关于生活中的温柔复苏
+          </span>
+          <section style="height: 3px; background: #fecdd3; border-radius: 2px; margin-top: 4px;"></section>
+        </section>
+        <section style="display: table-cell; vertical-align: middle; width: 24px; font-size: 20px; line-height: 1;">🍑</section>
       </section>
-      <span style="flex-shrink: 0; font-size: 20px; line-height: 1;">🍑</span>
     </section>
   </section>
 </section>`
@@ -96,14 +100,16 @@ export const materials = [
       </section>
       <span style="display: inline-block; vertical-align: bottom; font-size: 16px;">🌙</span>
     </section>
-    <section style="display: inline-flex; align-items: center; max-width: 100%; line-height: 1.3;">
-      <section style="display: inline-block; margin-right: 8px; word-break: break-word;">
-        <span style="font-size: 18px; font-weight: 800; color: #5b21b6; letter-spacing: 0.8px; display: inline-block; word-break: break-word;">
-          晚风拂过 枕着星河入梦
-        </span>
-        <section style="height: 3px; background: #ddd6fe; border-radius: 2px; margin-top: 4px;"></section>
+    <section style="display: inline-table; vertical-align: middle; max-width: 100%; line-height: 1.3;">
+      <section style="display: table-row;">
+        <section style="display: table-cell; vertical-align: middle; padding-right: 8px; word-break: break-word;">
+          <span style="font-size: 18px; font-weight: 800; color: #5b21b6; letter-spacing: 0.8px; display: inline-block; word-break: break-word;">
+            晚风拂过 枕着星河入梦
+          </span>
+          <section style="height: 3px; background: #ddd6fe; border-radius: 2px; margin-top: 4px;"></section>
+        </section>
+        <section style="display: table-cell; vertical-align: middle; width: 24px; font-size: 20px; line-height: 1;">🍇</section>
       </section>
-      <span style="flex-shrink: 0; font-size: 20px; line-height: 1;">🍇</span>
     </section>
   </section>
 </section>`
@@ -118,9 +124,15 @@ export const materials = [
     description: '实心与淡色双层圆圈序号，搭配加粗标题',
     tags: ['135热选', '序号标题', '蓝色'],
     html: `<section style="margin: 24px 0 16px; text-align: center; clear: both;" data-material="true">
-  <section style="display: inline-flex; align-items: center; text-align: left; max-width: 100%; box-sizing: border-box;">
-    <section style="flex-shrink: 0; background: #2563eb; color: #ffffff; font-size: 15px; font-weight: 800; width: 34px; height: 34px; line-height: 34px; text-align: center; border-radius: 50%; margin-right: 12px; -webkit-box-shadow: 0 4px 10px rgba(37,99,235,0.3); box-shadow: 0 4px 10px rgba(37,99,235,0.3);">01</section>
-    <span style="font-size: 17px; font-weight: 700; color: #1e293b; letter-spacing: 0.5px; line-height: 1.4; word-break: break-word;">避免用战术上的勤奋，掩盖战略上的懒惰</span>
+  <section style="display: inline-table; vertical-align: middle; text-align: left; max-width: 100%; box-sizing: border-box;">
+    <section style="display: table-row;">
+      <section style="display: table-cell; vertical-align: middle; width: 34px; line-height: 1;">
+        <section style="background: #2563eb; color: #ffffff; font-size: 15px; font-weight: 800; width: 34px; height: 34px; line-height: 34px; text-align: center; border-radius: 50%; -webkit-box-shadow: 0 4px 10px rgba(37,99,235,0.3); box-shadow: 0 4px 10px rgba(37,99,235,0.3);">01</section>
+      </section>
+      <section style="display: table-cell; vertical-align: middle; padding-left: 12px;">
+        <span style="font-size: 17px; font-weight: 700; color: #1e293b; letter-spacing: 0.5px; line-height: 1.4; word-break: break-word; display: block;">避免用战术上的勤奋，掩盖战略上的懒惰</span>
+      </section>
+    </section>
   </section>
 </section>`
   },
@@ -132,9 +144,15 @@ export const materials = [
     description: '黄色立体沉底图层 + 左倾小方块，高对比强吸睛',
     tags: ['135热选', '明黄', '立体风'],
     html: `<section style="margin: 24px 0 16px; text-align: center; clear: both;" data-material="true">
-  <section style="display: inline-flex; align-items: center; background: #fef08a; padding: 8px 16px 8px 12px; border-radius: 6px; -webkit-box-shadow: 3px 3px 0px #f59e0b; box-shadow: 3px 3px 0px #f59e0b; max-width: 100%; box-sizing: border-box; text-align: left;">
-    <span style="flex-shrink: 0; width: 8px; height: 18px; background: #d97706; border-radius: 2px; margin-right: 8px; display: inline-block;"></span>
-    <span style="font-size: 16px; font-weight: 800; color: #78350f; line-height: 1.4; word-break: break-word;">打造高转化率的爆款文章结构</span>
+  <section style="display: inline-table; vertical-align: middle; background: #fef08a; padding: 8px 16px 8px 12px; border-radius: 6px; -webkit-box-shadow: 3px 3px 0px #f59e0b; box-shadow: 3px 3px 0px #f59e0b; max-width: 100%; box-sizing: border-box; text-align: left;">
+    <section style="display: table-row;">
+      <section style="display: table-cell; vertical-align: middle; width: 8px; line-height: 1;">
+        <span style="width: 8px; height: 18px; background: #d97706; border-radius: 2px; display: block;"></span>
+      </section>
+      <section style="display: table-cell; vertical-align: middle; padding-left: 8px;">
+        <span style="font-size: 16px; font-weight: 800; color: #78350f; line-height: 1.4; word-break: break-word; display: block;">打造高转化率的爆款文章结构</span>
+      </section>
+    </section>
   </section>
 </section>`
   },
@@ -146,13 +164,15 @@ export const materials = [
     description: '薄荷绿圆角方块 + 侧阴影，清新爽朗适合教程结构',
     tags: ['135热选', '薄荷绿', '序号'],
     html: `<section style="margin: 24px 0 16px; text-align: center; clear: both;" data-material="true">
-  <section style="display: inline-flex; align-items: center; text-align: left; max-width: 100%; box-sizing: border-box;">
-    <section style="flex-shrink: 0; background: #10b981; color: #ffffff; font-weight: bold; font-size: 16px; width: 36px; height: 32px; line-height: 32px; text-align: center; border-radius: 8px; -webkit-box-shadow: 3px 3px 0px #047857; box-shadow: 3px 3px 0px #047857; margin-right: 10px;">
-      02
+  <section style="display: inline-table; vertical-align: middle; text-align: left; max-width: 100%; box-sizing: border-box;">
+    <section style="display: table-row;">
+      <section style="display: table-cell; vertical-align: middle; width: 36px; line-height: 1;">
+        <section style="background: #10b981; color: #ffffff; font-weight: bold; font-size: 16px; width: 36px; height: 32px; line-height: 32px; text-align: center; border-radius: 8px; -webkit-box-shadow: 3px 3px 0px #047857; box-shadow: 3px 3px 0px #047857;">02</section>
+      </section>
+      <section style="display: table-cell; vertical-align: middle; padding-left: 10px;">
+        <span style="font-size: 17px; font-weight: bold; color: #064e3b; letter-spacing: 0.5px; line-height: 1.4; word-break: break-word; display: block;">突破认知瓶颈</span>
+      </section>
     </section>
-    <span style="font-size: 17px; font-weight: bold; color: #064e3b; letter-spacing: 0.5px; line-height: 1.4; word-break: break-word;">
-      突破认知瓶颈
-    </span>
   </section>
 </section>`
   },
@@ -164,9 +184,11 @@ export const materials = [
     description: '低饱和度莫兰迪色系拼接，高级沉稳，适合文化随笔',
     tags: ['莫兰迪', '高级感', '拼接'],
     html: `<section style="margin: 22px 0 14px; text-align: center; clear: both;" data-material="true">
-  <section style="display: inline-flex; align-items: stretch; border-radius: 6px; overflow: hidden; max-width: 100%; box-sizing: border-box;">
-    <span style="background: #a3b18a; color: #ffffff; font-weight: bold; font-size: 13px; padding: 8px 12px; letter-spacing: 0.5px; flex-shrink: 0; display: inline-flex; align-items: center;">SECTION</span>
-    <span style="background: #dad7cd; color: #3a5a40; font-weight: bold; font-size: 15px; padding: 8px 16px; word-break: break-word; line-height: 1.4; display: inline-flex; align-items: center;">发现闪光日常</span>
+  <section style="display: inline-table; vertical-align: middle; border-radius: 6px; overflow: hidden; max-width: 100%; box-sizing: border-box;">
+    <section style="display: table-row;">
+      <section style="display: table-cell; vertical-align: middle; background: #a3b18a; color: #ffffff; font-weight: bold; font-size: 13px; padding: 8px 12px; letter-spacing: 0.5px; white-space: nowrap;">SECTION</section>
+      <section style="display: table-cell; vertical-align: middle; background: #dad7cd; color: #3a5a40; font-weight: bold; font-size: 15px; padding: 8px 16px; word-break: break-word; line-height: 1.4;">发现闪光日常</section>
+    </section>
   </section>
 </section>`
   },
@@ -204,9 +226,15 @@ export const materials = [
     description: '黑底金边科技光感标题，适合数码测评与 AI 前沿',
     tags: ['黑金', '科技感', '数码'],
     html: `<section style="margin: 24px 0 16px; text-align: center; clear: both;" data-material="true">
-  <section style="display: inline-flex; align-items: center; background: #0f172a; padding: 10px 18px; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0; line-height: 1.4; text-align: left; max-width: 100%; box-sizing: border-box;">
-    <span style="flex-shrink: 0; color: #f59e0b; font-size: 18px; margin-right: 8px;">⚡</span>
-    <span style="font-size: 16px; font-weight: bold; color: #f8fafc; letter-spacing: 0.5px; word-break: break-word;">GenAI 业务落地痛点</span>
+  <section style="display: inline-table; vertical-align: middle; background: #0f172a; padding: 10px 18px; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0; line-height: 1.4; text-align: left; max-width: 100%; box-sizing: border-box;">
+    <section style="display: table-row;">
+      <section style="display: table-cell; vertical-align: middle; width: 22px; line-height: 1;">
+        <span style="color: #f59e0b; font-size: 18px; display: block;">⚡</span>
+      </section>
+      <section style="display: table-cell; vertical-align: middle; padding-left: 8px;">
+        <span style="font-size: 16px; font-weight: bold; color: #f8fafc; letter-spacing: 0.5px; word-break: break-word; display: block;">GenAI 业务落地痛点</span>
+      </section>
+    </section>
   </section>
 </section>`
   },
@@ -554,16 +582,18 @@ export const headingTemplates = [
         <path d="M2 3 C10 0, 18 3, 24 13 M18 11 L24 13 L22 7" stroke="#facc15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </section>
-    <section style="display: inline-flex; align-items: center; max-width: 100%; line-height: 1.3;">
-      <section style="display: inline-block; margin-right: 8px; word-break: break-word;">
-        <span style="font-size: 18px; font-weight: 800; color: #2e8b57; letter-spacing: 1px; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; display: inline-block; word-break: break-word;">
-          ${title}
-        </span>
-        <svg width="100%" height="8" viewBox="0 0 140 8" preserveAspectRatio="none" fill="none" style="display: block; margin-top: 3px;">
-          <path d="M0 2 Q 10 7, 20 2 T 40 2 T 60 2 T 80 2 T 100 2 T 120 2 T 140 2 M0 6 Q 10 11, 20 6 T 40 6 T 60 6 T 80 6 T 100 6 T 120 6 T 140 6" stroke="#facc15" stroke-width="1.5" stroke-linecap="round"/>
-        </svg>
+    <section style="display: inline-table; vertical-align: middle; max-width: 100%; line-height: 1.3;">
+      <section style="display: table-row;">
+        <section style="display: table-cell; vertical-align: middle; padding-right: 8px; word-break: break-word;">
+          <span style="font-size: 18px; font-weight: 800; color: #2e8b57; letter-spacing: 1px; font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif; display: inline-block; word-break: break-word;">
+            ${title}
+          </span>
+          <svg width="100%" height="8" viewBox="0 0 140 8" preserveAspectRatio="none" fill="none" style="display: block; margin-top: 3px;">
+            <path d="M0 2 Q 10 7, 20 2 T 40 2 T 60 2 T 80 2 T 100 2 T 120 2 T 140 2 M0 6 Q 10 11, 20 6 T 40 6 T 60 6 T 80 6 T 100 6 T 120 6 T 140 6" stroke="#facc15" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </section>
+        <section style="display: table-cell; vertical-align: middle; width: 24px; font-size: 20px; line-height: 1;">🌿</section>
       </section>
-      <span style="flex-shrink: 0; font-size: 20px; line-height: 1;">🌿</span>
     </section>
   </section>
 </section>`;
@@ -589,14 +619,16 @@ export const headingTemplates = [
       </section>
       <span style="display: inline-block; vertical-align: bottom; font-size: 16px;">✨</span>
     </section>
-    <section style="display: inline-flex; align-items: center; max-width: 100%; line-height: 1.3;">
-      <section style="display: inline-block; margin-right: 8px; word-break: break-word;">
-        <span style="font-size: 18px; font-weight: 800; color: #be123c; letter-spacing: 0.8px; display: inline-block; word-break: break-word;">
-          ${title}
-        </span>
-        <section style="height: 3px; background: #fecdd3; border-radius: 2px; margin-top: 4px;"></section>
+    <section style="display: inline-table; vertical-align: middle; max-width: 100%; line-height: 1.3;">
+      <section style="display: table-row;">
+        <section style="display: table-cell; vertical-align: middle; padding-right: 8px; word-break: break-word;">
+          <span style="font-size: 18px; font-weight: 800; color: #be123c; letter-spacing: 0.8px; display: inline-block; word-break: break-word;">
+            ${title}
+          </span>
+          <section style="height: 3px; background: #fecdd3; border-radius: 2px; margin-top: 4px;"></section>
+        </section>
+        <section style="display: table-cell; vertical-align: middle; width: 24px; font-size: 20px; line-height: 1;">🍑</section>
       </section>
-      <span style="flex-shrink: 0; font-size: 20px; line-height: 1;">🍑</span>
     </section>
   </section>
 </section>`;
@@ -622,14 +654,16 @@ export const headingTemplates = [
       </section>
       <span style="display: inline-block; vertical-align: bottom; font-size: 16px;">🌙</span>
     </section>
-    <section style="display: inline-flex; align-items: center; max-width: 100%; line-height: 1.3;">
-      <section style="display: inline-block; margin-right: 8px; word-break: break-word;">
-        <span style="font-size: 18px; font-weight: 800; color: #5b21b6; letter-spacing: 0.8px; display: inline-block; word-break: break-word;">
-          ${title}
-        </span>
-        <section style="height: 3px; background: #ddd6fe; border-radius: 2px; margin-top: 4px;"></section>
+    <section style="display: inline-table; vertical-align: middle; max-width: 100%; line-height: 1.3;">
+      <section style="display: table-row;">
+        <section style="display: table-cell; vertical-align: middle; padding-right: 8px; word-break: break-word;">
+          <span style="font-size: 18px; font-weight: 800; color: #5b21b6; letter-spacing: 0.8px; display: inline-block; word-break: break-word;">
+            ${title}
+          </span>
+          <section style="height: 3px; background: #ddd6fe; border-radius: 2px; margin-top: 4px;"></section>
+        </section>
+        <section style="display: table-cell; vertical-align: middle; width: 24px; font-size: 20px; line-height: 1;">🍇</section>
       </section>
-      <span style="flex-shrink: 0; font-size: 20px; line-height: 1;">🍇</span>
     </section>
   </section>
 </section>`;
@@ -647,9 +681,15 @@ export const headingTemplates = [
     render: (title, index) => {
       const indexPadded = String(index).padStart(2, '0');
       return `<section style="margin: 24px 0 16px; text-align: center; clear: both;" data-material="true">
-  <section style="display: inline-flex; align-items: center; text-align: left; max-width: 100%; box-sizing: border-box;">
-    <section style="flex-shrink: 0; background: #2563eb; color: #ffffff; font-size: 15px; font-weight: 800; width: 34px; height: 34px; line-height: 34px; text-align: center; border-radius: 50%; margin-right: 12px; -webkit-box-shadow: 0 4px 10px rgba(37,99,235,0.3); box-shadow: 0 4px 10px rgba(37,99,235,0.3);">${indexPadded}</section>
-    <span style="font-size: 17px; font-weight: 700; color: #1e293b; letter-spacing: 0.5px; line-height: 1.4; word-break: break-word;">${title}</span>
+  <section style="display: inline-table; vertical-align: middle; text-align: left; max-width: 100%; box-sizing: border-box;">
+    <section style="display: table-row;">
+      <section style="display: table-cell; vertical-align: middle; width: 34px; line-height: 1;">
+        <section style="background: #2563eb; color: #ffffff; font-size: 15px; font-weight: 800; width: 34px; height: 34px; line-height: 34px; text-align: center; border-radius: 50%; -webkit-box-shadow: 0 4px 10px rgba(37,99,235,0.3); box-shadow: 0 4px 10px rgba(37,99,235,0.3);">${indexPadded}</section>
+      </section>
+      <section style="display: table-cell; vertical-align: middle; padding-left: 12px;">
+        <span style="font-size: 17px; font-weight: 700; color: #1e293b; letter-spacing: 0.5px; line-height: 1.4; word-break: break-word; display: block;">${title}</span>
+      </section>
+    </section>
   </section>
 </section>`;
     }
@@ -665,9 +705,15 @@ export const headingTemplates = [
     previewHtml: `<div style="background:#fef08a;padding:4px 8px;border-radius:4px;box-shadow:2px 2px 0 #f59e0b;font-size:12px;font-weight:800;color:#78350f;">打造高转化率结构</div>`,
     render: (title) => {
       return `<section style="margin: 24px 0 16px; text-align: center; clear: both;" data-material="true">
-  <section style="display: inline-flex; align-items: center; background: #fef08a; padding: 8px 16px 8px 12px; border-radius: 6px; -webkit-box-shadow: 3px 3px 0px #f59e0b; box-shadow: 3px 3px 0px #f59e0b; max-width: 100%; box-sizing: border-box; text-align: left;">
-    <span style="flex-shrink: 0; width: 8px; height: 18px; background: #d97706; border-radius: 2px; margin-right: 8px; display: inline-block;"></span>
-    <span style="font-size: 16px; font-weight: 800; color: #78350f; line-height: 1.4; word-break: break-word;">${title}</span>
+  <section style="display: inline-table; vertical-align: middle; background: #fef08a; padding: 8px 16px 8px 12px; border-radius: 6px; -webkit-box-shadow: 3px 3px 0px #f59e0b; box-shadow: 3px 3px 0px #f59e0b; max-width: 100%; box-sizing: border-box; text-align: left;">
+    <section style="display: table-row;">
+      <section style="display: table-cell; vertical-align: middle; width: 8px; line-height: 1;">
+        <span style="width: 8px; height: 18px; background: #d97706; border-radius: 2px; display: block;"></span>
+      </section>
+      <section style="display: table-cell; vertical-align: middle; padding-left: 8px;">
+        <span style="font-size: 16px; font-weight: 800; color: #78350f; line-height: 1.4; word-break: break-word; display: block;">${title}</span>
+      </section>
+    </section>
   </section>
 </section>`;
     }
@@ -684,13 +730,15 @@ export const headingTemplates = [
     render: (title, index) => {
       const indexPadded = String(index).padStart(2, '0');
       return `<section style="margin: 24px 0 16px; text-align: center; clear: both;" data-material="true">
-  <section style="display: inline-flex; align-items: center; text-align: left; max-width: 100%; box-sizing: border-box;">
-    <section style="flex-shrink: 0; background: #10b981; color: #ffffff; font-weight: bold; font-size: 16px; width: 36px; height: 32px; line-height: 32px; text-align: center; border-radius: 8px; -webkit-box-shadow: 3px 3px 0px #047857; box-shadow: 3px 3px 0px #047857; margin-right: 10px;">
-      ${indexPadded}
+  <section style="display: inline-table; vertical-align: middle; text-align: left; max-width: 100%; box-sizing: border-box;">
+    <section style="display: table-row;">
+      <section style="display: table-cell; vertical-align: middle; width: 36px; line-height: 1;">
+        <section style="background: #10b981; color: #ffffff; font-weight: bold; font-size: 16px; width: 36px; height: 32px; line-height: 32px; text-align: center; border-radius: 8px; -webkit-box-shadow: 3px 3px 0px #047857; box-shadow: 3px 3px 0px #047857;">${indexPadded}</section>
+      </section>
+      <section style="display: table-cell; vertical-align: middle; padding-left: 10px;">
+        <span style="font-size: 17px; font-weight: bold; color: #064e3b; letter-spacing: 0.5px; line-height: 1.4; word-break: break-word; display: block;">${title}</span>
+      </section>
     </section>
-    <span style="font-size: 17px; font-weight: bold; color: #064e3b; letter-spacing: 0.5px; line-height: 1.4; word-break: break-word;">
-      ${title}
-    </span>
   </section>
 </section>`;
     }
@@ -707,9 +755,11 @@ export const headingTemplates = [
     render: (title, index, options = {}) => {
       const prefix = options.prefix || 'SECTION';
       return `<section style="margin: 22px 0 14px; text-align: center; clear: both;" data-material="true">
-  <section style="display: inline-flex; align-items: stretch; border-radius: 6px; overflow: hidden; max-width: 100%; box-sizing: border-box;">
-    <span style="background: #a3b18a; color: #ffffff; font-weight: bold; font-size: 13px; padding: 8px 12px; letter-spacing: 0.5px; flex-shrink: 0; display: inline-flex; align-items: center;">${prefix}</span>
-    <span style="background: #dad7cd; color: #3a5a40; font-weight: bold; font-size: 15px; padding: 8px 16px; word-break: break-word; line-height: 1.4; display: inline-flex; align-items: center;">${title}</span>
+  <section style="display: inline-table; vertical-align: middle; border-radius: 6px; overflow: hidden; max-width: 100%; box-sizing: border-box;">
+    <section style="display: table-row;">
+      <section style="display: table-cell; vertical-align: middle; background: #a3b18a; color: #ffffff; font-weight: bold; font-size: 13px; padding: 8px 12px; letter-spacing: 0.5px; white-space: nowrap;">${prefix}</section>
+      <section style="display: table-cell; vertical-align: middle; background: #dad7cd; color: #3a5a40; font-weight: bold; font-size: 15px; padding: 8px 16px; word-break: break-word; line-height: 1.4;">${title}</section>
+    </section>
   </section>
 </section>`;
     }
@@ -759,9 +809,15 @@ export const headingTemplates = [
     previewHtml: `<div style="background:#0f172a;padding:3px 8px;border-left:3px solid #f59e0b;color:#f8fafc;font-size:11px;font-weight:bold;">⚡ GenAI 业务落地痛点</div>`,
     render: (title) => {
       return `<section style="margin: 24px 0 16px; text-align: center; clear: both;" data-material="true">
-  <section style="display: inline-flex; align-items: center; background: #0f172a; padding: 10px 18px; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0; line-height: 1.4; text-align: left; max-width: 100%; box-sizing: border-box;">
-    <span style="flex-shrink: 0; color: #f59e0b; font-size: 18px; margin-right: 8px;">⚡</span>
-    <span style="font-size: 16px; font-weight: bold; color: #f8fafc; letter-spacing: 0.5px; word-break: break-word;">${title}</span>
+  <section style="display: inline-table; vertical-align: middle; background: #0f172a; padding: 10px 18px; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0; line-height: 1.4; text-align: left; max-width: 100%; box-sizing: border-box;">
+    <section style="display: table-row;">
+      <section style="display: table-cell; vertical-align: middle; width: 22px; line-height: 1;">
+        <span style="color: #f59e0b; font-size: 18px; display: block;">⚡</span>
+      </section>
+      <section style="display: table-cell; vertical-align: middle; padding-left: 8px;">
+        <span style="font-size: 16px; font-weight: bold; color: #f8fafc; letter-spacing: 0.5px; word-break: break-word; display: block;">${title}</span>
+      </section>
+    </section>
   </section>
 </section>`;
     }
@@ -779,9 +835,15 @@ export const headingTemplates = [
     render: (title, index) => {
       const indexPadded = String(index).padStart(2, '0');
       return `<section style="margin: 18px 0 10px; text-align: left; clear: both;" data-material="true">
-  <section style="display: inline-flex; align-items: center; max-width: 100%;">
-    <span style="flex-shrink: 0; background: #2563eb; color: #ffffff; font-size: 12px; font-weight: 700; padding: 2px 7px; border-radius: 4px; margin-right: 8px;">${indexPadded}</span>
-    <span style="font-size: 15px; font-weight: 700; color: #1e293b; line-height: 1.4;">${title}</span>
+  <section style="display: inline-table; vertical-align: middle; max-width: 100%;">
+    <section style="display: table-row;">
+      <section style="display: table-cell; vertical-align: middle; line-height: 1;">
+        <span style="background: #2563eb; color: #ffffff; font-size: 12px; font-weight: 700; padding: 2px 7px; border-radius: 4px; display: inline-block;">${indexPadded}</span>
+      </section>
+      <section style="display: table-cell; vertical-align: middle; padding-left: 8px;">
+        <span style="font-size: 15px; font-weight: 700; color: #1e293b; line-height: 1.4; display: block;">${title}</span>
+      </section>
+    </section>
   </section>
 </section>`;
     }
@@ -797,10 +859,14 @@ export const headingTemplates = [
     previewHtml: `<div style="font-size:12px;font-weight:bold;color:#15803d;display:flex;align-items:center;gap:4px;"><span>🌱</span><span>关键设计原则</span></div>`,
     render: (title) => {
       return `<section style="margin: 18px 0 10px; text-align: left; clear: both;" data-material="true">
-  <div style="font-size: 15px; font-weight: 700; color: #15803d; display: inline-flex; align-items: center; gap: 6px; border-bottom: 2px solid #86efac; padding-bottom: 2px;">
-    <span>🌱</span>
-    <span>${title}</span>
-  </div>
+  <section style="display: inline-table; vertical-align: middle; border-bottom: 2px solid #86efac; padding-bottom: 2px;">
+    <section style="display: table-row;">
+      <section style="display: table-cell; vertical-align: middle; width: 22px; font-size: 15px;">🌱</section>
+      <section style="display: table-cell; vertical-align: middle; padding-left: 4px;">
+        <span style="font-size: 15px; font-weight: 700; color: #15803d; display: block;">${title}</span>
+      </section>
+    </section>
+  </section>
 </section>`;
     }
   }
@@ -941,9 +1007,11 @@ export const dividerTemplates = [
     tag: '135爆款',
     styleCategory: 'fresh',
     previewHtml: `<div style="color: #94a3b8; font-size: 12px;">✂️ ------------------</div>`,
-    render: () => `<section data-material="true" style="margin: 26px auto; color: #94a3b8; font-size: 14px; line-height: 1; display: flex; align-items: center; width: 100%; box-sizing: border-box;">
-  <span style="flex-shrink: 0; margin-right: 8px;">✂️</span>
-  <section style="flex: 1; border-top: 2px dashed #cbd5e1; height: 0;"></section>
+    render: () => `<section data-material="true" style="margin: 26px auto; color: #94a3b8; font-size: 14px; line-height: 1; display: table; width: 100%; box-sizing: border-box;">
+  <section style="display: table-row;">
+    <section style="display: table-cell; vertical-align: middle; width: 24px; padding-right: 8px;">✂️</section>
+    <section style="display: table-cell; vertical-align: middle; border-top: 2px dashed #cbd5e1; height: 0; width: 100%;"></section>
+  </section>
 </section>`
   },
   {
@@ -999,9 +1067,13 @@ export const listTemplates = [
     hasAutoNumber: true,
     previewHtml: `<div style="font-size:12px;display:flex;flex-direction:column;gap:3px;"><div style="display:flex;gap:4px;"><span style="background:#2563eb;color:#fff;border-radius:50%;width:14px;height:14px;font-size:9px;display:inline-flex;align-items:center;justify-content:center;">1</span><span>第一步方案</span></div><div style="display:flex;gap:4px;"><span style="background:#2563eb;color:#fff;border-radius:50%;width:14px;height:14px;font-size:9px;display:inline-flex;align-items:center;justify-content:center;">2</span><span>第二步实施</span></div></div>`,
     render: (itemHtml, index) => {
-      return `<li style="list-style: none; margin-bottom: 10px; display: flex; align-items: flex-start;" data-material="true">
-  <span style="flex-shrink: 0; background: #2563eb; color: #ffffff; font-size: 12px; font-weight: 700; width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 50%; margin-right: 10px; margin-top: 2px;">${index}</span>
-  <div style="flex: 1; font-size: 15px; line-height: 1.7; color: #334155; word-break: break-word;">${itemHtml}</div>
+      return `<li style="list-style: none; margin-bottom: 10px; display: table; width: 100%;" data-material="true">
+  <section style="display: table-row;">
+    <section style="display: table-cell; vertical-align: top; width: 32px; line-height: 1;">
+      <span style="background: #2563eb; color: #ffffff; font-size: 12px; font-weight: 700; width: 22px; height: 22px; line-height: 22px; text-align: center; border-radius: 50%; display: inline-block;">${index}</span>
+    </section>
+    <section style="display: table-cell; vertical-align: top; font-size: 15px; line-height: 1.7; color: #334155; word-break: break-word;">${itemHtml}</section>
+  </section>
 </li>`;
     }
   },
@@ -1013,9 +1085,11 @@ export const listTemplates = [
     styleCategory: 'fresh',
     previewHtml: `<div style="font-size:12px;color:#15803d;">🌱 核心要点清单一<br/>🌱 核心要点清单二</div>`,
     render: (itemHtml) => {
-      return `<li style="list-style: none; margin-bottom: 10px; display: flex; align-items: flex-start;" data-material="true">
-  <span style="flex-shrink: 0; font-size: 16px; margin-right: 8px; line-height: 1.6;">🌱</span>
-  <div style="flex: 1; font-size: 15px; line-height: 1.7; color: #2b2b2b; word-break: break-word;">${itemHtml}</div>
+      return `<li style="list-style: none; margin-bottom: 10px; display: table; width: 100%;" data-material="true">
+  <section style="display: table-row;">
+    <section style="display: table-cell; vertical-align: top; width: 24px; font-size: 16px; line-height: 1.6;">🌱</section>
+    <section style="display: table-cell; vertical-align: top; font-size: 15px; line-height: 1.7; color: #2b2b2b; word-break: break-word;">${itemHtml}</section>
+  </section>
 </li>`;
     }
   },
@@ -1027,9 +1101,11 @@ export const listTemplates = [
     styleCategory: 'fresh',
     previewHtml: `<div style="font-size:12px;color:#065f46;background:#ecfdf5;padding:3px 6px;border-radius:4px;">✅ 已完成测试项</div>`,
     render: (itemHtml) => {
-      return `<li style="list-style: none; margin-bottom: 8px; padding: 8px 12px; background: #f8fafc; border-left: 3px solid #10b981; border-radius: 0 6px 6px 0; display: flex; align-items: center;" data-material="true">
-  <span style="flex-shrink: 0; font-size: 14px; margin-right: 8px;">✅</span>
-  <div style="flex: 1; font-size: 14.5px; color: #334155; word-break: break-word;">${itemHtml}</div>
+      return `<li style="list-style: none; margin-bottom: 8px; padding: 8px 12px; background: #f8fafc; border-left: 3px solid #10b981; border-radius: 0 6px 6px 0; display: table; width: 100%; box-sizing: border-box;" data-material="true">
+  <section style="display: table-row;">
+    <section style="display: table-cell; vertical-align: middle; width: 24px; font-size: 14px; line-height: 1;">✅</section>
+    <section style="display: table-cell; vertical-align: middle; font-size: 14.5px; color: #334155; word-break: break-word;">${itemHtml}</section>
+  </section>
 </li>`;
     }
   }

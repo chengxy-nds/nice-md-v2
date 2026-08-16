@@ -22,13 +22,13 @@ import { allMaterialTemplatesMap } from './materialLibrary';
 function isMaterialEl(el) {
   if (!el || el.nodeType !== 1) return false;
   try {
-    if (el.getAttribute && (el.getAttribute('data-material') === 'true' || el.hasAttribute('data-material'))) {
+    if (el.getAttribute && (el.getAttribute('data-material') === 'true' || el.hasAttribute('data-material') || el.getAttribute('data-code-block') === 'true')) {
       return true;
     }
-    if (el.classList && el.classList.contains('material-block')) {
+    if (el.classList && (el.classList.contains('material-block') || el.classList.contains('code-snippet__fix'))) {
       return true;
     }
-    if (el.closest && el.closest('[data-material="true"], [data-material], .material-block, [data-heading][data-material="true"]')) {
+    if (el.closest && el.closest('[data-material="true"], [data-material], .material-block, [data-heading][data-material="true"], [data-code-block="true"], .code-snippet__fix')) {
       return true;
     }
   } catch (e) {}
@@ -39,9 +39,10 @@ export function cleanCss(css) {
   return (css || '').replace(/;+/g, ';').replace(/\s+/g, ' ').trim();
 }
 
-export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', codeThemeId = 'atom-one-dark', customCss = '', customStyles = null, livePreviewEl = null) {
-  const codeTheme = codeThemes.find(t => t.id === codeThemeId) || codeThemes[0];
-  const codeStyles = codeTheme.styles;
+export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', codeThemeId = 'mdnice-classic', customCss = '', customStyles = null, livePreviewEl = null) {
+  const effectiveCodeThemeId = customStyles?.code?.codeThemeId || codeThemeId || 'mdnice-classic';
+  const codeTheme = codeThemes.find(t => t.id === effectiveCodeThemeId) || codeThemes.find(t => t.id === codeThemeId) || codeThemes[0];
+  const codeStyles = (codeTheme && codeTheme.styles) ? codeTheme.styles : {};
   const theme = themes.find(t => t.id === themeId) || themes[0];
   const themeStyles = theme.styles;
 
@@ -555,22 +556,42 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     text-decoration: none;
   `);
 
-  // 7. Inline Codes
-  styleEl('code', wechatTypo.code || `
-    font-family: "SF Mono", Consolas, Monaco, Menlo, monospace;
-    font-size: 14px;
-    color: ${colors.codeText || '#bb2243'};
-    background-color: ${colors.codeBg || 'rgba(27, 31, 35, 0.05)'};
-    padding: 2px 4px;
-    border-radius: 4px;
-    display: inline;
-    word-break: break-word;
-  `);
+  // 7. Inline Codes (Strictly isolated: ONLY target inline <code>, never code inside <pre>)
+  const inlineCodeColor = customStyles?.code?.color || colors.codeTextTheme || colors.codeText || '#bb2243';
+  const inlineCodeBg = customStyles?.code?.backgroundColor || colors.codeBg || 'rgba(27, 31, 35, 0.05)';
+  root.querySelectorAll('code').forEach(codeEl => {
+    if (codeEl.closest('pre') || isMaterialEl(codeEl)) return;
+    const existing = codeEl.getAttribute('style') || '';
+    const inlineStyle = cleanCss(`
+      font-family: "SF Mono", Consolas, Monaco, Menlo, monospace;
+      font-size: 14px;
+      color: ${inlineCodeColor};
+      background-color: ${inlineCodeBg};
+      padding: 2px 5px;
+      border-radius: 4px;
+      display: inline;
+      word-break: break-word;
+    `);
+    codeEl.setAttribute('style', existing ? existing + '; ' + inlineStyle : inlineStyle);
+  });
 
-  // 8. Code Blocks (Atomic <pre class="custom"> with non-breaking spaces, <br> linebreaks, and -webkit-box)
+  // 8. Code Blocks (Strictly isolated: styled according to selected codeTheme, with resilient section wrapper for WeChat MP)
+  const isMacStyle = customStyles?.code?.macStyle !== false;
+  const showCodeLang = customStyles?.code?.showLang === true;
+  const codeFontSize = customStyles?.code?.fontSize || '13.5px';
+  const codeLineHeight = customStyles?.code?.lineHeight || '1.7';
+  const codeLetterSpacing = customStyles?.code?.letterSpacing || '0px';
+  const codeFontFamily = customStyles?.code?.fontFamily || 'Consolas, Monaco, Menlo, "Courier New", Courier, monospace';
+
+  // Strictly isolate code block background & text from inline code colors; Mac topbar matches code background seamlessly
+  const codeBg = customStyles?.pre?.backgroundColor || codeStyles.bg || '#282c34';
+  const codeText = customStyles?.pre?.color || codeStyles.text || '#abb2bf';
+  const macBg = codeBg; // Keep 100% unified background color to eliminate visual seams
+  const macText = codeStyles.macText || '#7f848e';
+
   root.querySelectorAll('pre').forEach(pre => {
-    // Extract language name from class
-    let langName = 'Code';
+    // Extract language name from code class or data-lang
+    let langName = '';
     const codeTag = pre.querySelector('code');
     if (codeTag) {
       const match = codeTag.className.match(/(?:language|lang)-(\w+)/);
@@ -578,69 +599,127 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         langName = match[1].toUpperCase();
       }
     }
+    if (!langName && pre.getAttribute('data-lang')) {
+      langName = (pre.getAttribute('data-lang') || '').toUpperCase();
+    }
+    if (langName === 'TEXT') {
+      langName = '';
+    }
 
-    // 1. Configure the pre container
-    pre.className = 'custom';
-    pre.setAttribute('data-tool', 'NiceMD编辑器');
-    pre.setAttribute('style', cleanCss(`
-      border-radius: 5px;
-      box-shadow: rgba(0, 0, 0, 0.55) 0px 2px 10px;
-      text-align: left;
-      margin: 14px 0;
-      padding: 0;
-      background-color: ${codeStyles.macBg || codeStyles.bg || '#282c34'};
+    // 1. Outer section container - prevents WeChat UEditor from stripping code block styles
+    const wrapper = doc.createElement('section');
+    wrapper.className = 'code-snippet__fix custom';
+    wrapper.setAttribute('data-code-block', 'true');
+    wrapper.setAttribute('data-material', 'true');
+    wrapper.setAttribute('data-tool', 'mdnice编辑器');
+    wrapper.setAttribute('data-website', 'https://www.mdnice.com');
+    wrapper.setAttribute('style', cleanCss(`
+      margin-top: 16px;
+      margin-bottom: 16px;
+      margin-left: 0px;
+      margin-right: 0px;
+      padding-top: 0px;
+      padding-bottom: 0px;
+      padding-left: 0px;
+      padding-right: 0px;
+      border-radius: 8px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.06);
+      border: 1px solid rgba(0, 0, 0, 0.08);
+      background-color: ${codeBg};
+      overflow: hidden;
       display: block;
       width: 100% !important;
       max-width: 100% !important;
       box-sizing: border-box !important;
+      text-align: left;
     `));
 
-    // 2. Create the Mac terminal dots header
-    const dotsSvg = 'data:image/svg+xml,' + encodeURIComponent(
-      '<svg xmlns="http://www.w3.org/2000/svg" x="0px" y="0px" width="450px" height="130px">' +
-      '<ellipse cx="65" cy="65" rx="50" ry="52" stroke="#dc3c36" stroke-width="2" fill="#ed6c60"/>' +
-      '<ellipse cx="225" cy="65" rx="50" ry="52" stroke="#da9721" stroke-width="2" fill="#f7c151"/>' +
-      '<ellipse cx="385" cy="65" rx="50" ry="52" stroke="#1ba125" stroke-width="2" fill="#64c856"/>' +
-      '</svg>');
+    // 2. Mac terminal 3-dots header
+    if (isMacStyle) {
+      const header = doc.createElement('section');
+      header.setAttribute('style', cleanCss(`
+        display: block;
+        height: 36px;
+        background-color: ${codeBg};
+        padding: 0 16px;
+        line-height: 36px;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        box-sizing: border-box;
+        overflow: hidden;
+        text-align: left;
+      `));
+      
+      const langSpan = (showCodeLang && langName) 
+        ? `<span style="display: block; float: right; font-size: 11px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: ${macText}; text-transform: uppercase; letter-spacing: 0.05em; line-height: 36px;">${langName}</span>`
+        : '';
 
-    const header = doc.createElement('span');
-    header.setAttribute('style', cleanCss(`
-      display: block;
-      background-image: url("${dotsSvg}");
-      height: 30px;
-      width: 100%;
-      background-size: 40px;
-      background-repeat: no-repeat;
-      background-color: ${codeStyles.macBg || codeStyles.bg || '#282c34'};
-      margin-bottom: -7px;
-      border-radius: 5px 5px 0 0;
-      background-position: 10px 10px;
-      padding: 0 14px;
+      header.innerHTML = `
+        <span style="display: inline-block; vertical-align: middle; line-height: 0; font-size: 0;">
+          <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: #ff5f56; margin-right: 8px; vertical-align: middle;"></span>
+          <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: #ffbd2e; margin-right: 8px; vertical-align: middle;"></span>
+          <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: #27c93f; vertical-align: middle;"></span>
+        </span>
+        ${langSpan}
+      `;
+      wrapper.appendChild(header);
+    } else if (showCodeLang && langName) {
+      // If not Mac style but showCodeLang is enabled, render a subtle top-right badge
+      const header = doc.createElement('section');
+      header.setAttribute('style', cleanCss(`
+        display: block;
+        height: 26px;
+        background-color: ${codeBg};
+        padding: 0 14px;
+        line-height: 26px;
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        box-sizing: border-box;
+        overflow: hidden;
+        text-align: right;
+      `));
+      header.innerHTML = `<span style="font-size: 10px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: ${macText}; text-transform: uppercase; letter-spacing: 0.05em;">${langName}</span>`;
+      wrapper.appendChild(header);
+    }
+
+    // 3. Create clean pre element
+    const preNew = doc.createElement('pre');
+    preNew.className = 'custom';
+    preNew.setAttribute('style', cleanCss(`
+      margin: 0;
+      padding: ${isMacStyle ? '8px 18px 16px 18px' : '16px 18px'};
+      background-color: ${codeBg};
+      border-radius: ${isMacStyle ? '0 0 8px 8px' : '8px'};
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
       box-sizing: border-box;
+      display: block;
+      width: 100%;
+      text-align: left;
+      white-space: pre;
+      word-wrap: normal;
     `));
-    header.innerHTML = `
-      <span style="display: block; float: right; line-height: 30px; color: ${codeStyles.macText || '#5c6370'}; font-family: -apple-system-font, sans-serif; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">${langName}</span>
-    `;
 
-    // 3. Create the code element with display: -webkit-box for WeChat UEditor atomic line preservation
+    // 4. Create code element with highlight styles
     const codeTagNew = doc.createElement('code');
     codeTagNew.className = 'hljs';
     codeTagNew.setAttribute('style', cleanCss(`
-      overflow-x: auto;
-      padding: 16px;
-      padding-top: 15px;
-      color: ${codeStyles.text || '#abb2bf'};
-      background: ${codeStyles.bg || '#282c34'};
-      border-radius: 5px;
-      display: -webkit-box;
-      font-family: Consolas, Monaco, Menlo, monospace;
-      font-size: 12.5px;
-      line-height: 26px;
-      width: 100%;
+      display: block;
+      background: transparent;
+      color: ${codeText};
+      font-family: ${codeFontFamily};
+      font-size: ${codeFontSize};
+      line-height: ${codeLineHeight};
+      letter-spacing: ${codeLetterSpacing};
+      white-space: pre;
+      word-break: normal;
       box-sizing: border-box;
+      padding: 0;
+      margin: 0;
+      border-radius: 0;
     `));
 
-    // Copy the children of code tag (which has highlight.js markup) to the new code tag
+    // Copy children from original code tag
     if (codeTag) {
       while (codeTag.firstChild) {
         codeTagNew.appendChild(codeTag.firstChild);
@@ -651,63 +730,55 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
       }
     }
 
-    // 4. Transform text nodes: convert all '\n' into <br> and all spaces into non-breaking spaces (\u00a0)
-    // This makes the code immune to WeChat UEditor whitespace collapsing and arbitrary paragraph wrapping!
+    // 5. Transform text nodes: convert multi-spaces to non-breaking spaces (\u00a0) to preserve indentation in WeChat
     const processNode = (node) => {
       if (node.nodeType === 3) {
-        const raw = (node.nodeValue || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
-        if (raw.includes('\n')) {
-          const parts = raw.split('\n');
-          const frag = doc.createDocumentFragment();
-          for (let i = 0; i < parts.length; i++) {
-            if (i > 0) {
-              frag.appendChild(doc.createElement('br'));
-            }
-            if (parts[i].length > 0) {
-              frag.appendChild(doc.createTextNode(parts[i].replace(/ /g, '\u00a0')));
-            }
-          }
-          node.parentNode.replaceChild(frag, node);
-        } else {
-          node.nodeValue = raw.replace(/ /g, '\u00a0');
-        }
+        const raw = node.nodeValue || '';
+        // Replace leading/multiple spaces with non-breaking spaces
+        node.nodeValue = raw.replace(/ {2,}/g, match => '\u00a0'.repeat(match.length));
       } else if (node.nodeType === 1) {
         Array.from(node.childNodes).forEach(child => processNode(child));
       }
     };
     Array.from(codeTagNew.childNodes).forEach(child => processNode(child));
 
-    // 5. Inline highlight.js styles inside code block with explicit line-height: 26px
-    const styleSpan = (selector, styleStr) => {
-      codeTagNew.querySelectorAll(selector).forEach(el => {
-        const existing = el.getAttribute('style') || '';
-        el.setAttribute('style', cleanCss(`${existing}; ${styleStr}`));
+    // 6. Inline highlight.js token syntax colors with explicit font inherit
+    const styleSpan = (selectors, styleStr) => {
+      selectors.forEach(sel => {
+        try {
+          codeTagNew.querySelectorAll(sel).forEach(el => {
+            const existing = el.getAttribute('style') || '';
+            el.setAttribute('style', cleanCss(`${existing}; ${styleStr}`));
+          });
+        } catch (e) {}
       });
     };
-    
-    // Set line-height on all spans to maintain uniform baseline
+
+    styleSpan(['.hljs-keyword', '.hljs-selector-tag', '.hljs-tag', '.hljs-name'], `color: ${codeStyles.keyword || '#c678dd'}; font-weight: bold;`);
+    styleSpan(['.hljs-string', '.hljs-regexp', '.hljs-addition', '.hljs-attribute', '.hljs-template-variable', '.hljs-symbol'], `color: ${codeStyles.string || '#98c379'};`);
+    styleSpan(['.hljs-number', '.hljs-literal'], `color: ${codeStyles.number || codeStyles.literal || '#d19a66'};`);
+    styleSpan(['.hljs-type', '.hljs-built_in', '.hljs-class', '.hljs-title.class_'], `color: ${codeStyles.builtIn || codeStyles.type || codeStyles.title || '#e6c07b'};`);
+    styleSpan(['.hljs-title', '.hljs-function', '.hljs-section', '.hljs-title.function_'], `color: ${codeStyles.title || '#61aeee'};`);
+    styleSpan(['.hljs-attr', '.hljs-property'], `color: ${codeStyles.attr || codeStyles.property || '#d19a66'};`);
+    styleSpan(['.hljs-comment', '.hljs-quote', '.hljs-deletion', '.hljs-doctag'], `color: ${codeStyles.comment || '#7f848e'}; font-style: italic;`);
+    styleSpan(['.hljs-meta', '.hljs-operator', '.hljs-punctuation'], `color: ${codeStyles.meta || codeStyles.operator || '#56b6c2'};`);
+    styleSpan(['.hljs-variable', '.hljs-params', '.hljs-subst', '.hljs-variable.language_'], `color: ${codeStyles.variable || codeStyles.property || '#abb2bf'};`);
+    styleSpan(['.hljs-bullet'], `color: ${codeStyles.string || '#98c379'};`);
+    styleSpan(['.hljs-emphasis'], `font-style: italic;`);
+    styleSpan(['.hljs-strong'], `font-weight: bold;`);
+
+    // Ensure all span tags in code maintain baseline and font inheritance
     codeTagNew.querySelectorAll('span').forEach(span => {
-      span.style.lineHeight = '26px';
+      const s = span.getAttribute('style') || '';
+      span.setAttribute('style', cleanCss(`${s}; font-family: inherit; font-size: inherit; line-height: inherit; display: inline;`));
     });
 
-    styleSpan('.hljs-keyword, .hljs-selector-tag', `color: ${codeStyles.keyword || '#c678dd'}; font-weight: bold; line-height: 26px;`);
-    styleSpan('.hljs-string, .hljs-regexp, .hljs-addition, .hljs-attribute, .hljs-template-variable', `color: ${codeStyles.string || '#98c379'}; line-height: 26px;`);
-    styleSpan('.hljs-number, .hljs-literal', `color: ${codeStyles.number || '#d19a66'}; line-height: 26px;`);
-    styleSpan('.hljs-type, .hljs-built_in, .hljs-class', `color: ${codeStyles.type || '#e5c07b'}; line-height: 26px;`);
-    styleSpan('.hljs-title, .hljs-function, .hljs-section', `color: ${codeStyles.title || '#61afef'}; line-height: 26px;`);
-    styleSpan('.hljs-attr', `color: ${codeStyles.attr || '#d19a66'}; line-height: 26px;`);
-    styleSpan('.hljs-comment, .hljs-quote', `color: ${codeStyles.comment || '#7f848e'}; font-style: italic; line-height: 26px;`);
-    styleSpan('.hljs-meta, .hljs-operator, .hljs-symbol', `color: ${codeStyles.meta || '#56b6c2'}; line-height: 26px;`);
-    styleSpan('.hljs-property, .hljs-variable, .hljs-params, .hljs-subst, .hljs-tag', `color: ${codeStyles.property || codeStyles.text || '#abb2bf'}; line-height: 26px;`);
-    styleSpan('.hljs-bullet', `color: ${codeStyles.string || '#98c379'}; line-height: 26px;`);
-    styleSpan('.hljs-emphasis', `font-style: italic; line-height: 26px;`);
-    styleSpan('.hljs-strong', `font-weight: bold; line-height: 26px;`);
-    styleSpan('.hljs-name', `color: ${codeStyles.keyword || '#e06c75'}; font-weight: bold; line-height: 26px;`);
+    preNew.appendChild(codeTagNew);
+    wrapper.appendChild(preNew);
 
-    // 6. Assemble inside <pre class="custom">
-    pre.innerHTML = '';
-    pre.appendChild(header);
-    pre.appendChild(codeTagNew);
+    if (pre.parentNode) {
+      pre.parentNode.replaceChild(wrapper, pre);
+    }
   });
 
   // 9. Tables (wrapped in overflow container with zebra striping and explicit cell alignment)
@@ -1718,10 +1789,11 @@ export function previewDomToWechatHtml(previewEl, primaryColor) {
  * Copies styled HTML + fallback plain text to user clipboard.
  * When `previewEl` is provided, uses WYSIWYG computed-style path.
  */
-export async function copyToWeChat(htmlContent, plainText, themeId = 'classic-indigo', codeThemeId = 'atom-one-dark', customCss = '', customStyles = null, livePreviewEl = null) {
+export async function copyToWeChat(htmlContent, plainText, themeId = 'classic-indigo', codeThemeId = 'mdnice-classic', customCss = '', customStyles = null, livePreviewEl = null) {
   // Always use the bulletproof compileToWeChatHtml engine to ensure zero negative margins,
   // zero floats, zero layout collisions, and 100% WeChat MP Editor compatibility.
-  const finalHtml = compileToWeChatHtml(htmlContent, themeId, codeThemeId, customCss, customStyles, livePreviewEl);
+  const effectiveCodeThemeId = customStyles?.code?.codeThemeId || codeThemeId || 'mdnice-classic';
+  const finalHtml = compileToWeChatHtml(htmlContent, themeId, effectiveCodeThemeId, customCss, customStyles, livePreviewEl);
 
   const htmlBlob = new Blob([finalHtml], { type: 'text/html' });
   const textBlob = new Blob([plainText], { type: 'text/plain' });
