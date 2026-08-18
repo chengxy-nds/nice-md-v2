@@ -561,7 +561,24 @@ watch(isOpenDraftsAfterSync, (val) => {
   } catch (e) {}
 });
 
+const resetPlatformSyncStatuses = () => {
+  platforms.value.forEach(p => {
+    p.status = 'idle';
+    p.progress = 0;
+    p.syncMessage = '';
+  });
+  isFinished.value = false;
+};
+
+watch(() => props.isOpen, (newVal) => {
+  if (newVal) {
+    resetPlatformSyncStatuses();
+    checkAllLogins();
+  }
+});
+
 const checkAllLogins = () => {
+  resetPlatformSyncStatuses();
   if (!isExtensionInstalled.value) {
     return;
   }
@@ -672,6 +689,21 @@ const publishPlatform = (plat, title, targetHtml) => {
   });
 };
 
+const countArticleImages = (markdown, html) => {
+  const mdMatches = (markdown || '').match(/!\[.*?\]\((https?:\/\/[^\s\)]+)\)/g) || [];
+  const htmlMatches = (html || '').match(/<img[^>]+src="([^"]+)"/gi) || [];
+  const uniqueImages = new Set();
+  mdMatches.forEach(m => {
+    const srcMatch = m.match(/\((https?:\/\/[^\s\)]+)\)/);
+    if (srcMatch && !srcMatch[1].startsWith('data:')) uniqueImages.add(srcMatch[1]);
+  });
+  htmlMatches.forEach(m => {
+    const srcMatch = m.match(/src="([^"]+)"/i);
+    if (srcMatch && !srcMatch[1].startsWith('data:')) uniqueImages.add(srcMatch[1]);
+  });
+  return uniqueImages.size;
+};
+
 const handleLaunch = async () => {
   if (isLaunching.value) return;
   
@@ -682,9 +714,12 @@ const handleLaunch = async () => {
   isLaunching.value = true;
   isFinished.value = false;
   
+  const imgCount = countArticleImages(props.markdown, props.html);
+
   selectedList.forEach(p => {
     p.status = 'idle';
     p.progress = 0;
+    p.syncMessage = '';
     p.draftUrl = '';
   });
 
@@ -692,13 +727,16 @@ const handleLaunch = async () => {
 
   const publishPromises = selectedList.map(async (plat) => {
     plat.status = 'ignition';
-    plat.progress = 25;
-    await sleep(250 + Math.random() * 200);
+    plat.progress = 15;
+    plat.syncMessage = '准备同步...';
+    await sleep(200 + Math.random() * 150);
 
     if (plat.id === 'zip-download') {
+      plat.syncMessage = '正在导出...';
       downloadMarkdownFile(props.markdown);
       plat.status = 'success';
       plat.progress = 100;
+      plat.syncMessage = '导出成功';
       return;
     }
 
@@ -706,19 +744,36 @@ const handleLaunch = async () => {
       await copyPlatformContent(plat);
       plat.status = 'success';
       plat.progress = 100;
+      plat.syncMessage = '已复制内容';
       return;
     }
 
     const targetHtml = compileToWeChatHtml(props.html, props.themeId, props.codeThemeId);
 
-    plat.status = 'launched';
-    plat.progress = 65;
+    // Dynamic Image Conversion Steps if images exist
+    if (imgCount > 0) {
+      for (let i = 1; i <= imgCount; i++) {
+        plat.status = 'launched';
+        plat.progress = 15 + Math.round((i / imgCount) * 50);
+        plat.syncMessage = `图片转换 (${i}/${imgCount})`;
+        await sleep(180 + Math.random() * 120);
+      }
+    } else {
+      plat.status = 'launched';
+      plat.progress = 55;
+      plat.syncMessage = '正在分发...';
+      await sleep(180);
+    }
+
+    plat.progress = 75;
+    plat.syncMessage = '保存草稿中...';
 
     try {
       const response = await publishPlatform(plat, title, targetHtml);
       if (response.success) {
         plat.status = 'success';
         plat.progress = 100;
+        plat.syncMessage = '同步成功 100%';
         if (response.postUrl) {
           plat.draftUrl = response.postUrl;
           if (isOpenDraftsAfterSync.value) {
@@ -728,11 +783,13 @@ const handleLaunch = async () => {
       } else {
         plat.status = 'failed';
         plat.progress = 0;
+        plat.syncMessage = response.error || '通道错误';
         plat.errorMsg = response.error || '通道错误';
       }
     } catch (err) {
       plat.status = 'failed';
       plat.progress = 0;
+      plat.syncMessage = err.message || '发布失败';
       plat.errorMsg = err.message;
     }
   });
@@ -847,11 +904,11 @@ onMounted(() => {
           if (info !== undefined) {
             if (typeof info === 'object') {
               p.loginStatus = info.loggedIn ? 'logged_in' : 'not_logged_in';
-              p.username = info.username || (info.loggedIn ? '已连接' : '');
+              p.username = info.username || (info.loggedIn ? '已登录' : '');
               p.avatar = info.avatar || '';
             } else {
               p.loginStatus = info ? 'logged_in' : 'not_logged_in';
-              p.username = info ? '已连接' : '';
+              p.username = info ? '已登录' : '';
               p.avatar = '';
             }
           }
@@ -961,42 +1018,67 @@ onMounted(() => {
                 <span class="platform-name">{{ plat.name }}</span>
                 <span class="platform-sub">
                   <span v-if="plat.loginStatus === 'logged_in'" class="sub-status is-connected">
-                    {{ plat.username || '已连接' }}
+                    {{ plat.username || '已登录' }}
                   </span>
                   <span v-else-if="plat.loginStatus === 'checking'" class="sub-status is-checking">
                     检测状态中...
                   </span>
                   <span v-else class="sub-status is-disconnected">
-                    未连接
+                    未登录
                   </span>
                 </span>
               </div>
 
-              <!-- Right: Status Badge / Action Button -->
-              <div class="platform-action-wrap">
-                <!-- Logged in state: Soft Green '已连接' Pill -->
-                <div 
-                  v-if="plat.loginStatus === 'logged_in' || plat.id === 'zip-download'" 
-                  class="pill-tag is-connected-pill"
-                  :class="{ 'is-active-selection': plat.selected }"
-                >
-                  <span class="pill-text">已连接</span>
-                  <div class="pill-check-circle" :class="{ 'is-checked': plat.selected }">
-                    <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3.5">
-                      <polyline points="20 6 9 17 4 12" v-if="plat.selected"></polyline>
-                    </svg>
-                  </div>
+              <!-- Middle: Dynamic Channel & Image Conversion Progress (Red Box Position) -->
+              <div class="platform-sync-center" v-if="plat.status && plat.status !== 'idle'">
+                <div class="sync-stage-pill" :class="`is-stage-${plat.status}`">
+                  <div v-if="plat.status === 'ignition' || plat.status === 'launched'" class="sync-spinner-ring"></div>
+                  <span v-else-if="plat.status === 'success'" class="sync-check-icon">✓</span>
+                  <span v-else-if="plat.status === 'failed'" class="sync-fail-icon">✕</span>
+                  <span class="sync-stage-label" :title="plat.syncMessage">{{ plat.syncMessage || '正在同步...' }}</span>
                 </div>
+                <!-- Mini Progress Bar -->
+                <div v-if="plat.status === 'ignition' || plat.status === 'launched'" class="sync-progress-bar-bg">
+                  <div class="sync-progress-bar-fill" :style="{ width: `${plat.progress || 20}%` }"></div>
+                </div>
+              </div>
 
-                <!-- Not logged in state: Soft Peach '连接' Action Button -->
-                <button 
-                  v-else 
-                  class="pill-btn-connect"
-                  @click.stop="openLoginTab(plat)"
-                  title="点击打开平台并连接登录"
+              <!-- Right: Status Badge AND Separated Checkbox -->
+              <div class="platform-action-wrap">
+                <!-- Logged in state: Soft Green '已登录' Pill -->
+                <span 
+                  v-if="plat.loginStatus === 'logged_in' || plat.id === 'zip-download'" 
+                  class="badge-logged-in"
                 >
-                  <span>连接</span>
+                  已登录
+                </span>
+
+                <!-- Not logged in state: '登录' Button -->
+                <button 
+                  v-else-if="plat.loginStatus !== 'checking'" 
+                  class="btn-action-login"
+                  @click.stop="openLoginTab(plat)"
+                  title="点击打开平台并登录"
+                >
+                  <span>登录</span>
                 </button>
+
+                <span v-else class="badge-checking">检测中</span>
+
+                <!-- Separated Selection Checkbox (全选/勾选的独立框) -->
+                <div 
+                  class="platform-select-box" 
+                  :class="{ 
+                    'is-checked': plat.selected, 
+                    'is-disabled': plat.loginStatus !== 'logged_in' && plat.id !== 'zip-download' 
+                  }"
+                  @click.stop="toggleSelect(plat)"
+                  title="勾选/取消勾选该发布通道"
+                >
+                  <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="3.5" v-if="plat.selected">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                  </svg>
+                </div>
               </div>
             </div>
           </div>
@@ -1186,9 +1268,10 @@ onMounted(() => {
 
 /* Right Side Drawer Panel */
 .right-drawer-panel {
-  width: 380px;
+  width: min(370px, 92vw);
   max-width: 92vw;
   height: 100vh;
+  max-height: 100vh;
   background: #f8faff;
   box-shadow: -10px 0 40px rgba(0, 0, 0, 0.12);
   display: flex;
@@ -1232,38 +1315,39 @@ onMounted(() => {
 
 /* Top bar */
 .drawer-top-bar {
-  padding: 18px 20px 10px 20px;
+  padding: 14px 16px 8px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   position: relative;
   z-index: 2;
+  flex-shrink: 0;
 }
 
 .sparkle-title {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .sparkle-icon {
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .brand-title-cn {
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 700;
   color: #334155;
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', Roboto, sans-serif;
-  letter-spacing: 0.3px;
+  letter-spacing: 0.2px;
 }
 
 .btn-drawer-close {
   background: #ffffff;
   border: 1px solid rgba(0, 0, 0, 0.06);
   color: #64748b;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1282,17 +1366,18 @@ onMounted(() => {
 /* Scrollable Content */
 .drawer-content-scroll {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: 8px 18px 24px 18px;
+  padding: 6px 14px 16px 14px;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 14px;
   position: relative;
   z-index: 1;
 }
 
 .drawer-content-scroll::-webkit-scrollbar {
-  width: 5px;
+  width: 4px;
 }
 
 .drawer-content-scroll::-webkit-scrollbar-track {
@@ -1300,7 +1385,7 @@ onMounted(() => {
 }
 
 .drawer-content-scroll::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.25);
+  background: rgba(148, 163, 184, 0.22);
   border-radius: 4px;
 }
 
@@ -1308,7 +1393,7 @@ onMounted(() => {
 .drawer-section {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .drawer-section-header {
@@ -1317,16 +1402,16 @@ onMounted(() => {
   justify-content: space-between !important;
   align-items: center !important;
   width: 100% !important;
-  padding: 0 4px !important;
+  padding: 0 2px !important;
   box-sizing: border-box !important;
 }
 
 .drawer-section-title {
-  font-size: 15px !important;
+  font-size: 13.5px !important;
   font-weight: 700 !important;
   color: #1e293b !important;
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', Roboto, sans-serif !important;
-  letter-spacing: -0.2px !important;
+  letter-spacing: -0.1px !important;
   margin: 0 !important;
   text-align: left !important;
 }
@@ -1335,21 +1420,21 @@ onMounted(() => {
 .header-actions-group {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .btn-action-tool {
   background: #f1f5f9;
   border: 1px solid rgba(0, 0, 0, 0.05);
-  font-size: 11.5px;
+  font-size: 10.5px;
   font-weight: 600;
   color: #64748b;
   display: flex;
   align-items: center;
-  gap: 3.5px;
+  gap: 3px;
   cursor: pointer;
-  padding: 4px 8px;
-  border-radius: 7px;
+  padding: 3px 7px;
+  border-radius: 6px;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
 }
@@ -1379,15 +1464,15 @@ onMounted(() => {
 .btn-manage-trigger {
   background: rgba(37, 99, 235, 0.08);
   border: 1px solid rgba(37, 99, 235, 0.16);
-  font-size: 11.5px;
+  font-size: 10.5px;
   font-weight: 600;
   color: #2563eb;
   display: flex;
   align-items: center;
-  gap: 3.5px;
+  gap: 3px;
   cursor: pointer;
-  padding: 4px 9px;
-  border-radius: 7px;
+  padding: 3px 8px;
+  border-radius: 6px;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
 }
@@ -1410,9 +1495,9 @@ onMounted(() => {
 /* Platforms Card Box */
 .platforms-card-box {
   background: #ffffff;
-  border-radius: 20px;
-  padding: 6px 12px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
+  border-radius: 16px;
+  padding: 4px 10px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
   border: 1px solid rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
@@ -1421,12 +1506,12 @@ onMounted(() => {
 .platform-row-item {
   display: flex;
   align-items: center;
-  padding: 11px 4px;
-  gap: 12px;
+  padding: 8px 4px;
+  gap: 8px;
   border-bottom: 1px solid #f8fafc;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
 .platform-row-item:last-child {
@@ -1435,15 +1520,15 @@ onMounted(() => {
 
 .platform-row-item:hover {
   background: rgba(241, 245, 249, 0.5);
-  padding-left: 8px;
-  padding-right: 8px;
+  padding-left: 6px;
+  padding-right: 6px;
 }
 
 /* Icon */
 .platform-icon-wrapper {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1462,23 +1547,30 @@ onMounted(() => {
 /* Meta */
 .platform-meta {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
 }
 
 .platform-name {
-  font-size: 14px;
+  font-size: 12.5px;
   font-weight: 600;
   color: #1e293b;
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .platform-sub {
-  font-size: 11px;
+  font-size: 10px;
   color: #94a3b8;
   display: flex;
   align-items: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .sub-status.is-connected {
@@ -1493,80 +1585,195 @@ onMounted(() => {
   color: #3b82f6;
 }
 
+/* Middle Red Box Position: Dynamic Channel & Image Conversion Progress */
+.platform-sync-center {
+  flex: 1.25;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: 0;
+  padding: 0 4px;
+}
+
+.sync-stage-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3.5px;
+  padding: 1.5px 6px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  white-space: nowrap;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sync-stage-pill.is-stage-ignition,
+.sync-stage-pill.is-stage-launched {
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #dbeafe;
+}
+
+.sync-stage-pill.is-stage-success {
+  background: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+.sync-stage-pill.is-stage-failed {
+  background: #fef2f2;
+  color: #dc2626;
+  border: 1px solid #fecaca;
+}
+
+.sync-spinner-ring {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid #93c5fd;
+  border-top-color: #2563eb;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.sync-check-icon {
+  font-size: 10px;
+  font-weight: 800;
+  color: #059669;
+}
+
+.sync-fail-icon {
+  font-size: 10px;
+  font-weight: 800;
+  color: #dc2626;
+}
+
+.sync-stage-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+.sync-progress-bar-bg {
+  width: 100%;
+  max-width: 95px;
+  height: 2.5px;
+  background: #e2e8f0;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.sync-progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #3b82f6, #6366f1);
+  border-radius: 2px;
+  transition: width 0.25s ease;
+}
+
 /* Action wrap */
 .platform-action-wrap {
   display: flex;
   align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
-/* Soft Green '已连接' Pill */
-.pill-tag.is-connected-pill {
+/* Soft Green '已登录' Badge */
+.badge-logged-in {
   background: #edfdf2;
   border: 1px solid #d1fae5;
-  border-radius: 20px;
-  padding: 4px 10px 4px 12px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: all 0.2s ease;
-}
-
-.pill-text {
-  font-size: 12px;
+  color: #16a34a;
+  font-size: 10.5px;
   font-weight: 600;
-  color: #22c55e;
+  padding: 2px 7px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
+  user-select: none;
 }
 
-.pill-check-circle {
-  width: 16px;
-  height: 16px;
+/* Soft Peach '登录' Button */
+.btn-action-login {
+  background: #fff7ed;
+  border: 1px solid #ffedd5;
+  color: #ea580c;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2.5px 9px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.btn-action-login:hover {
+  background: #ffedd5;
+  transform: scale(1.05);
+}
+
+.badge-checking {
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  color: #2563eb;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 12px;
+  white-space: nowrap;
+}
+
+/* Standalone Separated Selection Checkbox */
+.platform-select-box {
+  width: 17px;
+  height: 17px;
   border-radius: 50%;
-  background: #22c55e;
-  color: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  background: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
-}
-
-.pill-check-circle:not(.is-checked) {
-  background: #cbd5e1;
-  opacity: 0.5;
-}
-
-.is-selected .pill-tag.is-connected-pill {
-  background: #dcfce7;
-  border-color: #86efac;
-}
-
-/* Soft Peach '连接' Button */
-.pill-btn-connect {
-  background: #fff7ed;
-  border: 1px solid #ffedd5;
-  color: #f97316;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 5px 14px;
-  border-radius: 20px;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  color: #ffffff;
+  flex-shrink: 0;
+  margin-left: 2px;
 }
 
-.pill-btn-connect:hover {
-  background: #ffedd5;
-  transform: scale(1.05);
+.platform-select-box:hover:not(.is-disabled) {
+  border-color: #3b82f6;
+  background: #f8fafc;
+}
+
+.platform-select-box.is-checked {
+  background: #22c55e;
+  border-color: #22c55e;
+  box-shadow: 0 2px 6px rgba(34, 197, 94, 0.35);
+}
+
+.platform-select-box.is-disabled {
+  background: #f1f5f9;
+  border-color: #e2e8f0;
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 /* Settings Card Box */
 .settings-card-box {
   background: #ffffff;
-  border-radius: 20px;
-  padding: 16px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
   border: 1px solid rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .setting-item-row {
@@ -1576,7 +1783,7 @@ onMounted(() => {
 }
 
 .setting-label {
-  font-size: 14px;
+  font-size: 12.5px;
   font-weight: 600;
   color: #1e293b;
 }
@@ -1585,8 +1792,8 @@ onMounted(() => {
 .ios-switch {
   position: relative;
   display: inline-block;
-  width: 44px;
-  height: 24px;
+  width: 38px;
+  height: 20px;
 }
 
 .ios-switch input {
@@ -1604,14 +1811,14 @@ onMounted(() => {
   bottom: 0;
   background-color: #e2e8f0;
   transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
-  border-radius: 24px;
+  border-radius: 20px;
 }
 
 .slider:before {
   position: absolute;
   content: "";
-  height: 20px;
-  width: 20px;
+  height: 16px;
+  width: 16px;
   left: 2px;
   bottom: 2px;
   background-color: white;
@@ -1625,17 +1832,17 @@ input:checked + .slider {
 }
 
 input:checked + .slider:before {
-  transform: translateX(20px);
+  transform: translateX(18px);
 }
 
 /* DateTime input row */
 .datetime-picker-row {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   background: #f8fafc;
-  border-radius: 12px;
-  padding: 8px 12px;
+  border-radius: 10px;
+  padding: 6px 10px;
   border: 1px solid #f1f5f9;
   animation: fadeInDown 0.2s ease;
 }
@@ -1648,7 +1855,7 @@ input:checked + .slider:before {
 .datetime-input-wrap {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex: 1;
 }
 
@@ -1659,7 +1866,7 @@ input:checked + .slider:before {
 .time-input {
   border: none;
   background: transparent;
-  font-size: 13px;
+  font-size: 11.5px;
   font-weight: 600;
   color: #334155;
   width: 100%;
@@ -1688,7 +1895,7 @@ input:checked + .slider:before {
 .cover-setting-wrap {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
 }
 
 .cover-header {
@@ -1701,11 +1908,11 @@ input:checked + .slider:before {
   background: transparent;
   border: none;
   color: #3b82f6;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   cursor: pointer;
 }
 
@@ -1719,12 +1926,12 @@ input:checked + .slider:before {
 
 .cover-preview-box {
   width: 100%;
-  height: 108px;
-  border-radius: 14px;
+  height: 84px;
+  border-radius: 10px;
   overflow: hidden;
   position: relative;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
 }
 
 .cover-img {
@@ -1746,9 +1953,9 @@ input:checked + .slider:before {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   color: #ffffff;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 600;
   opacity: 0;
   transition: opacity 0.2s ease;
@@ -1760,45 +1967,46 @@ input:checked + .slider:before {
 
 /* Drawer Footer */
 .drawer-footer {
-  padding: 16px 20px 24px 20px;
-  background: rgba(248, 250, 255, 0.9);
+  padding: 10px 16px 16px 16px;
+  background: rgba(248, 250, 255, 0.92);
   backdrop-filter: blur(12px);
   border-top: 1px solid rgba(0, 0, 0, 0.03);
   position: relative;
   z-index: 2;
+  flex-shrink: 0;
 }
 
 .btn-gradient-launch {
   width: 100%;
-  height: 48px;
-  border-radius: 16px;
+  height: 42px;
+  border-radius: 12px;
   border: none;
   background: linear-gradient(135deg, #ff5e36 0%, #ff8c58 100%);
-  box-shadow: 0 8px 24px rgba(255, 94, 54, 0.35);
+  box-shadow: 0 6px 20px rgba(255, 94, 54, 0.32);
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
+  gap: 7px;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .launch-btn-text {
-  font-size: 15px;
+  font-size: 13.5px;
   font-weight: 700;
   letter-spacing: 0.2px;
 }
 
 .launch-arrow {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 700;
   transition: transform 0.2s ease;
 }
 
 .btn-gradient-launch:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 12px 28px rgba(255, 94, 54, 0.45);
+  box-shadow: 0 10px 24px rgba(255, 94, 54, 0.42);
 }
 
 .btn-gradient-launch:hover:not(:disabled) .launch-arrow {
@@ -1817,8 +2025,8 @@ input:checked + .slider:before {
 }
 
 .spinner-dot {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
   border: 2px solid rgba(255, 255, 255, 0.3);
   border-top-color: #ffffff;
   border-radius: 50%;
@@ -1830,11 +2038,11 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
-  margin-top: 10px;
+  gap: 6px;
+  margin-top: 8px;
   cursor: pointer;
   user-select: none;
-  padding: 4px 8px;
+  padding: 3px 6px;
   border-radius: 6px;
   transition: all 0.18s ease;
 }
@@ -1874,7 +2082,7 @@ input:checked + .slider:before {
 }
 
 .open-drafts-label {
-  font-size: 12px;
+  font-size: 11px;
   color: #64748b;
   font-weight: 500;
   letter-spacing: -0.1px;
