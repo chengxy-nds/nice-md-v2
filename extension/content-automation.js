@@ -264,9 +264,10 @@ if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
 
     let titleDone = false;
     let bodyDone = false;
+    let coverDone = false;
     let attempts = 0;
     
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       attempts++;
       
       // 1. Find and fill all matching title inputs
@@ -310,8 +311,36 @@ if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
           simulatePaste(editorEl, payload.markdown, payload.html, config.format);
         }
       }
+
+      // 3. Find and inject Cover Image if present
+      if (!coverDone && payload.cover) {
+        try {
+          const coverInput = document.querySelector('.cover-set input[type="file"], label.cover-set input, .cover-btn-groups input, input[type="file"][accept*="image"]');
+          if (coverInput) {
+            const existingCoverImg = document.querySelector('.cover.text, img.cover, .cover-img');
+            const hasCoverBg = existingCoverImg && existingCoverImg.style && existingCoverImg.style.backgroundImage && existingCoverImg.style.backgroundImage.includes('/img/');
+            if (!hasCoverBg) {
+              const res = await fetch(payload.cover);
+              const blob = await res.blob();
+              if (blob) {
+                const ext = blob.type.split('/')[1] || 'png';
+                const file = new File([blob], `cover.${ext}`, { type: blob.type || 'image/png' });
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                coverInput.files = dt.files;
+                coverInput.dispatchEvent(new Event('change', { bubbles: true }));
+                coverInput.dispatchEvent(new Event('input', { bubbles: true }));
+                console.log('[NiceMD Automation] Dispatched cover file to input element.');
+              }
+            }
+            coverDone = true;
+          }
+        } catch (coverErr) {
+          console.warn('[NiceMD Automation] Cover automation warning:', coverErr);
+        }
+      }
       
-      // 3. Check if finished or timeout (after 20 attempts, i.e., 10 seconds)
+      // 4. Check if finished or timeout (after 20 attempts, i.e., 10 seconds)
       if ((titleDone && bodyDone) || attempts > 20) {
         clearInterval(interval);
         console.log(`[NiceMD Automation] Injection complete. Status: Title=${titleDone}, Body=${bodyDone}`);

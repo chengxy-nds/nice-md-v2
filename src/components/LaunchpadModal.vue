@@ -3,7 +3,8 @@ import { ref, reactive, onMounted, computed, watch } from 'vue';
 import { 
   X, 
   Play, 
-  CheckCircle, 
+  CheckCircle,
+  CheckCircle2,
   ExternalLink, 
   Copy,
   ChevronRight,
@@ -922,7 +923,9 @@ onMounted(() => {
             }
           }
           
-          if (p.loginStatus !== 'logged_in') {
+          if (p.loginStatus === 'logged_in') {
+            p.selected = true; // 默认自动勾选已登录平台，点亮发布按钮
+          } else {
             p.selected = false;
           }
         });
@@ -1035,9 +1038,9 @@ onMounted(() => {
               <div class="platform-sync-center" v-if="plat.status && plat.status !== 'idle'">
                 <div class="sync-stage-pill" :class="`is-stage-${plat.status}`">
                   <div v-if="plat.status === 'ignition' || plat.status === 'launched'" class="sync-spinner-ring"></div>
-                  <span v-else-if="plat.status === 'success'" class="sync-check-icon">✓</span>
+                  <CheckCircle2 v-else-if="plat.status === 'success'" size="13" class="sync-check-icon" />
                   <span v-else-if="plat.status === 'failed'" class="sync-fail-icon">✕</span>
-                  <span class="sync-stage-label" :title="plat.syncMessage">{{ plat.syncMessage || '正在同步...' }}</span>
+                  <span class="sync-stage-label" :title="plat.syncMessage">{{ plat.syncMessage || (plat.status === 'success' ? '同步成功 100%' : '正在同步...') }}</span>
                 </div>
               </div>
 
@@ -1063,7 +1066,7 @@ onMounted(() => {
 
                 <span v-else class="badge-checking">检测中</span>
 
-                <ChevronRight size="15" class="row-chevron-arrow" />
+                <ChevronRight size="16" class="row-chevron-arrow" />
               </div>
             </div>
           </div>
@@ -1545,7 +1548,7 @@ onMounted(() => {
 /* Platforms Card Box */
 .platforms-card-box {
   background: #ffffff;
-  border-radius: 0.75rem;
+  border-radius: 0.875rem;
   padding: 0.375rem 0.875rem;
   box-shadow: 0 0.25rem 1.25rem rgba(0, 0, 0, 0.03);
   border: 0.0625rem solid #f1f5f9;
@@ -1556,8 +1559,8 @@ onMounted(() => {
 .platform-row-item {
   display: flex;
   align-items: center;
-  padding: 0.625rem 0.25rem;
-  gap: 0.625rem;
+  padding: 0.75rem 0.375rem;
+  gap: 0.75rem;
   border-bottom: 0.0625rem solid #f8fafc;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -1569,27 +1572,29 @@ onMounted(() => {
 }
 
 .platform-row-item:hover {
-  background: rgba(241, 245, 249, 0.5);
-  padding-left: 0.375rem;
-  padding-right: 0.375rem;
+  background: rgba(241, 245, 249, 0.55);
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
 }
 
 /* Icon with Corner Online Indicator */
 .platform-icon-wrapper {
-  width: 2.375rem;
-  height: 2.375rem;
-  border-radius: 0.625rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   overflow: visible;
   position: relative;
+  box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.06);
 }
 
 .platform-icon-img {
   width: 100%;
   height: 100%;
+  border-radius: 0.75rem;
   object-fit: contain;
   display: block;
 }
@@ -1598,12 +1603,13 @@ onMounted(() => {
   position: absolute;
   top: -0.125rem;
   right: -0.125rem;
-  width: 0.5rem;
-  height: 0.5rem;
+  width: 0.5625rem;
+  height: 0.5625rem;
   border-radius: 50%;
   background: #22c55e;
   border: 0.125rem solid #ffffff;
-  box-shadow: 0 0 0.25rem rgba(34, 197, 94, 0.5);
+  box-shadow: 0 0.0625rem 0.25rem rgba(34, 197, 94, 0.4);
+  z-index: 2;
 }
 
 /* Meta */
@@ -1616,18 +1622,20 @@ onMounted(() => {
 }
 
 .platform-name {
-  font-size: 0.84375rem;
-  font-weight: 600;
-  color: #1e293b;
-  line-height: 1.2;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: -0.0125rem;
 }
 
 .platform-sub {
-  font-size: 0.71875rem;
-  color: #94a3b8;
+  font-size: 0.78125rem;
+  color: #8da0b6;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1642,43 +1650,44 @@ onMounted(() => {
 }
 
 .sync-stage-pill {
-  background: #f0fdf4;
-  border: 0.0625rem solid #bbf7d0;
+  background: #eefbf3;
+  border: 0.0625rem solid #dcfce7;
   color: #16a34a;
-  font-size: 0.6875rem;
-  font-weight: 500;
-  border-radius: 0.375rem;
-  padding: 0.1875rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 0.25rem 0.6875rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.3125rem;
   white-space: nowrap;
+  box-shadow: 0 0.0625rem 0.25rem rgba(22, 163, 74, 0.06);
 }
 
 .sync-stage-pill.is-stage-failed {
   background: #fef2f2;
   color: #dc2626;
   border-color: #fecaca;
+  box-shadow: none;
 }
 
 .sync-spinner-ring {
-  width: 0.5625rem;
-  height: 0.5625rem;
-  border: 0.09375rem solid #93c5fd;
-  border-top-color: #2563eb;
+  width: 0.625rem;
+  height: 0.625rem;
+  border: 0.09375rem solid #bbf7d0;
+  border-top-color: #16a34a;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   flex-shrink: 0;
 }
 
 .sync-check-icon {
-  font-size: 0.625rem;
-  font-weight: 800;
   color: #16a34a;
+  flex-shrink: 0;
 }
 
 .sync-fail-icon {
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-weight: 800;
   color: #dc2626;
 }
@@ -1687,17 +1696,18 @@ onMounted(() => {
 .platform-action-wrap {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.5rem;
   flex-shrink: 0;
 }
 
 .badge-logged-in-clean {
   background: #f0fdf4;
+  border: 0.0625rem solid #dcfce7;
   color: #16a34a;
-  font-size: 0.6875rem;
-  font-weight: 500;
-  padding: 0.1875rem 0.5rem;
-  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
   white-space: nowrap;
   user-select: none;
 }
@@ -1706,10 +1716,10 @@ onMounted(() => {
   background: #fff7ed;
   border: 0.0625rem solid #ffedd5;
   color: #ea580c;
-  font-size: 0.65625rem;
+  font-size: 0.71875rem;
   font-weight: 600;
-  padding: 0.15625rem 0.5625rem;
-  border-radius: 0.375rem;
+  padding: 0.21875rem 0.625rem;
+  border-radius: 9999px;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
@@ -1717,22 +1727,24 @@ onMounted(() => {
 
 .btn-action-login:hover {
   background: #ffedd5;
+  transform: translateY(-0.0625rem);
 }
 
 .badge-checking {
   background: #eff6ff;
   border: 0.0625rem solid #dbeafe;
   color: #2563eb;
-  font-size: 0.625rem;
+  font-size: 0.6875rem;
   font-weight: 600;
-  padding: 0.125rem 0.375rem;
-  border-radius: 0.375rem;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 9999px;
   white-space: nowrap;
 }
 
 .row-chevron-arrow {
-  color: #cbd5e1;
-  margin-left: 0.125rem;
+  color: #94a3b8;
+  margin-left: 0.1875rem;
+  transition: transform 0.2s ease;
 }
 
 /* Settings Card Box */

@@ -299,6 +299,22 @@ class CodeAdapter {
     return res.blob();
   }
 
+  // Helper to upload article cover image
+  async uploadCover(coverUrl, uploadFn) {
+    if (!coverUrl) return '';
+    try {
+      console.log(`[NiceMD ${this.platformId}] Uploading cover image:`, typeof coverUrl === 'string' ? coverUrl.slice(0, 80) : 'blob');
+      const blob = await this.downloadImage(coverUrl);
+      const res = await uploadFn(blob, coverUrl);
+      const cdnUrl = res && res.url ? res.url : (typeof res === 'string' ? res : '');
+      console.log(`[NiceMD ${this.platformId}] Cover uploaded successfully:`, cdnUrl);
+      return cdnUrl;
+    } catch (err) {
+      console.warn(`[NiceMD ${this.platformId}] Cover upload failed (will continue without cover):`, err.message);
+      return '';
+    }
+  }
+
   // Unified image extraction and replacements
   async processImages(content, uploadFn, options = {}) {
     const { skipPatterns = [] } = options;
@@ -456,6 +472,11 @@ class CsdnAdapter extends CodeAdapter {
       console.warn('[CSDN Publish] Image processing failed:', err.message);
     }
 
+    let csdnCoverUrl = '';
+    if (article.cover) {
+      csdnCoverUrl = await this.uploadCover(article.cover, (blob, src) => this.uploadImage(blob, src));
+    }
+
     const nonce = crypto.randomUUID();
     const key = '203803574';
     const secret = '9znpamsyl2c7cdrr9sas0le9vbc3r6ba';
@@ -478,8 +499,8 @@ class CsdnAdapter extends CodeAdapter {
       authorized_status: false,
       not_auto_saved: '1',
       source: 'pc_mdeditor',
-      cover_images: [],
-      cover_type: 1,
+      cover_images: csdnCoverUrl ? [csdnCoverUrl] : (article.cover ? [article.cover] : []),
+      cover_type: (csdnCoverUrl || article.cover) ? 1 : 0,
       is_new: 1,
       vote_id: 0,
       resource_id: '',
@@ -676,10 +697,15 @@ class JuejinAdapter extends CodeAdapter {
       console.warn('[Juejin Publish] Image processing failed:', err.message);
     }
 
+    let juejinCoverUrl = '';
+    if (article.cover) {
+      juejinCoverUrl = await this.uploadCover(article.cover, (blob, src) => this.uploadImage(blob, src));
+    }
+
     const body = {
       brief_content: '',
       category_id: '0',
-      cover_image: '',
+      cover_image: juejinCoverUrl || article.cover || '',
       edit_type: 10,
       html_content: 'deprecated',
       link_url: '',
@@ -883,6 +909,11 @@ class WechatAdapter extends CodeAdapter {
       }
     }
 
+    let coverCdnUrl = '';
+    if (article.cover) {
+      coverCdnUrl = await this.uploadCover(article.cover, (blob, src) => this.uploadImage(blob, src));
+    }
+
     const cleanedTitle = this.cleanTitle(article.title) || '无标题文章';
     console.log('[NiceMD WeChat Sync] Original title:', article.title, '-> Cleaned title:', cleanedTitle);
 
@@ -908,10 +939,10 @@ class WechatAdapter extends CodeAdapter {
     params.append('sourceurl0', '');
     params.append('need_open_comment0', '1');
     params.append('only_fans_can_comment0', '0');
-    params.append('cdn_url0', '');
-    params.append('cdn_235_1_url0', '');
-    params.append('cdn_1_1_url0', '');
-    params.append('cdn_url_back0', '');
+    params.append('cdn_url0', coverCdnUrl || '');
+    params.append('cdn_235_1_url0', coverCdnUrl || '');
+    params.append('cdn_1_1_url0', coverCdnUrl || '');
+    params.append('cdn_url_back0', coverCdnUrl || '');
     params.append('crop_list0', '');
     params.append('music_id0', '');
     params.append('video_id0', '');
@@ -922,7 +953,7 @@ class WechatAdapter extends CodeAdapter {
     params.append('cardquantity0', '');
     params.append('cardlimit0', '');
     params.append('vid_type0', '');
-    params.append('show_cover_pic0', '0');
+    params.append('show_cover_pic0', coverCdnUrl ? '1' : '0');
     params.append('shortvideofileid0', '');
     params.append('copyright_type0', '0');
     params.append('releasefirst0', '');
@@ -1070,6 +1101,11 @@ class CnblogsAdapter extends CodeAdapter {
       console.warn('[Cnblogs Publish] Image processing failed:', err.message);
     }
 
+    let cnblogsCoverUrl = '';
+    if (article.cover) {
+      cnblogsCoverUrl = await this.uploadCover(article.cover, (blob, src) => this.uploadImage(blob, src));
+    }
+
     const body = {
       id: null,
       postType: 2,
@@ -1094,7 +1130,7 @@ class CnblogsAdapter extends CodeAdapter {
       isUpdateDateAdded: false,
       entryName: null,
       description: null,
-      featuredImage: null,
+      featuredImage: cnblogsCoverUrl || null,
       tags: null,
       password: null,
       publishAt: null,
@@ -1383,16 +1419,27 @@ class ZhihuAdapter extends CodeAdapter {
 
     content = content.replace(/<section\b[^>]*>/gi, '<div>').replace(/<\/section>/gi, '</div>');
 
+    let zhihuCoverUrl = '';
+    if (article.cover) {
+      zhihuCoverUrl = await this.uploadCover(article.cover, (blob, src) => this.uploadImage(blob, src));
+    }
+
+    const patchBody = {
+      title: article.title,
+      content: content
+    };
+    if (zhihuCoverUrl) {
+      patchBody.titleImage = zhihuCoverUrl;
+      patchBody.title_image = zhihuCoverUrl;
+    }
+
     const updateRes = await this.fetch(`https://zhuanlan.zhihu.com/api/articles/${draftId}/draft`, {
       method: 'PATCH',
       headers: {
         'content-type': 'application/json',
         'x-requested-with': 'fetch'
       },
-      body: JSON.stringify({
-        title: article.title,
-        content: content
-      })
+      body: JSON.stringify(patchBody)
     });
 
     const updateJson = await updateRes.json();
@@ -1428,10 +1475,29 @@ class WeiboAdapter extends CodeAdapter {
     }
   }
 
+  async uploadImage(blob, src) {
+    const formData = new FormData();
+    formData.append('pic', blob, 'image.jpg');
+    const res = await this.fetch('https://card.weibo.com/article/v5/aj/editor/draft/uploadimage', {
+      method: 'POST',
+      body: formData
+    });
+    const json = await res.json();
+    if (json.code === '100000' && json.data && (json.data.url || json.data.pic)) {
+      return { url: json.data.url || json.data.pic };
+    }
+    return { url: '' };
+  }
+
   async publish(article) {
     const config = await this.getUserConfig();
     if (!config || !config.uid) {
       throw new Error('请先在浏览器中登录微博');
+    }
+
+    let weiboCoverUrl = '';
+    if (article.cover) {
+      weiboCoverUrl = await this.uploadCover(article.cover, (blob, src) => this.uploadImage(blob, src));
     }
 
     const reqId = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
@@ -1445,7 +1511,7 @@ class WeiboAdapter extends CodeAdapter {
       body: new URLSearchParams({
         title: article.title,
         content: article.html || article.markdown || '',
-        cover: '',
+        cover: weiboCoverUrl || article.cover || '',
         summary: ''
       }).toString()
     });
@@ -1575,7 +1641,9 @@ class SegmentfaultAdapter extends CodeAdapter {
   async uploadImage(blob, src) {
     const token = await this.getSessionToken();
     const formData = new FormData();
-    formData.append('image', blob);
+    const ext = (src && typeof src === 'string' && src.split('.').pop()?.toLowerCase()?.split('?')[0]) || 'png';
+    const validExt = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? ext : 'png';
+    formData.append('image', blob, `cover_${Date.now()}.${validExt}`);
 
     const headers = {};
     if (token) headers['token'] = token;
@@ -1587,7 +1655,7 @@ class SegmentfaultAdapter extends CodeAdapter {
     });
 
     const res = await response.json();
-    const imageUrl = res.result || (Array.isArray(res) ? (res[0] === 1 ? null : res[1] || `https://image-static.segmentfault.com/${res[2]}`) : null);
+    let imageUrl = res.result || (Array.isArray(res) ? (res[0] === 1 ? null : res[1] || `https://image-static.segmentfault.com/${res[2]}`) : null);
     if (!imageUrl) {
       throw new Error('思否图片上传失败');
     }
@@ -1604,12 +1672,36 @@ class SegmentfaultAdapter extends CodeAdapter {
       console.warn('[NiceMD Segmentfault] Image process warning:', err.message);
     }
 
+    let sfCoverUrl = '';
+    if (article.cover) {
+      sfCoverUrl = await this.uploadCover(article.cover, (blob, src) => this.uploadImage(blob, src));
+    }
+
+    let cleanCover = sfCoverUrl || '';
+    if (cleanCover) {
+      if (cleanCover.startsWith('http')) {
+        const m = cleanCover.match(/\/img\/(bV[a-zA-Z0-9_-]+)/) || cleanCover.match(/segmentfault\.com\/(?:img\/)?([a-zA-Z0-9_-]+)/);
+        if (m) {
+          cleanCover = `/img/${m[1]}`;
+        }
+      } else if (!cleanCover.startsWith('/')) {
+        cleanCover = `/img/${cleanCover}`;
+      }
+    }
+
     const postData = {
       title: article.title,
       tags: [],
       text: content,
       object_id: '',
-      type: 'article'
+      type: 'article',
+      cover: cleanCover || sfCoverUrl || '',
+      cover_url: cleanCover || sfCoverUrl || '',
+      cover_img: cleanCover || sfCoverUrl || '',
+      cover_image: cleanCover || sfCoverUrl || '',
+      bg_img: cleanCover || sfCoverUrl || '',
+      background: cleanCover || sfCoverUrl || '',
+      image: cleanCover || sfCoverUrl || ''
     };
 
     const headers = {
@@ -1634,22 +1726,35 @@ class SegmentfaultAdapter extends CodeAdapter {
     }
 
     // Handle array response: [0, { id: "123" }] or [0, "123"] or [1, "error"]
+    let draftId = null;
     if (Array.isArray(json)) {
       if (json[0] === 1) throw new Error(json[1] || '思否草稿保存失败');
       const data = json[1];
-      const draftId = data?.id || (typeof data === 'string' || typeof data === 'number' ? data : null);
-      if (draftId) {
-        return this.createResult(true, {
-          postId: String(draftId),
-          postUrl: `https://segmentfault.com/write?draftId=${draftId}`,
-          draftOnly: true
-        });
-      }
+      draftId = data?.id || (typeof data === 'string' || typeof data === 'number' ? data : null);
+    } else if (json && (json.id || json.data?.id)) {
+      draftId = json.id || json.data?.id || (typeof json.data === 'string' ? json.data : null);
     }
 
-    // Handle object response: { id: "123" } or { data: { id: "123" } }
-    const draftId = json.id || json.data?.id || (typeof json.data === 'string' ? json.data : null);
     if (draftId) {
+      if (cleanCover) {
+        try {
+          await this.fetch(`https://segmentfault.com/gateway/draft/${draftId}`, {
+            method: 'PUT',
+            headers: headers,
+            body: JSON.stringify({
+              id: draftId,
+              title: article.title,
+              tags: [],
+              text: content,
+              cover: cleanCover,
+              type: 'article'
+            })
+          });
+          console.log('[NiceMD Segmentfault] Draft PUT with cover successful:', cleanCover);
+        } catch (e) {
+          console.warn('[NiceMD Segmentfault] Draft PUT update warning:', e.message);
+        }
+      }
       return this.createResult(true, {
         postId: String(draftId),
         postUrl: `https://segmentfault.com/write?draftId=${draftId}`,

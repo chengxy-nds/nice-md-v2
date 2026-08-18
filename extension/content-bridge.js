@@ -48,13 +48,13 @@ window.addEventListener('message', (event) => {
 
   // 2. Publish Launch
   if (message.type === 'NICEMD_PUBLISH') {
-    const { platform, title, markdown, html } = message.payload;
+    const { platform, title, markdown, html, cover, themeId, isScheduled, scheduledTime, isOriginal } = message.payload || {};
     const sent = safeSendMessage({
       type: 'LAUNCH_PUBLISH',
-      payload: { platform, title, markdown, html }
+      payload: { platform, title, markdown, html, cover, themeId, isScheduled, scheduledTime, isOriginal }
     }, (response) => {
       if (response) {
-        window.postMessage({ type: 'NICEMD_PUBLISH_RESPONSE', success: response.success, platform }, '*');
+        window.postMessage({ type: 'NICEMD_PUBLISH_RESPONSE', success: response.success, platform, postUrl: response.postUrl, postId: response.postId }, '*');
       }
     });
     if (!sent) {

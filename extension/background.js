@@ -358,7 +358,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
 
   // 3. Launch publishing flow
   if (message.type === 'LAUNCH_PUBLISH') {
-    const { platform, title, markdown, html } = message.payload;
+    const { platform, title, markdown, html, cover, isScheduled, scheduledTime, isOriginal } = message.payload;
     
     chrome.storage.local.get(['platforms_config'], (res) => {
       const configList = res.platforms_config || DEFAULT_PLATFORMS_CONFIG;
@@ -368,7 +368,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       const silentEnabled = targetPlatform ? targetPlatform.silentEnabled !== false : true;
       
       if (adapter && silentEnabled) {
-        adapter.publish({ title, markdown, html }).then((result) => {
+        adapter.publish({ title, markdown, html, cover, isScheduled, scheduledTime, isOriginal }).then((result) => {
           if (result.localOnly) {
             sendResponse({ success: true, localOnly: true });
           } else {
@@ -379,24 +379,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           if (isWechat && adapter.getWechatParams) {
             adapter.getWechatParams().then((params) => {
               const dynamicUrl = `https://mp.weixin.qq.com/cgi-bin/appmsg?t=media/appmsg_edit&action=edit&type=77&lang=zh_CN&token=${params.token}`;
-              fallbackToTabPublishWithUrl(dynamicUrl, platform, title, markdown, html, sendResponse);
+              fallbackToTabPublishWithUrl(dynamicUrl, platform, title, markdown, html, cover, sendResponse);
             }).catch(() => {
-              fallbackToTabPublishWithUrl('https://mp.weixin.qq.com/', platform, title, markdown, html, sendResponse);
+              fallbackToTabPublishWithUrl('https://mp.weixin.qq.com/', platform, title, markdown, html, cover, sendResponse);
             });
           } else {
-            fallbackToTabPublish(platform, title, markdown, html, sendResponse);
+            fallbackToTabPublish(platform, title, markdown, html, cover, sendResponse);
           }
         });
       } else {
         if (isWechat && adapter && adapter.getWechatParams) {
           adapter.getWechatParams().then((params) => {
             const dynamicUrl = `https://mp.weixin.qq.com/cgi-bin/appmsg?t=media/appmsg_edit&action=edit&type=77&lang=zh_CN&token=${params.token}`;
-            fallbackToTabPublishWithUrl(dynamicUrl, platform, title, markdown, html, sendResponse);
+            fallbackToTabPublishWithUrl(dynamicUrl, platform, title, markdown, html, cover, sendResponse);
           }).catch(() => {
-            fallbackToTabPublishWithUrl('https://mp.weixin.qq.com/', platform, title, markdown, html, sendResponse);
+            fallbackToTabPublishWithUrl('https://mp.weixin.qq.com/', platform, title, markdown, html, cover, sendResponse);
           });
         } else {
-          fallbackToTabPublish(platform, title, markdown, html, sendResponse);
+          fallbackToTabPublish(platform, title, markdown, html, cover, sendResponse);
         }
       }
     });
@@ -812,6 +812,21 @@ async function registerNetRequestRules() {
       },
       condition: {
         urlFilter: 'obs.cn-north-4.myhuaweicloud.com',
+        resourceTypes: ['xmlhttprequest', 'other']
+      }
+    },
+    {
+      id: 21,
+      priority: 1,
+      action: {
+        type: 'modifyHeaders',
+        requestHeaders: [
+          { header: 'Origin', operation: 'set', value: 'https://segmentfault.com' },
+          { header: 'Referer', operation: 'set', value: 'https://segmentfault.com/' }
+        ]
+      },
+      condition: {
+        urlFilter: '||segmentfault.com/gateway',
         resourceTypes: ['xmlhttprequest', 'other']
       }
     }
@@ -1296,16 +1311,16 @@ async function checkLoginStatus(platformId, writeUrl) {
 }
 
 // Fallback method to open tab and let content-automation.js execute DOM injection
-function fallbackToTabPublish(platform, title, markdown, html, sendResponse) {
+function fallbackToTabPublish(platform, title, markdown, html, cover, sendResponse) {
   chrome.storage.local.get(['platforms_config'], (res) => {
     const configList = res.platforms_config || DEFAULT_PLATFORMS_CONFIG;
     const targetPlatform = configList.find(p => p.id === platform);
     const url = targetPlatform ? targetPlatform.writeUrl : null;
-    fallbackToTabPublishWithUrl(url, platform, title, markdown, html, sendResponse);
+    fallbackToTabPublishWithUrl(url, platform, title, markdown, html, cover, sendResponse);
   });
 }
 
-function fallbackToTabPublishWithUrl(url, platform, title, markdown, html, sendResponse) {
+function fallbackToTabPublishWithUrl(url, platform, title, markdown, html, cover, sendResponse) {
   if (!url) {
     sendResponse({ success: true, localOnly: true });
     return;
@@ -1317,6 +1332,7 @@ function fallbackToTabPublishWithUrl(url, platform, title, markdown, html, sendR
       title,
       markdown,
       html,
+      cover,
       timestamp: Date.now()
     }
   }, () => {
