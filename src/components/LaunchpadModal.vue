@@ -172,12 +172,17 @@ const handleCoverUpload = (e) => {
 };
 
 const showCoverPreviewModal = ref(false);
+const previewImageUrl = ref('');
+
+const openImagePreview = (url) => {
+  if (!url) return;
+  soundEngine.playClick();
+  previewImageUrl.value = url;
+  showCoverPreviewModal.value = true;
+};
 
 const openCoverPreview = () => {
-  if (coverImage.value) {
-    soundEngine.playClick();
-    showCoverPreviewModal.value = true;
-  }
+  openImagePreview(coverImage.value);
 };
 
 const triggerCoverUpload = () => {
@@ -1703,7 +1708,7 @@ onMounted(() => {
 
           <!-- Centered Floating Image Container -->
           <div class="lightbox-image-container" @click.stop>
-            <img :src="coverImage" alt="Full Cover Preview" class="lightbox-floating-img" />
+            <img :src="previewImageUrl || coverImage" alt="Full Cover Preview" class="lightbox-floating-img" />
           </div>
         </div>
       </Transition>
@@ -1759,10 +1764,19 @@ onMounted(() => {
                   class="picker-img-item"
                   :class="{ 'is-active': tempSelectedCover === imgUrl }"
                   @click="selectCoverOption(imgUrl)"
+                  @dblclick="openImagePreview(imgUrl)"
                 >
                   <img :src="imgUrl" alt="Article image" class="picker-thumb" />
                   <div class="picker-active-badge" v-if="tempSelectedCover === imgUrl">
                     <Check size="13" class="check-svg" />
+                  </div>
+                  <!-- Hover Zoom Preview Action Button -->
+                  <div 
+                    class="picker-thumb-preview-btn" 
+                    @click.stop="openImagePreview(imgUrl)" 
+                    title="点击预览大图"
+                  >
+                    <Maximize2 size="11" />
                   </div>
                 </div>
               </div>
@@ -1784,10 +1798,19 @@ onMounted(() => {
                   class="picker-img-item"
                   :class="{ 'is-active': tempSelectedCover === presetUrl }"
                   @click="selectCoverOption(presetUrl)"
+                  @dblclick="openImagePreview(presetUrl)"
                 >
                   <img :src="presetUrl" alt="Preset cover" class="picker-thumb" />
                   <div class="picker-active-badge" v-if="tempSelectedCover === presetUrl">
                     <Check size="13" class="check-svg" />
+                  </div>
+                  <!-- Hover Zoom Preview Action Button -->
+                  <div 
+                    class="picker-thumb-preview-btn" 
+                    @click.stop="openImagePreview(presetUrl)" 
+                    title="点击预览大图"
+                  >
+                    <Maximize2 size="11" />
                   </div>
                 </div>
               </div>
@@ -3581,6 +3604,37 @@ input:checked + .slider:before {
   justify-content: center;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
   animation: popBadge 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 3;
+}
+
+.picker-thumb-preview-btn {
+  position: absolute;
+  bottom: 0.3125rem;
+  right: 0.3125rem;
+  width: 1.375rem;
+  height: 1.375rem;
+  border-radius: 0.375rem;
+  background: rgba(15, 23, 42, 0.72);
+  backdrop-filter: blur(4px);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transform: scale(0.85);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  z-index: 2;
+}
+
+.picker-img-item:hover .picker-thumb-preview-btn {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.picker-thumb-preview-btn:hover {
+  background: #ff5e36;
+  transform: scale(1.12);
 }
 
 @keyframes popBadge {
