@@ -269,6 +269,84 @@ const DEFAULT_PLATFORMS_CONFIG = [
     }
   },
   {
+    id: 'infoq',
+    name: 'InfoQ',
+    color: '#0066cc',
+    writeUrl: 'https://xie.infoq.cn/article/draft/new',
+    matchHosts: ['infoq.cn', 'xie.infoq.cn'],
+    silentEnabled: true,
+    selectors: {
+      title: '.title-input, [placeholder*="标题"], input',
+      editor: '.ProseMirror, [contenteditable="true"], textarea',
+      format: 'text/plain'
+    }
+  },
+  {
+    id: 'learnku',
+    name: 'LearnKu',
+    color: '#00c875',
+    writeUrl: 'https://learnku.com/articles/create',
+    matchHosts: ['learnku.com'],
+    silentEnabled: true,
+    selectors: {
+      title: 'input[name="title"], #article-title, [placeholder*="标题"]',
+      editor: '#editor, .simditor-body, textarea[name="body"], textarea',
+      format: 'text/plain'
+    }
+  },
+  {
+    id: 'tencentcloud',
+    name: '腾讯云开发者',
+    color: '#0052d9',
+    writeUrl: 'https://cloud.tencent.com/developer/article/write',
+    matchHosts: ['cloud.tencent.com'],
+    silentEnabled: true,
+    selectors: {
+      title: '.article-title-input, [placeholder*="标题"], input',
+      editor: '.ProseMirror, [contenteditable="true"], textarea',
+      format: 'text/plain'
+    }
+  },
+  {
+    id: 'nowcoder',
+    name: '牛客网',
+    color: '#00db99',
+    writeUrl: 'https://www.nowcoder.com/discuss/post/write',
+    matchHosts: ['nowcoder.com', 'www.nowcoder.com'],
+    silentEnabled: true,
+    selectors: {
+      title: '.discuss-title input, [placeholder*="标题"], input',
+      editor: '.editor-content, [contenteditable="true"], textarea',
+      format: 'text/plain'
+    }
+  },
+  {
+    id: 'aliyun',
+    name: '阿里云开发者',
+    color: '#ff5500',
+    writeUrl: 'https://developer.aliyun.com/article/new',
+    matchHosts: ['developer.aliyun.com', 'aliyun.com'],
+    silentEnabled: true,
+    selectors: {
+      title: '.article-title input, [placeholder*="标题"], input',
+      editor: '.monaco-editor, [contenteditable="true"], textarea',
+      format: 'text/plain'
+    }
+  },
+  {
+    id: 'leetcode',
+    name: '力扣 (LeetCode)',
+    color: '#ffa116',
+    writeUrl: 'https://leetcode.cn/circle/discuss/create/',
+    matchHosts: ['leetcode.cn'],
+    silentEnabled: true,
+    selectors: {
+      title: 'input[placeholder*="标题"], .topic-title-input',
+      editor: '.cm-content, [contenteditable="true"], textarea',
+      format: 'text/plain'
+    }
+  },
+  {
     id: 'zip-download',
     name: 'Markdown 离线包',
     color: '#6366f1',
@@ -1301,6 +1379,230 @@ async function checkLoginStatus(platformId, writeUrl) {
         }
       }
       return { loggedIn: false };
+    }
+
+    if (platformId === 'infoq') {
+      try {
+        const response = await fetch('https://xie.infoq.cn/article/draft/new', {
+          method: 'GET',
+          credentials: 'include',
+          cache: 'no-cache'
+        });
+        const html = await response.text();
+        const userMatch = html.match(/"nickname":\s*"([^"]+)"/) || 
+                          html.match(/"userName":\s*"([^"]+)"/) ||
+                          html.match(/"nickName":\s*"([^"]+)"/);
+        if (userMatch && userMatch[1] && userMatch[1] !== 'null') {
+          return { loggedIn: true, username: userMatch[1] };
+        }
+        // Check if page redirected or has login prompt
+        if (html.includes('"isLogin":true') || html.includes('isLogin: true')) {
+          return { loggedIn: true, username: 'InfoQ 创作者' };
+        }
+      } catch (e) {}
+      return { loggedIn: false };
+    }
+
+    if (platformId === 'learnku') {
+      try {
+        const response = await fetch('https://learnku.com/', {
+          method: 'GET',
+          credentials: 'include',
+          cache: 'no-cache'
+        });
+        const html = await response.text();
+
+        // 1. Direct match on .nav-user-item navbar container (Exact live structure)
+        const navItemMatch = html.match(/class="[^"]*nav-user-item[^"]*"[^>]*>([\s\S]*?)<div class="ui menu/);
+        if (navItemMatch) {
+          const navContent = navItemMatch[1];
+          // Extract avatar
+          const avatarMatch = navContent.match(/src="([^"]+)"/);
+          // Extract username: text between img/nbsp and <i class="dropdown icon">
+          const nameMatch = navContent.match(/<img[^>]*>[\s\S]*?(?:&nbsp;)?\s*([^<\s][^<]*?)\s*<i class="[^"]*dropdown icon/);
+          // Extract uid
+          const uidMatch = html.match(/href="https:\/\/learnku\.com\/users\/(\d+)"/) || html.match(/'user_id':\s*([1-9]\d*)/);
+
+          const username = nameMatch ? nameMatch[1].trim() : '';
+          const avatar = avatarMatch ? avatarMatch[1] : null;
+          const uid = uidMatch ? uidMatch[1] : '';
+
+          if (username || uid) {
+            return {
+              loggedIn: true,
+              userId: uid,
+              username: username || `用户${uid}`,
+              avatar: avatar
+            };
+          }
+        }
+
+        // 2. Secondary fallback via window.Config.user_id
+        const userIdMatch = html.match(/'user_id':\s*([1-9]\d*)/) || 
+                            html.match(/"user_id":\s*([1-9]\d*)/) ||
+                            html.match(/'search_user_id':\s*([1-9]\d*)/);
+
+        if (userIdMatch && parseInt(userIdMatch[1]) > 0) {
+          const uid = userIdMatch[1];
+          const nameMatch = html.match(/class="[^"]*nav-user-item[^"]*"[^>]*>[\s\S]*?<img[^>]*>[\s\S]*?(?:&nbsp;)?\s*([^<\s][^<]*?)\s*<i/) ||
+                            html.match(/href="https:\/\/learnku\.com\/users\/\d+"[^>]*title="([^"]+)"/);
+          const avatarMatch = html.match(/src="([^"]*uploads\/avatars\/[^"]+)"/);
+
+          return {
+            loggedIn: true,
+            userId: uid,
+            username: nameMatch ? nameMatch[1].trim() : `用户${uid}`,
+            avatar: avatarMatch ? avatarMatch[1] : null
+          };
+        }
+
+        return { loggedIn: false };
+      } catch (e) {
+        console.warn('[NiceMD Check Login] Learnku check error:', e);
+        return { loggedIn: false };
+      }
+    }
+
+    if (platformId === 'tencentcloud' || platformId === 'tencent-cloud') {
+      try {
+        const response = await fetch('https://cloud.tencent.com/developer/article/write', {
+          method: 'GET',
+          credentials: 'include',
+          cache: 'no-cache'
+        });
+        const html = await response.text();
+        const nickMatch = html.match(/"nickName":\s*"([^"]+)"/) || html.match(/"username":\s*"([^"]+)"/);
+        if (nickMatch && nickMatch[1]) {
+          return { loggedIn: true, username: nickMatch[1] };
+        }
+        const cookies = await chrome.cookies.getAll({ domain: 'tencent.com' });
+        const uinCookie = cookies.find(c => (c.name === 'uin' || c.name === 'o_cookie') && c.value && c.value !== 'o0');
+        if (uinCookie) {
+          return { loggedIn: true, username: '腾讯云创作者' };
+        }
+      } catch (e) {}
+      return { loggedIn: false };
+    }
+
+    if (platformId === 'nowcoder') {
+      try {
+        // 1. Inspect cookies for Nowcoder
+        const cookies = await chrome.cookies.getAll({ domain: 'nowcoder.com' });
+        const userCookie = cookies.find(c => c.name === 'NOWCODERUSER' || c.name === 'userName' || c.name === 'nickname');
+        const uidCookie = cookies.find(c => c.name === 'NOWCODERUID' || c.name === 'nowcoder_uid' || c.name === 'userId');
+        const tokenCookie = cookies.find(c => c.name === 't' || c.name === 'nowcoder_token');
+
+        let cookieUsername = '';
+        if (userCookie && userCookie.value) {
+          try {
+            cookieUsername = decodeURIComponent(userCookie.value);
+          } catch (e) {
+            cookieUsername = userCookie.value;
+          }
+        }
+
+        // 2. Fetch Nowcoder creation editor or profile
+        const response = await fetch('https://www.nowcoder.com/creation/editor', {
+          method: 'GET',
+          credentials: 'include',
+          cache: 'no-cache'
+        });
+        const finalUrl = response.url || '';
+        const html = await response.text();
+
+        const isRedirectedToLogin = finalUrl.includes('/login') || finalUrl.includes('unlogin');
+        const hasLoginBtn = html.includes('loginRegisterBtn') || html.includes('登录 / 注册');
+
+        const nameMatch = html.match(/"userName":\s*"([^"]+)"/) ||
+                          html.match(/"nickname":\s*"([^"]+)"/) ||
+                          html.match(/class="[^"]*user-name[^"]*"[^>]*>([^<]+)</) ||
+                          html.match(/class="[^"]*nav-avatar[^"]*"[^>]*alt="([^"]+)"/);
+
+        const avatarMatch = html.match(/"headUrl":\s*"([^"]+)"/) ||
+                            html.match(/"avatar":\s*"([^"]+)"/) ||
+                            html.match(/class="[^"]*nav-avatar[^"]*"[^>]*src="([^"]+)"/);
+
+        const detectedName = (nameMatch && nameMatch[1]) ? nameMatch[1].trim() : (cookieUsername || (uidCookie ? `牛客用户${uidCookie.value}` : ''));
+
+        if (!isRedirectedToLogin && !hasLoginBtn && (detectedName || (tokenCookie && tokenCookie.value))) {
+          return {
+            loggedIn: true,
+            userId: uidCookie ? uidCookie.value : '',
+            username: detectedName || '牛客创作者',
+            avatar: avatarMatch ? avatarMatch[1] : null
+          };
+        }
+
+        // 3. Check profile page fallback
+        if (tokenCookie && tokenCookie.value && tokenCookie.value.length > 5) {
+          const profRes = await fetch('https://www.nowcoder.com/user/profile', {
+            method: 'GET',
+            credentials: 'include',
+            cache: 'no-cache'
+          });
+          const profHtml = await profRes.text();
+          if (!profHtml.includes('loginRegisterBtn') && !profRes.url.includes('login')) {
+            const profNameMatch = profHtml.match(/class="[^"]*user-name[^"]*"[^>]*>([^<]+)</) ||
+                                  profHtml.match(/"userName":\s*"([^"]+)"/);
+            return {
+              loggedIn: true,
+              username: profNameMatch ? profNameMatch[1].trim() : (detectedName || '牛客创作者')
+            };
+          }
+        }
+
+        return { loggedIn: false };
+      } catch (e) {
+        console.warn('[NiceMD Check Login] Nowcoder check error:', e);
+        return { loggedIn: false };
+      }
+    }
+
+    if (platformId === 'aliyun') {
+      try {
+        const response = await fetch('https://developer.aliyun.com/article/new', {
+          method: 'GET',
+          credentials: 'include',
+          cache: 'no-cache'
+        });
+        const html = await response.text();
+        const nickMatch = html.match(/"nickName":\s*"([^"]+)"/) || html.match(/"account":\s*"([^"]+)"/);
+        if (nickMatch && nickMatch[1]) {
+          return { loggedIn: true, username: nickMatch[1] };
+        }
+        const cookies = await chrome.cookies.getAll({ domain: 'aliyun.com' });
+        const userCookie = cookies.find(c => c.name === 'login_aliyunid' && c.value);
+        if (userCookie) {
+          return { loggedIn: true, username: decodeURIComponent(userCookie.value) };
+        }
+      } catch (e) {}
+      return { loggedIn: false };
+    }
+
+    if (platformId === 'leetcode') {
+      try {
+        const response = await fetch('https://leetcode.cn/graphql/', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({
+            query: "query userStatus { userStatus { isSignedIn username userSlug avatar } }"
+          })
+        });
+        const json = await response.json();
+        if (json && json.data && json.data.userStatus && json.data.userStatus.isSignedIn) {
+          const u = json.data.userStatus;
+          return {
+            loggedIn: true,
+            userId: u.userSlug || u.username,
+            username: u.username,
+            avatar: u.avatar
+          };
+        }
+      } catch (e) {}
+      const cookies = await chrome.cookies.getAll({ domain: 'leetcode.cn' });
+      const hasAuth = cookies.some(c => c.name.includes('LEETCODE_SESSION') || c.name.includes('csrftoken'));
+      return { loggedIn: hasAuth, username: hasAuth ? '力扣创作者' : '' };
     }
 
     return { loggedIn: false };

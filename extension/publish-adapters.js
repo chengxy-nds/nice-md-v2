@@ -2124,7 +2124,91 @@ class ZipDownloadAdapter extends CodeAdapter {
   }
 }
 
-// Register all 22+ adapters
+// 23. InfoQ Adapter
+class InfoqAdapter extends CodeAdapter {
+  constructor() {
+    super('infoq');
+  }
+
+  async publish(article) {
+    return this.createResult(true, {
+      postUrl: 'https://xie.infoq.cn/article/draft/new',
+      draftOnly: true
+    });
+  }
+}
+
+// 24. LearnKu Adapter
+class LearnkuAdapter extends CodeAdapter {
+  constructor() {
+    super('learnku');
+  }
+
+  async publish(article) {
+    return this.createResult(true, {
+      postUrl: 'https://learnku.com/articles/create',
+      draftOnly: true
+    });
+  }
+}
+
+// 25. Tencent Cloud Adapter
+class TencentCloudAdapter extends CodeAdapter {
+  constructor() {
+    super('tencentcloud');
+  }
+
+  async publish(article) {
+    return this.createResult(true, {
+      postUrl: 'https://cloud.tencent.com/developer/article/write',
+      draftOnly: true
+    });
+  }
+}
+
+// 26. Nowcoder Adapter
+class NowcoderAdapter extends CodeAdapter {
+  constructor() {
+    super('nowcoder');
+  }
+
+  async publish(article) {
+    return this.createResult(true, {
+      postUrl: 'https://www.nowcoder.com/discuss/post/write',
+      draftOnly: true
+    });
+  }
+}
+
+// 27. Aliyun Developer Adapter
+class AliyunAdapter extends CodeAdapter {
+  constructor() {
+    super('aliyun');
+  }
+
+  async publish(article) {
+    return this.createResult(true, {
+      postUrl: 'https://developer.aliyun.com/article/new',
+      draftOnly: true
+    });
+  }
+}
+
+// 28. LeetCode Adapter
+class LeetcodeAdapter extends CodeAdapter {
+  constructor() {
+    super('leetcode');
+  }
+
+  async publish(article) {
+    return this.createResult(true, {
+      postUrl: 'https://leetcode.cn/circle/discuss/create/',
+      draftOnly: true
+    });
+  }
+}
+
+// Register all 28+ adapters
 self.publishAdapters = {
   csdn: new CsdnAdapter(),
   juejin: new JuejinAdapter(),
@@ -2148,6 +2232,13 @@ self.publishAdapters = {
   eastmoney: new EastmoneyAdapter(),
   jianshu: new JianshuAdapter(),
   toutiao: new ToutiaoAdapter(),
+  infoq: new InfoqAdapter(),
+  learnku: new LearnkuAdapter(),
+  tencentcloud: new TencentCloudAdapter(),
+  'tencent-cloud': new TencentCloudAdapter(),
+  nowcoder: new NowcoderAdapter(),
+  aliyun: new AliyunAdapter(),
+  leetcode: new LeetcodeAdapter(),
   'zip-download': new ZipDownloadAdapter()
 };
-console.log('[NiceMD Adapters] Registry initialized with 22+ platforms.');
+console.log('[NiceMD Adapters] Registry initialized with 28+ platforms.');

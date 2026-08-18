@@ -49,7 +49,13 @@
         "https://www.imooc.com/article/publish*",
         "https://www.woshipm.com/writing*",
         "https://www.jianshu.com/writer*",
-        "https://mp.toutiao.com/profile_v4/graphic/publish*"
+        "https://mp.toutiao.com/profile_v4/graphic/publish*",
+        "https://*.infoq.cn/*",
+        "https://learnku.com/*",
+        "https://cloud.tencent.com/developer/*",
+        "https://*.nowcoder.com/*",
+        "https://developer.aliyun.com/*",
+        "https://leetcode.cn/*"
       ],
       "js": ["content-automation.js"],
       "run_at": "document_end"

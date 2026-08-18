@@ -119,6 +119,7 @@ const platforms = ref([
   {
     id: 'wechat',
     name: '微信公众号',
+    category: 'media',
     iconUrl: './svg/微信.svg',
     color: '#07c160',
     writeUrl: 'https://mp.weixin.qq.com/',
@@ -135,6 +136,7 @@ const platforms = ref([
   {
     id: 'zhihu',
     name: '知乎',
+    category: 'tech',
     iconUrl: './svg/知乎.svg',
     color: '#0084ff',
     writeUrl: 'https://zhuanlan.zhihu.com/write',
@@ -151,6 +153,7 @@ const platforms = ref([
   {
     id: 'juejin',
     name: '掘金',
+    category: 'tech',
     iconUrl: './svg/juejin.svg',
     color: '#1e80ff',
     writeUrl: 'https://juejin.cn/editor/drafts/new',
@@ -167,6 +170,7 @@ const platforms = ref([
   {
     id: 'csdn',
     name: 'CSDN',
+    category: 'tech',
     iconUrl: './svg/csdn.svg',
     color: '#fc5531',
     writeUrl: 'https://editor.csdn.net/md/',
@@ -183,6 +187,7 @@ const platforms = ref([
   {
     id: 'baijiahao',
     name: '百家号',
+    category: 'media',
     iconUrl: './svg/百家号.svg',
     color: '#ea4335',
     writeUrl: 'https://baijiahao.baidu.com/builder/rc/write/article',
@@ -199,6 +204,7 @@ const platforms = ref([
   {
     id: 'bilibili',
     name: '哔哩哔哩',
+    category: 'media',
     iconUrl: './svg/哔哩哔哩.svg',
     color: '#fb7299',
     writeUrl: 'https://member.bilibili.com/platform/upload/text',
@@ -215,6 +221,7 @@ const platforms = ref([
   {
     id: 'cnblogs',
     name: '博客园',
+    category: 'tech',
     iconUrl: './svg/博客园.svg',
     color: '#3272ad',
     writeUrl: 'https://i.cnblogs.com/posts/edit',
@@ -231,6 +238,7 @@ const platforms = ref([
   {
     id: 'weibo',
     name: '微博头条',
+    category: 'media',
     iconUrl: './svg/微博.svg',
     color: '#e6162d',
     writeUrl: 'https://card.weibo.com/article/v5/editor',
@@ -247,6 +255,7 @@ const platforms = ref([
   {
     id: 'yuque',
     name: '语雀',
+    category: 'tech',
     iconUrl: './svg/语雀.svg',
     color: '#00b96b',
     writeUrl: 'https://www.yuque.com/dashboard',
@@ -263,6 +272,7 @@ const platforms = ref([
   {
     id: 'jianshu',
     name: '简书',
+    category: 'media',
     iconUrl: './svg/简书.svg',
     color: '#ea6f5a',
     writeUrl: 'https://www.jianshu.com/writer',
@@ -279,6 +289,7 @@ const platforms = ref([
   {
     id: 'segmentfault',
     name: '思否',
+    category: 'tech',
     iconUrl: './svg/思否.svg',
     color: '#00965e',
     writeUrl: 'https://segmentfault.com/write',
@@ -288,13 +299,14 @@ const platforms = ref([
     format: 'md',
     loginStatus: 'not_logged_in',
     selected: false,
-    enabled: false,
+    enabled: true,
     username: '',
     avatar: ''
   },
   {
     id: 'oschina',
     name: '开源中国',
+    category: 'tech',
     iconUrl: './svg/开源中国.svg',
     color: '#21b354',
     writeUrl: 'https://my.oschina.net/u/new-blog',
@@ -311,6 +323,7 @@ const platforms = ref([
   {
     id: 'toutiao',
     name: '今日头条',
+    category: 'media',
     iconUrl: './svg/今日头条.svg',
     color: '#f85959',
     writeUrl: 'https://mp.toutiao.com/profile_v4/graphic/publish',
@@ -327,6 +340,7 @@ const platforms = ref([
   {
     id: 'douban',
     name: '豆瓣网',
+    category: 'media',
     iconUrl: './svg/豆瓣网.svg',
     color: '#007722',
     writeUrl: 'https://www.douban.com/note/create',
@@ -343,6 +357,7 @@ const platforms = ref([
   {
     id: 'imooc',
     name: '慕课网',
+    category: 'tech',
     iconUrl: './svg/慕课网.svg',
     color: '#f01414',
     writeUrl: 'https://www.imooc.com/article/publish',
@@ -359,6 +374,7 @@ const platforms = ref([
   {
     id: 'netease',
     name: '网易号',
+    category: 'media',
     iconUrl: './svg/网易号.svg',
     color: '#e12d2d',
     writeUrl: 'https://mp.163.com/',
@@ -375,6 +391,7 @@ const platforms = ref([
   {
     id: '51cto',
     name: '51CTO',
+    category: 'tech',
     iconUrl: './svg/51.svg',
     color: '#d0021b',
     writeUrl: 'https://blog.51cto.com/',
@@ -391,6 +408,7 @@ const platforms = ref([
   {
     id: 'twitter',
     name: 'X (Twitter)',
+    category: 'media',
     iconUrl: './svg/推特.svg',
     color: '#000000',
     writeUrl: 'https://x.com/compose/post',
@@ -407,7 +425,8 @@ const platforms = ref([
   {
     id: 'sohu',
     name: '搜狐号',
-    iconUrl: '',
+    category: 'media',
+    iconUrl: './svg/sohu.svg',
     color: '#e11d48',
     writeUrl: 'https://mp.sohu.com/mpbp/bp/article/write',
     status: 'idle',
@@ -423,7 +442,8 @@ const platforms = ref([
   {
     id: 'xueqiu',
     name: '雪球',
-    iconUrl: '',
+    category: 'media',
+    iconUrl: './svg/xueqiu.svg',
     color: '#3b82f6',
     writeUrl: 'https://mp.xueqiu.com/writeV2',
     status: 'idle',
@@ -439,7 +459,8 @@ const platforms = ref([
   {
     id: 'eastmoney',
     name: '东方财富',
-    iconUrl: '',
+    category: 'media',
+    iconUrl: './svg/eastmoney.svg',
     color: '#f59e0b',
     writeUrl: 'https://mp.eastmoney.com/NewWrite/Article',
     status: 'idle',
@@ -455,7 +476,8 @@ const platforms = ref([
   {
     id: 'woshipm',
     name: '人人都是产品经理',
-    iconUrl: '',
+    category: 'media',
+    iconUrl: './svg/woshipm.svg',
     color: '#ea580c',
     writeUrl: 'https://www.woshipm.com/writing',
     status: 'idle',
@@ -469,8 +491,111 @@ const platforms = ref([
     avatar: ''
   },
   {
+    id: 'infoq',
+    name: 'InfoQ',
+    category: 'tech',
+    iconUrl: './svg/infoq.svg',
+    color: '#0066cc',
+    writeUrl: 'https://xie.infoq.cn/article/draft/new',
+    status: 'idle',
+    progress: 0,
+    actionLabel: '复制并前往创作',
+    format: 'md',
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: true,
+    username: '',
+    avatar: ''
+  },
+  {
+    id: 'learnku',
+    name: 'LearnKu',
+    category: 'tech',
+    iconUrl: './svg/learnku.svg',
+    color: '#00c875',
+    writeUrl: 'https://learnku.com/articles/create',
+    status: 'idle',
+    progress: 0,
+    actionLabel: '复制并前往创作',
+    format: 'md',
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: true,
+    username: '',
+    avatar: ''
+  },
+  {
+    id: 'tencentcloud',
+    name: '腾讯云开发者',
+    category: 'tech',
+    iconUrl: './svg/tencentcloud.svg',
+    color: '#0052d9',
+    writeUrl: 'https://cloud.tencent.com/developer/article/write',
+    status: 'idle',
+    progress: 0,
+    actionLabel: '复制并前往创作',
+    format: 'md',
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: true,
+    username: '',
+    avatar: ''
+  },
+  {
+    id: 'nowcoder',
+    name: '牛客网',
+    category: 'tech',
+    iconUrl: './svg/nowcoder.svg',
+    color: '#00db99',
+    writeUrl: 'https://www.nowcoder.com/discuss/post/write',
+    status: 'idle',
+    progress: 0,
+    actionLabel: '复制并前往创作',
+    format: 'md',
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: true,
+    username: '',
+    avatar: ''
+  },
+  {
+    id: 'aliyun',
+    name: '阿里云开发者',
+    category: 'tech',
+    iconUrl: './svg/aliyun.svg',
+    color: '#ff5500',
+    writeUrl: 'https://developer.aliyun.com/article/new',
+    status: 'idle',
+    progress: 0,
+    actionLabel: '复制并前往创作',
+    format: 'md',
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: true,
+    username: '',
+    avatar: ''
+  },
+  {
+    id: 'leetcode',
+    name: '力扣 (LeetCode)',
+    category: 'tech',
+    iconUrl: './svg/leetcode.svg',
+    color: '#ffa116',
+    writeUrl: 'https://leetcode.cn/circle/discuss/create/',
+    status: 'idle',
+    progress: 0,
+    actionLabel: '复制并前往创作',
+    format: 'md',
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: true,
+    username: '',
+    avatar: ''
+  },
+  {
     id: 'zip-download',
     name: 'Markdown 离线包',
+    category: 'tool',
     iconUrl: './svg/md.svg',
     color: '#6366f1',
     writeUrl: '',
@@ -486,10 +611,25 @@ const platforms = ref([
   }
 ]);
 
-// ── Visible Filtered Platforms ──
+// ── Visible Filtered Platforms (Sorted: Logged-in platforms first, Unlogged-in platforms below) ──
 const visiblePlatforms = computed(() => {
-  return platforms.value.filter(p => p.enabled !== false);
+  const filtered = platforms.value.filter(p => p.enabled !== false);
+  return [...filtered].sort((a, b) => {
+    const aLogged = a.loginStatus === 'logged_in' || a.id === 'zip-download';
+    const bLogged = b.loginStatus === 'logged_in' || b.id === 'zip-download';
+    if (aLogged && !bLogged) return -1;
+    if (!aLogged && bLogged) return 1;
+    return 0;
+  });
 });
+
+const handlePlatformRowClick = (plat) => {
+  if (plat.loginStatus === 'logged_in' || plat.id === 'zip-download') {
+    toggleSelect(plat);
+  } else {
+    openLoginTab(plat);
+  }
+};
 
 const loggedInCount = computed(() => {
   return visiblePlatforms.value.filter(p => p.loginStatus === 'logged_in' || p.id === 'zip-download').length;
@@ -497,11 +637,40 @@ const loggedInCount = computed(() => {
 
 // ── Platform Display Management ──
 const showPlatformManageModal = ref(false);
+const manageTab = ref('all'); // 'all' | 'tech' | 'media'
 const SAVED_ENABLED_KEY = 'nicemd_enabled_platforms_v2';
+
+const techPlatforms = computed(() => {
+  return platforms.value.filter(p => p.category === 'tech');
+});
+
+const mediaPlatforms = computed(() => {
+  return platforms.value.filter(p => p.category === 'media' || p.category === 'tool');
+});
+
+const techEnabledCount = computed(() => {
+  return techPlatforms.value.filter(p => p.enabled !== false).length;
+});
+
+const mediaEnabledCount = computed(() => {
+  return mediaPlatforms.value.filter(p => p.enabled !== false).length;
+});
 
 const togglePlatformEnabled = (plat) => {
   soundEngine.playClick();
   plat.enabled = !plat.enabled;
+  saveEnabledPlatforms();
+};
+
+const toggleCategoryPlatforms = (category, enable) => {
+  soundEngine.playClick();
+  platforms.value.forEach(p => {
+    if (category === 'tech' && p.category === 'tech') {
+      p.enabled = enable;
+    } else if (category === 'media' && (p.category === 'media' || p.category === 'tool')) {
+      p.enabled = enable;
+    }
+  });
   saveEnabledPlatforms();
 };
 
@@ -515,7 +684,11 @@ const toggleAllPlatforms = (enableAll) => {
 
 const resetDefaultPlatforms = () => {
   soundEngine.playClick();
-  const defaultEnabledIds = ['wechat', 'zhihu', 'juejin', 'csdn', 'baijiahao', 'bilibili', 'cnblogs', 'weibo', 'yuque', 'zip-download'];
+  const defaultEnabledIds = [
+    'wechat', 'zhihu', 'juejin', 'csdn', 'baijiahao', 'bilibili', 'cnblogs', 
+    'weibo', 'yuque', 'segmentfault', 'infoq', 'learnku', 'tencentcloud', 
+    'nowcoder', 'aliyun', 'leetcode', 'zip-download'
+  ];
   platforms.value.forEach(p => {
     p.enabled = defaultEnabledIds.includes(p.id);
   });
@@ -970,13 +1143,21 @@ onMounted(() => {
             <div class="section-title-left">
               <h3 class="drawer-section-title">发布平台</h3>
               <div class="login-count-tag">
-                <span class="count-pill">{{ loggedInCount }}/{{ visiblePlatforms.length }}</span>
-                <span class="count-label">已登录</span>
+                <span class="count-pill">{{ selectedCount }}/{{ loggedInCount }}</span>
+                <span class="count-label">已选择</span>
               </div>
             </div>
             
             <!-- Direct Actions Toolbar -->
             <div class="header-actions-group">
+              <button 
+                class="btn-action-tool btn-select-toggle" 
+                @click="toggleSelectAll"
+                title="一键全选或取消全选所有已登录渠道"
+              >
+                <span>{{ isAllSelected ? '取消全选' : '全选' }}</span>
+              </button>
+
               <button 
                 class="btn-action-tool btn-batch-manage" 
                 @click="showPlatformManageModal = true"
@@ -1006,11 +1187,29 @@ onMounted(() => {
               class="platform-row-item"
               :class="[
                 { 'is-selected': plat.selected },
-                { 'is-not-connected': plat.loginStatus !== 'logged_in' && plat.id !== 'zip-download' }
+                { 'is-logged-in': plat.loginStatus === 'logged_in' || plat.id === 'zip-download' },
+                { 'is-unlogged': plat.loginStatus !== 'logged_in' && plat.id !== 'zip-download' }
               ]"
-              @click="toggleSelect(plat)"
+              @click="handlePlatformRowClick(plat)"
             >
-              <!-- Left: Brand Icon with Online Green Dot Indicator -->
+              <!-- Left: Checkbox Selector (Active for logged in, Disabled placeholder for unlogged in) -->
+              <div 
+                v-if="plat.loginStatus === 'logged_in' || plat.id === 'zip-download'"
+                class="row-select-checkbox"
+                :class="{ 'is-checked': plat.selected }"
+                @click.stop="toggleSelect(plat)"
+                title="勾选/取消勾选分发渠道"
+              >
+                <Check v-if="plat.selected" size="12" class="check-svg" />
+              </div>
+              <div 
+                v-else
+                class="row-select-checkbox is-disabled"
+                @click.stop="openLoginTab(plat)"
+                title="未登录平台不可勾选，点击前往登录"
+              ></div>
+
+              <!-- Brand Icon with Online Green Dot Indicator -->
               <div class="platform-icon-wrapper" :style="{ backgroundColor: plat.iconUrl ? 'transparent' : plat.color }">
                 <img 
                   v-if="plat.iconUrl" 
@@ -1022,15 +1221,18 @@ onMounted(() => {
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                   <polyline points="22,6 12,13 2,6"/>
                 </svg>
-                <!-- Online Green Dot on Icon Corner -->
+                <!-- Online Green Dot on Icon Corner (Only for logged in) -->
                 <span v-if="plat.loginStatus === 'logged_in' || plat.id === 'zip-download'" class="icon-online-dot"></span>
               </div>
 
               <!-- Center: Name & Sub -->
-              <div class="platform-meta">
+              <div class="platform-meta" :class="{ 'is-unlogged-meta': plat.loginStatus !== 'logged_in' && plat.id !== 'zip-download' }">
                 <span class="platform-name">{{ plat.name }}</span>
-                <span class="platform-sub">
-                  {{ plat.username || (plat.loginStatus === 'logged_in' ? '已登录' : (plat.loginStatus === 'checking' ? '检测状态中...' : '未登录')) }}
+                <span 
+                  v-if="plat.loginStatus === 'logged_in' || plat.id === 'zip-download'" 
+                  class="platform-sub"
+                >
+                  {{ plat.username || '已登录' }}
                 </span>
               </div>
 
@@ -1046,27 +1248,27 @@ onMounted(() => {
 
               <!-- Right: Status Badge & Chevron Arrow -->
               <div class="platform-action-wrap">
-                <!-- Logged in state: Clean '已登录' Pill -->
+                <!-- Logged in state: Clean '已登录' Pill (Image 1) -->
                 <span 
                   v-if="plat.loginStatus === 'logged_in' || plat.id === 'zip-download'" 
                   class="badge-logged-in-clean"
+                  :class="{ 'is-selected-badge': plat.selected }"
                 >
-                  已登录
+                  {{ plat.selected ? '已选择' : '已登录' }}
                 </span>
 
-                <!-- Not logged in state: '登录' Button -->
-                <button 
-                  v-else-if="plat.loginStatus !== 'checking'" 
-                  class="btn-action-login"
-                  @click.stop="openLoginTab(plat)"
-                  title="点击打开平台并登录"
+                <!-- Checking state -->
+                <span v-else-if="plat.loginStatus === 'checking'" class="badge-checking">检测中</span>
+
+                <!-- Unlogged in state: Text '去登录' (Image 2) -->
+                <span 
+                  v-else 
+                  class="text-go-login"
                 >
-                  <span>登录</span>
-                </button>
+                  去登录
+                </span>
 
-                <span v-else class="badge-checking">检测中</span>
-
-                <ChevronRight size="16" class="row-chevron-arrow" />
+                <ChevronRight size="15" class="row-chevron-arrow" />
               </div>
             </div>
           </div>
@@ -1181,7 +1383,7 @@ onMounted(() => {
         >
           <span v-if="isLaunching" class="spinner-dot"></span>
           <span class="launch-btn-text">
-            {{ isFinished ? '重新发布' : isLaunching ? '正在执行分发...' : '重新发布' }}
+            {{ isFinished ? '重新发布' : isLaunching ? `正在执行分发 (${selectedCount} 个渠道)...` : (selectedCount > 0 ? `一键发布 (${selectedCount} 个渠道)` : '请勾选需要分发的渠道') }}
           </span>
           <span class="launch-arrow">→</span>
         </button>
@@ -1209,37 +1411,121 @@ onMounted(() => {
       <div class="manage-modal-card">
         <div class="manage-modal-header">
           <div class="manage-header-titles">
-            <h3 class="manage-modal-title">⚙️ 发布平台展示管理</h3>
-            <p class="manage-modal-subtitle">勾选需要在控制台展示的平台，未勾选的平台将自动隐藏</p>
+            <div class="manage-title-row">
+              <span class="manage-title-badge">设置</span>
+              <h3 class="manage-modal-title">发布平台展示管理</h3>
+            </div>
+            <p class="manage-modal-subtitle">自定义在右侧发布面板中展示的平台，支持技术社区与媒体平台分类管理</p>
           </div>
           <button class="manage-modal-close" @click="showPlatformManageModal = false" title="关闭">
             <X size="18" />
           </button>
         </div>
 
+        <!-- Category Nav Tabs -->
+        <div class="manage-tabs-bar">
+          <button 
+            class="manage-tab-btn" 
+            :class="{ active: manageTab === 'all' }"
+            @click="manageTab = 'all'"
+          >
+            全部平台 ({{ platforms.length }})
+          </button>
+          <button 
+            class="manage-tab-btn" 
+            :class="{ active: manageTab === 'tech' }"
+            @click="manageTab = 'tech'"
+          >
+            💻 技术社区 ({{ techEnabledCount }}/{{ techPlatforms.length }})
+          </button>
+          <button 
+            class="manage-tab-btn" 
+            :class="{ active: manageTab === 'media' }"
+            @click="manageTab = 'media'"
+          >
+            📰 媒体平台 ({{ mediaEnabledCount }}/{{ mediaPlatforms.length }})
+          </button>
+        </div>
+
         <div class="manage-modal-body">
-          <div class="manage-platforms-grid">
-            <div 
-              v-for="plat in platforms" 
-              :key="plat.id"
-              class="manage-platform-item"
-              :class="{ 'is-enabled': plat.enabled !== false }"
-              @click="togglePlatformEnabled(plat)"
-            >
-              <div class="manage-item-checkbox">
-                <input 
-                  type="checkbox" 
-                  :checked="plat.enabled !== false" 
-                  @click.stop="togglePlatformEnabled(plat)" 
-                />
+          <!-- Section 1: 技术社区与开发者平台 -->
+          <div v-if="manageTab === 'all' || manageTab === 'tech'" class="manage-category-group">
+            <div class="manage-category-header">
+              <div class="manage-category-title-wrap">
+                <span class="category-icon-emoji">💻</span>
+                <span class="manage-category-name">技术社区与开发者平台</span>
+                <span class="manage-category-count">{{ techEnabledCount }} / {{ techPlatforms.length }} 已开启</span>
               </div>
-              <div class="manage-item-icon">
-                <img v-if="plat.iconUrl" :src="plat.iconUrl" :alt="plat.name" />
-                <span v-else class="fallback-icon-letter">{{ plat.name.charAt(0) }}</span>
+              <div class="manage-category-actions">
+                <button class="btn-group-toggle" @click="toggleCategoryPlatforms('tech', true)">本组全选</button>
+                <button class="btn-group-toggle" @click="toggleCategoryPlatforms('tech', false)">本组取消</button>
               </div>
-              <div class="manage-item-info">
-                <span class="manage-item-name">{{ plat.name }}</span>
-                <span class="manage-item-tag">{{ plat.format === 'html' ? '富文本' : 'Markdown' }}</span>
+            </div>
+
+            <div class="manage-platforms-grid">
+              <div 
+                v-for="plat in techPlatforms" 
+                :key="plat.id"
+                class="manage-platform-item"
+                :class="{ 'is-enabled': plat.enabled !== false }"
+                @click="togglePlatformEnabled(plat)"
+              >
+                <div class="manage-item-checkbox">
+                  <input 
+                    type="checkbox" 
+                    :checked="plat.enabled !== false" 
+                    @click.stop="togglePlatformEnabled(plat)" 
+                  />
+                </div>
+                <div class="manage-item-icon">
+                  <img v-if="plat.iconUrl" :src="plat.iconUrl" :alt="plat.name" />
+                  <span v-else class="fallback-icon-letter">{{ plat.name.charAt(0) }}</span>
+                </div>
+                <div class="manage-item-info">
+                  <span class="manage-item-name">{{ plat.name }}</span>
+                  <span class="manage-item-tag">{{ plat.format === 'html' ? '富文本' : 'Markdown' }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Section 2: 媒体平台与自媒体 -->
+          <div v-if="manageTab === 'all' || manageTab === 'media'" class="manage-category-group">
+            <div class="manage-category-header">
+              <div class="manage-category-title-wrap">
+                <span class="category-icon-emoji">📰</span>
+                <span class="manage-category-name">媒体平台与自媒体渠道</span>
+                <span class="manage-category-count">{{ mediaEnabledCount }} / {{ mediaPlatforms.length }} 已开启</span>
+              </div>
+              <div class="manage-category-actions">
+                <button class="btn-group-toggle" @click="toggleCategoryPlatforms('media', true)">本组全选</button>
+                <button class="btn-group-toggle" @click="toggleCategoryPlatforms('media', false)">本组取消</button>
+              </div>
+            </div>
+
+            <div class="manage-platforms-grid">
+              <div 
+                v-for="plat in mediaPlatforms" 
+                :key="plat.id"
+                class="manage-platform-item"
+                :class="{ 'is-enabled': plat.enabled !== false }"
+                @click="togglePlatformEnabled(plat)"
+              >
+                <div class="manage-item-checkbox">
+                  <input 
+                    type="checkbox" 
+                    :checked="plat.enabled !== false" 
+                    @click.stop="togglePlatformEnabled(plat)" 
+                  />
+                </div>
+                <div class="manage-item-icon">
+                  <img v-if="plat.iconUrl" :src="plat.iconUrl" :alt="plat.name" />
+                  <span v-else class="fallback-icon-letter">{{ plat.name.charAt(0) }}</span>
+                </div>
+                <div class="manage-item-info">
+                  <span class="manage-item-name">{{ plat.name }}</span>
+                  <span class="manage-item-tag">{{ plat.id === 'zip-download' ? '离线导出' : (plat.format === 'html' ? '富文本' : 'Markdown') }}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -1253,7 +1539,7 @@ onMounted(() => {
           </div>
           <div class="manage-footer-right">
             <button class="btn-manage-done" @click="showPlatformManageModal = false">
-              完成 (已开启 {{ visiblePlatforms.length }} 个)
+              完成保存 (已开启 {{ visiblePlatforms.length }} 个)
             </button>
           </div>
         </div>
@@ -1489,6 +1775,27 @@ onMounted(() => {
   gap: 0.375rem;
 }
 
+.btn-action-tool.btn-select-toggle {
+  background: #eff6ff;
+  border: 0.0625rem solid #dbeafe;
+  font-size: 0.71875rem;
+  font-weight: 600;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  padding: 0.3125rem 0.625rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.btn-action-tool.btn-select-toggle:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
 .btn-action-tool.btn-batch-manage {
   background: #f8fafc;
   border: 0.0625rem solid #f1f5f9;
@@ -1559,12 +1866,14 @@ onMounted(() => {
 .platform-row-item {
   display: flex;
   align-items: center;
-  padding: 0.75rem 0.375rem;
-  gap: 0.75rem;
+  padding: 0.625rem 0.5rem;
+  gap: 0.625rem;
   border-bottom: 0.0625rem solid #f8fafc;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  border-radius: 0.625rem;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  border: 0.0625rem solid transparent;
 }
 
 .platform-row-item:last-child {
@@ -1572,43 +1881,121 @@ onMounted(() => {
 }
 
 .platform-row-item:hover {
-  background: rgba(241, 245, 249, 0.55);
-  padding-left: 0.5rem;
-  padding-right: 0.5rem;
+  background: rgba(241, 245, 249, 0.65);
 }
 
-/* Icon with Corner Online Indicator */
+.platform-row-item.is-selected {
+  background: #f8fbff;
+  border-color: #dbeafe;
+}
+
+/* Row Select Checkbox */
+.row-select-checkbox {
+  width: 1.0625rem;
+  height: 1.0625rem;
+  border-radius: 0.3125rem;
+  border: 0.09375rem solid #cbd5e1;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.row-select-checkbox:hover {
+  border-color: #3b82f6;
+  background: #eff6ff;
+}
+
+.row-select-checkbox.is-checked {
+  background: #2563eb;
+  border-color: #2563eb;
+  box-shadow: 0 0.125rem 0.375rem rgba(37, 99, 235, 0.3);
+}
+
+.row-select-checkbox.is-disabled {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  cursor: pointer;
+  opacity: 0.8;
+}
+
+.row-select-checkbox.is-disabled:hover {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+}
+
+.check-svg {
+  color: #ffffff;
+  stroke-width: 3.2;
+}
+
+/* Unlogged-in row (Image 2 style: Clean white & simple) */
+.platform-row-item.is-unlogged {
+  background: #ffffff;
+}
+
+.platform-row-item.is-unlogged:hover {
+  background: #f8fafc;
+}
+
+.platform-row-item.is-unlogged .platform-name {
+  font-weight: 500;
+  color: #475569;
+}
+
+.platform-row-item.is-unlogged:hover .platform-name {
+  color: #1e293b;
+}
+
+.platform-row-item.is-unlogged:hover .text-go-login {
+  color: #2563eb;
+}
+
+.platform-row-item.is-unlogged:hover .row-chevron-arrow {
+  color: #2563eb;
+  transform: translateX(0.125rem);
+}
+
+.is-unlogged-meta {
+  justify-content: center;
+}
+
+/* Icon with Corner Online Indicator (Clean & Compact 26px) */
 .platform-icon-wrapper {
-  width: 2.5rem;
-  height: 2.5rem;
-  border-radius: 0.75rem;
+  width: 1.625rem;
+  height: 1.625rem;
+  border-radius: 0.4375rem;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   overflow: visible;
   position: relative;
-  box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.06);
+  background: transparent !important;
+  box-shadow: none !important;
 }
 
 .platform-icon-img {
   width: 100%;
   height: 100%;
-  border-radius: 0.75rem;
+  border-radius: 0.4375rem;
   object-fit: contain;
   display: block;
 }
 
 .icon-online-dot {
   position: absolute;
-  top: -0.125rem;
-  right: -0.125rem;
-  width: 0.5625rem;
-  height: 0.5625rem;
+  top: -0.0625rem;
+  right: -0.0625rem;
+  width: 0.375rem;
+  height: 0.375rem;
   border-radius: 50%;
   background: #22c55e;
-  border: 0.125rem solid #ffffff;
-  box-shadow: 0 0.0625rem 0.25rem rgba(34, 197, 94, 0.4);
+  border: 0.0625rem solid #ffffff;
+  box-shadow: 0 0.0625rem 0.125rem rgba(34, 197, 94, 0.4);
   z-index: 2;
 }
 
@@ -1630,6 +2017,7 @@ onMounted(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   letter-spacing: -0.0125rem;
+  transition: color 0.18s ease;
 }
 
 .platform-sub {
@@ -1696,7 +2084,7 @@ onMounted(() => {
 .platform-action-wrap {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
   flex-shrink: 0;
 }
 
@@ -1710,24 +2098,23 @@ onMounted(() => {
   border-radius: 9999px;
   white-space: nowrap;
   user-select: none;
+  transition: all 0.18s ease;
 }
 
-.btn-action-login {
-  background: #fff7ed;
-  border: 0.0625rem solid #ffedd5;
-  color: #ea580c;
-  font-size: 0.71875rem;
+.badge-logged-in-clean.is-selected-badge {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #2563eb;
   font-weight: 600;
-  padding: 0.21875rem 0.625rem;
-  border-radius: 9999px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  white-space: nowrap;
 }
 
-.btn-action-login:hover {
-  background: #ffedd5;
-  transform: translateY(-0.0625rem);
+.text-go-login {
+  font-size: 0.8125rem;
+  color: #94a3b8;
+  font-weight: 400;
+  white-space: nowrap;
+  user-select: none;
+  transition: color 0.18s ease;
 }
 
 .badge-checking {
@@ -1743,8 +2130,7 @@ onMounted(() => {
 
 .row-chevron-arrow {
   color: #94a3b8;
-  margin-left: 0.1875rem;
-  transition: transform 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 /* Settings Card Box */
@@ -2122,13 +2508,12 @@ input:checked + .slider:before {
 }
 
 .manage-modal-card {
-  width: 520px;
+  width: 640px;
   max-width: 95vw;
-  max-height: 85vh;
+  max-height: 88vh;
   background: #ffffff;
   border-radius: 20px;
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
-  border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -2141,7 +2526,7 @@ input:checked + .slider:before {
 }
 
 .manage-modal-header {
-  padding: 18px 22px;
+  padding: 18px 22px 14px 22px;
   border-bottom: 1px solid #f1f5f9;
   display: flex;
   justify-content: space-between;
@@ -2152,11 +2537,28 @@ input:checked + .slider:before {
 .manage-header-titles {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
+}
+
+.manage-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.manage-title-badge {
+  font-size: 11px;
+  font-weight: 700;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #dbeafe;
+  padding: 1px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
 }
 
 .manage-modal-title {
-  font-size: 16px;
+  font-size: 16.5px;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
@@ -2188,16 +2590,117 @@ input:checked + .slider:before {
   color: #0f172a;
 }
 
+/* Category Filter Tabs Bar */
+.manage-tabs-bar {
+  display: flex;
+  gap: 6px;
+  padding: 10px 22px;
+  background: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.manage-tab-btn {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 6px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.manage-tab-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.manage-tab-btn.active {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.12);
+}
+
 .manage-modal-body {
-  padding: 16px 20px;
+  padding: 18px 22px;
   overflow-y: auto;
   flex: 1;
-  max-height: calc(85vh - 140px);
+  max-height: calc(88vh - 180px);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Category Group Block */
+.manage-category-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.manage-category-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 6px;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.manage-category-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.category-icon-emoji {
+  font-size: 15px;
+}
+
+.manage-category-name {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.manage-category-count {
+  font-size: 11px;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 1px 8px;
+  border-radius: 10px;
+  font-weight: 500;
+}
+
+.manage-category-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-group-toggle {
+  background: transparent;
+  border: 1px solid #e2e8f0;
+  font-size: 11px;
+  font-weight: 500;
+  color: #64748b;
+  padding: 2px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-group-toggle:hover {
+  background: #f8fafc;
+  color: #2563eb;
+  border-color: #bfdbfe;
 }
 
 .manage-platforms-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
   gap: 10px;
 }
 
@@ -2205,23 +2708,31 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 8px 12px;
+  padding: 9px 12px;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
+  border-radius: 13px;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
 }
 
 .manage-platform-item:hover {
   border-color: #cbd5e1;
-  background: #f1f5f9;
+  background: #ffffff;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.05);
+  transform: translateY(-1px);
 }
 
 .manage-platform-item.is-enabled {
-  background: #eff6ff;
-  border-color: #bfdbfe;
+  background: #ffffff;
+  border-color: #93c5fd;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+}
+
+.manage-platform-item.is-enabled:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.15);
 }
 
 .manage-item-checkbox {
@@ -2238,16 +2749,16 @@ input:checked + .slider:before {
 }
 
 .manage-item-icon {
-  width: 28px;
-  height: 28px;
-  border-radius: 7px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   overflow: hidden;
   background: #ffffff;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
 .manage-item-icon img {
@@ -2257,7 +2768,7 @@ input:checked + .slider:before {
 }
 
 .fallback-icon-letter {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
   color: #2563eb;
 }
@@ -2265,7 +2776,7 @@ input:checked + .slider:before {
 .manage-item-info {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 1px;
   flex: 1;
   min-width: 0;
 }
@@ -2273,19 +2784,20 @@ input:checked + .slider:before {
 .manage-item-name {
   font-size: 13px;
   font-weight: 600;
-  color: #1e293b;
+  color: #0f172a;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .manage-item-tag {
-  font-size: 10px;
+  font-size: 10.5px;
   color: #94a3b8;
+  font-weight: 500;
 }
 
 .manage-modal-footer {
-  padding: 14px 20px;
+  padding: 14px 22px;
   border-top: 1px solid #f1f5f9;
   display: flex;
   justify-content: space-between;
@@ -2297,7 +2809,7 @@ input:checked + .slider:before {
 .manage-footer-left {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
 .btn-manage-action {
@@ -2306,7 +2818,7 @@ input:checked + .slider:before {
   font-size: 12px;
   font-weight: 500;
   color: #475569;
-  padding: 5px 10px;
+  padding: 6px 12px;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -2319,21 +2831,21 @@ input:checked + .slider:before {
 }
 
 .btn-manage-done {
-  background: #2563eb;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   color: #ffffff;
   border: none;
   font-size: 13px;
   font-weight: 600;
-  padding: 7px 18px;
+  padding: 8px 20px;
   border-radius: 10px;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.32);
   transition: all 0.2s ease;
 }
 
 .btn-manage-done:hover {
-  background: #1d4ed8;
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.38);
+  background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+  box-shadow: 0 6px 18px rgba(37, 99, 235, 0.42);
   transform: translateY(-1px);
 }
 

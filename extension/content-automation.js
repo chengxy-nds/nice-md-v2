@@ -93,6 +93,36 @@ const SELECTORS = {
     title: '#post_title, [placeholder*="标题"], input',
     editor: '[contenteditable="true"], textarea',
     format: 'text/html'
+  },
+  infoq: {
+    title: 'input.title-input, [placeholder*="标题"], .title-editor input, input[type="text"]',
+    editor: '.ProseMirror, .bytemd-editor textarea, [contenteditable="true"], textarea',
+    format: 'text/plain'
+  },
+  learnku: {
+    title: 'input[name="title"], #article-title, [placeholder*="标题"], .article-title-input',
+    editor: '#editor, .simditor-body, textarea[name="body"], [contenteditable="true"], textarea',
+    format: 'text/plain'
+  },
+  tencentcloud: {
+    title: '.article-title-input, [placeholder*="标题"], input.title, input[type="text"]',
+    editor: '.ProseMirror, [contenteditable="true"], .editor-content, textarea',
+    format: 'text/plain'
+  },
+  nowcoder: {
+    title: '.discuss-title input, [placeholder*="标题"], input.title-input, input[type="text"]',
+    editor: '.editor-content, [contenteditable="true"], .w-e-text-container [contenteditable="true"], textarea',
+    format: 'text/plain'
+  },
+  aliyun: {
+    title: '.article-title input, [placeholder*="标题"], .title-input, input[type="text"]',
+    editor: '.monaco-editor, .cm-content, [contenteditable="true"], textarea',
+    format: 'text/plain'
+  },
+  leetcode: {
+    title: 'input[placeholder*="标题"], .topic-title-input, [placeholder*="Title"], input[type="text"]',
+    editor: '.cm-content, [contenteditable="true"], textarea',
+    format: 'text/plain'
   }
 };
 
@@ -116,6 +146,12 @@ function getPlatformKey() {
   if (host.includes('xueqiu.com')) return 'xueqiu';
   if (host.includes('imooc.com')) return 'imooc';
   if (host.includes('woshipm.com')) return 'woshipm';
+  if (host.includes('infoq.cn')) return 'infoq';
+  if (host.includes('learnku.com')) return 'learnku';
+  if (host.includes('cloud.tencent.com') || host.includes('tencentcloud')) return 'tencentcloud';
+  if (host.includes('nowcoder.com')) return 'nowcoder';
+  if (host.includes('developer.aliyun.com') || host.includes('aliyun.com')) return 'aliyun';
+  if (host.includes('leetcode.cn')) return 'leetcode';
   return null;
 }
 

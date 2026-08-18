@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="nc-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00db99"/>
+      <stop offset="100%" stop-color="#009e69"/>
+    </linearGradient>
+    <filter id="nc-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#004d33" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect width="100" height="100" rx="26" ry="26" fill="url(#nc-grad)"/>
+  <!-- Nowcoder Bold '牛' in Pure White -->
+  <g filter="url(#nc-shadow)">
+    <text x="50" y="69" font-family="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif" font-size="54" font-weight="900" text-anchor="middle" fill="#ffffff">牛</text>
+  </g>
+</svg>

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+  <defs>
+    <linearGradient id="lc-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#383838"/>
+      <stop offset="100%" stop-color="#1f1f1f"/>
+    </linearGradient>
+    <filter id="lc-shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#000000" flood-opacity="0.35"/>
+    </filter>
+  </defs>
+  <rect width="100" height="100" rx="26" ry="26" fill="url(#lc-grad)"/>
+  <!-- LeetCode Iconic Brand Colors & Shape in pure vector -->
+  <g filter="url(#lc-shadow)">
+    <!-- Top Arc (Gray/White) -->
+    <path d="M56 25c-8.5 0-16.5 4.5-20.8 11.8l-8.6 14.8c-3.1 5.3-3.1 11.9 0 17.2l8.6 14.8c4.3 7.3 12.3 11.8 20.8 11.8 11.2 0 21.1-7.7 23.8-18.6l-8-2c-1.8 7.4-8.5 12.6-16.1 12.6-5.8 0-11.2-3.1-14.1-8.1L33 64.5c-2.1-3.6-2.1-8.1 0-11.7l8.6-14.8c2.9-5 8.3-8.1 14.1-8.1 7.6 0 14.3 5.2 16.1 12.6l8-2C77.1 29.7 67.2 22 56 22z" fill="#b0b0b0"/>
+    <!-- Yellow/Orange Core Bar -->
+    <path d="M38 52h36c2.2 0 4-1.8 4-4s-1.8-4-4-4H38c-2.2 0-4 1.8-4 4s1.8 4 4 4z" fill="#ffa116"/>
+  </g>
+</svg>
