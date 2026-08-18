@@ -1601,16 +1601,22 @@ class SegmentfaultAdapter extends CodeAdapter {
 
   async getSessionToken() {
     try {
+      // 1. Check direct cookies (PHPSESSID, SHARESESSID, token)
+      const phpsessid = await this.getCookieValue('https://segmentfault.com', 'PHPSESSID');
+      const sharesessid = await this.getCookieValue('https://segmentfault.com', 'SHARESESSID');
+      const tokenCookie = await this.getCookieValue('https://segmentfault.com', 'token');
+      const cookieToken = tokenCookie || phpsessid || sharesessid;
+
+      // 2. Fetch /write page to inspect inline Token
       const res = await this.fetch('https://segmentfault.com/write');
       const html = await res.text();
       
-      // 1. Match modern serverData Token
       const tokenMatch = html.match(/serverData":\s*\{\s*"Token"\s*:\s*"([^"]+)"/) ||
                          html.match(/"Token"\s*:\s*"([^"]+)"/) ||
                          html.match(/"token"\s*:\s*"([^"]+)"/);
       if (tokenMatch) return tokenMatch[1];
 
-      // 2. Match window.g_initialProps
+      // 3. Match window.g_initialProps
       const markStr = 'window.g_initialProps = ';
       const authIndex = html.indexOf(markStr);
       if (authIndex !== -1) {
@@ -1626,7 +1632,9 @@ class SegmentfaultAdapter extends CodeAdapter {
         }
       }
 
-      // 3. Fallback: check user settings page
+      if (cookieToken) return cookieToken;
+
+      // 4. Fallback: check user settings page
       const settingsRes = await this.fetch('https://segmentfault.com/user/settings');
       const settingsHtml = await settingsRes.text();
       const settingsTokenMatch = settingsHtml.match(/"Token"\s*:\s*"([^"]+)"/) || 
@@ -1645,8 +1653,13 @@ class SegmentfaultAdapter extends CodeAdapter {
     const validExt = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? ext : 'png';
     formData.append('image', blob, `cover_${Date.now()}.${validExt}`);
 
-    const headers = {};
-    if (token) headers['token'] = token;
+    const headers = {
+      'accept': 'application/json, text/plain, */*'
+    };
+    if (token) {
+      headers['token'] = token;
+      headers['authorization'] = `Bearer ${token}`;
+    }
 
     const response = await this.fetch('https://segmentfault.com/gateway/image', {
       method: 'POST',
@@ -1655,11 +1668,37 @@ class SegmentfaultAdapter extends CodeAdapter {
     });
 
     const res = await response.json();
-    let imageUrl = res.result || (Array.isArray(res) ? (res[0] === 1 ? null : res[1] || `https://image-static.segmentfault.com/${res[2]}`) : null);
-    if (!imageUrl) {
-      throw new Error('思否图片上传失败');
+    console.log('[NiceMD Segmentfault] Image upload response:', res);
+
+    let imageKey = null;
+    if (Array.isArray(res)) {
+      if (res[0] === 1) throw new Error(res[1] || '思否图片上传失败');
+      
+      // 思否返回格式为 [0, 附件ID(如388), 图片短标识(如"bVdqh07")]
+      // 必须优先提取有效字符串短码 res[2]，而非数字 ID res[1]
+      if (res[2] && typeof res[2] === 'string' && res[2].trim()) {
+        imageKey = res[2].trim();
+      } else if (res[1] && typeof res[1] === 'string' && (res[1].startsWith('/img') || res[1].startsWith('bV') || res[1].startsWith('http') || isNaN(Number(res[1])))) {
+        imageKey = res[1].trim();
+      } else if (res[2]) {
+        imageKey = String(res[2]).trim();
+      } else if (res[1]) {
+        imageKey = String(res[1]).trim();
+      }
+    } else if (res && typeof res === 'object') {
+      // 必须优先使用 res.url ("/img/bVdqh07")，而非包含分片数字子目录的 res.result full cdn 链接
+      imageKey = res.url || res.path || res.result || res.data || res.src;
     }
-    return { url: imageUrl };
+    
+    if (!imageKey) {
+      throw new Error('思否图片上传失败: ' + JSON.stringify(res));
+    }
+
+    let imageUrl = imageKey;
+    if (!imageUrl.startsWith('http') && !imageUrl.startsWith('/')) {
+      imageUrl = `/img/${imageUrl}`;
+    }
+    return { url: imageUrl, key: imageKey };
   }
 
   async publish(article) {
@@ -1679,12 +1718,13 @@ class SegmentfaultAdapter extends CodeAdapter {
 
     let cleanCover = sfCoverUrl || '';
     if (cleanCover) {
-      if (cleanCover.startsWith('http')) {
-        const m = cleanCover.match(/\/img\/(bV[a-zA-Z0-9_-]+)/) || cleanCover.match(/segmentfault\.com\/(?:img\/)?([a-zA-Z0-9_-]+)/);
-        if (m) {
-          cleanCover = `/img/${m[1]}`;
-        }
-      } else if (!cleanCover.startsWith('/')) {
+      // 优先精准提取 bV 标识
+      const bVMatch = cleanCover.match(/\/(?:img\/)?(bV[a-zA-Z0-9_-]+)/);
+      if (bVMatch) {
+        cleanCover = `/img/${bVMatch[1]}`;
+      } else if (cleanCover.startsWith('/img/')) {
+        cleanCover = cleanCover;
+      } else if (!cleanCover.startsWith('http') && !cleanCover.startsWith('/')) {
         cleanCover = `/img/${cleanCover}`;
       }
     }
@@ -1701,14 +1741,17 @@ class SegmentfaultAdapter extends CodeAdapter {
       cover_image: cleanCover || sfCoverUrl || '',
       bg_img: cleanCover || sfCoverUrl || '',
       background: cleanCover || sfCoverUrl || '',
-      image: cleanCover || sfCoverUrl || ''
+      image: cleanCover || sfCoverUrl || '',
+      banner: cleanCover || sfCoverUrl || ''
     };
 
     const headers = {
-      'content-type': 'application/json'
+      'content-type': 'application/json',
+      'accept': 'application/json, text/plain, */*'
     };
     if (token) {
       headers['token'] = token;
+      headers['authorization'] = `Bearer ${token}`;
     }
 
     const res = await this.fetch('https://segmentfault.com/gateway/draft', {
@@ -1746,8 +1789,15 @@ class SegmentfaultAdapter extends CodeAdapter {
               title: article.title,
               tags: [],
               text: content,
+              type: 'article',
               cover: cleanCover,
-              type: 'article'
+              cover_url: cleanCover,
+              cover_img: cleanCover,
+              cover_image: cleanCover,
+              image: cleanCover,
+              bg_img: cleanCover,
+              background: cleanCover,
+              banner: cleanCover
             })
           });
           console.log('[NiceMD Segmentfault] Draft PUT with cover successful:', cleanCover);

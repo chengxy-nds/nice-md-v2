@@ -10,7 +10,7 @@ export class SegmentfaultAdapter extends CodeAdapter {
     name: '思否',
     icon: 'https://imgcache.iyiou.com/Company/2016-05-11/cf-segmentfault.jpg',
     homepage: 'https://segmentfault.com/user/draft',
-    capabilities: ['article', 'draft', 'image_upload'],
+    capabilities: ['article', 'draft', 'image_upload', 'cover'],
   }
 
   /** 预处理配置: 思否使用 Markdown 格式 */
@@ -147,9 +147,23 @@ export class SegmentfaultAdapter extends CodeAdapter {
       throw new Error('图片上传失败: ' + text)
     }
 
-    // 新版返回格式: { url: "/img/xxx", result: "https://..." }
-    // 旧版返回格式: [0, url, id] 或 [1, error_message]
-    const imageUrl = res.result || (Array.isArray(res) ? (res[0] === 1 ? null : res[1] || `https://image-static.segmentfault.com/${res[2]}`) : null)
+    // 新版/网关返回格式: [0, 附件ID(如388), 图片短标识(如"bVdqh07")] 或 [1, error_message]
+    let imageUrl = null;
+    if (Array.isArray(res)) {
+      if (res[0] === 1) throw new Error(res[1] || '图片上传失败');
+      if (res[2] && typeof res[2] === 'string') {
+        imageUrl = res[2].startsWith('/img') || res[2].startsWith('http') ? res[2] : `/img/${res[2]}`;
+      } else if (res[1] && typeof res[1] === 'string' && (res[1].startsWith('/img') || res[1].startsWith('http') || res[1].startsWith('bV') || isNaN(Number(res[1])))) {
+        imageUrl = res[1].startsWith('/img') || res[1].startsWith('http') ? res[1] : `/img/${res[1]}`;
+      } else if (res[2]) {
+        imageUrl = `/img/${res[2]}`;
+      } else if (res[1]) {
+        imageUrl = `/img/${res[1]}`;
+      }
+    } else if (res && typeof res === 'object') {
+      imageUrl = res.url || res.path || res.result || res.data || res.src;
+    }
+
     if (!imageUrl) {
       throw new Error(Array.isArray(res) ? (res[1] || '图片上传失败') : '图片上传失败')
     }
@@ -169,22 +183,52 @@ export class SegmentfaultAdapter extends CodeAdapter {
       let content = article.markdown || article.html || ''
       content = await this.processImages(content, (src) => this.uploadImageByUrl(src))
 
+      let coverUrl = ''
+      if (article.cover) {
+        try {
+          const coverRes = await this.uploadImageByUrl(article.cover)
+          coverUrl = coverRes.url
+        } catch (e) {
+          logger.warn('Failed to upload segmentfault cover:', e)
+        }
+      }
+
+      let cleanCover = coverUrl || ''
+      if (cleanCover) {
+        const bVMatch = cleanCover.match(/\/(?:img\/)?(bV[a-zA-Z0-9_-]+)/)
+        if (bVMatch) {
+          cleanCover = `/img/${bVMatch[1]}`
+        } else if (!cleanCover.startsWith('http') && !cleanCover.startsWith('/')) {
+          cleanCover = `/img/${cleanCover}`
+        }
+      }
+
       const postData = {
         title: article.title,
         tags: [],
         text: content,
         object_id: '',
         type: 'article',
+        cover: cleanCover,
+        cover_url: cleanCover,
+        cover_img: cleanCover,
+        cover_image: cleanCover,
+        image: cleanCover,
+      }
+
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        accept: '*/*',
+      }
+      if (this.sessionToken) {
+        headers['token'] = this.sessionToken
+        headers['authorization'] = `Bearer ${this.sessionToken}`
       }
 
       const response = await this.runtime.fetch('https://segmentfault.com/gateway/draft', {
         method: 'POST',
         credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-          token: this.sessionToken,
-          accept: '*/*',
-        },
+        headers,
         body: JSON.stringify(postData),
       })
 

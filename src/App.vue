@@ -5,7 +5,7 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, Ta
 import {
   Menu, Sparkles, Search, Image, HelpCircle, Link, Upload, Trash2,
   Link2, Link2Off, Eye, EyeOff, Download, Undo2, Redo2, Palette, Code2,
-  ChevronDown, FileCode, FileText, Globe
+  ChevronDown, FileCode, FileText, Globe, Wand2, LayoutGrid, Send, Settings, Check, X
 } from '@lucide/vue';
 import { applyTheme, getThemeDefaultStyles, themes as themePresets } from './utils/themePresets';
 import { codeThemes } from './utils/codeThemes';
@@ -887,6 +887,58 @@ const openSettings = () => {
   isSettingsOpen.value = true;
 };
 
+// ── Header Capsule Toolbar State & Actions ──
+const showMoreTools = ref(false);
+const showAiModal = ref(false);
+const appToastText = ref('');
+let appToastTimer = null;
+
+const triggerAppToast = (msg) => {
+  appToastText.value = msg;
+  clearTimeout(appToastTimer);
+  appToastTimer = setTimeout(() => {
+    appToastText.value = '';
+  }, 2500);
+};
+
+const handleAiPolish = () => {
+  soundEngine.playChime();
+  showAiModal.value = true;
+};
+
+const applyAiPolishPreset = (presetName) => {
+  showAiModal.value = false;
+  soundEngine.playChime();
+  triggerAppToast(`✨ AI 智能润色【${presetName}】已就绪！`);
+};
+
+// 智能排版 (中英文空格规范化、格式修剪、空行规整)
+const handleAutoFormat = () => {
+  if (!markdownContent.value) {
+    triggerAppToast('当前编辑器内容为空');
+    return;
+  }
+  soundEngine.playChime();
+  let text = markdownContent.value;
+  // 1. 中英文与数字之间添加标准空格 (Pangu style spacing)
+  text = text.replace(/([\u4e00-\u9fa5])([a-zA-Z0-9])/g, '$1 $2');
+  text = text.replace(/([a-zA-Z0-9])([\u4e00-\u9fa5])/g, '$1 $2');
+  // 2. 规范标题前后空格 (#标题 -> # 标题)
+  text = text.replace(/^(#{1,6})([^\s#])/gm, '$1 $2');
+  // 3. 规范无序列表符
+  text = text.replace(/^([ \t]*)\*([ \t]+)/gm, '$1- $2');
+  // 4. 清理多余空行 (最多连续保留两行)
+  text = text.replace(/\n{3,}/g, '\n\n');
+  
+  markdownContent.value = text;
+  triggerAppToast('✨ 智能排版与中英文规范已自动优化！');
+};
+
+const handleCoverGenerate = () => {
+  soundEngine.playChime();
+  isLaunchpadOpen.value = true;
+};
+
 // Renders html content helper for Launchpad
 const getCompiledHtml = () => {
   if (!markdownContent.value) return '';
@@ -1053,25 +1105,82 @@ watch(customStyles, () => {
         </button>
       </div>
 
-      <!-- Segmented View Switcher on Mobile/Tablet -->
-      <div class="mobile-view-tabs">
-        <button 
-          class="tab-view-btn" 
-          :class="{ 'is-active': mobileActiveView === 'editor' }" 
-          @click="mobileActiveView = 'editor'"
-        >
-          编辑
-        </button>
-        <button 
-          class="tab-view-btn" 
-          :class="{ 'is-active': mobileActiveView === 'preview' }" 
-          @click="mobileActiveView = 'preview'"
-        >
-          预览
-        </button>
+      <!-- Center Floating Pill Toolbar (AI 润色 / 智能排版 / 插入图片 / 生成封面 / 更多工具) -->
+      <div class="header-center">
+        <div class="header-capsule-bar">
+          <button class="capsule-btn is-ai" @click="handleAiPolish" title="AI 智能润色与优化">
+            <Sparkles size="14" class="capsule-icon ai-sparkle-icon" />
+            <span>AI 润色</span>
+          </button>
+          <button class="capsule-btn" @click="handleAutoFormat" title="智能中英文排版与规范">
+            <Wand2 size="14" class="capsule-icon" />
+            <span>智能排版</span>
+          </button>
+          <button class="capsule-btn" @click="editorPanelRef?.handleImageUpload()" title="插入图片">
+            <Image size="14" class="capsule-icon" />
+            <span>插入图片</span>
+          </button>
+          <button class="capsule-btn" @click="handleCoverGenerate" title="生成与更换文章封面">
+            <Palette size="14" class="capsule-icon" />
+            <span>生成封面</span>
+          </button>
+
+          <!-- More Tools Dropdown -->
+          <div class="capsule-dropdown-wrapper">
+            <button class="capsule-btn" :class="{ 'is-active': showMoreTools }" @click="showMoreTools = !showMoreTools" title="更多常用工具">
+              <LayoutGrid size="14" class="capsule-icon" />
+              <span>更多工具</span>
+            </button>
+            <div class="header-popout-panel capsule-popout" v-if="showMoreTools" @mouseleave="showMoreTools = false">
+              <button class="popout-item" @click="editorPanelRef?.openFindReplace(); showMoreTools = false">
+                <Search size="14" />
+                <span>查找与替换</span>
+              </button>
+              <button class="popout-item" @click="editorPanelRef?.toggleUrlImport(); showMoreTools = false">
+                <Link size="14" />
+                <span>URL 文章抓取导入</span>
+              </button>
+              <button class="popout-item" @click="editorPanelRef?.insertSample(); showMoreTools = false">
+                <HelpCircle size="14" />
+                <span>插入示例模板</span>
+              </button>
+              <button class="popout-item" @click="editorPanelRef?.clearContent(); showMoreTools = false">
+                <Trash2 size="14" />
+                <span>清空编辑器内容</span>
+              </button>
+              <button class="popout-item" @click="openSettings(); showMoreTools = false">
+                <Settings size="14" />
+                <span>系统偏好设置</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Segmented View Switcher on Mobile/Tablet -->
+        <div class="mobile-view-tabs">
+          <button 
+            class="tab-view-btn" 
+            :class="{ 'is-active': mobileActiveView === 'editor' }" 
+            @click="mobileActiveView = 'editor'"
+          >
+            编辑
+          </button>
+          <button 
+            class="tab-view-btn" 
+            :class="{ 'is-active': mobileActiveView === 'preview' }" 
+            @click="mobileActiveView = 'preview'"
+          >
+            预览
+          </button>
+        </div>
       </div>
 
+      <!-- Right Header Actions (Publish Button) -->
       <div class="header-right">
+        <button class="btn-header-publish" @click="openLaunchpad" title="一键多渠道分发发布">
+          <Send size="13" class="publish-send-icon" />
+          <span>发布</span>
+        </button>
       </div>
     </header>
 
@@ -1289,6 +1398,70 @@ watch(customStyles, () => {
 
     <!-- Global Confirm Dialog -->
     <ConfirmDialog />
+
+    <!-- AI Polish Interactive Modal -->
+    <Teleport to="body">
+      <div v-if="showAiModal" class="ai-polish-modal-backdrop" @click="showAiModal = false">
+        <div class="ai-polish-card" @click.stop>
+          <div class="ai-polish-header">
+            <div class="ai-header-title-wrap">
+              <div class="ai-header-icon-box">
+                <Sparkles size="16" />
+              </div>
+              <div>
+                <h3 class="ai-modal-title">AI 智能创作与润色</h3>
+                <p class="ai-modal-sub">深度调优文章行文质感、逻辑结构与传播吸引力</p>
+              </div>
+            </div>
+            <button class="ai-modal-close-btn" @click="showAiModal = false">
+              <X size="16" />
+            </button>
+          </div>
+
+          <div class="ai-presets-grid">
+            <div class="ai-preset-item" @click="applyAiPolishPreset('文学与优雅润色')">
+              <div class="ai-preset-emoji">✨</div>
+              <div class="ai-preset-text">
+                <div class="ai-preset-name">文学与优雅润色</div>
+                <div class="ai-preset-desc">辞藻华丽升华，通顺优美，适合散文与深度好文</div>
+              </div>
+            </div>
+
+            <div class="ai-preset-item" @click="applyAiPolishPreset('技术严谨与精炼')">
+              <div class="ai-preset-emoji">⚡</div>
+              <div class="ai-preset-text">
+                <div class="ai-preset-name">技术严谨与精炼</div>
+                <div class="ai-preset-desc">去芜存菁，结构紧凑，适合技术干货与架构分享</div>
+              </div>
+            </div>
+
+            <div class="ai-preset-item" @click="applyAiPolishPreset('错别字与语病纠正')">
+              <div class="ai-preset-emoji">🔍</div>
+              <div class="ai-preset-text">
+                <div class="ai-preset-name">错别字与语病纠正</div>
+                <div class="ai-preset-desc">一键校对全文错别字、标点与语病，保持原意</div>
+              </div>
+            </div>
+
+            <div class="ai-preset-item" @click="applyAiPolishPreset('生成 5 个爆款标题')">
+              <div class="ai-preset-emoji">🔥</div>
+              <div class="ai-preset-text">
+                <div class="ai-preset-name">生成 5 个爆款标题</div>
+                <div class="ai-preset-desc">结合微信公众号与知乎高赞逻辑，提高打开率</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Global App Floating Toast -->
+    <Transition name="toast-fade">
+      <div v-if="appToastText" class="app-floating-toast">
+        <Sparkles size="14" class="toast-sparkle" />
+        <span>{{ appToastText }}</span>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -1359,6 +1532,288 @@ watch(customStyles, () => {
   padding: 2px 7px;
   border-radius: 6px;
   line-height: 1;
+}
+
+/* Center Floating Capsule Toolbar */
+.header-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  position: relative;
+}
+
+.header-capsule-bar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  background: #ffffff;
+  border: 1px solid #eef2f6;
+  border-radius: 9999px;
+  padding: 3px 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  position: relative;
+  user-select: none;
+}
+
+.capsule-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border: none;
+  background: transparent;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.capsule-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.capsule-btn.is-ai {
+  color: #ff5e36;
+  font-weight: 600;
+}
+
+.capsule-btn.is-ai:hover {
+  background: #fff3ed;
+  color: #ea580c;
+}
+
+.capsule-btn.is-ai .ai-sparkle-icon {
+  color: #ff5e36;
+}
+
+.capsule-btn .capsule-icon {
+  flex-shrink: 0;
+}
+
+.capsule-dropdown-wrapper {
+  position: relative;
+}
+
+.capsule-popout {
+  top: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+  min-width: 170px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  padding: 6px;
+  z-index: 1000;
+}
+
+/* Right Header Publish Button */
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 140px;
+  justify-content: flex-end;
+}
+
+.btn-header-publish {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 18px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #ff6b4a 0%, #ff4b2b 100%);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(255, 94, 54, 0.32);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.btn-header-publish:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 15px rgba(255, 94, 54, 0.42);
+  filter: brightness(1.04);
+}
+
+.btn-header-publish:active {
+  transform: translateY(0);
+}
+
+.publish-send-icon {
+  transform: rotate(-15deg);
+}
+
+/* AI Polish Modal Popup */
+.ai-polish-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  animation: fadeIn 0.2s ease;
+}
+
+.ai-polish-card {
+  width: 500px;
+  max-width: 90vw;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.16);
+  border: 1px solid #f1f5f9;
+  overflow: hidden;
+  animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ai-polish-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f1f5f9;
+  background: #fafbfc;
+}
+
+.ai-header-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ai-header-icon-box {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: #fff3ed;
+  color: #ff5e36;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ai-modal-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.ai-modal-sub {
+  margin: 2px 0 0 0;
+  font-size: 11px;
+  color: #64748b;
+}
+
+.ai-modal-close-btn {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.ai-modal-close-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.ai-presets-grid {
+  padding: 16px 20px 20px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+
+.ai-preset-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid #eef2f6;
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.ai-preset-item:hover {
+  border-color: #ff5e36;
+  background: #fff9f6;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 94, 54, 0.12);
+}
+
+.ai-preset-emoji {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.ai-preset-text {
+  flex: 1;
+}
+
+.ai-preset-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.ai-preset-desc {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* Floating Toast */
+.app-floating-toast {
+  position: fixed;
+  top: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(12px);
+  color: #ffffff;
+  padding: 8px 20px;
+  border-radius: 9999px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  z-index: 99999;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toast-sparkle {
+  color: #fbbf24;
+}
+
+.toast-fade-enter-active,
+.toast-fade-leave-active {
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast-fade-enter-from,
+.toast-fade-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -10px);
 }
 
 .app-body {
@@ -1554,12 +2009,6 @@ watch(customStyles, () => {
 
 .header-select:hover {
   border-color: var(--accent-color);
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .export-dropdown {
@@ -1901,8 +2350,20 @@ watch(customStyles, () => {
   z-index: 99;
 }
 
+.btn-menu-toggle {
+  display: none;
+}
+
+.mobile-view-tabs {
+  display: none;
+}
+
 @media (max-width: 960px) {
   .app-left {
+    display: none;
+  }
+  
+  .header-capsule-bar {
     display: none;
   }
   

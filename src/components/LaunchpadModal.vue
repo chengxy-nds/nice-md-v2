@@ -894,6 +894,84 @@ const openLoginTab = (platform) => {
   }
 };
 
+// ── Resolve Channel User Profile / Home URL ──
+const getUserHomeUrl = (plat) => {
+  if (!plat) return '';
+  const id = plat.id;
+  const uid = plat.userId || '';
+
+  switch (id) {
+    case 'zhihu':
+      return uid ? `https://www.zhihu.com/people/${uid}` : 'https://www.zhihu.com/creator';
+    case 'juejin':
+      return uid ? `https://juejin.cn/user/${uid}` : 'https://juejin.cn/creator/home';
+    case 'cnblogs':
+      return uid ? `https://home.cnblogs.com/u/${uid}/` : 'https://home.cnblogs.com/';
+    case 'csdn':
+      return uid ? `https://blog.csdn.net/${uid}` : 'https://mp.csdn.net/';
+    case 'learnku':
+      return uid ? `https://learnku.com/users/${uid}` : 'https://learnku.com/';
+    case 'segmentfault':
+      return uid ? `https://segmentfault.com/u/${uid}` : 'https://segmentfault.com/user/settings';
+    case 'imooc':
+      return uid ? `https://www.imooc.com/u/${uid}` : 'https://www.imooc.com/u/index/allcourses';
+    case 'nowcoder':
+      return uid ? `https://www.nowcoder.com/profile/${uid}` : 'https://www.nowcoder.com/';
+    case 'leetcode':
+      return uid ? `https://leetcode.cn/u/${uid}` : 'https://leetcode.cn/circle/discuss/create/';
+    case 'bilibili':
+      return uid ? `https://space.bilibili.com/${uid}` : 'https://member.bilibili.com/platform/home';
+    case 'oschina':
+      return uid ? `https://my.oschina.net/u/${uid}` : 'https://my.oschina.net/';
+    case 'weibo':
+      return uid ? `https://weibo.com/u/${uid}` : 'https://weibo.com/';
+    case '51cto':
+      return uid ? (uid.startsWith('u_') ? `https://blog.51cto.com/${uid}` : `https://blog.51cto.com/u_${uid}`) : 'https://blog.51cto.com/';
+    case 'yuque':
+      return 'https://www.yuque.com/dashboard';
+    case 'wechat':
+    case 'weixin':
+      return 'https://mp.weixin.qq.com/';
+    case 'baijiahao':
+      return 'https://baijiahao.baidu.com/builder/rc/home';
+    case 'xueqiu':
+      return uid ? `https://xueqiu.com/u/${uid}` : 'https://xueqiu.com/';
+    case 'woshipm':
+      return uid ? `https://www.woshipm.com/u/${uid}` : 'https://www.woshipm.com/';
+    case 'douban':
+      return uid ? `https://www.douban.com/people/${uid}/` : 'https://www.douban.com/';
+    case 'infoq':
+      return 'https://xie.infoq.cn/';
+    case 'tencentcloud':
+      return uid ? `https://cloud.tencent.com/developer/user/${uid}` : 'https://cloud.tencent.com/developer';
+    case 'aliyun':
+      return 'https://developer.aliyun.com/creator';
+    case 'toutiao':
+      return 'https://mp.toutiao.com/profile_v4/index';
+    case 'netease':
+      return 'https://mp.163.com/';
+    case 'jianshu':
+      return 'https://www.jianshu.com/';
+    default:
+      return plat.writeUrl || '';
+  }
+};
+
+const openUserHome = (plat, event) => {
+  if (event) {
+    event.stopPropagation();
+  }
+  if (!plat || plat.id === 'zip-download') return;
+  soundEngine.playClick();
+  const url = getUserHomeUrl(plat);
+  if (!url) return;
+  if (isExtensionInstalled.value) {
+    window.postMessage({ type: 'NICEMD_OPEN_TAB', url }, '*');
+  } else {
+    window.open(url, '_blank');
+  }
+};
+
 const getPublishTitle = () => {
   if (props.articleTitle && props.articleTitle.trim()) {
     return props.articleTitle.trim();
@@ -1192,10 +1270,12 @@ onMounted(() => {
           if (info !== undefined) {
             if (typeof info === 'object') {
               p.loginStatus = info.loggedIn ? 'logged_in' : 'not_logged_in';
+              p.userId = info.userId || '';
               p.username = info.username || (info.loggedIn ? '已登录' : '');
               p.avatar = info.avatar || '';
             } else {
               p.loginStatus = info ? 'logged_in' : 'not_logged_in';
+              p.userId = '';
               p.username = info ? '已登录' : '';
               p.avatar = '';
             }
@@ -1336,6 +1416,9 @@ onMounted(() => {
                 <span 
                   v-if="plat.loginStatus === 'logged_in' || plat.id === 'zip-download'" 
                   class="platform-sub"
+                  :class="{ 'is-clickable-user': plat.id !== 'zip-download' }"
+                  @click.stop="openUserHome(plat, $event)"
+                  :title="plat.id === 'zip-download' ? '' : '点击前往该平台个人主页'"
                 >
                   {{ plat.username || '已登录' }}
                 </span>
@@ -1603,7 +1686,9 @@ onMounted(() => {
                     <span class="manage-item-name">{{ plat.name }}</span>
                     <span 
                       v-if="plat.loginStatus === 'logged_in' || plat.id === 'zip-download'" 
-                      class="manage-item-tag is-logged-tag"
+                      class="manage-item-tag is-logged-tag is-clickable-user"
+                      @click.stop="openUserHome(plat, $event)"
+                      :title="plat.id === 'zip-download' ? '' : '点击前往该平台个人主页'"
                     >
                       {{ plat.username || (plat.id === 'zip-download' ? '离线导出' : '已登录') }}
                     </span>
@@ -1656,7 +1741,9 @@ onMounted(() => {
                     <span class="manage-item-name">{{ plat.name }}</span>
                     <span 
                       v-if="plat.loginStatus === 'logged_in' || plat.id === 'zip-download'" 
-                      class="manage-item-tag is-logged-tag"
+                      class="manage-item-tag is-logged-tag is-clickable-user"
+                      @click.stop="openUserHome(plat, $event)"
+                      :title="plat.id === 'zip-download' ? '' : '点击前往该平台个人主页'"
                     >
                       {{ plat.username || (plat.id === 'zip-download' ? '离线导出' : '已登录') }}
                     </span>
@@ -2307,6 +2394,19 @@ onMounted(() => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.platform-sub.is-clickable-user {
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.platform-sub.is-clickable-user:hover {
+  color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 /* Dynamic Sync Center */
@@ -3156,6 +3256,19 @@ input:checked + .slider:before {
 .manage-item-tag.is-logged-tag {
   color: #16a34a;
   font-weight: 600;
+}
+
+.manage-item-tag.is-logged-tag.is-clickable-user {
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-block;
+  max-width: 100%;
+}
+
+.manage-item-tag.is-logged-tag.is-clickable-user:hover {
+  color: #2563eb;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 }
 
 .manage-item-tag.is-unlogged-tag {
