@@ -14,7 +14,12 @@ import {
   Upload,
   Check,
   RefreshCw,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Send,
+  ShieldCheck,
+  FileText,
+  Layers,
+  Maximize2
 } from '@lucide/vue';
 import { soundEngine } from '../utils/synthAudio';
 import { compileToWeChatHtml } from '../utils/wechatStyles';
@@ -485,6 +490,10 @@ const visiblePlatforms = computed(() => {
   return platforms.value.filter(p => p.enabled !== false);
 });
 
+const loggedInCount = computed(() => {
+  return visiblePlatforms.value.filter(p => p.loginStatus === 'logged_in' || p.id === 'zip-download').length;
+});
+
 // ── Platform Display Management ──
 const showPlatformManageModal = ref(false);
 const SAVED_ENABLED_KEY = 'nicemd_enabled_platforms_v2';
@@ -934,14 +943,19 @@ onMounted(() => {
       <div class="ambient-glow glow-1"></div>
       <div class="ambient-glow glow-2"></div>
 
-      <!-- Drawer Header Bar -->
+      <!-- Drawer Header Bar (Paper Airplane + Titles + Close Button) -->
       <div class="drawer-top-bar">
-        <div class="sparkle-title">
-          <span class="sparkle-icon">✨</span>
-          <span class="brand-title-cn">多渠道内容分发</span>
+        <div class="brand-header-left">
+          <div class="brand-icon-badge">
+            <Send size="18" class="plane-icon" />
+          </div>
+          <div class="brand-title-wrap">
+            <h2 class="brand-title-cn">多渠道内容分发</h2>
+            <p class="brand-subtitle-cn">一键发布到多个平台</p>
+          </div>
         </div>
         <button @click="emit('close')" class="btn-drawer-close" title="关闭面板">
-          <X size="18" />
+          <X size="16" />
         </button>
       </div>
 
@@ -950,44 +964,38 @@ onMounted(() => {
         <!-- Section 1: 发布平台 -->
         <section class="drawer-section">
           <div class="drawer-section-header">
-            <h3 class="drawer-section-title">发布平台</h3>
+            <div class="section-title-left">
+              <h3 class="drawer-section-title">发布平台</h3>
+              <div class="login-count-tag">
+                <span class="count-pill">{{ loggedInCount }}/{{ visiblePlatforms.length }}</span>
+                <span class="count-label">已登录</span>
+              </div>
+            </div>
             
             <!-- Direct Actions Toolbar -->
             <div class="header-actions-group">
-              <!-- Smart Toggle Select All / Deselect All Button -->
               <button 
-                class="btn-action-tool btn-toggle-select" 
-                :class="{ 'is-active': isAllSelected }"
-                @click="toggleSelectAll" 
-                :title="isAllSelected ? '取消全选所有平台' : '全选所有已连接平台'"
+                class="btn-action-tool btn-batch-manage" 
+                @click="showPlatformManageModal = true"
+                title="批量管理要在控制台展示的平台"
               >
-                <X v-if="isAllSelected" size="12" />
-                <Check v-else size="12" />
-                <span>{{ isAllSelected ? '取消全选' : '全选' }}</span>
+                <Layers size="13" />
+                <span>批量管理</span>
               </button>
               
               <button 
-                class="btn-action-tool" 
+                class="btn-action-dark btn-refresh-status" 
                 @click="checkAllLogins" 
                 :disabled="isCheckingLogins" 
                 title="刷新各平台登录状态"
               >
-                <RefreshCw size="12" :class="{ 'spin-anim': isCheckingLogins }" />
-                <span>刷新</span>
-              </button>
-
-              <button 
-                class="btn-manage-trigger" 
-                @click="showPlatformManageModal = true"
-                title="选择/管理要在控制台展示的平台"
-              >
-                <SlidersHorizontal size="12" />
-                <span>管理</span>
+                <RotateCw size="12" :class="{ 'spin-anim': isCheckingLogins }" />
+                <span>刷新状态</span>
               </button>
             </div>
           </div>
 
-          <!-- Platforms Card Container (Only Visible Platforms) -->
+          <!-- Platforms Card Container -->
           <div class="platforms-card-box">
             <div 
               v-for="plat in visiblePlatforms" 
@@ -999,7 +1007,7 @@ onMounted(() => {
               ]"
               @click="toggleSelect(plat)"
             >
-              <!-- Left: Brand Icon (使用用户下载的 public/svg 中的真实图标) -->
+              <!-- Left: Brand Icon with Online Green Dot Indicator -->
               <div class="platform-icon-wrapper" :style="{ backgroundColor: plat.iconUrl ? 'transparent' : plat.color }">
                 <img 
                   v-if="plat.iconUrl" 
@@ -1011,25 +1019,19 @@ onMounted(() => {
                   <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
                   <polyline points="22,6 12,13 2,6"/>
                 </svg>
+                <!-- Online Green Dot on Icon Corner -->
+                <span v-if="plat.loginStatus === 'logged_in' || plat.id === 'zip-download'" class="icon-online-dot"></span>
               </div>
 
-              <!-- Center: Name & Status info -->
+              <!-- Center: Name & Sub -->
               <div class="platform-meta">
                 <span class="platform-name">{{ plat.name }}</span>
                 <span class="platform-sub">
-                  <span v-if="plat.loginStatus === 'logged_in'" class="sub-status is-connected">
-                    {{ plat.username || '已登录' }}
-                  </span>
-                  <span v-else-if="plat.loginStatus === 'checking'" class="sub-status is-checking">
-                    检测状态中...
-                  </span>
-                  <span v-else class="sub-status is-disconnected">
-                    未登录
-                  </span>
+                  {{ plat.username || (plat.loginStatus === 'logged_in' ? '已登录' : (plat.loginStatus === 'checking' ? '检测状态中...' : '未登录')) }}
                 </span>
               </div>
 
-              <!-- Middle: Dynamic Channel & Image Conversion Progress (Red Box Position) -->
+              <!-- Middle: Dynamic Channel & Image Conversion Progress (Only when active/syncing) -->
               <div class="platform-sync-center" v-if="plat.status && plat.status !== 'idle'">
                 <div class="sync-stage-pill" :class="`is-stage-${plat.status}`">
                   <div v-if="plat.status === 'ignition' || plat.status === 'launched'" class="sync-spinner-ring"></div>
@@ -1037,18 +1039,14 @@ onMounted(() => {
                   <span v-else-if="plat.status === 'failed'" class="sync-fail-icon">✕</span>
                   <span class="sync-stage-label" :title="plat.syncMessage">{{ plat.syncMessage || '正在同步...' }}</span>
                 </div>
-                <!-- Mini Progress Bar -->
-                <div v-if="plat.status === 'ignition' || plat.status === 'launched'" class="sync-progress-bar-bg">
-                  <div class="sync-progress-bar-fill" :style="{ width: `${plat.progress || 20}%` }"></div>
-                </div>
               </div>
 
-              <!-- Right: Status Badge AND Separated Checkbox -->
+              <!-- Right: Status Badge & Chevron Arrow -->
               <div class="platform-action-wrap">
-                <!-- Logged in state: Soft Green '已登录' Pill -->
+                <!-- Logged in state: Clean '已登录' Pill -->
                 <span 
                   v-if="plat.loginStatus === 'logged_in' || plat.id === 'zip-download'" 
-                  class="badge-logged-in"
+                  class="badge-logged-in-clean"
                 >
                   已登录
                 </span>
@@ -1065,20 +1063,7 @@ onMounted(() => {
 
                 <span v-else class="badge-checking">检测中</span>
 
-                <!-- Separated Selection Checkbox (全选/勾选的独立框) -->
-                <div 
-                  class="platform-select-box" 
-                  :class="{ 
-                    'is-checked': plat.selected, 
-                    'is-disabled': plat.loginStatus !== 'logged_in' && plat.id !== 'zip-download' 
-                  }"
-                  @click.stop="toggleSelect(plat)"
-                  title="勾选/取消勾选该发布通道"
-                >
-                  <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="3.5" v-if="plat.selected">
-                    <polyline points="20 6 9 17 4 12"></polyline>
-                  </svg>
-                </div>
+                <ChevronRight size="15" class="row-chevron-arrow" />
               </div>
             </div>
           </div>
@@ -1093,46 +1078,72 @@ onMounted(() => {
           <!-- Settings Box -->
           <div class="settings-card-box">
             <!-- Row 1: 定时发布 -->
-            <div class="setting-item-row">
-              <span class="setting-label">定时发布</span>
-              <label class="ios-switch">
-                <input type="checkbox" v-model="isScheduled" />
-                <span class="slider"></span>
-              </label>
+            <div class="setting-item-block">
+              <div class="setting-item-main">
+                <div class="setting-icon-badge is-clock">
+                  <Clock size="16" />
+                </div>
+                <div class="setting-text-meta">
+                  <span class="setting-title">定时发布</span>
+                  <span class="setting-desc">可设置未来时间自动发布</span>
+                </div>
+                <label class="ios-switch">
+                  <input type="checkbox" v-model="isScheduled" />
+                  <span class="slider"></span>
+                </label>
+              </div>
+
+              <!-- Expandable Time Picker Row -->
+              <div v-if="isScheduled" class="datetime-picker-row">
+                <div class="datetime-input-wrap">
+                  <Clock size="13" class="time-icon" />
+                  <input 
+                    type="text" 
+                    v-model="scheduledTime" 
+                    class="time-input" 
+                    placeholder="2024-07-21 18:00"
+                  />
+                </div>
+                <button class="btn-time-refresh" @click="resetScheduledTime" title="重设为当前后2小时">
+                  <RotateCw size="13" />
+                </button>
+              </div>
             </div>
 
-            <!-- Expandable Time Picker Row -->
-            <div v-if="isScheduled" class="datetime-picker-row">
-              <div class="datetime-input-wrap">
-                <Clock size="14" class="time-icon" />
-                <input 
-                  type="text" 
-                  v-model="scheduledTime" 
-                  class="time-input" 
-                  placeholder="2024-07-21 18:00"
-                />
-              </div>
-              <button class="btn-time-refresh" @click="resetScheduledTime" title="重设为当前后2小时">
-                <RotateCw size="14" />
-              </button>
-            </div>
+            <div class="settings-divider"></div>
 
             <!-- Row 2: 原创声明 -->
-            <div class="setting-item-row">
-              <span class="setting-label">原创声明</span>
-              <label class="ios-switch">
-                <input type="checkbox" v-model="isOriginalDeclaration" />
-                <span class="slider"></span>
-              </label>
+            <div class="setting-item-block">
+              <div class="setting-item-main">
+                <div class="setting-icon-badge is-shield">
+                  <ShieldCheck size="16" />
+                </div>
+                <div class="setting-text-meta">
+                  <span class="setting-title">原创声明</span>
+                  <span class="setting-desc">声明此内容为原创文章</span>
+                </div>
+                <label class="ios-switch">
+                  <input type="checkbox" v-model="isOriginalDeclaration" />
+                  <span class="slider"></span>
+                </label>
+              </div>
             </div>
 
+            <div class="settings-divider"></div>
+
             <!-- Row 3: 文章封面 -->
-            <div class="cover-setting-wrap">
-              <div class="cover-header">
-                <span class="setting-label">文章封面</span>
-                <button class="btn-change-cover" @click="triggerCoverUpload">
-                  <ImageIcon size="12" />
+            <div class="setting-item-block is-cover-block">
+              <div class="setting-item-main">
+                <div class="setting-icon-badge is-file">
+                  <FileText size="16" />
+                </div>
+                <div class="setting-text-meta">
+                  <span class="setting-title">文章封面</span>
+                  <span class="setting-desc">为你的文章选择一个吸引人的封面</span>
+                </div>
+                <button class="btn-link-change-cover" @click="triggerCoverUpload">
                   <span>更换封面</span>
+                  <ChevronRight size="13" />
                 </button>
               </div>
 
@@ -1148,9 +1159,8 @@ onMounted(() => {
               <!-- Cover Image Preview Frame -->
               <div class="cover-preview-box" @click="triggerCoverUpload">
                 <img :src="coverImage" alt="Article Cover" class="cover-img" />
-                <div class="cover-overlay-hint">
-                  <Upload size="18" />
-                  <span>点击上传自定义封面</span>
+                <div class="cover-expand-btn" title="查看或更换封面">
+                  <Maximize2 size="13" />
                 </div>
               </div>
             </div>
@@ -1168,21 +1178,21 @@ onMounted(() => {
         >
           <span v-if="isLaunching" class="spinner-dot"></span>
           <span class="launch-btn-text">
-            {{ isFinished ? '重新发布' : isLaunching ? '正在执行分发...' : `一键发布 (${selectedCount})` }}
+            {{ isFinished ? '重新发布' : isLaunching ? '正在执行分发...' : '重新发布' }}
           </span>
           <span class="launch-arrow">→</span>
         </button>
 
-        <!-- Option: 是否同步打开草稿 (Sleek Round Dot Radio Option) -->
+        <!-- Option: 发布后打开草稿 (Orange Round Ring Radio) -->
         <div 
           class="open-drafts-option" 
           @click="isOpenDraftsAfterSync = !isOpenDraftsAfterSync"
           title="勾选后，发布成功的平台将自动在浏览器中打开草稿页面"
         >
-          <div class="dot-radio-wrapper" :class="{ 'is-checked': isOpenDraftsAfterSync }">
-            <div class="dot-inner"></div>
+          <div class="orange-ring-radio" :class="{ 'is-checked': isOpenDraftsAfterSync }">
+            <div class="ring-inner" v-if="isOpenDraftsAfterSync"></div>
           </div>
-          <span class="open-drafts-label">是否同步打开草稿</span>
+          <span class="open-drafts-label">发布后打开草稿</span>
         </div>
       </div>
     </aside>
@@ -1267,13 +1277,14 @@ onMounted(() => {
 }
 
 /* Right Side Drawer Panel */
+/* Right Side Drawer Panel */
 .right-drawer-panel {
-  width: min(370px, 92vw);
-  max-width: 92vw;
+  width: min(28.75rem, 95vw);
+  max-width: 95vw;
   height: 100vh;
   max-height: 100vh;
   background: #f8faff;
-  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.12);
+  box-shadow: -0.9375rem 0 3.125rem rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
   position: relative;
@@ -1292,30 +1303,30 @@ onMounted(() => {
   position: absolute;
   border-radius: 50%;
   pointer-events: none;
-  filter: blur(50px);
+  filter: blur(3.125rem);
   opacity: 0.65;
   z-index: 0;
 }
 
 .glow-1 {
-  width: 220px;
-  height: 220px;
-  top: -40px;
-  right: -30px;
+  width: 15rem;
+  height: 15rem;
+  top: -2.5rem;
+  right: -1.875rem;
   background: radial-gradient(circle, rgba(254, 215, 226, 0.8) 0%, rgba(255, 255, 255, 0) 70%);
 }
 
 .glow-2 {
-  width: 260px;
-  height: 260px;
-  top: 36%;
-  left: 20%;
-  background: radial-gradient(circle, rgba(255, 237, 213, 0.6) 0%, rgba(255, 255, 255, 0) 70%);
+  width: 17.5rem;
+  height: 17.5rem;
+  bottom: 10%;
+  right: -1.25rem;
+  background: radial-gradient(circle, rgba(238, 242, 255, 0.85) 0%, rgba(255, 255, 255, 0) 70%);
 }
 
-/* Top bar */
+/* Top bar (Paper Airplane Badge + Titles + Close Button) */
 .drawer-top-bar {
-  padding: 14px 16px 8px 16px;
+  padding: 1.25rem 1.375rem 0.875rem 1.375rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1324,36 +1335,62 @@ onMounted(() => {
   flex-shrink: 0;
 }
 
-.sparkle-title {
+.brand-header-left {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 0.75rem;
 }
 
-.sparkle-icon {
-  font-size: 15px;
+.brand-icon-badge {
+  width: 2.375rem;
+  height: 2.375rem;
+  border-radius: 0.75rem;
+  background: #fff1eb;
+  color: #ff5e36;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0.125rem 0.5rem rgba(255, 94, 54, 0.15);
+}
+
+.plane-icon {
+  transform: rotate(-10deg) translate(0.0625rem, -0.0625rem);
+}
+
+.brand-title-wrap {
+  display: flex;
+  flex-direction: column;
 }
 
 .brand-title-cn {
-  font-size: 13px;
+  font-size: 1rem;
   font-weight: 700;
-  color: #334155;
+  color: #1e293b;
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', Roboto, sans-serif;
-  letter-spacing: 0.2px;
+  letter-spacing: -0.0125rem;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.brand-subtitle-cn {
+  font-size: 0.71875rem;
+  color: #94a3b8;
+  margin: 0.1875rem 0 0 0;
+  font-weight: 400;
 }
 
 .btn-drawer-close {
   background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.06);
+  border: 0.0625rem solid #f1f5f9;
   color: #64748b;
-  width: 28px;
-  height: 28px;
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+  box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.04);
   transition: all 0.2s ease;
 }
 
@@ -1368,16 +1405,16 @@ onMounted(() => {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 6px 14px 16px 14px;
+  padding: 0.375rem 1.125rem 1rem 1.125rem;
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 1.125rem;
   position: relative;
   z-index: 1;
 }
 
 .drawer-content-scroll::-webkit-scrollbar {
-  width: 4px;
+  width: 0.25rem;
 }
 
 .drawer-content-scroll::-webkit-scrollbar-track {
@@ -1386,14 +1423,14 @@ onMounted(() => {
 
 .drawer-content-scroll::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.22);
-  border-radius: 4px;
+  border-radius: 0.25rem;
 }
 
 /* Sections */
 .drawer-section {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.625rem;
 }
 
 .drawer-section-header {
@@ -1402,86 +1439,99 @@ onMounted(() => {
   justify-content: space-between !important;
   align-items: center !important;
   width: 100% !important;
-  padding: 0 2px !important;
+  padding: 0 0.125rem !important;
   box-sizing: border-box !important;
 }
 
+.section-title-left {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .drawer-section-title {
-  font-size: 13.5px !important;
+  font-size: 0.9375rem !important;
   font-weight: 700 !important;
   color: #1e293b !important;
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', Roboto, sans-serif !important;
-  letter-spacing: -0.1px !important;
+  letter-spacing: -0.0125rem !important;
   margin: 0 !important;
   text-align: left !important;
+}
+
+.login-count-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.count-pill {
+  background: #edfdf2;
+  color: #16a34a;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.09375rem 0.375rem;
+  border-radius: 0.25rem;
+}
+
+.count-label {
+  color: #94a3b8;
+  font-size: 0.71875rem;
 }
 
 /* Header Actions Toolbar */
 .header-actions-group {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 0.375rem;
 }
 
-.btn-action-tool {
+.btn-action-tool.btn-batch-manage {
+  background: #f8fafc;
+  border: 0.0625rem solid #f1f5f9;
+  font-size: 0.71875rem;
+  font-weight: 500;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  padding: 0.3125rem 0.6875rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.btn-action-tool.btn-batch-manage:hover {
   background: #f1f5f9;
-  border: 1px solid rgba(0, 0, 0, 0.05);
-  font-size: 10.5px;
-  font-weight: 600;
-  color: #64748b;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  cursor: pointer;
-  padding: 3px 7px;
-  border-radius: 6px;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  user-select: none;
-}
-
-.btn-action-tool:hover:not(:disabled) {
-  background: #e2e8f0;
   color: #0f172a;
-  border-color: rgba(0, 0, 0, 0.08);
 }
 
-.btn-action-tool.btn-toggle-select.is-active {
-  background: #eff6ff;
-  color: #2563eb;
-  border-color: #bfdbfe;
-}
-
-.btn-action-tool.btn-toggle-select.is-active:hover {
-  background: #dbeafe;
-  color: #1d4ed8;
-}
-
-.btn-action-tool:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-manage-trigger {
-  background: rgba(37, 99, 235, 0.08);
-  border: 1px solid rgba(37, 99, 235, 0.16);
-  font-size: 10.5px;
+.btn-action-dark.btn-refresh-status {
+  background: #1e293b;
+  border: none;
+  font-size: 0.71875rem;
   font-weight: 600;
-  color: #2563eb;
+  color: #ffffff;
   display: flex;
   align-items: center;
-  gap: 3px;
+  gap: 0.25rem;
   cursor: pointer;
-  padding: 3px 8px;
-  border-radius: 6px;
+  padding: 0.3125rem 0.75rem;
+  border-radius: 0.5rem;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 0.125rem 0.375rem rgba(30, 41, 59, 0.25);
   user-select: none;
 }
 
-.btn-manage-trigger:hover {
-  background: rgba(37, 99, 235, 0.16);
-  color: #1d4ed8;
-  border-color: rgba(37, 99, 235, 0.3);
-  transform: translateY(-1px);
+.btn-action-dark.btn-refresh-status:hover:not(:disabled) {
+  background: #0f172a;
+  transform: translateY(-0.0625rem);
+}
+
+.btn-action-dark.btn-refresh-status:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
 }
 
 .spin-anim {
@@ -1495,10 +1545,10 @@ onMounted(() => {
 /* Platforms Card Box */
 .platforms-card-box {
   background: #ffffff;
-  border-radius: 16px;
-  padding: 4px 10px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.03);
+  border-radius: 0.75rem;
+  padding: 0.375rem 0.875rem;
+  box-shadow: 0 0.25rem 1.25rem rgba(0, 0, 0, 0.03);
+  border: 0.0625rem solid #f1f5f9;
   display: flex;
   flex-direction: column;
 }
@@ -1506,12 +1556,12 @@ onMounted(() => {
 .platform-row-item {
   display: flex;
   align-items: center;
-  padding: 8px 4px;
-  gap: 8px;
-  border-bottom: 1px solid #f8fafc;
+  padding: 0.625rem 0.25rem;
+  gap: 0.625rem;
+  border-bottom: 0.0625rem solid #f8fafc;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  border-radius: 10px;
+  border-radius: 0.625rem;
 }
 
 .platform-row-item:last-child {
@@ -1520,20 +1570,20 @@ onMounted(() => {
 
 .platform-row-item:hover {
   background: rgba(241, 245, 249, 0.5);
-  padding-left: 6px;
-  padding-right: 6px;
+  padding-left: 0.375rem;
+  padding-right: 0.375rem;
 }
 
-/* Icon */
+/* Icon with Corner Online Indicator */
 .platform-icon-wrapper {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 2.375rem;
+  height: 2.375rem;
+  border-radius: 0.625rem;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
 }
 
@@ -1544,17 +1594,29 @@ onMounted(() => {
   display: block;
 }
 
+.icon-online-dot {
+  position: absolute;
+  top: -0.125rem;
+  right: -0.125rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #22c55e;
+  border: 0.125rem solid #ffffff;
+  box-shadow: 0 0 0.25rem rgba(34, 197, 94, 0.5);
+}
+
 /* Meta */
 .platform-meta {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 0.125rem;
 }
 
 .platform-name {
-  font-size: 12.5px;
+  font-size: 0.84375rem;
   font-weight: 600;
   color: #1e293b;
   line-height: 1.2;
@@ -1564,76 +1626,45 @@ onMounted(() => {
 }
 
 .platform-sub {
-  font-size: 10px;
+  font-size: 0.71875rem;
   color: #94a3b8;
-  display: flex;
-  align-items: center;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.sub-status.is-connected {
-  color: #94a3b8;
-}
-
-.sub-status.is-disconnected {
-  color: #cbd5e1;
-}
-
-.sub-status.is-checking {
-  color: #3b82f6;
-}
-
-/* Middle Red Box Position: Dynamic Channel & Image Conversion Progress */
+/* Dynamic Sync Center */
 .platform-sync-center {
-  flex: 1.25;
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  min-width: 0;
-  padding: 0 4px;
+  padding: 0 0.25rem;
 }
 
 .sync-stage-pill {
+  background: #f0fdf4;
+  border: 0.0625rem solid #bbf7d0;
+  color: #16a34a;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  border-radius: 0.375rem;
+  padding: 0.1875rem 0.5rem;
   display: inline-flex;
   align-items: center;
-  gap: 3.5px;
-  padding: 1.5px 6px;
-  border-radius: 5px;
-  font-size: 10px;
-  font-weight: 600;
+  gap: 0.25rem;
   white-space: nowrap;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.sync-stage-pill.is-stage-ignition,
-.sync-stage-pill.is-stage-launched {
-  background: #eff6ff;
-  color: #2563eb;
-  border: 1px solid #dbeafe;
-}
-
-.sync-stage-pill.is-stage-success {
-  background: #ecfdf5;
-  color: #059669;
-  border: 1px solid #a7f3d0;
 }
 
 .sync-stage-pill.is-stage-failed {
   background: #fef2f2;
   color: #dc2626;
-  border: 1px solid #fecaca;
+  border-color: #fecaca;
 }
 
 .sync-spinner-ring {
-  width: 9px;
-  height: 9px;
-  border: 1.5px solid #93c5fd;
+  width: 0.5625rem;
+  height: 0.5625rem;
+  border: 0.09375rem solid #93c5fd;
   border-top-color: #2563eb;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -1641,159 +1672,164 @@ onMounted(() => {
 }
 
 .sync-check-icon {
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 800;
-  color: #059669;
+  color: #16a34a;
 }
 
 .sync-fail-icon {
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 800;
   color: #dc2626;
 }
 
-.sync-stage-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-}
-
-.sync-progress-bar-bg {
-  width: 100%;
-  max-width: 95px;
-  height: 2.5px;
-  background: #e2e8f0;
-  border-radius: 2px;
-  overflow: hidden;
-}
-
-.sync-progress-bar-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #3b82f6, #6366f1);
-  border-radius: 2px;
-  transition: width 0.25s ease;
-}
-
-/* Action wrap */
+/* Action wrap & Badges */
 .platform-action-wrap {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
   flex-shrink: 0;
 }
 
-/* Soft Green '已登录' Badge */
-.badge-logged-in {
-  background: #edfdf2;
-  border: 1px solid #d1fae5;
+.badge-logged-in-clean {
+  background: #f0fdf4;
   color: #16a34a;
-  font-size: 10.5px;
-  font-weight: 600;
-  padding: 2px 7px;
-  border-radius: 12px;
-  display: inline-flex;
-  align-items: center;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 0.375rem;
   white-space: nowrap;
   user-select: none;
 }
 
-/* Soft Peach '登录' Button */
 .btn-action-login {
   background: #fff7ed;
-  border: 1px solid #ffedd5;
+  border: 0.0625rem solid #ffedd5;
   color: #ea580c;
-  font-size: 10.5px;
+  font-size: 0.65625rem;
   font-weight: 600;
-  padding: 2.5px 9px;
-  border-radius: 12px;
+  padding: 0.15625rem 0.5625rem;
+  border-radius: 0.375rem;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
-  user-select: none;
 }
 
 .btn-action-login:hover {
   background: #ffedd5;
-  transform: scale(1.05);
 }
 
 .badge-checking {
   background: #eff6ff;
-  border: 1px solid #dbeafe;
+  border: 0.0625rem solid #dbeafe;
   color: #2563eb;
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 12px;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.375rem;
   white-space: nowrap;
 }
 
-/* Standalone Separated Selection Checkbox */
-.platform-select-box {
-  width: 17px;
-  height: 17px;
-  border-radius: 50%;
-  border: 1.5px solid #cbd5e1;
-  background: #ffffff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  color: #ffffff;
-  flex-shrink: 0;
-  margin-left: 2px;
-}
-
-.platform-select-box:hover:not(.is-disabled) {
-  border-color: #3b82f6;
-  background: #f8fafc;
-}
-
-.platform-select-box.is-checked {
-  background: #22c55e;
-  border-color: #22c55e;
-  box-shadow: 0 2px 6px rgba(34, 197, 94, 0.35);
-}
-
-.platform-select-box.is-disabled {
-  background: #f1f5f9;
-  border-color: #e2e8f0;
-  cursor: not-allowed;
-  opacity: 0.45;
+.row-chevron-arrow {
+  color: #cbd5e1;
+  margin-left: 0.125rem;
 }
 
 /* Settings Card Box */
 .settings-card-box {
   background: #ffffff;
-  border-radius: 16px;
-  padding: 12px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
-  border: 1px solid rgba(0, 0, 0, 0.03);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  box-shadow: 0 0.25rem 1.25rem rgba(0, 0, 0, 0.03);
+  border: 0.0625rem solid #f1f5f9;
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 0.875rem;
 }
 
-.setting-item-row {
+.setting-item-block {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.setting-label {
-  font-size: 12.5px;
+.setting-item-main {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.setting-icon-badge {
+  width: 2.125rem;
+  height: 2.125rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.setting-icon-badge.is-clock {
+  background: #fef7ee;
+  color: #f59e0b;
+}
+
+.setting-icon-badge.is-shield {
+  background: #eff6ff;
+  color: #3b82f6;
+}
+
+.setting-icon-badge.is-file {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
+.setting-text-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.setting-title {
+  font-size: 0.84375rem;
   font-weight: 600;
   color: #1e293b;
+}
+
+.setting-desc {
+  font-size: 0.6875rem;
+  color: #94a3b8;
+}
+
+.btn-link-change-cover {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.125rem;
+  cursor: pointer;
+}
+
+.btn-link-change-cover:hover {
+  color: #1e293b;
+}
+
+.settings-divider {
+  height: 0.0625rem;
+  background: #f8fafc;
+  margin: 0 -0.25rem;
 }
 
 /* iOS Style Switch */
 .ios-switch {
   position: relative;
   display: inline-block;
-  width: 38px;
-  height: 20px;
+  width: 2.5rem;
+  height: 1.375rem;
 }
 
 .ios-switch input {
@@ -1811,51 +1847,51 @@ onMounted(() => {
   bottom: 0;
   background-color: #e2e8f0;
   transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
-  border-radius: 20px;
+  border-radius: 1.375rem;
 }
 
 .slider:before {
   position: absolute;
   content: "";
-  height: 16px;
-  width: 16px;
-  left: 2px;
-  bottom: 2px;
+  height: 1.125rem;
+  width: 1.125rem;
+  left: 0.125rem;
+  bottom: 0.125rem;
   background-color: white;
   transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
   border-radius: 50%;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.15);
 }
 
 input:checked + .slider {
-  background-color: #ff6036;
+  background-color: #ff5e36;
 }
 
 input:checked + .slider:before {
-  transform: translateX(18px);
+  transform: translateX(1.125rem);
 }
 
 /* DateTime input row */
 .datetime-picker-row {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
   background: #f8fafc;
-  border-radius: 10px;
-  padding: 6px 10px;
-  border: 1px solid #f1f5f9;
+  border-radius: 0.625rem;
+  padding: 0.375rem 0.625rem;
+  border: 0.0625rem solid #f1f5f9;
   animation: fadeInDown 0.2s ease;
 }
 
 @keyframes fadeInDown {
-  from { opacity: 0; transform: translateY(-4px); }
+  from { opacity: 0; transform: translateY(-0.25rem); }
   to { opacity: 1; transform: translateY(0); }
 }
 
 .datetime-input-wrap {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
   flex: 1;
 }
 
@@ -1866,7 +1902,7 @@ input:checked + .slider:before {
 .time-input {
   border: none;
   background: transparent;
-  font-size: 11.5px;
+  font-size: 0.71875rem;
   font-weight: 600;
   color: #334155;
   width: 100%;
@@ -1879,7 +1915,7 @@ input:checked + .slider:before {
   border: none;
   color: #94a3b8;
   cursor: pointer;
-  padding: 2px;
+  padding: 0.125rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1891,47 +1927,20 @@ input:checked + .slider:before {
   transform: rotate(45deg);
 }
 
-/* Cover Image Section */
-.cover-setting-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.cover-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.btn-change-cover {
-  background: transparent;
-  border: none;
-  color: #3b82f6;
-  font-size: 10.5px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  cursor: pointer;
-}
-
-.btn-change-cover:hover {
-  text-decoration: underline;
-}
-
+/* Cover Image Frame with bottom-right expand icon */
 .hidden-file-input {
   display: none;
 }
 
 .cover-preview-box {
   width: 100%;
-  height: 84px;
-  border-radius: 10px;
+  height: 6.5rem;
+  border-radius: 0.75rem;
   overflow: hidden;
   position: relative;
   cursor: pointer;
-  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.06);
+  border: 0.0625rem solid #f1f5f9;
+  box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.04);
 }
 
 .cover-img {
@@ -1942,79 +1951,81 @@ input:checked + .slider:before {
 }
 
 .cover-preview-box:hover .cover-img {
-  transform: scale(1.04);
+  transform: scale(1.03);
 }
 
-.cover-overlay-hint {
+.cover-expand-btn {
   position: absolute;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  bottom: 0.5rem;
+  right: 0.5rem;
+  width: 1.625rem;
+  height: 1.625rem;
+  border-radius: 0.375rem;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(0.25rem);
+  box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.1);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 600;
-  opacity: 0;
-  transition: opacity 0.2s ease;
+  color: #475569;
+  transition: all 0.2s ease;
 }
 
-.cover-preview-box:hover .cover-overlay-hint {
-  opacity: 1;
+.cover-preview-box:hover .cover-expand-btn {
+  background: #ffffff;
+  color: #0f172a;
 }
 
 /* Drawer Footer */
 .drawer-footer {
-  padding: 10px 16px 16px 16px;
-  background: rgba(248, 250, 255, 0.92);
-  backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(0, 0, 0, 0.03);
+  padding: 1rem 1.25rem 1.5rem 1.25rem;
+  background: transparent;
   position: relative;
   z-index: 2;
   flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .btn-gradient-launch {
   width: 100%;
-  height: 42px;
-  border-radius: 12px;
+  height: 2.875rem;
+  border-radius: 1rem;
   border: none;
-  background: linear-gradient(135deg, #ff5e36 0%, #ff8c58 100%);
-  box-shadow: 0 6px 20px rgba(255, 94, 54, 0.32);
+  background: linear-gradient(135deg, #ff5e36 0%, #ff784e 100%);
+  box-shadow: 0 0.5rem 1.5rem rgba(255, 94, 54, 0.32);
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 7px;
+  gap: 0.5rem;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .launch-btn-text {
-  font-size: 13.5px;
+  font-size: 0.9375rem;
   font-weight: 700;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.0125rem;
 }
 
 .launch-arrow {
-  font-size: 14px;
+  font-size: 1rem;
   font-weight: 700;
   transition: transform 0.2s ease;
 }
 
 .btn-gradient-launch:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(255, 94, 54, 0.42);
+  transform: translateY(-0.125rem);
+  box-shadow: 0 0.75rem 1.75rem rgba(255, 94, 54, 0.42);
 }
 
 .btn-gradient-launch:hover:not(:disabled) .launch-arrow {
-  transform: translateX(3px);
+  transform: translateX(0.1875rem);
 }
 
 .btn-gradient-launch:active:not(:disabled) {
-  transform: translateY(1px);
+  transform: translateY(0.0625rem);
 }
 
 .btn-gradient-launch:disabled {
@@ -2025,9 +2036,9 @@ input:checked + .slider:before {
 }
 
 .spinner-dot {
-  width: 13px;
-  height: 13px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  width: 0.875rem;
+  height: 0.875rem;
+  border: 0.125rem solid rgba(255, 255, 255, 0.3);
   border-top-color: #ffffff;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
@@ -2038,12 +2049,12 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  margin-top: 8px;
+  gap: 0.4375rem;
+  margin-top: 0.75rem;
   cursor: pointer;
   user-select: none;
-  padding: 3px 6px;
-  border-radius: 6px;
+  padding: 0.1875rem 0.375rem;
+  border-radius: 0.375rem;
   transition: all 0.18s ease;
 }
 
@@ -2051,15 +2062,11 @@ input:checked + .slider:before {
   color: #1e293b;
 }
 
-.open-drafts-option:hover .dot-radio-wrapper:not(.is-checked) {
-  border-color: #94a3b8;
-}
-
-.dot-radio-wrapper {
-  width: 14px;
-  height: 14px;
+.orange-ring-radio {
+  width: 0.875rem;
+  height: 0.875rem;
   border-radius: 50%;
-  border: 1.5px solid #cbd5e1;
+  border: 0.09375rem solid #ff5e36;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2068,24 +2075,18 @@ input:checked + .slider:before {
   flex-shrink: 0;
 }
 
-.dot-radio-wrapper.is-checked {
-  border-color: #2563eb;
-  background: #eff6ff;
-}
-
-.dot-radio-wrapper.is-checked .dot-inner {
-  width: 6px;
-  height: 6px;
+.orange-ring-radio.is-checked .ring-inner {
+  width: 0.375rem;
+  height: 0.375rem;
   border-radius: 50%;
-  background: #2563eb;
-  box-shadow: 0 0 4px rgba(37, 99, 235, 0.4);
+  background: #ff5e36;
 }
 
 .open-drafts-label {
-  font-size: 11px;
+  font-size: 0.75rem;
   color: #64748b;
   font-weight: 500;
-  letter-spacing: -0.1px;
+  letter-spacing: -0.00625rem;
   transition: color 0.18s ease;
 }
 
