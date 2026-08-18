@@ -69,15 +69,43 @@ const isOriginalDeclaration = ref(true);
 const customCoverUrl = ref('');
 const fileInputRef = ref(null);
 
-// Preset beautiful sunset lake cover (from reference design)
-const defaultCoverUrl = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80';
+// Preset curated covers
+const presetCovers = [
+  'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80',
+  'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80'
+];
+
+// Extract all images from markdown & html
+const articleImages = computed(() => {
+  const list = [];
+  if (props.markdown) {
+    const mdRegex = /!\[.*?\]\((https?:\/\/[^\s\)]+|data:image\/[^\s\)]+)\)/g;
+    let match;
+    while ((match = mdRegex.exec(props.markdown)) !== null) {
+      if (match[1] && !list.includes(match[1])) {
+        list.push(match[1]);
+      }
+    }
+  }
+  if (props.html) {
+    const htmlRegex = /<img[^>]+src=["']([^"']+)["']/gi;
+    let match;
+    while ((match = htmlRegex.exec(props.html)) !== null) {
+      if (match[1] && !list.includes(match[1])) {
+        list.push(match[1]);
+      }
+    }
+  }
+  return list;
+});
 
 // Auto-extract first image from markdown or fallback
 const coverImage = computed(() => {
   if (customCoverUrl.value) return customCoverUrl.value;
-  const match = props.markdown.match(/!\[.*?\]\((https?:\/\/[^\s\)]+)\)/);
-  if (match && match[1]) return match[1];
-  return defaultCoverUrl;
+  if (articleImages.value.length > 0) return articleImages.value[0];
+  return presetCovers[0];
 });
 
 // Format scheduled time helper
@@ -98,20 +126,62 @@ const resetScheduledTime = () => {
   initScheduledTime();
 };
 
+const showCoverSelectModal = ref(false);
+const tempSelectedCover = ref('');
+const activeCoverTab = ref('article'); // 'article' | 'upload' | 'preset'
+
+const openCoverSelectModal = () => {
+  soundEngine.playClick();
+  tempSelectedCover.value = coverImage.value;
+  activeCoverTab.value = 'article'; // 默认从文章图中选择
+  showCoverPreviewModal.value = false; // 关闭大图预览
+  showCoverSelectModal.value = true;
+};
+
+const selectCoverOption = (url) => {
+  soundEngine.playClick();
+  tempSelectedCover.value = url;
+};
+
+const confirmCoverSelection = () => {
+  soundEngine.playChime();
+  if (tempSelectedCover.value) {
+    customCoverUrl.value = tempSelectedCover.value;
+  }
+  showCoverSelectModal.value = false;
+  showCoverPreviewModal.value = false;
+};
+
+const triggerLocalFileUpload = () => {
+  soundEngine.playClick();
+  fileInputRef.value?.click();
+};
+
 const handleCoverUpload = (e) => {
   const file = e.target.files?.[0];
   if (!file) return;
   const reader = new FileReader();
   reader.onload = (event) => {
     customCoverUrl.value = event.target.result;
+    tempSelectedCover.value = event.target.result;
     soundEngine.playChime();
+    showCoverSelectModal.value = false;
+    showCoverPreviewModal.value = false;
   };
   reader.readAsDataURL(file);
 };
 
+const showCoverPreviewModal = ref(false);
+
+const openCoverPreview = () => {
+  if (coverImage.value) {
+    soundEngine.playClick();
+    showCoverPreviewModal.value = true;
+  }
+};
+
 const triggerCoverUpload = () => {
-  soundEngine.playClick();
-  fileInputRef.value?.click();
+  openCoverSelectModal();
 };
 
 // ── Platforms ──
@@ -426,7 +496,7 @@ const platforms = ref([
     id: 'sohu',
     name: '搜狐号',
     category: 'media',
-    iconUrl: './svg/sohu.svg',
+    iconUrl: './svg/搜狐.svg',
     color: '#e11d48',
     writeUrl: 'https://mp.sohu.com/mpbp/bp/article/write',
     status: 'idle',
@@ -443,7 +513,7 @@ const platforms = ref([
     id: 'xueqiu',
     name: '雪球',
     category: 'media',
-    iconUrl: './svg/xueqiu.svg',
+    iconUrl: './svg/雪球.svg',
     color: '#3b82f6',
     writeUrl: 'https://mp.xueqiu.com/writeV2',
     status: 'idle',
@@ -460,7 +530,7 @@ const platforms = ref([
     id: 'eastmoney',
     name: '东方财富',
     category: 'media',
-    iconUrl: './svg/eastmoney.svg',
+    iconUrl: './svg/东方财富网.svg',
     color: '#f59e0b',
     writeUrl: 'https://mp.eastmoney.com/NewWrite/Article',
     status: 'idle',
@@ -477,7 +547,7 @@ const platforms = ref([
     id: 'woshipm',
     name: '人人都是产品经理',
     category: 'media',
-    iconUrl: './svg/woshipm.svg',
+    iconUrl: './svg/人人都是产品经理.svg',
     color: '#ea580c',
     writeUrl: 'https://www.woshipm.com/writing',
     status: 'idle',
@@ -528,7 +598,7 @@ const platforms = ref([
     id: 'tencentcloud',
     name: '腾讯云开发者',
     category: 'tech',
-    iconUrl: './svg/tencentcloud.svg',
+    iconUrl: './svg/腾讯云.svg',
     color: '#0052d9',
     writeUrl: 'https://cloud.tencent.com/developer/article/write',
     status: 'idle',
@@ -545,7 +615,7 @@ const platforms = ref([
     id: 'nowcoder',
     name: '牛客网',
     category: 'tech',
-    iconUrl: './svg/nowcoder.svg',
+    iconUrl: './svg/牛客网.svg',
     color: '#00db99',
     writeUrl: 'https://www.nowcoder.com/discuss/post/write',
     status: 'idle',
@@ -641,23 +711,41 @@ const manageTab = ref('all'); // 'all' | 'tech' | 'media'
 const SAVED_ENABLED_KEY = 'nicemd_enabled_platforms_v2';
 
 const techPlatforms = computed(() => {
-  return platforms.value.filter(p => p.category === 'tech');
+  return platforms.value
+    .filter(p => p.category === 'tech')
+    .slice()
+    .sort((a, b) => {
+      const aLogged = (a.loginStatus === 'logged_in' || a.id === 'zip-download') ? 1 : 0;
+      const bLogged = (b.loginStatus === 'logged_in' || b.id === 'zip-download') ? 1 : 0;
+      return bLogged - aLogged;
+    });
 });
 
 const mediaPlatforms = computed(() => {
-  return platforms.value.filter(p => p.category === 'media' || p.category === 'tool');
+  return platforms.value
+    .filter(p => p.category === 'media' || p.category === 'tool')
+    .slice()
+    .sort((a, b) => {
+      const aLogged = (a.loginStatus === 'logged_in' || a.id === 'zip-download') ? 1 : 0;
+      const bLogged = (b.loginStatus === 'logged_in' || b.id === 'zip-download') ? 1 : 0;
+      return bLogged - aLogged;
+    });
 });
 
 const techEnabledCount = computed(() => {
-  return techPlatforms.value.filter(p => p.enabled !== false).length;
+  return techPlatforms.value.filter(p => p.enabled !== false && (p.loginStatus === 'logged_in' || p.id === 'zip-download')).length;
 });
 
 const mediaEnabledCount = computed(() => {
-  return mediaPlatforms.value.filter(p => p.enabled !== false).length;
+  return mediaPlatforms.value.filter(p => p.enabled !== false && (p.loginStatus === 'logged_in' || p.id === 'zip-download')).length;
 });
 
 const togglePlatformEnabled = (plat) => {
   soundEngine.playClick();
+  if (plat.loginStatus !== 'logged_in' && plat.id !== 'zip-download') {
+    openLoginTab(plat);
+    return;
+  }
   plat.enabled = !plat.enabled;
   saveEnabledPlatforms();
 };
@@ -665,10 +753,16 @@ const togglePlatformEnabled = (plat) => {
 const toggleCategoryPlatforms = (category, enable) => {
   soundEngine.playClick();
   platforms.value.forEach(p => {
-    if (category === 'tech' && p.category === 'tech') {
-      p.enabled = enable;
-    } else if (category === 'media' && (p.category === 'media' || p.category === 'tool')) {
-      p.enabled = enable;
+    const isMatch = (category === 'tech' && p.category === 'tech') ||
+                    (category === 'media' && (p.category === 'media' || p.category === 'tool'));
+    if (isMatch) {
+      if (enable) {
+        if (p.loginStatus === 'logged_in' || p.id === 'zip-download') {
+          p.enabled = true;
+        }
+      } else {
+        p.enabled = false;
+      }
     }
   });
   saveEnabledPlatforms();
@@ -677,7 +771,13 @@ const toggleCategoryPlatforms = (category, enable) => {
 const toggleAllPlatforms = (enableAll) => {
   soundEngine.playClick();
   platforms.value.forEach(p => {
-    p.enabled = enableAll;
+    if (enableAll) {
+      if (p.loginStatus === 'logged_in' || p.id === 'zip-download') {
+        p.enabled = true;
+      }
+    } else {
+      p.enabled = false;
+    }
   });
   saveEnabledPlatforms();
 };
@@ -1161,10 +1261,10 @@ onMounted(() => {
               <button 
                 class="btn-action-tool btn-batch-manage" 
                 @click="showPlatformManageModal = true"
-                title="批量管理要在控制台展示的平台"
+                title="管理要在控制台展示的平台渠道"
               >
                 <Layers size="13" />
-                <span>批量管理</span>
+                <span>渠道管理</span>
               </button>
               
               <button 
@@ -1282,7 +1382,8 @@ onMounted(() => {
 
           <!-- Settings Box -->
           <div class="settings-card-box">
-            <!-- Row 1: 定时发布 -->
+            <!-- Row 1: 定时发布 (暂隐藏) -->
+            <!--
             <div class="setting-item-block">
               <div class="setting-item-main">
                 <div class="setting-icon-badge is-clock">
@@ -1298,7 +1399,6 @@ onMounted(() => {
                 </label>
               </div>
 
-              <!-- Expandable Time Picker Row -->
               <div v-if="isScheduled" class="datetime-picker-row">
                 <div class="datetime-input-wrap">
                   <Clock size="13" class="time-icon" />
@@ -1316,8 +1416,10 @@ onMounted(() => {
             </div>
 
             <div class="settings-divider"></div>
+            -->
 
-            <!-- Row 2: 原创声明 -->
+            <!-- Row 2: 原创声明 (暂隐藏) -->
+            <!--
             <div class="setting-item-block">
               <div class="setting-item-main">
                 <div class="setting-icon-badge is-shield">
@@ -1335,6 +1437,7 @@ onMounted(() => {
             </div>
 
             <div class="settings-divider"></div>
+            -->
 
             <!-- Row 3: 文章封面 -->
             <div class="setting-item-block is-cover-block">
@@ -1361,10 +1464,10 @@ onMounted(() => {
                 @change="handleCoverUpload"
               />
 
-              <!-- Cover Image Preview Frame -->
-              <div class="cover-preview-box" @click="triggerCoverUpload">
+              <!-- Cover Image Preview Frame (点击查看大图预览) -->
+              <div class="cover-preview-box" @click="openCoverPreview" title="点击查看大图预览">
                 <img :src="coverImage" alt="Article Cover" class="cover-img" />
-                <div class="cover-expand-btn" title="查看或更换封面">
+                <div class="cover-expand-btn" @click.stop="openCoverPreview" title="预览封面大图">
                   <Maximize2 size="13" />
                 </div>
               </div>
@@ -1402,7 +1505,7 @@ onMounted(() => {
       </div>
     </aside>
 
-    <!-- Platform Management Modal (点击管理弹出的平台配置浮层) -->
+    <!-- Platform Management Modal (左侧分类导航 + 右侧卡片网格的宽屏自适应弹窗) -->
     <div 
       v-if="showPlatformManageModal" 
       class="manage-modal-backdrop" 
@@ -1412,119 +1515,150 @@ onMounted(() => {
         <div class="manage-modal-header">
           <div class="manage-header-titles">
             <div class="manage-title-row">
-              <span class="manage-title-badge">设置</span>
               <h3 class="manage-modal-title">发布平台展示管理</h3>
             </div>
-            <p class="manage-modal-subtitle">自定义在右侧发布面板中展示的平台，支持技术社区与媒体平台分类管理</p>
+            <p class="manage-modal-subtitle">自定义在右侧发布面板中展示的平台，未登录渠道可在登录后开启展示</p>
           </div>
           <button class="manage-modal-close" @click="showPlatformManageModal = false" title="关闭">
             <X size="18" />
           </button>
         </div>
 
-        <!-- Category Nav Tabs -->
-        <div class="manage-tabs-bar">
-          <button 
-            class="manage-tab-btn" 
-            :class="{ active: manageTab === 'all' }"
-            @click="manageTab = 'all'"
-          >
-            全部平台 ({{ platforms.length }})
-          </button>
-          <button 
-            class="manage-tab-btn" 
-            :class="{ active: manageTab === 'tech' }"
-            @click="manageTab = 'tech'"
-          >
-            💻 技术社区 ({{ techEnabledCount }}/{{ techPlatforms.length }})
-          </button>
-          <button 
-            class="manage-tab-btn" 
-            :class="{ active: manageTab === 'media' }"
-            @click="manageTab = 'media'"
-          >
-            📰 媒体平台 ({{ mediaEnabledCount }}/{{ mediaPlatforms.length }})
-          </button>
-        </div>
+        <!-- Main Body: Two Column (Left Sidebar + Right Platform Grid) -->
+        <div class="manage-modal-body-layout">
+          <!-- Left: Categories Navigation Sidebar -->
+          <aside class="manage-sidebar-left">
+            <div class="manage-sidebar-label">平台分类</div>
+            <button 
+              class="manage-side-nav-btn" 
+              :class="{ active: manageTab === 'all' }"
+              @click="manageTab = 'all'"
+            >
+              <span class="nav-btn-name">全部平台</span>
+              <span class="nav-btn-counter">{{ platforms.length }}</span>
+            </button>
+            <button 
+              class="manage-side-nav-btn" 
+              :class="{ active: manageTab === 'tech' }"
+              @click="manageTab = 'tech'"
+            >
+              <span class="nav-btn-name">技术社区</span>
+              <span class="nav-btn-counter" :class="{ 'has-active': techEnabledCount > 0 }">{{ techEnabledCount }}/{{ techPlatforms.length }}</span>
+            </button>
+            <button 
+              class="manage-side-nav-btn" 
+              :class="{ active: manageTab === 'media' }"
+              @click="manageTab = 'media'"
+            >
+              <span class="nav-btn-name">媒体平台</span>
+              <span class="nav-btn-counter" :class="{ 'has-active': mediaEnabledCount > 0 }">{{ mediaEnabledCount }}/{{ mediaPlatforms.length }}</span>
+            </button>
+          </aside>
 
-        <div class="manage-modal-body">
-          <!-- Section 1: 技术社区与开发者平台 -->
-          <div v-if="manageTab === 'all' || manageTab === 'tech'" class="manage-category-group">
-            <div class="manage-category-header">
-              <div class="manage-category-title-wrap">
-                <span class="category-icon-emoji">💻</span>
-                <span class="manage-category-name">技术社区与开发者平台</span>
-                <span class="manage-category-count">{{ techEnabledCount }} / {{ techPlatforms.length }} 已开启</span>
+          <!-- Right: Scrollable Content Grid -->
+          <div class="manage-content-right">
+            <!-- Section 1: 技术社区与开发者平台 -->
+            <div v-if="manageTab === 'all' || manageTab === 'tech'" class="manage-category-group">
+              <div class="manage-category-header">
+                <div class="manage-category-title-wrap">
+                  <span class="manage-category-name">技术社区与开发者平台</span>
+                  <span class="manage-category-count">{{ techEnabledCount }} / {{ techPlatforms.length }} 已开启</span>
+                </div>
+                <div class="manage-category-actions">
+                  <button class="btn-group-toggle" @click="toggleCategoryPlatforms('tech', true)">本组全选</button>
+                  <button class="btn-group-toggle" @click="toggleCategoryPlatforms('tech', false)">本组取消</button>
+                </div>
               </div>
-              <div class="manage-category-actions">
-                <button class="btn-group-toggle" @click="toggleCategoryPlatforms('tech', true)">本组全选</button>
-                <button class="btn-group-toggle" @click="toggleCategoryPlatforms('tech', false)">本组取消</button>
+
+              <div class="manage-platforms-grid">
+                <div 
+                  v-for="plat in techPlatforms" 
+                  :key="plat.id"
+                  class="manage-platform-item"
+                  :class="{ 
+                    'is-enabled': plat.enabled !== false && (plat.loginStatus === 'logged_in' || plat.id === 'zip-download'),
+                    'is-unlogged-manage': plat.loginStatus !== 'logged_in' && plat.id !== 'zip-download'
+                  }"
+                  @click="togglePlatformEnabled(plat)"
+                  :title="plat.loginStatus !== 'logged_in' && plat.id !== 'zip-download' ? '未登录渠道暂不支持展示，点击前往登录' : (plat.enabled !== false ? '点击取消展示' : '点击开启展示')"
+                >
+                  <div class="manage-item-checkbox">
+                    <input 
+                      type="checkbox" 
+                      :checked="plat.enabled !== false && (plat.loginStatus === 'logged_in' || plat.id === 'zip-download')" 
+                      :disabled="plat.loginStatus !== 'logged_in' && plat.id !== 'zip-download'"
+                      @click.stop="togglePlatformEnabled(plat)" 
+                    />
+                  </div>
+                  <div class="manage-item-icon">
+                    <img v-if="plat.iconUrl" :src="plat.iconUrl" :alt="plat.name" />
+                    <span v-else class="fallback-icon-letter">{{ plat.name.charAt(0) }}</span>
+                  </div>
+                  <div class="manage-item-info">
+                    <span class="manage-item-name">{{ plat.name }}</span>
+                    <span 
+                      v-if="plat.loginStatus === 'logged_in' || plat.id === 'zip-download'" 
+                      class="manage-item-tag is-logged-tag"
+                    >
+                      {{ plat.username || (plat.id === 'zip-download' ? '离线导出' : '已登录') }}
+                    </span>
+                    <span v-else class="manage-item-tag is-unlogged-tag">
+                      去登录 >
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div class="manage-platforms-grid">
-              <div 
-                v-for="plat in techPlatforms" 
-                :key="plat.id"
-                class="manage-platform-item"
-                :class="{ 'is-enabled': plat.enabled !== false }"
-                @click="togglePlatformEnabled(plat)"
-              >
-                <div class="manage-item-checkbox">
-                  <input 
-                    type="checkbox" 
-                    :checked="plat.enabled !== false" 
-                    @click.stop="togglePlatformEnabled(plat)" 
-                  />
+            <!-- Section 2: 媒体平台与自媒体 -->
+            <div v-if="manageTab === 'all' || manageTab === 'media'" class="manage-category-group">
+              <div class="manage-category-header">
+                <div class="manage-category-title-wrap">
+                  <span class="manage-category-name">媒体平台与自媒体渠道</span>
+                  <span class="manage-category-count">{{ mediaEnabledCount }} / {{ mediaPlatforms.length }} 已开启</span>
                 </div>
-                <div class="manage-item-icon">
-                  <img v-if="plat.iconUrl" :src="plat.iconUrl" :alt="plat.name" />
-                  <span v-else class="fallback-icon-letter">{{ plat.name.charAt(0) }}</span>
-                </div>
-                <div class="manage-item-info">
-                  <span class="manage-item-name">{{ plat.name }}</span>
-                  <span class="manage-item-tag">{{ plat.format === 'html' ? '富文本' : 'Markdown' }}</span>
+                <div class="manage-category-actions">
+                  <button class="btn-group-toggle" @click="toggleCategoryPlatforms('media', true)">本组全选</button>
+                  <button class="btn-group-toggle" @click="toggleCategoryPlatforms('media', false)">本组取消</button>
                 </div>
               </div>
-            </div>
-          </div>
 
-          <!-- Section 2: 媒体平台与自媒体 -->
-          <div v-if="manageTab === 'all' || manageTab === 'media'" class="manage-category-group">
-            <div class="manage-category-header">
-              <div class="manage-category-title-wrap">
-                <span class="category-icon-emoji">📰</span>
-                <span class="manage-category-name">媒体平台与自媒体渠道</span>
-                <span class="manage-category-count">{{ mediaEnabledCount }} / {{ mediaPlatforms.length }} 已开启</span>
-              </div>
-              <div class="manage-category-actions">
-                <button class="btn-group-toggle" @click="toggleCategoryPlatforms('media', true)">本组全选</button>
-                <button class="btn-group-toggle" @click="toggleCategoryPlatforms('media', false)">本组取消</button>
-              </div>
-            </div>
-
-            <div class="manage-platforms-grid">
-              <div 
-                v-for="plat in mediaPlatforms" 
-                :key="plat.id"
-                class="manage-platform-item"
-                :class="{ 'is-enabled': plat.enabled !== false }"
-                @click="togglePlatformEnabled(plat)"
-              >
-                <div class="manage-item-checkbox">
-                  <input 
-                    type="checkbox" 
-                    :checked="plat.enabled !== false" 
-                    @click.stop="togglePlatformEnabled(plat)" 
-                  />
-                </div>
-                <div class="manage-item-icon">
-                  <img v-if="plat.iconUrl" :src="plat.iconUrl" :alt="plat.name" />
-                  <span v-else class="fallback-icon-letter">{{ plat.name.charAt(0) }}</span>
-                </div>
-                <div class="manage-item-info">
-                  <span class="manage-item-name">{{ plat.name }}</span>
-                  <span class="manage-item-tag">{{ plat.id === 'zip-download' ? '离线导出' : (plat.format === 'html' ? '富文本' : 'Markdown') }}</span>
+              <div class="manage-platforms-grid">
+                <div 
+                  v-for="plat in mediaPlatforms" 
+                  :key="plat.id"
+                  class="manage-platform-item"
+                  :class="{ 
+                    'is-enabled': plat.enabled !== false && (plat.loginStatus === 'logged_in' || plat.id === 'zip-download'),
+                    'is-unlogged-manage': plat.loginStatus !== 'logged_in' && plat.id !== 'zip-download'
+                  }"
+                  @click="togglePlatformEnabled(plat)"
+                  :title="plat.loginStatus !== 'logged_in' && plat.id !== 'zip-download' ? '未登录渠道暂不支持展示，点击前往登录' : (plat.enabled !== false ? '点击取消展示' : '点击开启展示')"
+                >
+                  <div class="manage-item-checkbox">
+                    <input 
+                      type="checkbox" 
+                      :checked="plat.enabled !== false && (plat.loginStatus === 'logged_in' || plat.id === 'zip-download')" 
+                      :disabled="plat.loginStatus !== 'logged_in' && plat.id !== 'zip-download'"
+                      @click.stop="togglePlatformEnabled(plat)" 
+                    />
+                  </div>
+                  <div class="manage-item-icon">
+                    <img v-if="plat.iconUrl" :src="plat.iconUrl" :alt="plat.name" />
+                    <span v-else class="fallback-icon-letter">{{ plat.name.charAt(0) }}</span>
+                  </div>
+                  <div class="manage-item-info">
+                    <span class="manage-item-name">{{ plat.name }}</span>
+                    <span 
+                      v-if="plat.loginStatus === 'logged_in' || plat.id === 'zip-download'" 
+                      class="manage-item-tag is-logged-tag"
+                    >
+                      {{ plat.username || (plat.id === 'zip-download' ? '离线导出' : '已登录') }}
+                    </span>
+                    <span v-else class="manage-item-tag is-unlogged-tag">
+                      去登录 >
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1535,7 +1669,6 @@ onMounted(() => {
           <div class="manage-footer-left">
             <button class="btn-manage-action" @click="toggleAllPlatforms(true)">全选显示</button>
             <button class="btn-manage-action" @click="toggleAllPlatforms(false)">取消全选</button>
-            <button class="btn-manage-action" @click="resetDefaultPlatforms">恢复默认</button>
           </div>
           <div class="manage-footer-right">
             <button class="btn-manage-done" @click="showPlatformManageModal = false">
@@ -1545,6 +1678,168 @@ onMounted(() => {
         </div>
       </div>
     </div>
+
+    <!-- Cover Fullscreen Immersive Lightbox Modal (沉浸式悬浮大图预览) -->
+    <Teleport to="body">
+      <Transition name="lightbox-fade">
+        <div 
+          v-if="showCoverPreviewModal" 
+          class="cover-lightbox-backdrop" 
+          @click="showCoverPreviewModal = false"
+        >
+          <!-- Floating Top Controls Bar (Frosted Glass Pill) -->
+          <div class="lightbox-floating-controls" @click.stop>
+            <span class="lightbox-badge">封面大图预览</span>
+            <div class="lightbox-btn-group">
+              <button class="lightbox-tool-btn" @click="triggerCoverUpload" title="更换新封面">
+                <Upload size="13" />
+                <span>更换封面</span>
+              </button>
+              <button class="lightbox-close-circle" @click="showCoverPreviewModal = false" title="关闭预览 (ESC)">
+                <X size="15" />
+              </button>
+            </div>
+          </div>
+
+          <!-- Centered Floating Image Container -->
+          <div class="lightbox-image-container" @click.stop>
+            <img :src="coverImage" alt="Full Cover Preview" class="lightbox-floating-img" />
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
+    <!-- Cover Image Selection Modal (Tab 切换形式) -->
+    <Teleport to="body">
+      <div 
+        v-if="showCoverSelectModal" 
+        class="cover-picker-backdrop" 
+        @click.self="showCoverSelectModal = false"
+      >
+        <div class="cover-picker-card">
+          <div class="cover-picker-header">
+            <div class="picker-header-titles">
+              <h3 class="picker-modal-title">更换文章封面</h3>
+              <p class="picker-modal-subtitle">从文章正文插图中选择，或直接从本地上传图片</p>
+            </div>
+            <button class="picker-modal-close" @click="showCoverSelectModal = false" title="关闭">
+              <X size="18" />
+            </button>
+          </div>
+
+          <!-- Top Segmented Tab Navigation (左右 Tab 切换) -->
+          <div class="picker-tab-bar">
+            <button 
+              class="picker-tab-btn" 
+              :class="{ 'is-active': activeCoverTab === 'article' }"
+              @click="activeCoverTab = 'article'"
+            >
+              <ImageIcon size="14" />
+              <span>从文章插图中选择</span>
+              <span class="picker-tab-count">{{ articleImages.length }}</span>
+            </button>
+            <button 
+              class="picker-tab-btn" 
+              :class="{ 'is-active': activeCoverTab === 'upload' }"
+              @click="activeCoverTab = 'upload'"
+            >
+              <Upload size="14" />
+              <span>本地上传</span>
+            </button>
+            <button 
+              class="picker-tab-btn" 
+              :class="{ 'is-active': activeCoverTab === 'preset' }"
+              @click="activeCoverTab = 'preset'"
+            >
+              <Sparkles size="14" />
+              <span>推荐精选封面</span>
+            </button>
+          </div>
+
+          <div class="cover-picker-body">
+            <!-- Tab 1: 从文章插图中选择 (默认激活) -->
+            <div v-if="activeCoverTab === 'article'" class="picker-tab-pane">
+              <div v-if="articleImages.length > 0" class="picker-images-grid">
+                <div 
+                  v-for="(imgUrl, idx) in articleImages" 
+                  :key="'article-img-' + idx"
+                  class="picker-img-item"
+                  :class="{ 'is-active': tempSelectedCover === imgUrl }"
+                  @click="selectCoverOption(imgUrl)"
+                >
+                  <img :src="imgUrl" alt="Article image" class="picker-thumb" />
+                  <div class="picker-active-badge" v-if="tempSelectedCover === imgUrl">
+                    <Check size="13" class="check-svg" />
+                  </div>
+                </div>
+              </div>
+              <div v-else class="picker-empty-panel">
+                <div class="picker-empty-icon">
+                  <ImageIcon size="32" />
+                </div>
+                <p class="picker-empty-title">正文中暂未检测到插入的图片</p>
+                <p class="picker-empty-desc">你可以直接从本地上传图片，或者挑选系统推荐的精选封面</p>
+                <button class="btn-empty-switch" @click="activeCoverTab = 'upload'">
+                  <Upload size="14" />
+                  <span>前往本地上传</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Tab 2: 本地上传 -->
+            <div v-else-if="activeCoverTab === 'upload'" class="picker-tab-pane">
+              <div class="picker-upload-box is-large-box" @click="triggerLocalFileUpload">
+                <div class="picker-upload-icon-circle is-large-circle">
+                  <Upload size="26" />
+                </div>
+                <div class="picker-upload-info is-large-info">
+                  <span class="picker-upload-title-lg">点击选取或拖拽本地图片到此处</span>
+                  <span class="picker-upload-desc-lg">支持 JPG、PNG、WebP、GIF 格式，建议尺寸 16:9 或 2.35:1</span>
+                </div>
+              </div>
+
+              <!-- 若已上传过自定义封面，提供快捷预览选择 -->
+              <div v-if="customCoverUrl" class="picker-uploaded-section">
+                <span class="picker-uploaded-label">当前已上传自定义封面：</span>
+                <div 
+                  class="picker-img-item is-uploaded-item"
+                  :class="{ 'is-active': tempSelectedCover === customCoverUrl }"
+                  @click="selectCoverOption(customCoverUrl)"
+                >
+                  <img :src="customCoverUrl" alt="Uploaded cover" class="picker-thumb" />
+                  <div class="picker-active-badge" v-if="tempSelectedCover === customCoverUrl">
+                    <Check size="13" class="check-svg" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Tab 3: 推荐精选封面 -->
+            <div v-else-if="activeCoverTab === 'preset'" class="picker-tab-pane">
+              <div class="picker-images-grid">
+                <div 
+                  v-for="(presetUrl, idx) in presetCovers" 
+                  :key="'preset-img-' + idx"
+                  class="picker-img-item"
+                  :class="{ 'is-active': tempSelectedCover === presetUrl }"
+                  @click="selectCoverOption(presetUrl)"
+                >
+                  <img :src="presetUrl" alt="Preset cover" class="picker-thumb" />
+                  <div class="picker-active-badge" v-if="tempSelectedCover === presetUrl">
+                    <Check size="13" class="check-svg" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="cover-picker-footer">
+            <button class="btn-picker-cancel" @click="showCoverSelectModal = false">取消</button>
+            <button class="btn-picker-confirm" @click="confirmCoverSelection">确认使用选中封面</button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -1634,12 +1929,13 @@ onMounted(() => {
   width: 2.375rem;
   height: 2.375rem;
   border-radius: 0.75rem;
-  background: #fff1eb;
+  background: #fff8f5;
+  border: 1px solid rgba(255, 94, 54, 0.08);
   color: #ff5e36;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0.125rem 0.5rem rgba(255, 94, 54, 0.15);
+  box-shadow: 0 0.125rem 0.375rem rgba(255, 94, 54, 0.04);
 }
 
 .plane-icon {
@@ -2021,7 +2317,7 @@ onMounted(() => {
 }
 
 .platform-sub {
-  font-size: 0.78125rem;
+  font-size: 0.75rem;
   color: #8da0b6;
   font-weight: 500;
   white-space: nowrap;
@@ -2332,8 +2628,8 @@ input:checked + .slider:before {
 
 .cover-preview-box {
   width: 100%;
-  height: 6.5rem;
-  border-radius: 0.75rem;
+  height: 12.5rem;
+  border-radius: 0.5rem;
   overflow: hidden;
   position: relative;
   cursor: pointer;
@@ -2376,19 +2672,22 @@ input:checked + .slider:before {
 
 /* Drawer Footer */
 .drawer-footer {
-  padding: 1rem 1.25rem 1.5rem 1.25rem;
+  padding: 0.875rem 1.25rem 1.25rem 1.25rem;
   background: transparent;
   position: relative;
   z-index: 2;
   flex-shrink: 0;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.625rem;
 }
 
 .btn-gradient-launch {
-  width: 100%;
+  flex: 4;
+  min-width: 0;
   height: 2.875rem;
-  border-radius: 1rem;
+  border-radius: 0.875rem;
   border: none;
   background: linear-gradient(135deg, #ff5e36 0%, #ff784e 100%);
   box-shadow: 0 0.5rem 1.5rem rgba(255, 94, 54, 0.32);
@@ -2396,21 +2695,26 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
+  gap: 0.375rem;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0 0.75rem;
+  white-space: nowrap;
 }
 
 .launch-btn-text {
   font-size: 0.9375rem;
   font-weight: 700;
   letter-spacing: 0.0125rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .launch-arrow {
   font-size: 1rem;
   font-weight: 700;
   transition: transform 0.2s ease;
+  flex-shrink: 0;
 }
 
 .btn-gradient-launch:hover:not(:disabled) {
@@ -2440,24 +2744,28 @@ input:checked + .slider:before {
   border-top-color: #ffffff;
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
 }
 
-/* Open Drafts Option Under Launch Button */
+/* Open Drafts Option Beside Launch Button */
 .open-drafts-option {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4375rem;
-  margin-top: 0.75rem;
+  gap: 0.3125rem;
+  margin-top: 0;
   cursor: pointer;
   user-select: none;
-  padding: 0.1875rem 0.375rem;
-  border-radius: 0.375rem;
+  padding: 0.5rem 0.25rem;
+  border-radius: 0.625rem;
   transition: all 0.18s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .open-drafts-option:hover .open-drafts-label {
-  color: #1e293b;
+  color: #ff5e36;
 }
 
 .orange-ring-radio {
@@ -2508,11 +2816,12 @@ input:checked + .slider:before {
 }
 
 .manage-modal-card {
-  width: 640px;
+  width: min(58rem, 95vw);
   max-width: 95vw;
-  max-height: 88vh;
+  height: min(38rem, 86vh);
+  max-height: 86vh;
   background: #ffffff;
-  border-radius: 20px;
+  border-radius: 1.125rem;
   box-shadow: 0 25px 70px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.05);
   display: flex;
   flex-direction: column;
@@ -2521,44 +2830,34 @@ input:checked + .slider:before {
 }
 
 @keyframes popInCard {
-  from { opacity: 0; transform: scale(0.94) translateY(10px); }
+  from { opacity: 0; transform: scale(0.95) translateY(8px); }
   to { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .manage-modal-header {
-  padding: 18px 22px 14px 22px;
+  padding: 1rem 1.375rem;
   border-bottom: 1px solid #f1f5f9;
   display: flex;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: center;
   background: #fafbfc;
+  flex-shrink: 0;
 }
 
 .manage-header-titles {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 0.1875rem;
 }
 
 .manage-title-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-}
-
-.manage-title-badge {
-  font-size: 11px;
-  font-weight: 700;
-  color: #2563eb;
-  background: #eff6ff;
-  border: 1px solid #dbeafe;
-  padding: 1px 7px;
-  border-radius: 6px;
-  letter-spacing: 0.5px;
+  gap: 0.5rem;
 }
 
 .manage-modal-title {
-  font-size: 16.5px;
+  font-size: 1.0625rem;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
@@ -2566,7 +2865,7 @@ input:checked + .slider:before {
 }
 
 .manage-modal-subtitle {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: #64748b;
   margin: 0;
 }
@@ -2575,8 +2874,8 @@ input:checked + .slider:before {
   background: transparent;
   border: none;
   color: #94a3b8;
-  width: 32px;
-  height: 32px;
+  width: 2rem;
+  height: 2rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -2590,104 +2889,158 @@ input:checked + .slider:before {
   color: #0f172a;
 }
 
-/* Category Filter Tabs Bar */
-.manage-tabs-bar {
+/* Two-Column Body Layout */
+.manage-modal-body-layout {
   display: flex;
-  gap: 6px;
-  padding: 10px 22px;
-  background: #ffffff;
-  border-bottom: 1px solid #f1f5f9;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: #f8fafc;
 }
 
-.manage-tab-btn {
+/* Left Sidebar Categories Navigation */
+.manage-sidebar-left {
+  width: 12rem;
+  flex-shrink: 0;
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  color: #475569;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 6px 14px;
-  border-radius: 20px;
+  border-right: 1px solid #eef2f6;
+  padding: 0.875rem 0.625rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  overflow-y: auto;
+}
+
+.manage-sidebar-label {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.25rem 0.5rem 0.375rem 0.5rem;
+}
+
+.manage-side-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.5625rem 0.75rem;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0.625rem;
   cursor: pointer;
   transition: all 0.18s ease;
   user-select: none;
 }
 
-.manage-tab-btn:hover {
-  background: #f1f5f9;
-  color: #0f172a;
-  border-color: #cbd5e1;
+.manage-side-nav-btn .nav-btn-name {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #475569;
 }
 
-.manage-tab-btn.active {
+.manage-side-nav-btn .nav-btn-counter {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #94a3b8;
+  background: #f1f5f9;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.625rem;
+  transition: all 0.15s ease;
+}
+
+.manage-side-nav-btn:hover {
+  background: #ffffff;
+  border-color: #e2e8f0;
+}
+
+.manage-side-nav-btn:hover .nav-btn-name {
+  color: #0f172a;
+}
+
+.manage-side-nav-btn.active {
+  background: #ffffff;
+  border-color: #dbeafe;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.08);
+}
+
+.manage-side-nav-btn.active .nav-btn-name {
+  color: #2563eb;
+  font-weight: 700;
+}
+
+.manage-side-nav-btn.active .nav-btn-counter {
   background: #eff6ff;
   color: #2563eb;
-  border-color: #bfdbfe;
-  box-shadow: 0 1px 3px rgba(37, 99, 235, 0.12);
 }
 
-.manage-modal-body {
-  padding: 18px 22px;
-  overflow-y: auto;
+.manage-side-nav-btn .nav-btn-counter.has-active {
+  color: #16a34a;
+  background: #f0fdf4;
+}
+
+/* Right Content Area */
+.manage-content-right {
   flex: 1;
-  max-height: calc(88vh - 180px);
+  min-width: 0;
+  padding: 1.125rem 1.375rem;
+  overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 1.375rem;
+  background: #ffffff;
 }
 
 /* Category Group Block */
 .manage-category-group {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0.625rem;
 }
 
 .manage-category-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 6px;
+  padding-bottom: 0.4375rem;
   border-bottom: 1px dashed #e2e8f0;
 }
 
 .manage-category-title-wrap {
   display: flex;
   align-items: center;
-  gap: 6px;
-}
-
-.category-icon-emoji {
-  font-size: 15px;
+  gap: 0.5rem;
 }
 
 .manage-category-name {
-  font-size: 13.5px;
+  font-size: 0.84375rem;
   font-weight: 700;
   color: #1e293b;
 }
 
 .manage-category-count {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: #64748b;
   background: #f1f5f9;
-  padding: 1px 8px;
-  border-radius: 10px;
+  padding: 0.0625rem 0.5rem;
+  border-radius: 0.625rem;
   font-weight: 500;
 }
 
 .manage-category-actions {
   display: flex;
-  gap: 6px;
+  gap: 0.375rem;
 }
 
 .btn-group-toggle {
   background: transparent;
   border: 1px solid #e2e8f0;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 500;
   color: #64748b;
-  padding: 2px 8px;
-  border-radius: 6px;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 0.375rem;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -2700,18 +3053,18 @@ input:checked + .slider:before {
 
 .manage-platforms-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 0.625rem;
 }
 
 .manage-platform-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
+  gap: 0.625rem;
+  padding: 0.5625rem 0.75rem;
   background: #f8fafc;
   border: 1px solid #e2e8f0;
-  border-radius: 13px;
+  border-radius: 0.8125rem;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
@@ -2735,23 +3088,40 @@ input:checked + .slider:before {
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.15);
 }
 
+.manage-platform-item.is-unlogged-manage {
+  background: #f8fafc;
+  border-color: #f1f5f9;
+  opacity: 0.68;
+}
+
+.manage-platform-item.is-unlogged-manage:hover {
+  opacity: 1;
+  border-color: #cbd5e1;
+  background: #ffffff;
+}
+
 .manage-item-checkbox {
   display: flex;
   align-items: center;
 }
 
 .manage-item-checkbox input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 1rem;
+  height: 1rem;
   accent-color: #2563eb;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 0.25rem;
+}
+
+.manage-item-checkbox input[type="checkbox"]:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
 }
 
 .manage-item-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 9px;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.5625rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2768,7 +3138,7 @@ input:checked + .slider:before {
 }
 
 .fallback-icon-letter {
-  font-size: 14px;
+  font-size: 0.875rem;
   font-weight: 700;
   color: #2563eb;
 }
@@ -2776,13 +3146,13 @@ input:checked + .slider:before {
 .manage-item-info {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 0.0625rem;
   flex: 1;
   min-width: 0;
 }
 
 .manage-item-name {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   color: #0f172a;
   white-space: nowrap;
@@ -2791,35 +3161,55 @@ input:checked + .slider:before {
 }
 
 .manage-item-tag {
-  font-size: 10.5px;
+  font-size: 0.65625rem;
   color: #94a3b8;
   font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.manage-item-tag.is-logged-tag {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.manage-item-tag.is-unlogged-tag {
+  color: #94a3b8;
+  font-weight: 500;
+  transition: color 0.15s ease;
+}
+
+.manage-platform-item.is-unlogged-manage:hover .manage-item-tag.is-unlogged-tag {
+  color: #2563eb;
+  font-weight: 600;
 }
 
 .manage-modal-footer {
-  padding: 14px 22px;
+  padding: 0.875rem 1.375rem;
   border-top: 1px solid #f1f5f9;
   display: flex;
   justify-content: space-between;
   align-items: center;
   background: #fafbfc;
-  gap: 12px;
+  gap: 0.75rem;
+  flex-shrink: 0;
 }
 
 .manage-footer-left {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .btn-manage-action {
   background: #ffffff;
   border: 1px solid #cbd5e1;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   color: #475569;
-  padding: 6px 12px;
-  border-radius: 8px;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.5rem;
   cursor: pointer;
   transition: all 0.15s ease;
 }
@@ -2834,10 +3224,10 @@ input:checked + .slider:before {
   background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   color: #ffffff;
   border: none;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
-  padding: 8px 20px;
-  border-radius: 10px;
+  padding: 0.5rem 1.25rem;
+  border-radius: 0.625rem;
   cursor: pointer;
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.32);
   transition: all 0.2s ease;
@@ -2849,10 +3239,546 @@ input:checked + .slider:before {
   transform: translateY(-1px);
 }
 
+@media (max-width: 768px) {
+  .manage-modal-card {
+    width: 96vw !important;
+    max-height: 92vh !important;
+    height: 92vh !important;
+  }
+  .manage-modal-body-layout {
+    flex-direction: column !important;
+  }
+  .manage-sidebar-left {
+    width: 100% !important;
+    border-right: none !important;
+    border-bottom: 1px solid #eef2f6 !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    padding: 0.5rem 0.75rem !important;
+    gap: 0.5rem !important;
+  }
+  .manage-sidebar-label {
+    display: none !important;
+  }
+  .manage-side-nav-btn {
+    width: auto !important;
+    flex-shrink: 0 !important;
+  }
+  .manage-platforms-grid {
+    grid-template-columns: 1fr !important;
+  }
+  .manage-modal-footer {
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+  .manage-footer-left {
+    justify-content: center !important;
+  }
+  .btn-manage-done {
+    width: 100% !important;
+  }
+}
+
 @media (max-width: 480px) {
   .right-drawer-panel {
     width: 100vw !important;
     max-width: 100vw !important;
   }
+}
+
+/* Modern Immersive Lightbox Preview */
+.cover-lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 15, 29, 0.86);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  padding: 2rem;
+  cursor: zoom-out;
+}
+
+/* Floating Top Controls */
+.lightbox-floating-controls {
+  position: absolute;
+  top: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  padding: 0.4375rem 0.625rem 0.4375rem 1.125rem;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  z-index: 10;
+  cursor: default;
+}
+
+.lightbox-badge {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: 0.02em;
+}
+
+.lightbox-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.lightbox-tool-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.3125rem 0.8125rem;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lightbox-tool-btn:hover {
+  background: #ff5e36;
+  border-color: #ff5e36;
+  box-shadow: 0 4px 14px rgba(255, 94, 54, 0.45);
+  transform: translateY(-1px);
+}
+
+.lightbox-close-circle {
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.85);
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.lightbox-close-circle:hover {
+  background: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  transform: rotate(90deg);
+}
+
+/* Centered Image Container */
+.lightbox-image-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 90vw;
+  max-height: 82vh;
+  cursor: default;
+}
+
+.lightbox-floating-img {
+  max-width: 100%;
+  max-height: 82vh;
+  object-fit: contain;
+  border-radius: 0.875rem;
+  box-shadow: 0 25px 80px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.12);
+  animation: zoomInImage 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes zoomInImage {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* Lightbox Vue Transition */
+.lightbox-fade-enter-active,
+.lightbox-fade-leave-active {
+  transition: opacity 0.22s ease;
+}
+
+.lightbox-fade-enter-from,
+.lightbox-fade-leave-to {
+  opacity: 0;
+}
+
+/* Cover Image Picker Modal (Tab 模式) */
+.cover-picker-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1.25rem;
+  animation: fadeInModal 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cover-picker-card {
+  width: min(44rem, 92vw);
+  max-width: 92vw;
+  max-height: 86vh;
+  background: #ffffff;
+  border-radius: 1.125rem;
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: popInCard 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.cover-picker-header {
+  padding: 1rem 1.375rem 0.75rem 1.375rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.picker-header-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.picker-modal-title {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+}
+
+.picker-modal-subtitle {
+  font-size: 0.75rem;
+  color: #64748b;
+  margin: 0;
+}
+
+.picker-modal-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  width: 1.875rem;
+  height: 1.875rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.picker-modal-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Tab Bar */
+.picker-tab-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0 1.375rem 0.75rem 1.375rem;
+  border-bottom: 1px solid #f1f5f9;
+  background: #ffffff;
+  flex-shrink: 0;
+}
+
+.picker-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.4375rem 0.875rem;
+  border-radius: 0.5rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #64748b;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.picker-tab-btn:hover {
+  color: #0f172a;
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+.picker-tab-btn.is-active {
+  background: #fff8f5;
+  color: #ff5e36;
+  border-color: #ffbba7;
+  box-shadow: 0 2px 6px rgba(255, 94, 54, 0.1);
+}
+
+.picker-tab-count {
+  padding: 0.0625rem 0.375rem;
+  border-radius: 9999px;
+  background: rgba(0, 0, 0, 0.06);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.picker-tab-btn.is-active .picker-tab-count {
+  background: #ff5e36;
+  color: #ffffff;
+}
+
+.cover-picker-body {
+  padding: 1.25rem 1.375rem;
+  overflow-y: auto;
+  flex: 1;
+  min-height: 14rem;
+}
+
+.picker-tab-pane {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  animation: fadeInModal 0.2s ease;
+}
+
+.picker-upload-box.is-large-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2.25rem 1.5rem;
+  background: #f8fafc;
+  border: 2px dashed #cbd5e1;
+  border-radius: 0.875rem;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.picker-upload-box.is-large-box:hover {
+  background: #fff8f5;
+  border-color: #ff5e36;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(255, 94, 54, 0.1);
+}
+
+.picker-upload-icon-circle.is-large-circle {
+  width: 3.25rem;
+  height: 3.25rem;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #ff5e36;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.picker-upload-box.is-large-box:hover .picker-upload-icon-circle.is-large-circle {
+  background: #ff5e36;
+  color: #ffffff;
+  border-color: #ff5e36;
+  transform: scale(1.06);
+}
+
+.picker-upload-info.is-large-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.picker-upload-title-lg {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.picker-upload-desc-lg {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.picker-uploaded-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+}
+
+.picker-uploaded-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #475569;
+}
+
+.picker-img-item.is-uploaded-item {
+  width: 12rem;
+  height: 6.75rem;
+}
+
+.picker-images-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: 0.625rem;
+}
+
+.picker-img-item {
+  position: relative;
+  height: 5.5rem;
+  border-radius: 0.625rem;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid transparent;
+  background: #f1f5f9;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.picker-img-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.picker-img-item.is-active {
+  border-color: #ff5e36;
+  box-shadow: 0 4px 14px rgba(255, 94, 54, 0.28);
+}
+
+.picker-thumb {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.picker-img-item:hover .picker-thumb {
+  transform: scale(1.05);
+}
+
+.picker-active-badge {
+  position: absolute;
+  top: 0.3125rem;
+  right: 0.3125rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: #ff5e36;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  animation: popBadge 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.picker-empty-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem;
+  text-align: center;
+  background: #f8fafc;
+  border: 1px dashed #e2e8f0;
+  border-radius: 0.75rem;
+}
+
+.picker-empty-icon {
+  color: #cbd5e1;
+  margin-bottom: 0.625rem;
+}
+
+.picker-empty-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #475569;
+  margin: 0 0 0.25rem 0;
+}
+
+.picker-empty-desc {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin: 0 0 1rem 0;
+}
+
+.btn-empty-switch {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  background: #ff5e36;
+  color: #ffffff;
+  border: none;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.375rem 0.875rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(255, 94, 54, 0.25);
+  transition: all 0.15s ease;
+}
+
+.btn-empty-switch:hover {
+  background: #ff784e;
+  transform: translateY(-1px);
+}
+
+.cover-picker-footer {
+  padding: 0.875rem 1.375rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 0.75rem;
+  background: #fafbfc;
+  flex-shrink: 0;
+}
+
+.btn-picker-cancel {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  color: #475569;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.4375rem 1.125rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-picker-cancel:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.btn-picker-confirm {
+  background: linear-gradient(135deg, #ff5e36 0%, #ff784e 100%);
+  color: #ffffff;
+  border: none;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  padding: 0.4375rem 1.25rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(255, 94, 54, 0.3);
+  transition: all 0.2s ease;
+}
+
+.btn-picker-confirm:hover {
+  box-shadow: 0 6px 18px rgba(255, 94, 54, 0.42);
+  transform: translateY(-1px);
 }
 </style>
