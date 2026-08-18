@@ -1,7 +1,7 @@
 export const codeThemes = [
   {
     id: 'mdnice-classic',
-    name: 'MDNice 经典 (Atom One Dark)',
+    name: 'MDNice 经典',
     dark: true,
     styles: {
       bg: '#282c34',
@@ -25,7 +25,7 @@ export const codeThemes = [
   },
   {
     id: 'atom-one-dark',
-    name: 'Atom One Dark (深灰黑标准)',
+    name: 'Atom One Dark',
     dark: true,
     styles: {
       bg: '#282c34',
@@ -49,7 +49,7 @@ export const codeThemes = [
   },
   {
     id: 'vs-code-dark',
-    name: 'VS Code Dark+ (微软官方深色)',
+    name: 'VS Code Dark+',
     dark: true,
     styles: {
       bg: '#1e1e1e',
@@ -73,7 +73,7 @@ export const codeThemes = [
   },
   {
     id: 'github-dark',
-    name: 'GitHub Dark (GitHub 官方深色)',
+    name: 'GitHub Dark',
     dark: true,
     styles: {
       bg: '#0d1117',
@@ -97,7 +97,7 @@ export const codeThemes = [
   },
   {
     id: 'dracula',
-    name: 'Dracula (吸血鬼高对比)',
+    name: 'Dracula',
     dark: true,
     styles: {
       bg: '#282a36',
@@ -121,7 +121,7 @@ export const codeThemes = [
   },
   {
     id: 'monokai',
-    name: 'Monokai Pro (经典黑金艳丽)',
+    name: 'Monokai Pro',
     dark: true,
     styles: {
       bg: '#272822',
@@ -145,7 +145,7 @@ export const codeThemes = [
   },
   {
     id: 'night-owl',
-    name: 'Night Owl (夜猫子极光蓝)',
+    name: 'Night Owl',
     dark: true,
     styles: {
       bg: '#011627',
@@ -169,7 +169,7 @@ export const codeThemes = [
   },
   {
     id: 'nord',
-    name: 'Nord (北欧极简极光)',
+    name: 'Nord',
     dark: true,
     styles: {
       bg: '#2e3440',
@@ -193,7 +193,7 @@ export const codeThemes = [
   },
   {
     id: 'tokyo-night',
-    name: 'Tokyo Night (东京霓虹紫蓝)',
+    name: 'Tokyo Night',
     dark: true,
     styles: {
       bg: '#1a1b26',
@@ -217,7 +217,7 @@ export const codeThemes = [
   },
   {
     id: 'material-ocean',
-    name: 'Material Palenight (深蓝紫柔和)',
+    name: 'Material Palenight',
     dark: true,
     styles: {
       bg: '#292d3e',
@@ -241,7 +241,7 @@ export const codeThemes = [
   },
   {
     id: 'github-light',
-    name: 'GitHub Light (官方白底极简)',
+    name: 'GitHub Light',
     dark: false,
     styles: {
       bg: '#f6f8fa',
@@ -265,7 +265,7 @@ export const codeThemes = [
   },
   {
     id: 'one-light',
-    name: 'Atom One Light (柔和米灰浅色)',
+    name: 'Atom One Light',
     dark: false,
     styles: {
       bg: '#fafafa',
@@ -289,7 +289,7 @@ export const codeThemes = [
   },
   {
     id: 'vscode-light',
-    name: 'VS Code Light+ (微软官方浅色)',
+    name: 'VS Code Light+',
     dark: false,
     styles: {
       bg: '#ffffff',
@@ -313,7 +313,7 @@ export const codeThemes = [
   },
   {
     id: 'xcode-light',
-    name: 'Xcode Light (苹果经典优雅浅色)',
+    name: 'Xcode Light',
     dark: false,
     styles: {
       bg: '#fbfbfb',
@@ -337,7 +337,7 @@ export const codeThemes = [
   },
   {
     id: 'solarized-light',
-    name: 'Solarized Light (日光暖调米黄)',
+    name: 'Solarized Light',
     dark: false,
     styles: {
       bg: '#fdf6e3',
@@ -361,7 +361,7 @@ export const codeThemes = [
   },
   {
     id: 'solarized-dark',
-    name: 'Solarized Dark (日光暗调深青)',
+    name: 'Solarized Dark',
     dark: true,
     styles: {
       bg: '#002b36',

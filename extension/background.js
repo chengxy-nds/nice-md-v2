@@ -26,7 +26,8 @@ const DEFAULT_PLATFORMS_CONFIG = [
     name: '知乎专栏',
     color: '#0084ff',
     writeUrl: 'https://zhuanlan.zhihu.com/write',
-    matchHosts: ['zhuanlan.zhihu.com'],
+    matchHosts: ['zhuanlan.zhihu.com', 'zhihu.com', 'www.zhihu.com'],
+    silentEnabled: true,
     selectors: {
       title: 'textarea.WriteIndex-titleInput, [placeholder*="请输入标题"]',
       editor: '.public-DraftEditor-content, .DraftEditor-root [contenteditable="true"], [role="textbox"]',
@@ -78,6 +79,7 @@ const DEFAULT_PLATFORMS_CONFIG = [
     color: '#ea4335',
     writeUrl: 'https://baijiahao.baidu.com/builder/rc/write/article',
     matchHosts: ['baijiahao.baidu.com'],
+    silentEnabled: true,
     selectors: {
       title: '.editor-title input, [placeholder*="文章标题"], #title-input',
       editor: '.ProseMirror, [contenteditable="true"], .ueditor-content',
@@ -103,6 +105,7 @@ const DEFAULT_PLATFORMS_CONFIG = [
     color: '#f59e0b',
     writeUrl: 'https://mp.eastmoney.com/NewWrite/Article',
     matchHosts: ['mp.eastmoney.com'],
+    silentEnabled: true,
     selectors: {
       title: '.title-input, [placeholder*="标题"], #txtTitle',
       editor: '[contenteditable="true"], .editor-content, textarea',
@@ -128,6 +131,7 @@ const DEFAULT_PLATFORMS_CONFIG = [
     color: '#e11d48',
     writeUrl: 'https://mp.sohu.com/mpbp/bp/article/write',
     matchHosts: ['mp.sohu.com'],
+    silentEnabled: true,
     selectors: {
       title: '.title-input, [placeholder*="标题"], input',
       editor: '.ProseMirror, [contenteditable="true"], .editor',
@@ -153,6 +157,7 @@ const DEFAULT_PLATFORMS_CONFIG = [
     color: '#10b981',
     writeUrl: 'https://blog.51cto.com/blogger/publish',
     matchHosts: ['blog.51cto.com'],
+    silentEnabled: true,
     selectors: {
       title: '#title, [placeholder*="标题"], .title-input',
       editor: '[contenteditable="true"], textarea',
@@ -165,6 +170,7 @@ const DEFAULT_PLATFORMS_CONFIG = [
     color: '#007722',
     writeUrl: 'https://www.douban.com/note/create',
     matchHosts: ['douban.com', 'www.douban.com'],
+    silentEnabled: true,
     selectors: {
       title: '#note_title, [placeholder*="题目"], input',
       editor: '#note_text, textarea',
@@ -177,6 +183,7 @@ const DEFAULT_PLATFORMS_CONFIG = [
     color: '#009a61',
     writeUrl: 'https://segmentfault.com/write',
     matchHosts: ['segmentfault.com'],
+    silentEnabled: true,
     selectors: {
       title: '[placeholder*="标题"], #title, .title-input',
       editor: '.cm-content, [contenteditable="true"], textarea',
@@ -188,7 +195,8 @@ const DEFAULT_PLATFORMS_CONFIG = [
     name: '微博',
     color: '#e6162d',
     writeUrl: 'https://card.weibo.com/article/v5/editor',
-    matchHosts: ['card.weibo.com'],
+    matchHosts: ['card.weibo.com', 'weibo.com'],
+    silentEnabled: true,
     selectors: {
       title: '.title-input, [placeholder*="标题"], input',
       editor: '.editor-content, [contenteditable="true"], textarea',
@@ -201,6 +209,7 @@ const DEFAULT_PLATFORMS_CONFIG = [
     color: '#3b82f6',
     writeUrl: 'https://mp.xueqiu.com/writeV2',
     matchHosts: ['xueqiu.com', 'mp.xueqiu.com'],
+    silentEnabled: true,
     selectors: {
       title: '.write-title, [placeholder*="标题"], input',
       editor: '.editor-body, [contenteditable="true"], textarea',
@@ -213,6 +222,7 @@ const DEFAULT_PLATFORMS_CONFIG = [
     color: '#f01414',
     writeUrl: 'https://www.imooc.com/article/publish',
     matchHosts: ['imooc.com', 'www.imooc.com'],
+    silentEnabled: true,
     selectors: {
       title: '.js-title, [placeholder*="标题"], input',
       editor: '[contenteditable="true"], textarea',
@@ -225,6 +235,7 @@ const DEFAULT_PLATFORMS_CONFIG = [
     color: '#ea580c',
     writeUrl: 'https://www.woshipm.com/writing',
     matchHosts: ['woshipm.com', 'www.woshipm.com'],
+    silentEnabled: true,
     selectors: {
       title: '#post_title, [placeholder*="标题"], input',
       editor: '[contenteditable="true"], textarea',
@@ -232,8 +243,34 @@ const DEFAULT_PLATFORMS_CONFIG = [
     }
   },
   {
+    id: 'jianshu',
+    name: '简书',
+    color: '#ea6f5a',
+    writeUrl: 'https://www.jianshu.com/writer',
+    matchHosts: ['jianshu.com', 'www.jianshu.com'],
+    silentEnabled: true,
+    selectors: {
+      title: '._24i7u, [placeholder*="请输入标题"], input',
+      editor: '#kalamu-editor, [contenteditable="true"], textarea',
+      format: 'text/plain'
+    }
+  },
+  {
+    id: 'toutiao',
+    name: '今日头条',
+    color: '#ed4040',
+    writeUrl: 'https://mp.toutiao.com/profile_v4/graphic/publish',
+    matchHosts: ['toutiao.com', 'mp.toutiao.com'],
+    silentEnabled: true,
+    selectors: {
+      title: '.byte-input__inner, [placeholder*="标题"], input',
+      editor: '.ProseMirror, [contenteditable="true"], textarea',
+      format: 'text/html'
+    }
+  },
+  {
     id: 'zip-download',
-    name: 'Markdown 压缩包',
+    name: 'Markdown 离线包',
     color: '#6366f1',
     writeUrl: '',
     matchHosts: [],
@@ -326,13 +363,11 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     chrome.storage.local.get(['platforms_config'], (res) => {
       const configList = res.platforms_config || DEFAULT_PLATFORMS_CONFIG;
       const targetPlatform = configList.find(p => p.id === platform);
-      const silentEnabled = targetPlatform ? !!targetPlatform.silentEnabled : false;
-      
       const adapter = self.publishAdapters ? self.publishAdapters[platform] : null;
-      const isWechat = platform === 'wechat';
-      const actualSilentEnabled = isWechat ? false : silentEnabled;
+      const isWechat = platform === 'wechat' || platform === 'weixin';
+      const silentEnabled = targetPlatform ? targetPlatform.silentEnabled !== false : true;
       
-      if (adapter && actualSilentEnabled) {
+      if (adapter && silentEnabled) {
         adapter.publish({ title, markdown, html }).then((result) => {
           if (result.localOnly) {
             sendResponse({ success: true, localOnly: true });
@@ -340,16 +375,24 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
             sendResponse({ success: true, postUrl: result.postUrl, postId: result.postId });
           }
         }).catch((err) => {
-          console.warn(`[NiceMD Background] Background API publish failed for ${platform}:`, err.message);
-          sendResponse({ success: false, error: err.message });
+          console.warn(`[NiceMD Background] Background API publish failed for ${platform}, falling back to tab automation:`, err.message);
+          if (isWechat && adapter.getWechatParams) {
+            adapter.getWechatParams().then((params) => {
+              const dynamicUrl = `https://mp.weixin.qq.com/cgi-bin/appmsg?t=media/appmsg_edit&action=edit&type=77&lang=zh_CN&token=${params.token}`;
+              fallbackToTabPublishWithUrl(dynamicUrl, platform, title, markdown, html, sendResponse);
+            }).catch(() => {
+              fallbackToTabPublishWithUrl('https://mp.weixin.qq.com/', platform, title, markdown, html, sendResponse);
+            });
+          } else {
+            fallbackToTabPublish(platform, title, markdown, html, sendResponse);
+          }
         });
       } else {
-        if (isWechat && adapter) {
+        if (isWechat && adapter && adapter.getWechatParams) {
           adapter.getWechatParams().then((params) => {
             const dynamicUrl = `https://mp.weixin.qq.com/cgi-bin/appmsg?t=media/appmsg_edit&action=edit&type=77&lang=zh_CN&token=${params.token}`;
             fallbackToTabPublishWithUrl(dynamicUrl, platform, title, markdown, html, sendResponse);
-          }).catch((err) => {
-            console.warn('[NiceMD Background] Failed to get dynamic WeChat URL, falling back to login:', err.message);
+          }).catch(() => {
             fallbackToTabPublishWithUrl('https://mp.weixin.qq.com/', platform, title, markdown, html, sendResponse);
           });
         } else {

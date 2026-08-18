@@ -47,7 +47,9 @@
         "https://card.weibo.com/article/v5/editor*",
         "https://mp.xueqiu.com/writeV2*",
         "https://www.imooc.com/article/publish*",
-        "https://www.woshipm.com/writing*"
+        "https://www.woshipm.com/writing*",
+        "https://www.jianshu.com/writer*",
+        "https://mp.toutiao.com/profile_v4/graphic/publish*"
       ],
       "js": ["content-automation.js"],
       "run_at": "document_end"

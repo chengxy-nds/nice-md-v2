@@ -639,10 +639,10 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
       const header = doc.createElement('section');
       header.setAttribute('style', cleanCss(`
         display: block;
-        height: 36px;
+        height: 28px;
         background-color: ${codeBg};
-        padding: 0 16px;
-        line-height: 36px;
+        padding: 0 14px;
+        line-height: 28px;
         border-top-left-radius: 8px;
         border-top-right-radius: 8px;
         box-sizing: border-box;
@@ -651,14 +651,14 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
       `));
       
       const langSpan = (showCodeLang && langName) 
-        ? `<span style="display: block; float: right; font-size: 11px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: ${macText}; text-transform: uppercase; letter-spacing: 0.05em; line-height: 36px;">${langName}</span>`
+        ? `<span style="display: block; float: right; font-size: 10px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: ${macText}; text-transform: uppercase; letter-spacing: 0.05em; line-height: 28px;">${langName}</span>`
         : '';
 
       header.innerHTML = `
         <span style="display: inline-block; vertical-align: middle; line-height: 0; font-size: 0;">
-          <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: #ff5f56; margin-right: 8px; vertical-align: middle;"></span>
-          <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: #ffbd2e; margin-right: 8px; vertical-align: middle;"></span>
-          <span style="display: inline-block; width: 12px; height: 12px; border-radius: 50%; background-color: #27c93f; vertical-align: middle;"></span>
+          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #ff5f56; margin-right: 6px; vertical-align: middle;"></span>
+          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #ffbd2e; margin-right: 6px; vertical-align: middle;"></span>
+          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #27c93f; vertical-align: middle;"></span>
         </span>
         ${langSpan}
       `;
@@ -668,10 +668,10 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
       const header = doc.createElement('section');
       header.setAttribute('style', cleanCss(`
         display: block;
-        height: 26px;
+        height: 24px;
         background-color: ${codeBg};
-        padding: 0 14px;
-        line-height: 26px;
+        padding: 0 12px;
+        line-height: 24px;
         border-top-left-radius: 8px;
         border-top-right-radius: 8px;
         box-sizing: border-box;
@@ -687,7 +687,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     preNew.className = 'custom';
     preNew.setAttribute('style', cleanCss(`
       margin: 0;
-      padding: ${isMacStyle ? '8px 18px 16px 18px' : '16px 18px'};
+      padding: ${isMacStyle ? '4px 16px 14px 16px' : '14px 16px'};
       background-color: ${codeBg};
       border-radius: ${isMacStyle ? '0 0 8px 8px' : '8px'};
       overflow-x: auto;

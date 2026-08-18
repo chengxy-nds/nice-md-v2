@@ -1206,7 +1206,7 @@ watch(customStyles, () => {
                   title="代码高亮主题"
                 >
                   <Code2 size="13" />
-                  <span>代码: {{ activeCodeThemeObj?.name || 'Atom Dark' }}</span>
+                  <span>代码: {{ activeCodeThemeObj?.name || 'Atom One Dark' }}</span>
                   <ChevronDown size="11" />
                 </button>
                 <div class="header-popout-panel" v-if="showCodeThemeMenu" @mouseleave="showCodeThemeMenu = false">
@@ -1217,7 +1217,7 @@ watch(customStyles, () => {
                     :class="{ 'is-active': ct.id === currentCodeTheme }"
                     @click="handleCodeThemeSelect(ct.id)"
                   >
-                    <span>代码: {{ ct.name }}</span>
+                    <span>{{ ct.name }}</span>
                   </button>
                 </div>
               </div>
@@ -1273,6 +1273,7 @@ watch(customStyles, () => {
     <!-- Launchpad Modal -->
     <LaunchpadModal
       :isOpen="isLaunchpadOpen"
+      :articleTitle="activeDocument?.title || ''"
       :markdown="markdownContent"
       :html="getCompiledHtml()"
       :themeId="currentTheme"

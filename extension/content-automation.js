@@ -70,8 +70,8 @@ const SELECTORS = {
     format: 'text/plain'
   },
   segmentfault: {
-    title: '[placeholder*="标题"], #title, .title-input',
-    editor: '.cm-content, [contenteditable="true"], textarea',
+    title: '[placeholder*="标题"], #title, .title-input, input[type="text"]',
+    editor: '.cm-content, .ProseMirror, .sf-editor, [contenteditable="true"], #text, textarea',
     format: 'text/plain'
   },
   weibo: {
@@ -85,9 +85,9 @@ const SELECTORS = {
     format: 'text/html'
   },
   imooc: {
-    title: '.js-title, [placeholder*="标题"], input',
-    editor: '[contenteditable="true"], textarea',
-    format: 'text/html'
+    title: '#article_title, .article-title, input#article_title, [placeholder="请在此输入标题"], [placeholder*="输入标题"], .js-title, #art_title, [placeholder*="标题"], .title-input, input[type="text"]',
+    editor: '.editormd-markdown-textarea, #markdown, .CodeMirror textarea, #article_content, [contenteditable="true"], textarea',
+    format: 'text/plain'
   },
   woshipm: {
     title: '#post_title, [placeholder*="标题"], input',
@@ -159,80 +159,81 @@ function findElement(selector) {
   return null;
 }
 
-// Helper to simulate paste event into Rich Text/Markdown editors with multi-level fallbacks
+function escapeHtmlText(str) {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// Helper to simulate paste event into Rich Text/Markdown editors with single-write guarantee
 function simulatePaste(target, markdown, html, format = 'text/plain') {
   target.focus();
   
+  // 0. Try CodeMirror 5 direct setValue if present
+  const cm5 = target.CodeMirror || target.closest('.CodeMirror')?.CodeMirror;
+  if (cm5 && typeof cm5.setValue === 'function') {
+    cm5.setValue(markdown);
+    console.log('[NiceMD Automation] CodeMirror 5 instance filled via setValue.');
+    return;
+  }
+
   const isCodeMirrorTextarea = target.tagName === 'TEXTAREA' && target.closest('.CodeMirror');
   const isStandardInput = (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') && !isCodeMirrorTextarea;
   
-  // 1. For standard Input/Textarea elements, direct value manipulation is 100% reliable and preserves newlines
+  // 1. For standard Input/Textarea elements
   if (isStandardInput) {
-    const start = target.selectionStart || 0;
-    const end = target.selectionEnd || 0;
-    const val = target.value || '';
-    target.value = val.substring(0, start) + markdown + val.substring(end);
-    target.selectionStart = target.selectionEnd = start + markdown.length;
+    target.value = markdown;
     target.dispatchEvent(new Event('input', { bubbles: true }));
     target.dispatchEvent(new Event('change', { bubbles: true }));
     console.log('[NiceMD Automation] Standard input/textarea filled directly.');
     return;
   }
 
-  // 2. For Contenteditable elements & CodeMirror textareas: Dispatching ClipboardEvent is the safest & most standard method
+  // 2. For Contenteditable elements & CodeMirror 6 textareas
   const targetDoc = target.ownerDocument || document;
-  const initialText = target.textContent || (target.value || '');
-  
-  // Setup Selection for Contenteditables before dispatching (Only if it already has text to avoid breaking empty ProseMirror editors)
-  const isContentEditable = target.getAttribute('contenteditable') === 'true' || target.contentEditable === 'true';
-  if (isContentEditable && target.textContent.trim().length > 0) {
-    try {
-      const selection = targetDoc.getSelection();
-      if (selection) {
-        const range = targetDoc.createRange();
-        range.selectNodeContents(target);
-        selection.removeAllRanges();
-        selection.addRange(range);
-        selection.collapseToEnd(); // Put cursor at the end
-      }
-    } catch (err) {
-      console.warn('[NiceMD Automation] Failed to set selection range:', err);
+
+  // Clear existing content & select all
+  try {
+    const selection = targetDoc.getSelection();
+    if (selection) {
+      const range = targetDoc.createRange();
+      range.selectNodeContents(target);
+      selection.removeAllRanges();
+      selection.addRange(range);
     }
+  } catch (err) {
+    console.warn('[NiceMD Automation] Failed to set selection range:', err);
   }
 
-  // Dispatch ClipboardEvent paste
+  // Create single DataTransfer
+  const dataTransfer = new DataTransfer();
+  dataTransfer.setData('text/plain', markdown);
+  if (format === 'text/html' && html) {
+    dataTransfer.setData('text/html', html);
+  }
+
+  // Dispatch ONLY ONE ClipboardEvent paste
   try {
-    const dataTransfer = new DataTransfer();
-    dataTransfer.setData('text/plain', markdown);
-    if (html) {
-      dataTransfer.setData('text/html', html);
-    }
     const pasteEvent = new ClipboardEvent('paste', {
       bubbles: true,
       cancelable: true,
       clipboardData: dataTransfer
     });
     target.dispatchEvent(pasteEvent);
-    console.log('[NiceMD Automation] Dispatched ClipboardEvent.');
+    console.log(`[NiceMD Automation] Dispatched single ClipboardEvent (format: ${format}).`);
   } catch (err) {
     console.error('[NiceMD Automation] ClipboardEvent dispatch failed:', err);
   }
 
-  // 3. Fallback: If content didn't change (ClipboardEvent ignored), try execCommand (Except for Draft.js/Zhihu to avoid freezing)
-  const currentText = target.textContent || (target.value || '');
-  if (currentText === initialText && !target.closest('.DraftEditor-root')) {
-    try {
-      if (format === 'text/html' && html) {
-        targetDoc.execCommand('insertHTML', false, html);
-        console.log('[NiceMD Automation] Fallback: Inserted HTML via insertHTML command.');
-      } else {
-        targetDoc.execCommand('insertText', false, markdown);
-        console.log('[NiceMD Automation] Fallback: Inserted text via insertText command.');
-      }
-    } catch (err) {
-      console.warn('[NiceMD Automation] Fallback execCommand failed:', err);
-    }
-  }
+  // Dispatch trailing input event to ensure reactive bindings update
+  try {
+    target.dispatchEvent(new Event('input', { bubbles: true }));
+    target.dispatchEvent(new Event('change', { bubbles: true }));
+  } catch (e) {}
 }
 
 // Automate input filling with support for custom dynamic selectors
@@ -242,71 +243,72 @@ function injectContent(platform, payload, customSelectors) {
 
   console.log(`[NiceMD Automation] Start filling content for ${platform}...`);
   
-  let titleFilled = false;
-  let bodyFilled = false;
+  // Imooc special: If not in Markdown mode, try to click the Markdown tab
+  if (platform === 'imooc') {
+    const mdTab = Array.from(document.querySelectorAll('a, button, span, div, li'))
+      .find(el => el.textContent.trim() === 'Markdown' && !el.classList.contains('active') && !el.classList.contains('selected') && el.children.length === 0);
+    if (mdTab) {
+      try {
+        mdTab.click();
+        console.log('[NiceMD Automation] Activated Imooc Markdown mode tab.');
+      } catch (e) {}
+    }
+  }
+
+  let titleDone = false;
+  let bodyDone = false;
   let attempts = 0;
   
   const interval = setInterval(() => {
     attempts++;
     
-    // Find title input
-    const titleInput = findElement(config.title);
-    console.log(`[NiceMD Automation Debug] Title element attempt ${attempts}:`, titleInput);
+    // 1. Find and fill all matching title inputs
+    if (!titleDone) {
+      try {
+        const allTitleEls = document.querySelectorAll(config.title);
+        allTitleEls.forEach((el) => {
+          if (isElementValidTextEditable(el)) {
+            const isContentEditable = el.getAttribute('contenteditable') === 'true' || el.contentEditable === 'true';
+            if (isContentEditable) {
+              el.textContent = payload.title;
+            } else {
+              el.focus();
+              el.value = payload.title;
+              el.dispatchEvent(new Event('input', { bubbles: true }));
+              el.dispatchEvent(new Event('change', { bubbles: true }));
+              el.dispatchEvent(new Event('blur', { bubbles: true }));
+            }
+            titleDone = true;
+          }
+        });
+      } catch (e) {}
+    }
     
-    if (titleInput && !titleFilled) {
-      const isContentEditable = titleInput.getAttribute('contenteditable') === 'true' || titleInput.contentEditable === 'true';
-      if (isContentEditable) {
-        simulatePaste(titleInput, payload.title, '', 'text/plain');
-        // Fallback: If still empty, force textContent without synthetic event triggers to avoid WeChat binding crash
-        if (titleInput.textContent.trim() === '') {
-          titleInput.textContent = payload.title;
+    // 2. Find and fill editor element EXACTLY ONCE
+    if (!bodyDone) {
+      const editorEl = findElement(config.editor);
+      if (editorEl) {
+        // If the editor already has substantial text (e.g. preloaded draft from server), skip injection
+        const currentLength = (editorEl.textContent || editorEl.value || '').trim().length;
+        if (currentLength > 20) {
+          console.log(`[NiceMD Automation] Editor already contains content (${currentLength} chars) from server draft, skipping duplicate injection.`);
+          bodyDone = true;
+          return;
         }
-        // Verify success before locking titleFilled
-        if (titleInput.textContent.trim() !== '') {
-          titleFilled = true;
-          console.log('[NiceMD Automation] Title filled successfully (contenteditable).');
-        }
-      } else {
-        titleInput.focus();
-        titleInput.value = payload.title;
-        titleInput.dispatchEvent(new Event('input', { bubbles: true }));
-        titleInput.dispatchEvent(new Event('change', { bubbles: true }));
-        if (titleInput.value.trim() !== '') {
-          titleFilled = true;
-          console.log('[NiceMD Automation] Title filled successfully (input).');
-        }
+
+        bodyDone = true; // Mark as done immediately so it NEVER re-runs in future interval ticks
+        console.log(`[NiceMD Automation] Editor element found on attempt ${attempts}, injecting single paste.`);
+        simulatePaste(editorEl, payload.markdown, payload.html, config.format);
       }
     }
     
-    // Find editor element
-    const editorEl = findElement(config.editor);
-    console.log(`[NiceMD Automation Debug] Editor element attempt ${attempts}:`, editorEl);
-    
-    if (editorEl && !bodyFilled) {
-      bodyFilled = true; // Mark as filled synchronously to prevent parallel executions
-      setTimeout(() => {
-        simulatePaste(editorEl, payload.markdown, payload.html, config.format);
-        // Verify body filling. If empty, reset bodyFilled so it retries on next tick
-        const currentText = editorEl.textContent || (editorEl.value || '');
-        if (currentText.trim() === '') {
-          bodyFilled = false;
-          console.log('[NiceMD Automation] Editor body was empty after paste, resetting for retry.');
-        } else {
-          console.log('[NiceMD Automation] Content body pasted successfully.');
-        }
-      }, 500);
-    }
-    
-    // Check if finished or timeout (after 20 attempts, i.e., 10 seconds)
-    if ((titleFilled && bodyFilled) || attempts > 20) {
+    // 3. Check if finished or timeout (after 20 attempts, i.e., 10 seconds)
+    if ((titleDone && bodyDone) || attempts > 20) {
       clearInterval(interval);
-      console.log(`[NiceMD Automation] Injection complete. Status: Title=${titleFilled}, Body=${bodyFilled}`);
-      
-      // Clean up storage so it doesn't trigger again on reload
+      console.log(`[NiceMD Automation] Injection complete. Status: Title=${titleDone}, Body=${bodyDone}`);
       chrome.storage.local.remove(`pending_publish_${platform}`);
       
-      // Show success notification overlay
-      if (titleFilled || bodyFilled) {
+      if (titleDone || bodyDone) {
         showSuccessBanner(platform);
       }
     }
@@ -362,6 +364,23 @@ onMounted(() => {
   if (!platform) return;
   
   const storageKey = `pending_publish_${platform}`;
+  
+  // CRITICAL CHECK: If this page was opened to an existing draft via draftId/article_id parameter,
+  // the backend API already saved the draft to the platform! We should NOT inject content again!
+  const searchStr = window.location.search || '';
+  const pathStr = window.location.pathname || '';
+  const isExistingDraftUrl = searchStr.includes('draftId') || 
+                             searchStr.includes('draft_id') || 
+                             searchStr.includes('article_id') || 
+                             searchStr.includes('id=') ||
+                             pathStr.includes('/edit');
+                             
+  if (isExistingDraftUrl) {
+    console.log(`[NiceMD Automation] Opening existing draft URL for ${platform}, skipping DOM injection to avoid duplicate content.`);
+    chrome.storage.local.remove(storageKey);
+    return;
+  }
+  
   chrome.storage.local.get([storageKey, 'platforms_config'], (res) => {
     const payload = res[storageKey];
     const platformsConfig = res.platforms_config || [];
@@ -370,6 +389,7 @@ onMounted(() => {
     if (payload) {
       const age = Date.now() - payload.timestamp;
       if (age < 5 * 60 * 1000) {
+        chrome.storage.local.remove(storageKey); // Consume payload immediately
         injectContent(platform, payload, activePlatform ? activePlatform.selectors : null);
       } else {
         console.log('[NiceMD Automation] Stale payload ignored.');

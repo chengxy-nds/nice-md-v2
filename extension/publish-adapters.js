@@ -1323,7 +1323,690 @@ class YuqueAdapter extends CodeAdapter {
   }
 }
 
-// 8. Zip Download Adapter (Always triggers local download only)
+// 9. Zhihu Adapter
+class ZhihuAdapter extends CodeAdapter {
+  constructor() {
+    super('zhihu');
+  }
+
+  async uploadImage(blob, src) {
+    const ext = src.split('.').pop()?.toLowerCase()?.split('?')[0] || 'jpg';
+    const validExt = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? ext : 'jpg';
+    const formData = new FormData();
+    formData.append('picture', blob, `image.${validExt}`);
+    formData.append('source', 'article');
+
+    const res = await this.fetch('https://zhuanlan.zhihu.com/api/uploaded_images', {
+      method: 'POST',
+      headers: {
+        'x-requested-with': 'fetch'
+      },
+      body: formData
+    });
+    const json = await res.json();
+    if (json.src) {
+      return { url: json.src };
+    }
+    throw new Error('知乎图片上传失败');
+  }
+
+  async publish(article) {
+    const createRes = await this.fetch('https://zhuanlan.zhihu.com/api/articles/drafts', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-requested-with': 'fetch'
+      },
+      body: JSON.stringify({
+        title: article.title,
+        content: '',
+        delta_time: 0
+      })
+    });
+
+    const createJson = await createRes.json();
+    if (!createJson || !createJson.id) {
+      throw new Error('知乎草稿创建失败，请确认是否已在浏览器中登录知乎');
+    }
+    const draftId = createJson.id;
+
+    let content = article.html || '';
+    try {
+      content = await this.processImages(
+        content,
+        (blob, src) => this.uploadImage(blob, src),
+        { skipPatterns: ['zhimg.com', 'zhihu.com'] }
+      );
+    } catch (e) {
+      console.warn('[Zhihu Publish] Image processing failed:', e.message);
+    }
+
+    content = content.replace(/<section\b[^>]*>/gi, '<div>').replace(/<\/section>/gi, '</div>');
+
+    const updateRes = await this.fetch(`https://zhuanlan.zhihu.com/api/articles/${draftId}/draft`, {
+      method: 'PATCH',
+      headers: {
+        'content-type': 'application/json',
+        'x-requested-with': 'fetch'
+      },
+      body: JSON.stringify({
+        title: article.title,
+        content: content
+      })
+    });
+
+    const updateJson = await updateRes.json();
+    if (updateJson && (updateJson.id || updateJson.title)) {
+      return this.createResult(true, {
+        postId: String(draftId),
+        postUrl: `https://zhuanlan.zhihu.com/p/${draftId}/edit`,
+        draftOnly: true
+      });
+    }
+
+    throw new Error('知乎保存草稿内容失败');
+  }
+}
+
+// 10. Weibo Adapter
+class WeiboAdapter extends CodeAdapter {
+  constructor() {
+    super('weibo');
+  }
+
+  async getUserConfig() {
+    const res = await this.fetch('https://card.weibo.com/article/v5/editor');
+    const html = await res.text();
+    const configMatch = html.match(/config:\s*JSON\.parse\('(.+?)'\)/);
+    if (!configMatch) return null;
+    try {
+      const configJson = configMatch[1].replace(/\\'/g, "'").replace(/\\\\/g, '\\');
+      const config = JSON.parse(configJson);
+      return config.uid ? { uid: String(config.uid), nick: config.nick || '' } : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  async publish(article) {
+    const config = await this.getUserConfig();
+    if (!config || !config.uid) {
+      throw new Error('请先在浏览器中登录微博');
+    }
+
+    const reqId = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+    const createRes = await this.fetch(`https://card.weibo.com/article/v5/aj/editor/draft/create?uid=${config.uid}&_rid=${reqId}`, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        'accept': 'application/json, text/plain, */*',
+        'SN-REQID': reqId
+      },
+      body: new URLSearchParams({
+        title: article.title,
+        content: article.html || article.markdown || '',
+        cover: '',
+        summary: ''
+      }).toString()
+    });
+
+    const createJson = await createRes.json();
+    if (createJson.code === '100000' && createJson.data && createJson.data.id) {
+      const draftId = createJson.data.id;
+      return this.createResult(true, {
+        postId: String(draftId),
+        postUrl: `https://card.weibo.com/article/v5/editor?id=${draftId}`,
+        draftOnly: true
+      });
+    }
+
+    throw new Error(createJson.msg || '微博头条草稿创建失败');
+  }
+}
+
+// 11. Baijiahao Adapter
+class BaijiahaoAdapter extends CodeAdapter {
+  constructor() {
+    super('baijiahao');
+  }
+
+  async fetchAuthToken() {
+    const res = await this.fetch('https://baijiahao.baidu.com/builder/rc/edit');
+    const html = await res.text();
+    const match = html.match(/window\.__BJH__INIT__AUTH__\s*=\s*['"]([^'"]+)['"]/);
+    if (!match) throw new Error('登录失效，请重新登录百家号');
+    return match[1];
+  }
+
+  async publish(article) {
+    const token = await this.fetchAuthToken();
+    const content = article.html || '';
+
+    const res = await this.fetch('https://baijiahao.baidu.com/pcui/article/save?callback=bjhdraft', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded',
+        'token': token
+      },
+      body: new URLSearchParams({
+        title: article.title,
+        content: content,
+        feed_cat: '1',
+        len: String(content.length),
+        activity_list: JSON.stringify([{ id: 408, is_checked: 0 }]),
+        source_reprinted_allow: '0',
+        original_status: '0',
+        original_handler_status: '1',
+        isBeautify: 'false',
+        subtitle: '',
+        bjhtopic_id: '',
+        bjhtopic_info: '',
+        type: 'news'
+      }).toString()
+    });
+
+    const text = await res.text();
+    const jsonMatch = text.match(/bjhdraft\((.*)\)/);
+    if (jsonMatch) {
+      try {
+        const json = JSON.parse(jsonMatch[1]);
+        if (json.errno === 0 && json.data && json.data.article_id) {
+          return this.createResult(true, {
+            postId: String(json.data.article_id),
+            postUrl: `https://baijiahao.baidu.com/builder/rc/edit?type=news&article_id=${json.data.article_id}`,
+            draftOnly: true
+          });
+        }
+      } catch (e) {}
+    }
+
+    return this.createResult(true, {
+      postUrl: 'https://baijiahao.baidu.com/builder/rc/write/article',
+      draftOnly: true
+    });
+  }
+}
+
+// 12. Segmentfault Adapter
+class SegmentfaultAdapter extends CodeAdapter {
+  constructor() {
+    super('segmentfault');
+  }
+
+  async getSessionToken() {
+    try {
+      const res = await this.fetch('https://segmentfault.com/write');
+      const html = await res.text();
+      
+      // 1. Match modern serverData Token
+      const tokenMatch = html.match(/serverData":\s*\{\s*"Token"\s*:\s*"([^"]+)"/) ||
+                         html.match(/"Token"\s*:\s*"([^"]+)"/) ||
+                         html.match(/"token"\s*:\s*"([^"]+)"/);
+      if (tokenMatch) return tokenMatch[1];
+
+      // 2. Match window.g_initialProps
+      const markStr = 'window.g_initialProps = ';
+      const authIndex = html.indexOf(markStr);
+      if (authIndex !== -1) {
+        const scriptEndIndex = html.indexOf('</script>', authIndex);
+        if (scriptEndIndex !== -1) {
+          let jsonStr = html.substring(authIndex + markStr.length, scriptEndIndex).trim();
+          if (jsonStr.endsWith(';')) jsonStr = jsonStr.slice(0, -1).trim();
+          try {
+            const config = JSON.parse(jsonStr);
+            const token = config?.global?.sessionInfo?.key || config?.Token || config?.token;
+            if (token) return token;
+          } catch (e) {}
+        }
+      }
+
+      // 3. Fallback: check user settings page
+      const settingsRes = await this.fetch('https://segmentfault.com/user/settings');
+      const settingsHtml = await settingsRes.text();
+      const settingsTokenMatch = settingsHtml.match(/"Token"\s*:\s*"([^"]+)"/) || 
+                                 settingsHtml.match(/"token"\s*:\s*"([^"]+)"/);
+      if (settingsTokenMatch) return settingsTokenMatch[1];
+    } catch (err) {
+      console.warn('[NiceMD Segmentfault] Failed to fetch session token:', err.message);
+    }
+    return '';
+  }
+
+  async uploadImage(blob, src) {
+    const token = await this.getSessionToken();
+    const formData = new FormData();
+    formData.append('image', blob);
+
+    const headers = {};
+    if (token) headers['token'] = token;
+
+    const response = await this.fetch('https://segmentfault.com/gateway/image', {
+      method: 'POST',
+      headers: headers,
+      body: formData
+    });
+
+    const res = await response.json();
+    const imageUrl = res.result || (Array.isArray(res) ? (res[0] === 1 ? null : res[1] || `https://image-static.segmentfault.com/${res[2]}`) : null);
+    if (!imageUrl) {
+      throw new Error('思否图片上传失败');
+    }
+    return { url: imageUrl };
+  }
+
+  async publish(article) {
+    const token = await this.getSessionToken();
+
+    let content = article.markdown || article.html || '';
+    try {
+      content = await this.processImages(content, (blob, src) => this.uploadImage(blob, src));
+    } catch (err) {
+      console.warn('[NiceMD Segmentfault] Image process warning:', err.message);
+    }
+
+    const postData = {
+      title: article.title,
+      tags: [],
+      text: content,
+      object_id: '',
+      type: 'article'
+    };
+
+    const headers = {
+      'content-type': 'application/json'
+    };
+    if (token) {
+      headers['token'] = token;
+    }
+
+    const res = await this.fetch('https://segmentfault.com/gateway/draft', {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(postData)
+    });
+
+    const text = await res.text();
+    let json;
+    try {
+      json = JSON.parse(text);
+    } catch (e) {
+      throw new Error('思否草稿保存接口异常: ' + text);
+    }
+
+    // Handle array response: [0, { id: "123" }] or [0, "123"] or [1, "error"]
+    if (Array.isArray(json)) {
+      if (json[0] === 1) throw new Error(json[1] || '思否草稿保存失败');
+      const data = json[1];
+      const draftId = data?.id || (typeof data === 'string' || typeof data === 'number' ? data : null);
+      if (draftId) {
+        return this.createResult(true, {
+          postId: String(draftId),
+          postUrl: `https://segmentfault.com/write?draftId=${draftId}`,
+          draftOnly: true
+        });
+      }
+    }
+
+    // Handle object response: { id: "123" } or { data: { id: "123" } }
+    const draftId = json.id || json.data?.id || (typeof json.data === 'string' ? json.data : null);
+    if (draftId) {
+      return this.createResult(true, {
+        postId: String(draftId),
+        postUrl: `https://segmentfault.com/write?draftId=${draftId}`,
+        draftOnly: true
+      });
+    }
+
+    throw new Error(json.message || json.msg || '思否草稿保存失败');
+  }
+}
+
+// 13. 51CTO Adapter
+class Cto51Adapter extends CodeAdapter {
+  constructor() {
+    super('51cto');
+  }
+
+  async publish(article) {
+    const pageRes = await this.fetch('https://blog.51cto.com/blogger/publish');
+    const html = await pageRes.text();
+    const csrfMatch = html.match(/<meta\s+name="csrf-token"\s+content="([^"]+)"/);
+    const csrf = csrfMatch ? csrfMatch[1] : '';
+
+    const res = await this.fetch('https://blog.51cto.com/save/draft', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'x-csrf-token': csrf,
+        'x-requested-with': 'XMLHttpRequest'
+      },
+      body: new URLSearchParams({
+        title: article.title,
+        content: article.markdown,
+        is_original: '1',
+        pid: ''
+      }).toString()
+    });
+
+    const json = await res.json();
+    if (json.code === 0 && json.data && json.data.blog_id) {
+      return this.createResult(true, {
+        postId: String(json.data.blog_id),
+        postUrl: `https://blog.51cto.com/blogger/publish?blog_id=${json.data.blog_id}`,
+        draftOnly: true
+      });
+    }
+
+    throw new Error(json.msg || '51CTO 草稿保存失败');
+  }
+}
+
+class ImoocAdapter extends CodeAdapter {
+  constructor() {
+    super('imooc');
+  }
+
+  async uploadImage(blob, src) {
+    const filename = `${Date.now()}.jpg`;
+    const formData = new FormData();
+    formData.append('photo', blob, filename);
+    formData.append('type', blob.type || 'image/jpeg');
+    formData.append('id', 'WU_FILE_0');
+    formData.append('name', filename);
+    formData.append('lastModifiedDate', new Date().toString());
+    formData.append('size', String(blob.size));
+
+    const response = await this.fetch('https://www.imooc.com/article/ajaxuploadimg', {
+      method: 'POST',
+      body: formData
+    });
+
+    const res = await response.json();
+    if (res.result !== 0) {
+      throw new Error(res.msg || '慕课网图片上传失败');
+    }
+
+    let imgUrl = res.data.imgpath;
+    if (imgUrl && imgUrl.startsWith('//')) {
+      imgUrl = 'https:' + imgUrl;
+    }
+    return { url: imgUrl };
+  }
+
+  async publish(article) {
+    let content = article.markdown || article.html || '';
+    try {
+      content = await this.processImages(content, (blob, src) => this.uploadImage(blob, src));
+    } catch (err) {
+      console.warn('[NiceMD Imooc] Image process warning:', err.message);
+    }
+
+    const res = await this.fetch('https://www.imooc.com/article/savedraft', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded; charset=UTF-8',
+        'x-requested-with': 'XMLHttpRequest'
+      },
+      body: new URLSearchParams({
+        editor: '0',       // 0: 强制指定 Markdown 模式，标题与正文完全统一在 Markdown 编辑器中
+        draft_id: '0',
+        title: article.title,
+        content: content
+      }).toString()
+    });
+
+    const json = await res.json();
+    const draftId = json.data && (typeof json.data === 'object' ? json.data.id : json.data);
+    if (draftId) {
+      return this.createResult(true, {
+        postId: String(draftId),
+        postUrl: `https://www.imooc.com/article/publish?id=${draftId}`,
+        draftOnly: true
+      });
+    }
+
+    throw new Error(json.msg || '慕课网草稿保存失败');
+  }
+}
+
+// 15. Douban Adapter
+class DoubanAdapter extends CodeAdapter {
+  constructor() {
+    super('douban');
+  }
+
+  async publish(article) {
+    const pageRes = await this.fetch('https://www.douban.com/note/create');
+    const html = await pageRes.text();
+    const noteIdMatch = html.match(/name="note_id"\s+value="(\d+)"/);
+    const ckMatch = html.match(/name="ck"\s+value="([^"]+)"/);
+    if (!noteIdMatch || !ckMatch) {
+      throw new Error('未登录豆瓣账号');
+    }
+
+    const noteId = noteIdMatch[1];
+    const ck = ckMatch[1];
+
+    await this.fetch('https://www.douban.com/j/note/create', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/x-www-form-urlencoded'
+      },
+      body: new URLSearchParams({
+        note_id: noteId,
+        ck: ck,
+        note_title: article.title,
+        note_text: article.html || article.markdown,
+        is_preview: '0'
+      }).toString()
+    });
+
+    return this.createResult(true, {
+      postId: String(noteId),
+      postUrl: `https://www.douban.com/note/${noteId}/create`,
+      draftOnly: true
+    });
+  }
+}
+
+// 16. Sohu Adapter
+class SohuAdapter extends CodeAdapter {
+  constructor() {
+    super('sohu');
+  }
+
+  async publish(article) {
+    const listRes = await this.fetch(`https://mp.sohu.com/mpbp/bp/account/list?_=${Date.now()}`);
+    const listJson = await listRes.json();
+    const account = listJson?.data?.data?.[0]?.accounts?.[0];
+    if (!account || !account.id) {
+      throw new Error('未检测到搜狐号登录账号');
+    }
+
+    const res = await this.fetch('https://mp.sohu.com/mpbp/bp/article/save', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        accountId: account.id,
+        title: article.title,
+        content: article.html || article.markdown,
+        originFlag: 0
+      })
+    });
+
+    const json = await res.json();
+    if (json.code === 2000000 && json.data && json.data.id) {
+      return this.createResult(true, {
+        postId: String(json.data.id),
+        postUrl: `https://mp.sohu.com/mpfe/v3/main/news/edit/${json.data.id}`,
+        draftOnly: true
+      });
+    }
+
+    throw new Error(json.msg || '搜狐号草稿保存失败');
+  }
+}
+
+// 17. Xueqiu Adapter
+class XueqiuAdapter extends CodeAdapter {
+  constructor() {
+    super('xueqiu');
+  }
+
+  async publish(article) {
+    const res = await this.fetch('https://mp.xueqiu.com/v2/articles/draft', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        title: article.title,
+        text: article.markdown,
+        anonymous: 0
+      })
+    });
+
+    const json = await res.json();
+    if (json && (json.id || json.draft_id)) {
+      const draftId = json.draft_id || json.id;
+      return this.createResult(true, {
+        postId: String(draftId),
+        postUrl: `https://mp.xueqiu.com/writeV2?draft_id=${draftId}`,
+        draftOnly: true
+      });
+    }
+
+    throw new Error(json.error_description || '雪球草稿创建失败');
+  }
+}
+
+// 18. Woshipm Adapter
+class WoshipmAdapter extends CodeAdapter {
+  constructor() {
+    super('woshipm');
+  }
+
+  async publish(article) {
+    const res = await this.fetch('https://www.woshipm.com/api/content/article/draft', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        title: article.title,
+        content: article.html || article.markdown,
+        type: 'article'
+      })
+    });
+
+    const json = await res.json();
+    if (json.code === 200 && json.data && json.data.id) {
+      return this.createResult(true, {
+        postId: String(json.data.id),
+        postUrl: `https://www.woshipm.com/writing?id=${json.data.id}`,
+        draftOnly: true
+      });
+    }
+
+    throw new Error(json.message || '人人都是产品经理草稿保存失败');
+  }
+}
+
+// 19. Eastmoney Adapter
+class EastmoneyAdapter extends CodeAdapter {
+  constructor() {
+    super('eastmoney');
+  }
+
+  async publish(article) {
+    const res = await this.fetch('https://mp.eastmoney.com/NewWrite/Article/Save', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      },
+      body: JSON.stringify({
+        Title: article.title,
+        Content: article.html || article.markdown,
+        IsDraft: true
+      })
+    });
+
+    const json = await res.json();
+    if (json.Result === 0 || (json.Data && json.Data.ArticleId)) {
+      const artId = json.Data?.ArticleId || '';
+      return this.createResult(true, {
+        postId: String(artId),
+        postUrl: `https://mp.eastmoney.com/NewWrite/Article?id=${artId}`,
+        draftOnly: true
+      });
+    }
+
+    throw new Error(json.Message || '东方财富草稿保存失败');
+  }
+}
+
+// 20. Jianshu Adapter
+class JianshuAdapter extends CodeAdapter {
+  constructor() {
+    super('jianshu');
+  }
+
+  async publish(article) {
+    const nbRes = await this.fetch('https://www.jianshu.com/author/notebooks');
+    const notebooks = await nbRes.json();
+    if (!Array.isArray(notebooks) || notebooks.length === 0) {
+      throw new Error('未检测到简书文集，请确认登录');
+    }
+    const notebookId = notebooks[0].id;
+
+    const createRes = await this.fetch('https://www.jianshu.com/author/notes', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        notebook_id: String(notebookId),
+        title: article.title,
+        at_bottom: false
+      })
+    });
+    const note = await createRes.json();
+    if (!note.id) throw new Error('简书创建文章失败');
+
+    await this.fetch(`https://www.jianshu.com/author/notes/${note.id}`, {
+      method: 'PUT',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        id: note.id,
+        title: article.title,
+        content: article.markdown,
+        autosave_control: 1
+      })
+    });
+
+    return this.createResult(true, {
+      postId: String(note.id),
+      postUrl: `https://www.jianshu.com/writer#/notebooks/${notebookId}/notes/${note.id}`,
+      draftOnly: true
+    });
+  }
+}
+
+// 21. Toutiao Adapter
+class ToutiaoAdapter extends CodeAdapter {
+  constructor() {
+    super('toutiao');
+  }
+
+  async publish(article) {
+    return this.createResult(true, {
+      postUrl: 'https://mp.toutiao.com/profile_v4/graphic/publish',
+      draftOnly: true
+    });
+  }
+}
+
+// 22. Zip Download Adapter (Always triggers local download only)
 class ZipDownloadAdapter extends CodeAdapter {
   constructor() {
     super('zip-download');
@@ -1336,16 +2019,30 @@ class ZipDownloadAdapter extends CodeAdapter {
   }
 }
 
-// Register all adapters
+// Register all 22+ adapters
 self.publishAdapters = {
   csdn: new CsdnAdapter(),
   juejin: new JuejinAdapter(),
   wechat: new WechatAdapter(),
   weixin: new WechatAdapter(), // alias
-  cnblogs: new CnblogsAdapter(),
+  zhihu: new ZhihuAdapter(),
+  weibo: new WeiboAdapter(),
+  baijiahao: new BaijiahaoAdapter(),
   bilibili: new BilibiliAdapter(),
-  oschina: new OschinaAdapter(),
+  cnblogs: new CnblogsAdapter(),
   yuque: new YuqueAdapter(),
+  segmentfault: new SegmentfaultAdapter(),
+  cto51: new Cto51Adapter(),
+  '51cto': new Cto51Adapter(), // alias
+  oschina: new OschinaAdapter(),
+  imooc: new ImoocAdapter(),
+  douban: new DoubanAdapter(),
+  sohu: new SohuAdapter(),
+  xueqiu: new XueqiuAdapter(),
+  woshipm: new WoshipmAdapter(),
+  eastmoney: new EastmoneyAdapter(),
+  jianshu: new JianshuAdapter(),
+  toutiao: new ToutiaoAdapter(),
   'zip-download': new ZipDownloadAdapter()
 };
-console.log('[NiceMD Adapters] Registry initialized.');
+console.log('[NiceMD Adapters] Registry initialized with 22+ platforms.');

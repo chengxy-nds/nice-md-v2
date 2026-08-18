@@ -5,9 +5,16 @@ import {
   Play, 
   CheckCircle, 
   ExternalLink, 
-  Terminal, 
   Copy,
-  ChevronRight
+  ChevronRight,
+  Clock,
+  RotateCw,
+  Image as ImageIcon,
+  Sparkles,
+  Upload,
+  Check,
+  RefreshCw,
+  SlidersHorizontal
 } from '@lucide/vue';
 import { soundEngine } from '../utils/synthAudio';
 import { compileToWeChatHtml } from '../utils/wechatStyles';
@@ -17,6 +24,10 @@ const props = defineProps({
   isOpen: {
     type: Boolean,
     default: false
+  },
+  articleTitle: {
+    type: String,
+    default: ''
   },
   markdown: {
     type: String,
@@ -38,347 +49,520 @@ const props = defineProps({
 
 const emit = defineEmits(['close']);
 
+// ── State ──
 const isLaunching = ref(false);
 const isFinished = ref(false);
-const terminalLogs = ref([]);
-const activeLogIndex = ref(0);
 const isCheckingLogins = ref(false);
+const isExtensionInstalled = ref(false);
+const showManagementMenu = ref(false);
 
+// Publishing settings state
+const isScheduled = ref(false);
+const scheduledTime = ref('');
+const isOriginalDeclaration = ref(true);
+const customCoverUrl = ref('');
+const fileInputRef = ref(null);
+
+// Preset beautiful sunset lake cover (from reference design)
+const defaultCoverUrl = 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=800&q=80';
+
+// Auto-extract first image from markdown or fallback
+const coverImage = computed(() => {
+  if (customCoverUrl.value) return customCoverUrl.value;
+  const match = props.markdown.match(/!\[.*?\]\((https?:\/\/[^\s\)]+)\)/);
+  if (match && match[1]) return match[1];
+  return defaultCoverUrl;
+});
+
+// Format scheduled time helper
+const initScheduledTime = () => {
+  const now = new Date();
+  now.setHours(now.getHours() + 2);
+  now.setMinutes(0);
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const date = String(now.getDate()).padStart(2, '0');
+  const hours = String(now.getHours()).padStart(2, '0');
+  const minutes = String(now.getMinutes()).padStart(2, '0');
+  scheduledTime.value = `${year}-${month}-${date} ${hours}:${minutes}`;
+};
+
+const resetScheduledTime = () => {
+  soundEngine.playClick();
+  initScheduledTime();
+};
+
+const handleCoverUpload = (e) => {
+  const file = e.target.files?.[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (event) => {
+    customCoverUrl.value = event.target.result;
+    soundEngine.playChime();
+  };
+  reader.readAsDataURL(file);
+};
+
+const triggerCoverUpload = () => {
+  soundEngine.playClick();
+  fileInputRef.value?.click();
+};
+
+// ── Platforms ──
 const platforms = ref([
   {
     id: 'wechat',
     name: '微信公众号',
+    iconUrl: './svg/微信.svg',
     color: '#07c160',
     writeUrl: 'https://mp.weixin.qq.com/',
     status: 'idle',
     progress: 0,
     actionLabel: '前往公众号后台',
     format: 'html',
-    loginStatus: 'checking',
-    selected: true,
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: true,
     username: '',
     avatar: ''
   },
   {
     id: 'zhihu',
-    name: '知乎专栏',
+    name: '知乎',
+    iconUrl: './svg/知乎.svg',
     color: '#0084ff',
     writeUrl: 'https://zhuanlan.zhihu.com/write',
     status: 'idle',
     progress: 0,
     actionLabel: '复制并前往创作',
     format: 'md',
-    loginStatus: 'checking',
-    selected: true,
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: true,
     username: '',
     avatar: ''
   },
   {
     id: 'juejin',
-    name: '稀土掘金',
+    name: '掘金',
+    iconUrl: './svg/juejin.svg',
     color: '#1e80ff',
     writeUrl: 'https://juejin.cn/editor/drafts/new',
     status: 'idle',
     progress: 0,
     actionLabel: '复制并前往写文章',
     format: 'md',
-    loginStatus: 'checking',
-    selected: true,
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: true,
     username: '',
     avatar: ''
   },
   {
     id: 'csdn',
-    name: 'CSDN 博客',
+    name: 'CSDN',
+    iconUrl: './svg/csdn.svg',
     color: '#fc5531',
     writeUrl: 'https://editor.csdn.net/md/',
     status: 'idle',
     progress: 0,
     actionLabel: '复制并前往创作',
     format: 'md',
-    loginStatus: 'checking',
-    selected: true,
-    username: '',
-    avatar: ''
-  },
-  {
-    id: 'cnblogs',
-    name: '博客园',
-    color: '#3272ad',
-    writeUrl: 'https://i.cnblogs.com/posts/edit',
-    status: 'idle',
-    progress: 0,
-    actionLabel: '复制并前往创作',
-    format: 'md',
-    loginStatus: 'checking',
-    selected: true,
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: true,
     username: '',
     avatar: ''
   },
   {
     id: 'baijiahao',
     name: '百家号',
+    iconUrl: './svg/百家号.svg',
     color: '#ea4335',
     writeUrl: 'https://baijiahao.baidu.com/builder/rc/write/article',
     status: 'idle',
     progress: 0,
     actionLabel: '复制并前往创作',
     format: 'html',
-    loginStatus: 'checking',
-    selected: true,
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: true,
     username: '',
     avatar: ''
   },
   {
     id: 'bilibili',
     name: '哔哩哔哩',
+    iconUrl: './svg/哔哩哔哩.svg',
     color: '#fb7299',
     writeUrl: 'https://member.bilibili.com/platform/upload/text',
     status: 'idle',
     progress: 0,
     actionLabel: '复制并前往创作',
     format: 'md',
-    loginStatus: 'checking',
-    selected: true,
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: true,
     username: '',
     avatar: ''
   },
   {
-    id: 'eastmoney',
-    name: '东方财富',
-    color: '#f59e0b',
-    writeUrl: 'https://mp.eastmoney.com/NewWrite/Article',
-    status: 'idle',
-    progress: 0,
-    actionLabel: '复制并前往创作',
-    format: 'html',
-    loginStatus: 'checking',
-    selected: true,
-    username: '',
-    avatar: ''
-  },
-  {
-    id: 'oschina',
-    name: '开源中国',
-    color: '#22c55e',
-    writeUrl: 'https://my.oschina.net/action/blog/write',
+    id: 'cnblogs',
+    name: '博客园',
+    iconUrl: './svg/博客园.svg',
+    color: '#3272ad',
+    writeUrl: 'https://i.cnblogs.com/posts/edit',
     status: 'idle',
     progress: 0,
     actionLabel: '复制并前往创作',
     format: 'md',
-    loginStatus: 'checking',
-    selected: true,
-    username: '',
-    avatar: ''
-  },
-  {
-    id: 'sohu',
-    name: '搜狐号',
-    color: '#e11d48',
-    writeUrl: 'https://mp.sohu.com/mpbp/bp/article/write',
-    status: 'idle',
-    progress: 0,
-    actionLabel: '复制并前往创作',
-    format: 'html',
-    loginStatus: 'checking',
-    selected: true,
-    username: '',
-    avatar: ''
-  },
-  {
-    id: 'yuque',
-    name: '语雀',
-    color: '#00b96b',
-    writeUrl: 'https://www.yuque.com/dashboard',
-    status: 'idle',
-    progress: 0,
-    actionLabel: '复制并前往创作',
-    format: 'md',
-    loginStatus: 'checking',
-    selected: true,
-    username: '',
-    avatar: ''
-  },
-  {
-    id: '51cto',
-    name: '51CTO',
-    color: '#10b981',
-    writeUrl: 'https://blog.51cto.com/blogger/publish',
-    status: 'idle',
-    progress: 0,
-    actionLabel: '复制并前往创作',
-    format: 'md',
-    loginStatus: 'checking',
-    selected: true,
-    username: '',
-    avatar: ''
-  },
-  {
-    id: 'douban',
-    name: '豆瓣',
-    color: '#007722',
-    writeUrl: 'https://www.douban.com/note/create',
-    status: 'idle',
-    progress: 0,
-    actionLabel: '复制并前往创作',
-    format: 'md',
-    loginStatus: 'checking',
-    selected: true,
-    username: '',
-    avatar: ''
-  },
-  {
-    id: 'segmentfault',
-    name: '思否',
-    color: '#009a61',
-    writeUrl: 'https://segmentfault.com/write',
-    status: 'idle',
-    progress: 0,
-    actionLabel: '复制并前往创作',
-    format: 'md',
-    loginStatus: 'checking',
-    selected: true,
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: true,
     username: '',
     avatar: ''
   },
   {
     id: 'weibo',
-    name: '微博',
+    name: '微博头条',
+    iconUrl: './svg/微博.svg',
     color: '#e6162d',
     writeUrl: 'https://card.weibo.com/article/v5/editor',
     status: 'idle',
     progress: 0,
     actionLabel: '复制并前往创作',
     format: 'html',
-    loginStatus: 'checking',
-    selected: true,
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: true,
+    username: '',
+    avatar: ''
+  },
+  {
+    id: 'yuque',
+    name: '语雀',
+    iconUrl: './svg/语雀.svg',
+    color: '#00b96b',
+    writeUrl: 'https://www.yuque.com/dashboard',
+    status: 'idle',
+    progress: 0,
+    actionLabel: '复制并前往创作',
+    format: 'md',
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: true,
+    username: '',
+    avatar: ''
+  },
+  {
+    id: 'jianshu',
+    name: '简书',
+    iconUrl: './svg/简书.svg',
+    color: '#ea6f5a',
+    writeUrl: 'https://www.jianshu.com/writer',
+    status: 'idle',
+    progress: 0,
+    actionLabel: '复制并前往创作',
+    format: 'md',
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: false,
+    username: '',
+    avatar: ''
+  },
+  {
+    id: 'segmentfault',
+    name: '思否',
+    iconUrl: './svg/思否.svg',
+    color: '#00965e',
+    writeUrl: 'https://segmentfault.com/write',
+    status: 'idle',
+    progress: 0,
+    actionLabel: '复制并前往创作',
+    format: 'md',
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: false,
+    username: '',
+    avatar: ''
+  },
+  {
+    id: 'oschina',
+    name: '开源中国',
+    iconUrl: './svg/开源中国.svg',
+    color: '#21b354',
+    writeUrl: 'https://my.oschina.net/u/new-blog',
+    status: 'idle',
+    progress: 0,
+    actionLabel: '复制并前往创作',
+    format: 'md',
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: false,
+    username: '',
+    avatar: ''
+  },
+  {
+    id: 'toutiao',
+    name: '今日头条',
+    iconUrl: './svg/今日头条.svg',
+    color: '#f85959',
+    writeUrl: 'https://mp.toutiao.com/profile_v4/graphic/publish',
+    status: 'idle',
+    progress: 0,
+    actionLabel: '复制并前往创作',
+    format: 'html',
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: false,
+    username: '',
+    avatar: ''
+  },
+  {
+    id: 'douban',
+    name: '豆瓣网',
+    iconUrl: './svg/豆瓣网.svg',
+    color: '#007722',
+    writeUrl: 'https://www.douban.com/note/create',
+    status: 'idle',
+    progress: 0,
+    actionLabel: '复制并前往创作',
+    format: 'md',
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: false,
+    username: '',
+    avatar: ''
+  },
+  {
+    id: 'imooc',
+    name: '慕课网',
+    iconUrl: './svg/慕课网.svg',
+    color: '#f01414',
+    writeUrl: 'https://www.imooc.com/article/publish',
+    status: 'idle',
+    progress: 0,
+    actionLabel: '复制并前往创作',
+    format: 'md',
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: false,
+    username: '',
+    avatar: ''
+  },
+  {
+    id: 'netease',
+    name: '网易号',
+    iconUrl: './svg/网易号.svg',
+    color: '#e12d2d',
+    writeUrl: 'https://mp.163.com/',
+    status: 'idle',
+    progress: 0,
+    actionLabel: '复制并前往创作',
+    format: 'html',
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: false,
+    username: '',
+    avatar: ''
+  },
+  {
+    id: '51cto',
+    name: '51CTO',
+    iconUrl: './svg/51.svg',
+    color: '#d0021b',
+    writeUrl: 'https://blog.51cto.com/',
+    status: 'idle',
+    progress: 0,
+    actionLabel: '复制并前往创作',
+    format: 'md',
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: false,
+    username: '',
+    avatar: ''
+  },
+  {
+    id: 'twitter',
+    name: 'X (Twitter)',
+    iconUrl: './svg/推特.svg',
+    color: '#000000',
+    writeUrl: 'https://x.com/compose/post',
+    status: 'idle',
+    progress: 0,
+    actionLabel: '前往 X 发布',
+    format: 'md',
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: false,
+    username: '',
+    avatar: ''
+  },
+  {
+    id: 'sohu',
+    name: '搜狐号',
+    iconUrl: '',
+    color: '#e11d48',
+    writeUrl: 'https://mp.sohu.com/mpbp/bp/article/write',
+    status: 'idle',
+    progress: 0,
+    actionLabel: '复制并前往创作',
+    format: 'html',
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: false,
     username: '',
     avatar: ''
   },
   {
     id: 'xueqiu',
     name: '雪球',
+    iconUrl: '',
     color: '#3b82f6',
     writeUrl: 'https://mp.xueqiu.com/writeV2',
     status: 'idle',
     progress: 0,
     actionLabel: '复制并前往创作',
     format: 'html',
-    loginStatus: 'checking',
-    selected: true,
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: false,
     username: '',
     avatar: ''
   },
   {
-    id: 'imooc',
-    name: '慕课手记',
-    color: '#f01414',
-    writeUrl: 'https://www.imooc.com/article/publish',
+    id: 'eastmoney',
+    name: '东方财富',
+    iconUrl: '',
+    color: '#f59e0b',
+    writeUrl: 'https://mp.eastmoney.com/NewWrite/Article',
     status: 'idle',
     progress: 0,
     actionLabel: '复制并前往创作',
     format: 'html',
-    loginStatus: 'checking',
-    selected: true,
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: false,
     username: '',
     avatar: ''
   },
   {
     id: 'woshipm',
     name: '人人都是产品经理',
+    iconUrl: '',
     color: '#ea580c',
     writeUrl: 'https://www.woshipm.com/writing',
     status: 'idle',
     progress: 0,
     actionLabel: '复制并前往创作',
     format: 'html',
-    loginStatus: 'checking',
-    selected: true,
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: false,
     username: '',
     avatar: ''
   },
   {
     id: 'zip-download',
-    name: 'Markdown 压缩包',
+    name: 'Markdown 离线包',
+    iconUrl: './svg/md.svg',
     color: '#6366f1',
     writeUrl: '',
     status: 'idle',
     progress: 0,
     actionLabel: '点击下载文件',
     format: 'md',
-    loginStatus: 'logged_in', // Zip download is always ready
-    selected: true,
+    loginStatus: 'logged_in',
+    selected: false,
+    enabled: true,
     username: '本地下载',
     avatar: ''
   }
 ]);
 
-const getDynamicLogSequence = () => {
-  const seq = [
-    { text: '初始化 NiceMD 内容分发系统...', type: 'info', delay: 150 },
-    { text: '解析 Markdown 抽象语法树 (AST) 并检测多媒体区块...', type: 'info', delay: 200 },
-    { text: '静态资源路径分析: 未检测到相对路径或非 HTTPS 资源。', type: 'info', delay: 100 }
-  ];
-  
-  // Checking channels
-  platforms.value.forEach(p => {
-    if (p.selected) {
-      seq.push({
-        text: `配置发布通道 [${p.name}]: 已加载注入规则与 DOM 选择器。`,
-        type: 'info',
-        delay: 150,
-        platform: p.id,
-        status: 'ignition'
-      });
-    }
-  });
-  
-  seq.push({ text: '所有发布通道校验成功，网络连接正常。', type: 'info', delay: 120 });
-  seq.push({ text: '启动多渠道自动化分发任务...', type: 'info', delay: 150 });
-  
-  // Dispatch steps
-  platforms.value.forEach(p => {
-    if (p.selected) {
-      seq.push({
-        text: `拉起 ${p.name} 创作页面并建立连接管道...`,
-        type: 'info',
-        delay: 100,
-        platform: p.id,
-        status: 'launched',
-        progress: 50
-      });
-    }
-  });
-  
-  seq.push({ text: '已建立与配套 Extension 的安全双向数据通道。', type: 'info', delay: 200 });
-  
-  // Success steps
-  platforms.value.forEach(p => {
-    if (p.selected) {
-      seq.push({
-        text: `已成功向 ${p.name} 注入文章标题与主体内容。`,
-        type: 'success',
-        delay: 100,
-        platform: p.id,
-        status: 'success',
-        progress: 100
-      });
-    }
-  });
-  
-  seq.push({ text: '多渠道自动化分发流执行完毕。', type: 'success', delay: 150 });
-  return seq;
+// ── Visible Filtered Platforms ──
+const visiblePlatforms = computed(() => {
+  return platforms.value.filter(p => p.enabled !== false);
+});
+
+// ── Platform Display Management ──
+const showPlatformManageModal = ref(false);
+const SAVED_ENABLED_KEY = 'nicemd_enabled_platforms_v2';
+
+const togglePlatformEnabled = (plat) => {
+  soundEngine.playClick();
+  plat.enabled = !plat.enabled;
+  saveEnabledPlatforms();
 };
 
-const isExtensionInstalled = ref(false);
+const toggleAllPlatforms = (enableAll) => {
+  soundEngine.playClick();
+  platforms.value.forEach(p => {
+    p.enabled = enableAll;
+  });
+  saveEnabledPlatforms();
+};
+
+const resetDefaultPlatforms = () => {
+  soundEngine.playClick();
+  const defaultEnabledIds = ['wechat', 'zhihu', 'juejin', 'csdn', 'baijiahao', 'bilibili', 'cnblogs', 'weibo', 'yuque', 'zip-download'];
+  platforms.value.forEach(p => {
+    p.enabled = defaultEnabledIds.includes(p.id);
+  });
+  saveEnabledPlatforms();
+};
+
+const loadSavedEnabledPlatforms = () => {
+  try {
+    const raw = localStorage.getItem(SAVED_ENABLED_KEY);
+    if (raw) {
+      const enabledMap = JSON.parse(raw);
+      platforms.value.forEach(p => {
+        if (enabledMap[p.id] !== undefined) {
+          p.enabled = enabledMap[p.id];
+        }
+      });
+    } else {
+      resetDefaultPlatforms();
+    }
+  } catch (e) {
+    console.error('Failed to load saved platforms', e);
+  }
+};
+
+const saveEnabledPlatforms = () => {
+  try {
+    const enabledMap = {};
+    platforms.value.forEach(p => {
+      enabledMap[p.id] = p.enabled !== false;
+    });
+    localStorage.setItem(SAVED_ENABLED_KEY, JSON.stringify(enabledMap));
+  } catch (e) {
+    console.error('Failed to save platforms', e);
+  }
+};
+
+// ── Open Drafts Automatically After Sync ──
+const SAVED_OPEN_DRAFTS_KEY = 'nicemd_open_drafts_after_sync';
+const isOpenDraftsAfterSync = ref(false);
+
+const loadOpenDraftsPref = () => {
+  try {
+    const saved = localStorage.getItem(SAVED_OPEN_DRAFTS_KEY);
+    if (saved !== null) {
+      isOpenDraftsAfterSync.value = JSON.parse(saved);
+    }
+  } catch (e) {}
+};
+
+watch(isOpenDraftsAfterSync, (val) => {
+  try {
+    localStorage.setItem(SAVED_OPEN_DRAFTS_KEY, JSON.stringify(val));
+  } catch (e) {}
+});
 
 const checkAllLogins = () => {
   if (!isExtensionInstalled.value) {
-    platforms.value.forEach(p => {
-      if (p.id !== 'zip-download') {
-        p.loginStatus = 'unknown';
-      }
-    });
     return;
   }
   
@@ -405,9 +589,16 @@ const openLoginTab = (platform) => {
   }
 };
 
+const getPublishTitle = () => {
+  if (props.articleTitle && props.articleTitle.trim()) {
+    return props.articleTitle.trim();
+  }
+  const titleMatch = props.markdown.match(/^#\s+(.+)$/m);
+  return titleMatch ? titleMatch[1].trim() : '未命名文章';
+};
+
 const downloadMarkdownFile = (markdownText) => {
-  const titleMatch = markdownText.match(/^#\s+(.+)$/m);
-  const fileName = (titleMatch ? titleMatch[1].trim() : 'article') + '.md';
+  const fileName = getPublishTitle() + '.md';
   const blob = new Blob([markdownText], { type: 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -420,131 +611,41 @@ const downloadMarkdownFile = (markdownText) => {
 };
 
 const toggleSelect = (plat) => {
-  if (plat.id !== 'zip-download' && plat.loginStatus !== 'logged_in') {
-    return; // Don't allow selection of unlogged platforms
-  }
   soundEngine.playClick();
+  if (plat.loginStatus !== 'logged_in' && plat.id !== 'zip-download') {
+    openLoginTab(plat);
+    return;
+  }
   plat.selected = !plat.selected;
 };
 
-watch(() => props.isOpen, (newVal) => {
-  if (newVal) {
-    window.postMessage({ type: 'NICEMD_GET_CONFIG' }, '*');
-    if (isExtensionInstalled.value) {
-      checkAllLogins();
-    }
-  }
+const selectedCount = computed(() => {
+  return visiblePlatforms.value.filter(p => p.selected).length;
 });
 
-onMounted(() => {
-  window.addEventListener('message', (event) => {
-    if (event.source !== window) return;
-    
-    // Check PING PONG
-    if (event.data && event.data.type === 'NICEMD_PONG') {
-      isExtensionInstalled.value = true;
-      console.log('[NiceMD] Chrome extension helper detected!', event.data.version);
-      
-      platforms.value.forEach(p => {
-        if (p.id !== 'zip-download') {
-          p.actionLabel = '自动装填并前往';
-        }
-      });
-      checkAllLogins();
-    }
-
-    // Dynamic config load
-    if (event.data && event.data.type === 'NICEMD_GET_CONFIG_RESPONSE') {
-      if (event.data.success && event.data.config) {
-        platforms.value = event.data.config.map(c => {
-          const existing = platforms.value.find(p => p.id === c.id);
-          const isZip = c.id === 'zip-download';
-          return {
-            id: c.id,
-            name: c.name,
-            color: c.color,
-            writeUrl: c.writeUrl,
-            format: c.selectors.format === 'text/html' ? 'html' : 'md',
-            status: existing ? existing.status : 'idle',
-            progress: existing ? existing.progress : 0,
-            actionLabel: isZip 
-              ? '点击下载文件' 
-              : (isExtensionInstalled.value 
-                  ? (c.silentEnabled ? '静默生成草稿' : '自动装填并前往') 
-                  : '复制并前往'),
-            loginStatus: isZip ? 'logged_in' : (existing ? existing.loginStatus : 'checking'),
-            selected: existing ? existing.selected : true,
-            username: isZip ? '本地下载' : (existing ? existing.username : ''),
-            avatar: isZip ? '' : (existing ? existing.avatar : ''),
-            silentEnabled: !!c.silentEnabled
-          };
-        });
-        checkAllLogins();
+const selectAll = (val) => {
+  soundEngine.playClick();
+  visiblePlatforms.value.forEach(p => {
+    if (val) {
+      if (p.id === 'zip-download' || p.loginStatus === 'logged_in') {
+        p.selected = true;
       }
-    }
-
-    // Check login status response
-    if (event.data && event.data.type === 'NICEMD_CHECK_LOGINS_RESPONSE') {
-      isCheckingLogins.value = false;
-      if (event.data.success && event.data.statuses) {
-        platforms.value.forEach(p => {
-          if (p.id === 'zip-download') return;
-          
-          const info = event.data.statuses[p.id];
-          if (info !== undefined) {
-            if (typeof info === 'object') {
-              p.loginStatus = info.loggedIn ? 'logged_in' : 'not_logged_in';
-              p.username = info.username || '';
-              p.avatar = info.avatar || '';
-            } else {
-              p.loginStatus = info ? 'logged_in' : 'not_logged_in';
-              p.username = '';
-              p.avatar = '';
-            }
-          } else {
-            p.loginStatus = 'unknown';
-          }
-          
-          // Disable selection if not logged in
-          if (p.loginStatus !== 'logged_in') {
-            p.selected = false;
-          }
-        });
-      } else {
-        platforms.value.forEach(p => {
-          if (p.id !== 'zip-download') {
-            p.loginStatus = 'unknown';
-            p.username = '';
-            p.avatar = '';
-            p.selected = false;
-          }
-        });
-      }
+    } else {
+      p.selected = false;
     }
   });
+};
 
-  // Ping for extension after panel mount
-  setTimeout(() => {
-    window.postMessage({ type: 'NICEMD_PING' }, '*');
-  }, 300);
+const isAllSelected = computed(() => {
+  const selectable = visiblePlatforms.value.filter(p => p.id === 'zip-download' || p.loginStatus === 'logged_in');
+  return selectable.length > 0 && selectable.every(p => p.selected);
 });
+
+const toggleSelectAll = () => {
+  selectAll(!isAllSelected.value);
+};
 
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
-
-const addLog = (type, text) => {
-  const now = new Date();
-  const time = now.toTimeString().split(' ')[0];
-  terminalLogs.value.push({
-    id: Date.now() + Math.random(),
-    time,
-    type,
-    text
-  });
-  setTimeout(() => {
-    const term = document.querySelector('.terminal-screen');
-    if (term) term.scrollTop = term.scrollHeight;
-  }, 10);
-};
 
 const publishPlatform = (plat, title, targetHtml) => {
   return new Promise((resolve) => {
@@ -562,7 +663,10 @@ const publishPlatform = (plat, title, targetHtml) => {
         platform: plat.id,
         title,
         markdown: props.markdown,
-        html: targetHtml
+        html: targetHtml,
+        scheduled: isScheduled.value ? scheduledTime.value : null,
+        isOriginal: isOriginalDeclaration.value,
+        cover: coverImage.value
       }
     }, '*');
   });
@@ -571,63 +675,44 @@ const publishPlatform = (plat, title, targetHtml) => {
 const handleLaunch = async () => {
   if (isLaunching.value) return;
   
-  // Make sure we only attempt to launch valid, logged-in, and selected platforms
-  const selectedList = platforms.value.filter(p => p.selected && (p.id === 'zip-download' || p.loginStatus === 'logged_in'));
+  const selectedList = visiblePlatforms.value.filter(p => p.selected && (p.id === 'zip-download' || p.loginStatus === 'logged_in'));
   if (selectedList.length === 0) return;
 
+  soundEngine.playClick();
   isLaunching.value = true;
   isFinished.value = false;
-  terminalLogs.value = [];
   
-  platforms.value.forEach(p => {
-    if (p.selected) {
-      p.status = 'idle';
-      p.progress = 0;
-      p.draftUrl = ''; // reset previous draft links
-    }
+  selectedList.forEach(p => {
+    p.status = 'idle';
+    p.progress = 0;
+    p.draftUrl = '';
   });
 
-  addLog('info', '🚀 初始化 NiceMD 多渠道内容分发引擎...');
-  await sleep(400);
-  addLog('info', '📦 解析 Markdown 文章内容与样式配置...');
-  await sleep(300);
+  const title = getPublishTitle();
 
-  const titleMatch = props.markdown.match(/^#\s+(.+)$/m);
-  const title = titleMatch ? titleMatch[1] : '极简发布文章 - NiceMD';
-
-  addLog('info', '启动多渠道自动化分发任务...');
-  
   const publishPromises = selectedList.map(async (plat) => {
     plat.status = 'ignition';
-    plat.progress = 20;
-    addLog('info', `[${plat.name}] 正在校验发布通道并建立数据通道...`);
-    await sleep(200 + Math.random() * 300);
+    plat.progress = 25;
+    await sleep(250 + Math.random() * 200);
 
     if (plat.id === 'zip-download') {
-      addLog('info', `[${plat.name}] 正在生成本地打包文件...`);
       downloadMarkdownFile(props.markdown);
       plat.status = 'success';
       plat.progress = 100;
-      addLog('success', `[${plat.name}] 成功生成 Markdown 本地文件并触发下载。`);
       return;
     }
 
     if (!isExtensionInstalled.value) {
-      addLog('warn', `[${plat.name}] 未检测到助手插件，进入剪贴板备份模式...`);
       await copyPlatformContent(plat);
       plat.status = 'success';
       plat.progress = 100;
-      addLog('success', `[${plat.name}] 剪贴板已就绪，已拉起平台页面。`);
       return;
     }
 
-    const targetHtml = plat.id === 'wechat'
-      ? compileToWeChatHtml(props.html, props.themeId, props.codeThemeId)
-      : props.html;
+    const targetHtml = compileToWeChatHtml(props.html, props.themeId, props.codeThemeId);
 
     plat.status = 'launched';
-    plat.progress = 50;
-    addLog('info', `[${plat.name}] 正在传送数据，执行后台 API 草稿生成...`);
+    plat.progress = 65;
 
     try {
       const response = await publishPlatform(plat, title, targetHtml);
@@ -636,54 +721,46 @@ const handleLaunch = async () => {
         plat.progress = 100;
         if (response.postUrl) {
           plat.draftUrl = response.postUrl;
-          addLog('success', `[${plat.name}] 草稿创建成功！链接: ${response.postUrl}`);
-        } else if (response.fallback) {
-          addLog('success', `[${plat.name}] 成功拉起发布页面并执行自动填装。`);
-        } else {
-          addLog('success', `[${plat.name}] 发布执行完毕。`);
+          if (isOpenDraftsAfterSync.value) {
+            window.open(response.postUrl, '_blank');
+          }
         }
       } else {
         plat.status = 'failed';
         plat.progress = 0;
         plat.errorMsg = response.error || '通道错误';
-        addLog('error', `[${plat.name}] 发布失败: ${response.error || '通道错误'}`);
       }
     } catch (err) {
       plat.status = 'failed';
       plat.progress = 0;
       plat.errorMsg = err.message;
-      addLog('error', `[${plat.name}] 通道异常: ${err.message}`);
     }
   });
 
   await Promise.all(publishPromises);
 
-  // Fallback copy for WeChat styled output
-  const wechatPlat = platforms.value.find(p => p.id === 'wechat');
-  if (wechatPlat && wechatPlat.selected) {
-    try {
-      const finalHtml = compileToWeChatHtml(props.html, props.themeId, props.codeThemeId);
-      const htmlBlob = new Blob([finalHtml], { type: 'text/html' });
-      const textBlob = new Blob([props.markdown], { type: 'text/plain' });
-      const item = new ClipboardItem({
-        'text/html': htmlBlob,
-        'text/plain': textBlob
-      });
-      await navigator.clipboard.write([item]);
-      addLog('success', '💡 提示: 微信排版样式已同步至系统剪贴板，支持在公众号编辑器直接粘贴。');
-    } catch (err) {
-      // ignore
-    }
+  // Write fully styled HTML & Markdown to clipboard for instant pasting anywhere
+  try {
+    const finalHtml = compileToWeChatHtml(props.html, props.themeId, props.codeThemeId);
+    const htmlBlob = new Blob([finalHtml], { type: 'text/html' });
+    const textBlob = new Blob([props.markdown], { type: 'text/plain' });
+    const item = new ClipboardItem({
+      'text/html': htmlBlob,
+      'text/plain': textBlob
+    });
+    await navigator.clipboard.write([item]);
+  } catch (err) {
+    // ignore
   }
 
-  addLog('success', '🎉 所有通道发布任务处理完毕。');
   isFinished.value = true;
   isLaunching.value = false;
+  soundEngine.playChime();
   
   confetti({
-    particleCount: 80,
+    particleCount: 70,
     spread: 60,
-    origin: { y: 0.6 }
+    origin: { x: 0.8, y: 0.6 }
   });
 };
 
@@ -712,8 +789,7 @@ const copyPlatformContent = async (platform) => {
       window.open(platform.writeUrl, '_blank');
     } else {
       if (isExtensionInstalled.value) {
-        const titleMatch = props.markdown.match(/^#\s+(.+)$/m);
-        const title = titleMatch ? titleMatch[1] : '极简发布文章 - NiceMD';
+        const title = getPublishTitle();
         window.postMessage({
           type: 'NICEMD_PUBLISH',
           payload: {
@@ -733,263 +809,359 @@ const copyPlatformContent = async (platform) => {
   }
 };
 
-const selectedCount = computed(() => {
-  return platforms.value.filter(p => p.selected).length;
+watch(() => props.isOpen, (newVal) => {
+  if (newVal) {
+    initScheduledTime();
+    window.postMessage({ type: 'NICEMD_GET_CONFIG' }, '*');
+    if (isExtensionInstalled.value) {
+      checkAllLogins();
+    }
+  }
 });
 
-const selectablePlatformsCount = computed(() => {
-  return platforms.value.filter(p => p.id === 'zip-download' || p.loginStatus === 'logged_in').length;
-});
+onMounted(() => {
+  initScheduledTime();
+  loadSavedEnabledPlatforms();
+  loadOpenDraftsPref();
+  window.addEventListener('message', (event) => {
+    if (event.source !== window) return;
+    
+    if (event.data && event.data.type === 'NICEMD_PONG') {
+      isExtensionInstalled.value = true;
+      checkAllLogins();
+    }
 
-const selectAll = (val) => {
-  soundEngine.playClick();
-  platforms.value.forEach(p => {
-    if (val) {
-      if (p.id === 'zip-download' || p.loginStatus === 'logged_in') {
-        p.selected = true;
+    if (event.data && event.data.type === 'NICEMD_GET_CONFIG_RESPONSE') {
+      if (event.data.success && event.data.config) {
+        checkAllLogins();
       }
-    } else {
-      p.selected = false;
+    }
+
+    if (event.data && event.data.type === 'NICEMD_CHECK_LOGINS_RESPONSE') {
+      isCheckingLogins.value = false;
+      if (event.data.success && event.data.statuses) {
+        platforms.value.forEach(p => {
+          if (p.id === 'zip-download') return;
+          
+          const info = event.data.statuses[p.id];
+          if (info !== undefined) {
+            if (typeof info === 'object') {
+              p.loginStatus = info.loggedIn ? 'logged_in' : 'not_logged_in';
+              p.username = info.username || (info.loggedIn ? '已连接' : '');
+              p.avatar = info.avatar || '';
+            } else {
+              p.loginStatus = info ? 'logged_in' : 'not_logged_in';
+              p.username = info ? '已连接' : '';
+              p.avatar = '';
+            }
+          }
+          
+          if (p.loginStatus !== 'logged_in') {
+            p.selected = false;
+          }
+        });
+      }
     }
   });
-};
+
+  setTimeout(() => {
+    window.postMessage({ type: 'NICEMD_PING' }, '*');
+  }, 300);
+});
 </script>
 
 <template>
   <div v-if="isOpen" class="modal-overlay" @click.self="emit('close')">
-    <div class="modal-card">
-      <div class="modal-header">
-        <div class="title-area">
-          <span class="pulse-dot"></span>
-          <h2>多渠道内容分发控制台</h2>
+    <aside class="right-drawer-panel">
+      <!-- Background Ambient Sparkle Spheres -->
+      <div class="ambient-glow glow-1"></div>
+      <div class="ambient-glow glow-2"></div>
+
+      <!-- Drawer Header Bar -->
+      <div class="drawer-top-bar">
+        <div class="sparkle-title">
+          <span class="sparkle-icon">✨</span>
+          <span class="brand-title-cn">多渠道内容分发</span>
         </div>
-        <button @click="emit('close')" class="btn-close">
-          <X size="20" />
+        <button @click="emit('close')" class="btn-drawer-close" title="关闭面板">
+          <X size="18" />
         </button>
       </div>
 
-      <div class="modal-body-container">
-        <!-- Control Bar -->
-        <div class="launchpad-control-bar">
-          <div class="control-left">
-            <span class="control-label">选择分发渠道：</span>
-            <span class="control-count">已选择 {{ selectedCount }} / {{ platforms.length }}</span>
-          </div>
-          <div class="control-right">
-            <button class="btn-control-action" @click="selectAll(true)">全选</button>
-            <span class="divider">|</span>
-            <button class="btn-control-action" @click="selectAll(false)">清空</button>
-            <span class="divider">|</span>
-            <button class="btn-control-action btn-refresh" @click="checkAllLogins" title="刷新登录状态">
-              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" class="icon-refresh" :class="{ 'is-spinning': isCheckingLogins }">
-                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
-              </svg>
-              <span>刷新状态</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Platform Launch Pads -->
-        <div class="launchpads-container">
-          <div 
-            v-for="plat in platforms" 
-            :key="plat.id" 
-            class="launchpad-card"
-            :class="[
-              `is-${plat.status}`, 
-              plat.id, 
-              { 'is-unselected': !plat.selected },
-              { 'is-disabled': plat.id !== 'zip-download' && plat.loginStatus !== 'logged_in' }
-            ]"
-            :style="{ '--accent': plat.color }"
-            @click="toggleSelect(plat)"
-          >
-            <!-- Card Checkbox -->
-            <div class="card-checkbox" @click.stop="toggleSelect(plat)">
-              <div 
-                class="checkbox-visual" 
-                :class="{ 
-                  'is-checked': plat.selected,
-                  'is-disabled': plat.id !== 'zip-download' && plat.loginStatus !== 'logged_in'
-                }" 
-                :style="{ color: plat.color }"
+      <!-- Drawer Scrollable Content -->
+      <div class="drawer-content-scroll">
+        <!-- Section 1: 发布平台 -->
+        <section class="drawer-section">
+          <div class="drawer-section-header">
+            <h3 class="drawer-section-title">发布平台</h3>
+            
+            <!-- Direct Actions Toolbar -->
+            <div class="header-actions-group">
+              <!-- Smart Toggle Select All / Deselect All Button -->
+              <button 
+                class="btn-action-tool btn-toggle-select" 
+                :class="{ 'is-active': isAllSelected }"
+                @click="toggleSelectAll" 
+                :title="isAllSelected ? '取消全选所有平台' : '全选所有已连接平台'"
               >
-                <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="4">
-                  <polyline points="20 6 9 17 4 12" v-if="plat.selected"></polyline>
+                <X v-if="isAllSelected" size="12" />
+                <Check v-else size="12" />
+                <span>{{ isAllSelected ? '取消全选' : '全选' }}</span>
+              </button>
+              
+              <button 
+                class="btn-action-tool" 
+                @click="checkAllLogins" 
+                :disabled="isCheckingLogins" 
+                title="刷新各平台登录状态"
+              >
+                <RefreshCw size="12" :class="{ 'spin-anim': isCheckingLogins }" />
+                <span>刷新</span>
+              </button>
+
+              <button 
+                class="btn-manage-trigger" 
+                @click="showPlatformManageModal = true"
+                title="选择/管理要在控制台展示的平台"
+              >
+                <SlidersHorizontal size="12" />
+                <span>管理</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Platforms Card Container (Only Visible Platforms) -->
+          <div class="platforms-card-box">
+            <div 
+              v-for="plat in visiblePlatforms" 
+              :key="plat.id"
+              class="platform-row-item"
+              :class="[
+                { 'is-selected': plat.selected },
+                { 'is-not-connected': plat.loginStatus !== 'logged_in' && plat.id !== 'zip-download' }
+              ]"
+              @click="toggleSelect(plat)"
+            >
+              <!-- Left: Brand Icon (使用用户下载的 public/svg 中的真实图标) -->
+              <div class="platform-icon-wrapper" :style="{ backgroundColor: plat.iconUrl ? 'transparent' : plat.color }">
+                <img 
+                  v-if="plat.iconUrl" 
+                  :src="plat.iconUrl" 
+                  :alt="plat.name" 
+                  class="platform-icon-img" 
+                />
+                <svg v-else viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="#64748b" stroke-width="2">
+                  <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                  <polyline points="22,6 12,13 2,6"/>
                 </svg>
               </div>
+
+              <!-- Center: Name & Status info -->
+              <div class="platform-meta">
+                <span class="platform-name">{{ plat.name }}</span>
+                <span class="platform-sub">
+                  <span v-if="plat.loginStatus === 'logged_in'" class="sub-status is-connected">
+                    {{ plat.username || '已连接' }}
+                  </span>
+                  <span v-else-if="plat.loginStatus === 'checking'" class="sub-status is-checking">
+                    检测状态中...
+                  </span>
+                  <span v-else class="sub-status is-disconnected">
+                    未连接
+                  </span>
+                </span>
+              </div>
+
+              <!-- Right: Status Badge / Action Button -->
+              <div class="platform-action-wrap">
+                <!-- Logged in state: Soft Green '已连接' Pill -->
+                <div 
+                  v-if="plat.loginStatus === 'logged_in' || plat.id === 'zip-download'" 
+                  class="pill-tag is-connected-pill"
+                  :class="{ 'is-active-selection': plat.selected }"
+                >
+                  <span class="pill-text">已连接</span>
+                  <div class="pill-check-circle" :class="{ 'is-checked': plat.selected }">
+                    <svg viewBox="0 0 24 24" width="10" height="10" fill="none" stroke="currentColor" stroke-width="3.5">
+                      <polyline points="20 6 9 17 4 12" v-if="plat.selected"></polyline>
+                    </svg>
+                  </div>
+                </div>
+
+                <!-- Not logged in state: Soft Peach '连接' Action Button -->
+                <button 
+                  v-else 
+                  class="pill-btn-connect"
+                  @click.stop="openLoginTab(plat)"
+                  title="点击打开平台并连接登录"
+                >
+                  <span>连接</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Section 2: 发布设置 -->
+        <section class="drawer-section">
+          <div class="drawer-section-header">
+            <h3 class="drawer-section-title">发布设置</h3>
+          </div>
+
+          <!-- Settings Box -->
+          <div class="settings-card-box">
+            <!-- Row 1: 定时发布 -->
+            <div class="setting-item-row">
+              <span class="setting-label">定时发布</span>
+              <label class="ios-switch">
+                <input type="checkbox" v-model="isScheduled" />
+                <span class="slider"></span>
+              </label>
             </div>
 
-            <!-- Platform badge -->
-            <div class="platform-badge" :style="{ backgroundColor: plat.color + '15', color: plat.color, borderColor: plat.color + '30', borderWidth: '1px', borderStyle: 'solid' }">
-              <!-- WeChat SVG -->
-              <svg v-if="plat.id === 'wechat'" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                <path d="M8.22 2C4.16 2 .85 4.84.85 8.35c0 2.01 1.08 3.8 2.76 5.02l-.69 2.11c-.08.24.11.45.34.37l2.45-1.19c.77.22 1.62.34 2.51.34c4.06 0 7.37-2.84 7.37-6.35S12.28 2 8.22 2zm-2.86 5c-.47 0-.85-.38-.85-.85s.38-.85.85-.85.85.38.85.85-.38.85-.85.85zm4.82 0c-.47 0-.85-.38-.85-.85s.38-.85.85-.85.85.38.85.85-.38.85-.85.85zm12.38 5.76c0-2.92-2.77-5.29-6.19-5.29c-.39 0-.76.03-1.12.09c.8 1.09 1.28 2.45 1.28 3.93c0 3.87-3.37 7.02-7.53 7.02c-.52 0-1.03-.05-1.53-.15c.87.89 2.12 1.45 3.52 1.45c.74 0 1.45-.16 2.09-.44l2.04.99c.19.09.35-.08.28-.28l-.57-1.75c1.78-1.19 2.92-2.94 2.92-4.91l.01-.66zm-4.7-1.22c-.39 0-.7-.31-.7-.7s.31-.7.7-.7s.7.31.7.7s-.31.7-.7.7zm3.56 0c-.39 0-.7-.31-.7-.7s.31-.7.7-.7s.7.31.7.7s-.31.7-.7.7z"/>
-              </svg>
-              <!-- Zhihu SVG -->
-              <svg v-else-if="plat.id === 'zhihu'" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                <path d="M16.27 10.1c.14-.52.22-1.07.24-1.63h-2.33v-1.6h2.46c.01-.17.02-.33.02-.5h-2.48V4.76h4.15v1.6H17.4v.01c0 .17-.01.33-.02.5h2.15v1.6H17.2c-.03.56-.11 1.11-.25 1.63h2.38v1.6h-2.92v3.75h-1.6v-3.75h-2.91v-1.6h4.37zm-6.6 3.19l.71 1.43c-.87.43-1.84.77-2.91 1.02l-.56-1.5c.84-.18 1.61-.43 2.31-.72l.45-.23zm-.68-6.1c.7-.62 1.48-1.12 2.34-1.5l.89 1.34c-.81.33-1.54.77-2.18 1.3l-1.05-1.14zm4.41 7.15c.61.54 1.31 1 2.09 1.37l-.92 1.42c-.75-.38-1.42-.85-2.01-1.39l.84-1.4zm-7.62 1.13c2.25-.66 4.07-2 5.48-4.04l1.35.88c-1.58 2.27-3.66 3.77-6.24 4.51l-.59-1.35zm3.11-8.22c.2-.5.35-1.02.46-1.56H7.13v-1.6h4.2c-.15-.75-.38-1.48-.7-2.17l1.58-.45c.42.92.71 1.88.89 2.62h2.2v1.6h-2.35c-.15.74-.36 1.45-.63 2.13l-1.59-.57zM5 3.5h14c.83 0 1.5.67 1.5 1.5v14c0 .83-.67 1.5-1.5 1.5H5c-.83 0-1.5-.67-1.5-1.5V5c0-.83.67-1.5 1.5-1.5z"/>
-              </svg>
-              <!-- Juejin SVG -->
-              <svg v-else-if="plat.id === 'juejin'" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                <path d="M12 2.5l9 7.2l-9 7.2l-9-7.2zm0 17.8l6.7-5.4l1.6 1.3l-8.3 6.6l-8.3-6.6l1.6-1.3zm0-3.6l4.5-3.6l1.6 1.3L12 20.8l-6.1-4.9l1.6-1.3z"/>
-              </svg>
-              <!-- CSDN SVG -->
-              <svg v-else-if="plat.id === 'csdn'" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5c-2.48 0-4.5-2.02-4.5-4.5s2.02-4.5 4.5-4.5c1.8 0 3.36.93 4.14 2.33l-1.82 1.05C12.82 10.37 12 9.75 11 9.75c-1.24 0-2.25 1.01-2.25 2.25s1.01 2.25 2.25 2.25c1.01 0 1.83-.62 2.32-1.63l1.82 1.05c-.78 1.4-2.34 2.33-4.14 2.33z"/>
-              </svg>
-              <!-- Cnblogs SVG -->
-              <svg v-else-if="plat.id === 'cnblogs'" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1.8 14.2c-1.8 0-3.2-1.4-3.2-3.2s1.4-3.2 3.2-3.2c.9 0 1.7.4 2.3 1l-1.4 1.4c-.2-.2-.5-.4-.9-.4-.7 0-1.2.5-1.2 1.2s.5 1.2 1.2 1.2c.4 0 .7-.2.9-.4l1.4 1.4c-.6.6-1.4 1-2.3 1zm5.2-.2h-2.4V8h2.4c.9 0 1.6.7 1.6 1.6 0 .5-.2.9-.6 1.2.6.3 1 .9 1 1.6 0 .9-.7 1.6-1.6 1.6zm-1-4.2h1c.3 0 .6-.3.6-.6s-.3-.6-.6-.6h-1v1.2zm0 2.2h1c.3 0 .6-.3.6-.6s-.3-.6-.6-.6h-1v1.2z"/>
-              </svg>
-              <!-- Baijiahao SVG -->
-              <svg v-else-if="plat.id === 'baijiahao'" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="2" width="20" height="20" rx="4"/>
-                <text x="5" y="16" font-family="'Outfit', sans-serif" font-weight="900" font-size="14" fill="currentColor" stroke="none">百</text>
-              </svg>
-              <!-- Bilibili SVG -->
-              <svg v-else-if="plat.id === 'bilibili'" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                <path d="M12 2a1 1 0 0 1 .8.4l2.5 3c.3.4.2 1-.2 1.4a1 1 0 0 1-1.4-.2l-2-2.4H10.3l-2 2.4a1 1 0 0 1-1.6-1.2l2.5-3a1 1 0 0 1 .8-.4h2zM5 8h14c1.1 0 2 .9 2 2v9c0 1.1-.9 2-2 2H5c-1.1 0-2-.9-2-2v-9c0-1.1.9-2 2-2zm2.5 4c-.8 0-1.5.7-1.5 1.5S6.7 15 7.5 15s1.5-.7 1.5-1.5S8.3 12 7.5 12zm9 0c-.8 0-1.5.7-1.5 1.5s.7 1.5 1.5 1.5 1.5-.7 1.5-1.5-.7-1.5-1.5-1.5zm-5 5c-1.7 0-3-.7-3.7-1.5h8.4c-.7.8-2 1.5-4.7 1.5z"/>
-              </svg>
-              <!-- Eastmoney SVG -->
-              <svg v-else-if="plat.id === 'eastmoney'" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 6v12M8 10h8M9 14h6"/>
-              </svg>
-              <!-- Oschina SVG -->
-              <svg v-else-if="plat.id === 'oschina'" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="2" width="20" height="20" rx="4"/>
-                <text x="4" y="16" font-family="'Outfit', sans-serif" font-weight="900" font-size="12" fill="currentColor" stroke="none">OS</text>
-              </svg>
-              <!-- Sohu SVG -->
-              <svg v-else-if="plat.id === 'sohu'" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="2" width="20" height="20" rx="4"/>
-                <text x="5" y="16" font-family="'Outfit', sans-serif" font-weight="900" font-size="14" fill="currentColor" stroke="none">搜</text>
-              </svg>
-              <!-- Yuque SVG -->
-              <svg v-else-if="plat.id === 'yuque'" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14.5l-3-3h2v-4h2v4h2l-3 3z"/>
-              </svg>
-              <!-- 51cto SVG -->
-              <svg v-else-if="plat.id === '51cto'" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="2" width="20" height="20" rx="4"/>
-                <text x="4" y="16" font-family="'Outfit', sans-serif" font-weight="900" font-size="12" fill="currentColor" stroke="none">51</text>
-              </svg>
-              <!-- Douban SVG -->
-              <svg v-else-if="plat.id === 'douban'" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                <path d="M5 3.5h14v2H5v-2zm1.5 5.5h11v9.5H6.5V9zm2.5 2v5.5h6v-5.5H9zM5 20.5h14v-2H5v2z"/>
-              </svg>
-              <!-- Segmentfault SVG -->
-              <svg v-else-if="plat.id === 'segmentfault'" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="2" width="20" height="20" rx="4"/>
-                <text x="5" y="16" font-family="'Outfit', sans-serif" font-weight="900" font-size="14" fill="currentColor" stroke="none">SF</text>
-              </svg>
-              <!-- Weibo SVG -->
-              <svg v-else-if="plat.id === 'weibo'" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
-                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3.3 11.5c-.3.8-1 1.4-2.1 1.8-.7.3-1.4.4-2.2.4-1.6 0-3-.5-4.1-1.5-1.1-1-1.6-2.3-1.6-3.8 0-1.5.5-2.8 1.6-3.8 1.1-1 2.5-1.5 4.1-1.5 1.6 0 3 .5 4.1 1.5 1.1 1 1.6 2.3 1.6 3.8s-.5 2.8-1.5 3.6zm-3.3-6.2c-.9 0-1.7.3-2.3.9s-.9 1.4-.9 2.3c0 .9.3 1.7.9 2.3.6.6 1.4.9 2.3.9.9 0 1.7-.3 2.3-.9.6-.6.9-1.4.9-2.3 0-.9-.3-1.7-.9-2.3s-1.4-.9-2.3-.9z"/>
-              </svg>
-              <!-- Xueqiu SVG -->
-              <svg v-else-if="plat.id === 'xueqiu'" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"/>
-                <path d="M12 8v8M8 12h8"/>
-              </svg>
-              <!-- Imooc SVG -->
-              <svg v-else-if="plat.id === 'imooc'" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="2" width="20" height="20" rx="4"/>
-                <text x="5" y="16" font-family="'Outfit', sans-serif" font-weight="900" font-size="14" fill="currentColor" stroke="none">慕</text>
-              </svg>
-              <!-- Woshipm SVG -->
-              <svg v-else-if="plat.id === 'woshipm'" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
-                <rect x="2" y="2" width="20" height="20" rx="4"/>
-                <text x="4" y="16" font-family="'Outfit', sans-serif" font-weight="900" font-size="12" fill="currentColor" stroke="none">PM</text>
-              </svg>
-              <!-- Zip-download SVG -->
-              <svg v-else-if="plat.id === 'zip-download'" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
-              </svg>
-            </div>
-            
-            <div class="pad-title">
-              <span>{{ plat.name }}</span>
-              <span v-if="plat.silentEnabled" class="silent-mode-badge" title="当前已开启后台 API 静默分发">静默</span>
+            <!-- Expandable Time Picker Row -->
+            <div v-if="isScheduled" class="datetime-picker-row">
+              <div class="datetime-input-wrap">
+                <Clock size="14" class="time-icon" />
+                <input 
+                  type="text" 
+                  v-model="scheduledTime" 
+                  class="time-input" 
+                  placeholder="2024-07-21 18:00"
+                />
+              </div>
+              <button class="btn-time-refresh" @click="resetScheduledTime" title="重设为当前后2小时">
+                <RotateCw size="14" />
+              </button>
             </div>
 
-            <!-- Login Status Badge -->
-            <div class="login-badge-container">
-              <span v-if="plat.loginStatus === 'checking'" class="login-badge is-checking">
-                <span class="dot-blink"></span>检测中
-              </span>
-              <span 
-                v-else-if="plat.loginStatus === 'logged_in'" 
-                class="login-badge is-logged-in" 
-                @click.stop="openLoginTab(plat)" 
-                :title="plat.username ? '当前账户: ' + plat.username + ' (点击进入平台)' : '已登录 (点击进入平台)'"
-              >
-                <img v-if="plat.avatar" :src="plat.avatar" class="badge-avatar" />
-                <span>{{ plat.username || '已登录' }}</span>
-              </span>
-              <span 
-                v-else-if="plat.loginStatus === 'not_logged_in'" 
-                class="login-badge is-not-logged-in" 
-                @click.stop="openLoginTab(plat)" 
-                title="点击前往登录"
-              >
-                未登录 🔗
-              </span>
-              <span v-else class="login-badge is-unknown">
-                未知
-              </span>
+            <!-- Row 2: 原创声明 -->
+            <div class="setting-item-row">
+              <span class="setting-label">原创声明</span>
+              <label class="ios-switch">
+                <input type="checkbox" v-model="isOriginalDeclaration" />
+                <span class="slider"></span>
+              </label>
             </div>
 
-            <!-- Progress bar -->
-            <div class="progress-bar-container">
-              <div class="progress-bar-fill" :style="{ width: `${plat.progress}%` }"></div>
-            </div>
+            <!-- Row 3: 文章封面 -->
+            <div class="cover-setting-wrap">
+              <div class="cover-header">
+                <span class="setting-label">文章封面</span>
+                <button class="btn-change-cover" @click="triggerCoverUpload">
+                  <ImageIcon size="12" />
+                  <span>更换封面</span>
+                </button>
+              </div>
 
-            <!-- Status Row (Inline Indicator + Label) -->
-            <div class="status-row">
-              <span class="status-indicator">
-                <svg v-if="plat.status === 'success'" class="icon-success-small" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="3">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-                <span v-else-if="plat.status === 'launched' || plat.status === 'ignition'" class="spinner-loader-small"></span>
-                <span v-else-if="plat.status === 'failed'" class="icon-failed-small">❌</span>
-                <span v-else class="icon-idle-small"></span>
-              </span>
-              <span class="status-text">
-                <span v-if="plat.status === 'idle'" class="text-idle">等待分发</span>
-                <span v-else-if="plat.status === 'ignition'" class="text-working">校验中...</span>
-                <span v-else-if="plat.status === 'launched'" class="text-working">分发中...</span>
-                <span v-else-if="plat.status === 'success'" class="text-success">已完成</span>
-                <span v-else-if="plat.status === 'failed'" class="text-failed" :title="plat.errorMsg || '分发失败'">失败</span>
-              </span>
-            </div>
+              <!-- Hidden File Input for Custom Cover Upload -->
+              <input 
+                type="file" 
+                ref="fileInputRef" 
+                accept="image/*" 
+                class="hidden-file-input" 
+                @change="handleCoverUpload"
+              />
 
-            <!-- Action button -->
-            <button 
-              :disabled="plat.status !== 'success'"
-              @click.stop="copyPlatformContent(plat)"
-              class="btn-platform-action"
+              <!-- Cover Image Preview Frame -->
+              <div class="cover-preview-box" @click="triggerCoverUpload">
+                <img :src="coverImage" alt="Article Cover" class="cover-img" />
+                <div class="cover-overlay-hint">
+                  <Upload size="18" />
+                  <span>点击上传自定义封面</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <!-- Drawer Footer Launch Action Button -->
+      <div class="drawer-footer">
+        <button 
+          class="btn-gradient-launch"
+          :disabled="isLaunching || selectedCount === 0"
+          :class="{ 'is-launching': isLaunching }"
+          @click="handleLaunch"
+        >
+          <span v-if="isLaunching" class="spinner-dot"></span>
+          <span class="launch-btn-text">
+            {{ isFinished ? '重新发布' : isLaunching ? '正在执行分发...' : `一键发布 (${selectedCount})` }}
+          </span>
+          <span class="launch-arrow">→</span>
+        </button>
+
+        <!-- Option: 是否同步打开草稿 (Sleek Round Dot Radio Option) -->
+        <div 
+          class="open-drafts-option" 
+          @click="isOpenDraftsAfterSync = !isOpenDraftsAfterSync"
+          title="勾选后，发布成功的平台将自动在浏览器中打开草稿页面"
+        >
+          <div class="dot-radio-wrapper" :class="{ 'is-checked': isOpenDraftsAfterSync }">
+            <div class="dot-inner"></div>
+          </div>
+          <span class="open-drafts-label">是否同步打开草稿</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Platform Management Modal (点击管理弹出的平台配置浮层) -->
+    <div 
+      v-if="showPlatformManageModal" 
+      class="manage-modal-backdrop" 
+      @click.self="showPlatformManageModal = false"
+    >
+      <div class="manage-modal-card">
+        <div class="manage-modal-header">
+          <div class="manage-header-titles">
+            <h3 class="manage-modal-title">⚙️ 发布平台展示管理</h3>
+            <p class="manage-modal-subtitle">勾选需要在控制台展示的平台，未勾选的平台将自动隐藏</p>
+          </div>
+          <button class="manage-modal-close" @click="showPlatformManageModal = false" title="关闭">
+            <X size="18" />
+          </button>
+        </div>
+
+        <div class="manage-modal-body">
+          <div class="manage-platforms-grid">
+            <div 
+              v-for="plat in platforms" 
+              :key="plat.id"
+              class="manage-platform-item"
+              :class="{ 'is-enabled': plat.enabled !== false }"
+              @click="togglePlatformEnabled(plat)"
             >
-              <span>{{ plat.draftUrl ? '进入草稿箱' : plat.actionLabel }}</span>
-              <ChevronRight size="14" />
+              <div class="manage-item-checkbox">
+                <input 
+                  type="checkbox" 
+                  :checked="plat.enabled !== false" 
+                  @click.stop="togglePlatformEnabled(plat)" 
+                />
+              </div>
+              <div class="manage-item-icon">
+                <img v-if="plat.iconUrl" :src="plat.iconUrl" :alt="plat.name" />
+                <span v-else class="fallback-icon-letter">{{ plat.name.charAt(0) }}</span>
+              </div>
+              <div class="manage-item-info">
+                <span class="manage-item-name">{{ plat.name }}</span>
+                <span class="manage-item-tag">{{ plat.format === 'html' ? '富文本' : 'Markdown' }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="manage-modal-footer">
+          <div class="manage-footer-left">
+            <button class="btn-manage-action" @click="toggleAllPlatforms(true)">全选显示</button>
+            <button class="btn-manage-action" @click="toggleAllPlatforms(false)">取消全选</button>
+            <button class="btn-manage-action" @click="resetDefaultPlatforms">恢复默认</button>
+          </div>
+          <div class="manage-footer-right">
+            <button class="btn-manage-done" @click="showPlatformManageModal = false">
+              完成 (已开启 {{ visiblePlatforms.length }} 个)
             </button>
           </div>
         </div>
-      </div>
-
-      <!-- Footer Action -->
-      <div class="modal-footer">
-        <button 
-          @click="handleLaunch" 
-          class="btn-launch" 
-          :disabled="isLaunching || selectedCount === 0"
-          :class="{ 'is-active': isLaunching }"
-        >
-          <Play v-if="!isLaunching && !isFinished" size="18" />
-          <CheckCircle v-else-if="!isLaunching && isFinished" size="18" />
-          <span>{{ isFinished ? '重新分发' : isLaunching ? '分发中...' : (selectedCount === 0 ? '请选择分发渠道' : `开始一键分发至已选 ${selectedCount} 个渠道`) }}</span>
-        </button>
       </div>
     </div>
   </div>
@@ -998,606 +1170,956 @@ const selectAll = (val) => {
 <style scoped>
 .modal-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.4);
-  backdrop-filter: blur(10px);
+  inset: 0;
+  background: rgba(15, 23, 42, 0.38);
+  backdrop-filter: blur(8px);
   display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-  animation: fadeIn 0.25s ease;
+  justify-content: flex-end;
+  z-index: 2000;
+  animation: fadeInOverlay 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-@keyframes fadeIn {
+@keyframes fadeInOverlay {
   from { opacity: 0; }
   to { opacity: 1; }
 }
 
-.modal-card {
-  width: 720px;
-  height: 580px;
-  background: var(--bg-editor);
-  border: 2px solid var(--border-color);
-  border-radius: 20px;
-  box-shadow: var(--shadow-md);
+/* Right Side Drawer Panel */
+.right-drawer-panel {
+  width: 380px;
+  max-width: 92vw;
+  height: 100vh;
+  background: #f8faff;
+  box-shadow: -10px 0 40px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
-  overflow: hidden;
-  animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-@keyframes slideUp {
-  from { transform: translateY(40px) scale(0.95); opacity: 0; }
-  to { transform: translateY(0) scale(1); opacity: 1; }
-}
-
-.modal-header {
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  background: rgba(0,0,0,0.01);
-}
-
-.title-area {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.pulse-dot {
-  width: 8px;
-  height: 8px;
-  background: #10b981;
-  border-radius: 50%;
-  animation: pulse 1.5s infinite;
-}
-
-@keyframes pulse {
-  0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
-  70% { transform: scale(1); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
-  100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
-}
-
-.modal-header h2 {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text-main);
-  font-family: 'Outfit', sans-serif;
-}
-
-.btn-close {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
-  transition: all 0.2s ease;
-}
-
-.btn-close:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--text-main);
-}
-
-.modal-body-container {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  padding: 20px 24px;
-  gap: 16px;
-  overflow: hidden;
-}
-
-/* Launchpad layouts */
-.launchpads-container {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
-  gap: 12px;
-  flex: 1;
-  overflow-y: auto;
-  padding-right: 6px;
-}
-
-/* Scrollbar styling */
-.launchpads-container::-webkit-scrollbar {
-  width: 6px;
-}
-.launchpads-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-.launchpads-container::-webkit-scrollbar-thumb {
-  background: var(--border-color);
-  border-radius: 3px;
-}
-.launchpads-container::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
-}
-
-.launchpad-card {
-  border: 1px solid var(--border-color);
-  background: rgba(0,0,0,0.01);
-  border-radius: 12px;
-  padding: 12px 8px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
   position: relative;
   overflow: hidden;
-  transition: all 0.3s ease;
-  cursor: pointer;
+  animation: slideDrawer 0.32s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
 }
 
-.launchpad-card:not(.is-unselected):not(.is-disabled) {
-  border-color: var(--accent) !important;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+@keyframes slideDrawer {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
 }
 
-.launchpad-card.is-unselected {
-  opacity: 0.55;
-  filter: grayscale(40%);
-  border-color: var(--border-color) !important;
+/* Ambient glow blobs */
+.ambient-glow {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(50px);
+  opacity: 0.65;
+  z-index: 0;
 }
 
-.launchpad-card.is-disabled {
-  opacity: 0.45;
-  filter: grayscale(100%);
-  border-color: var(--border-color) !important;
-  cursor: not-allowed;
+.glow-1 {
+  width: 220px;
+  height: 220px;
+  top: -40px;
+  right: -30px;
+  background: radial-gradient(circle, rgba(254, 215, 226, 0.8) 0%, rgba(255, 255, 255, 0) 70%);
 }
 
-.launchpad-card:hover:not(.is-disabled) {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-sm);
+.glow-2 {
+  width: 260px;
+  height: 260px;
+  top: 36%;
+  left: 20%;
+  background: radial-gradient(circle, rgba(255, 237, 213, 0.6) 0%, rgba(255, 255, 255, 0) 70%);
 }
 
-.launchpad-card:not(.is-unselected):hover:not(.is-disabled) {
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.04);
-}
-
-/* Platform Selection Control Bar styling */
-.launchpad-control-bar {
+/* Top bar */
+.drawer-top-bar {
+  padding: 18px 20px 10px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 4px;
+  position: relative;
+  z-index: 2;
 }
 
-.control-left {
+.sparkle-title {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
-.control-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-main);
+.sparkle-icon {
+  font-size: 16px;
 }
 
-.control-count {
-  font-size: 11px;
-  color: var(--text-muted);
-  background: rgba(0, 0, 0, 0.03);
-  padding: 2px 8px;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
+.brand-title-cn {
+  font-size: 14px;
+  font-weight: 700;
+  color: #334155;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: 0.3px;
 }
 
-.control-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.btn-control-action {
-  background: transparent;
-  border: none;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
-  transition: all 0.2s ease;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.btn-control-action:hover {
-  color: var(--accent-color);
-  background: rgba(0, 0, 0, 0.03);
-}
-
-.btn-refresh {
-  color: var(--text-main);
-}
-
-.icon-refresh {
-  flex-shrink: 0;
-  transition: transform 0.2s ease;
-}
-
-@keyframes spin-refresh {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
-}
-
-.icon-refresh.is-spinning {
-  animation: spin-refresh 1s linear infinite;
-}
-
-.launchpad-control-bar .divider {
-  font-size: 11px;
-  color: var(--border-color);
-}
-
-/* Card Checkbox styling */
-.card-checkbox {
-  position: absolute;
-  top: 8px;
-  right: 8px;
-  cursor: pointer;
-  z-index: 10;
-}
-
-.checkbox-visual {
-  width: 16px;
-  height: 16px;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
+.btn-drawer-close {
+  background: #ffffff;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  color: #64748b;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--bg-editor);
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.04);
   transition: all 0.2s ease;
 }
 
-.checkbox-visual.is-checked {
-  background: currentColor;
-  border-color: currentColor;
+.btn-drawer-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  transform: scale(1.06);
 }
 
-.checkbox-visual.is-checked svg {
-  color: var(--bg-editor);
+/* Scrollable Content */
+.drawer-content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px 18px 24px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: relative;
+  z-index: 1;
 }
 
-.checkbox-visual.is-disabled {
-  background: rgba(0, 0, 0, 0.05) !important;
-  border-color: var(--border-color) !important;
+.drawer-content-scroll::-webkit-scrollbar {
+  width: 5px;
+}
+
+.drawer-content-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.drawer-content-scroll::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 4px;
+}
+
+/* Sections */
+.drawer-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.drawer-section-header {
+  display: flex !important;
+  flex-direction: row !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  width: 100% !important;
+  padding: 0 4px !important;
+  box-sizing: border-box !important;
+}
+
+.drawer-section-title {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', Roboto, sans-serif !important;
+  letter-spacing: -0.2px !important;
+  margin: 0 !important;
+  text-align: left !important;
+}
+
+/* Header Actions Toolbar */
+.header-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-action-tool {
+  background: #f1f5f9;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 3.5px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 7px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+}
+
+.btn-action-tool:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #0f172a;
+  border-color: rgba(0, 0, 0, 0.08);
+}
+
+.btn-action-tool.btn-toggle-select.is-active {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
+.btn-action-tool.btn-toggle-select.is-active:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.btn-action-tool:disabled {
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
-.platform-badge {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 8px;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.03);
-}
-
-.pad-title {
+.btn-manage-trigger {
+  background: rgba(37, 99, 235, 0.08);
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  font-size: 11.5px;
   font-weight: 600;
-  font-size: 12px;
-  color: var(--text-main);
-  margin-bottom: 6px;
-  text-align: center;
+  color: #2563eb;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 4px;
+  gap: 3.5px;
+  cursor: pointer;
+  padding: 4px 9px;
+  border-radius: 7px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
 }
 
-.silent-mode-badge {
-  font-size: 9px;
-  background: rgba(16, 185, 129, 0.15);
-  color: #10b981;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-  padding: 1px 4px;
-  border-radius: 4px;
-  font-weight: 700;
-  line-height: 1;
+.btn-manage-trigger:hover {
+  background: rgba(37, 99, 235, 0.16);
+  color: #1d4ed8;
+  border-color: rgba(37, 99, 235, 0.3);
+  transform: translateY(-1px);
 }
 
-/* Status Row */
-.status-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  height: 14px;
-  margin-top: 4px;
-  margin-bottom: 2px;
-}
-
-.status-indicator {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.icon-success-small {
-  color: #10b981;
-}
-
-.spinner-loader-small {
-  width: 10px;
-  height: 10px;
-  border: 1.5px solid rgba(0, 0, 0, 0.05);
-  border-top: 1.5px solid var(--accent-color);
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
+.spin-anim {
+  animation: spin 1s linear infinite;
 }
 
 @keyframes spin {
   to { transform: rotate(360deg); }
 }
 
-.icon-idle-small {
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: var(--border-color);
-  opacity: 0.6;
+/* Platforms Card Box */
+.platforms-card-box {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 6px 12px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
 }
 
-.progress-bar-container {
-  width: 100%;
-  height: 3px;
-  background: rgba(0, 0, 0, 0.04);
-  border-radius: 1.5px;
+.platform-row-item {
+  display: flex;
+  align-items: center;
+  padding: 11px 4px;
+  gap: 12px;
+  border-bottom: 1px solid #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 12px;
+}
+
+.platform-row-item:last-child {
+  border-bottom: none;
+}
+
+.platform-row-item:hover {
+  background: rgba(241, 245, 249, 0.5);
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* Icon */
+.platform-icon-wrapper {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   overflow: hidden;
-  margin-bottom: 6px;
+  position: relative;
 }
 
-.progress-bar-fill {
+.platform-icon-img {
+  width: 100%;
   height: 100%;
-  width: 0;
-  background-color: var(--accent-color);
-  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  object-fit: contain;
+  display: block;
 }
 
-.status-text {
-  font-size: 10px;
+/* Meta */
+.platform-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.platform-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.2;
+}
+
+.platform-sub {
+  font-size: 11px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+}
+
+.sub-status.is-connected {
+  color: #94a3b8;
+}
+
+.sub-status.is-disconnected {
+  color: #cbd5e1;
+}
+
+.sub-status.is-checking {
+  color: #3b82f6;
+}
+
+/* Action wrap */
+.platform-action-wrap {
+  display: flex;
+  align-items: center;
+}
+
+/* Soft Green '已连接' Pill */
+.pill-tag.is-connected-pill {
+  background: #edfdf2;
+  border: 1px solid #d1fae5;
+  border-radius: 20px;
+  padding: 4px 10px 4px 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+}
+
+.pill-text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #22c55e;
+}
+
+.pill-check-circle {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #22c55e;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.pill-check-circle:not(.is-checked) {
+  background: #cbd5e1;
+  opacity: 0.5;
+}
+
+.is-selected .pill-tag.is-connected-pill {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+/* Soft Peach '连接' Button */
+.pill-btn-connect {
+  background: #fff7ed;
+  border: 1px solid #ffedd5;
+  color: #f97316;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 5px 14px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.pill-btn-connect:hover {
+  background: #ffedd5;
+  transform: scale(1.05);
+}
+
+/* Settings Card Box */
+.settings-card-box {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 16px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.03);
+  border: 1px solid rgba(0, 0, 0, 0.03);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.setting-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.setting-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+/* iOS Style Switch */
+.ios-switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.ios-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #e2e8f0;
+  transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 20px;
+  width: 20px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: .3s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+input:checked + .slider {
+  background-color: #ff6036;
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+/* DateTime input row */
+.datetime-picker-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 8px 12px;
+  border: 1px solid #f1f5f9;
+  animation: fadeInDown 0.2s ease;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.datetime-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+}
+
+.time-icon {
+  color: #94a3b8;
+}
+
+.time-input {
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
+  width: 100%;
+  font-family: 'Outfit', -apple-system, sans-serif;
+  outline: none;
+}
+
+.btn-time-refresh {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  cursor: pointer;
+  padding: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.btn-time-refresh:hover {
+  color: #ff6036;
+  transform: rotate(45deg);
+}
+
+/* Cover Image Section */
+.cover-setting-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cover-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.btn-change-cover {
+  background: transparent;
+  border: none;
+  color: #3b82f6;
+  font-size: 11px;
   font-weight: 600;
   display: flex;
   align-items: center;
-}
-
-.status-text .text-idle {
-  color: var(--text-muted);
-}
-
-.status-text .text-working {
-  color: var(--text-main);
-}
-
-.status-text .text-success {
-  color: #10b981;
-}
-
-.btn-platform-action {
-  margin-top: 8px;
-  background: var(--bg-editor);
-  border: 1.5px solid var(--border-color);
-  border-radius: 6px;
-  padding: 6px 8px;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--text-main);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
   gap: 4px;
+  cursor: pointer;
+}
+
+.btn-change-cover:hover {
+  text-decoration: underline;
+}
+
+.hidden-file-input {
+  display: none;
+}
+
+.cover-preview-box {
   width: 100%;
-  justify-content: center;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  height: 108px;
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.btn-platform-action:disabled {
-  background: rgba(0, 0, 0, 0.01);
-  color: var(--text-muted);
-  border-color: var(--border-color);
-  cursor: not-allowed;
-  opacity: 0.7;
+.cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
 }
 
-.btn-platform-action:hover:not(:disabled) {
-  background: var(--text-main);
-  color: var(--bg-editor);
-  border-color: var(--text-main);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
+.cover-preview-box:hover .cover-img {
+  transform: scale(1.04);
 }
 
-.btn-platform-action:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.modal-footer {
-  padding: 16px 24px;
-  border-top: 1px solid var(--border-color);
-  background: rgba(0, 0, 0, 0.01);
+.cover-overlay-hint {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  opacity: 0;
+  transition: opacity 0.2s ease;
 }
 
-.status-text .text-failed {
-  color: #ef4444;
-  cursor: help;
+.cover-preview-box:hover .cover-overlay-hint {
+  opacity: 1;
 }
 
-.icon-failed-small {
-  font-size: 10px;
-  margin-right: 2px;
+/* Drawer Footer */
+.drawer-footer {
+  padding: 16px 20px 24px 20px;
+  background: rgba(248, 250, 255, 0.9);
+  backdrop-filter: blur(12px);
+  border-top: 1px solid rgba(0, 0, 0, 0.03);
+  position: relative;
+  z-index: 2;
 }
 
-.btn-launch {
+.btn-gradient-launch {
   width: 100%;
-  padding: 12px 24px;
-  background: var(--accent-color);
-  color: #1e1e1e;
-  border: 2px solid var(--border-color);
-  border-radius: 12px;
-  font-size: 14px;
-  font-family: 'Outfit', sans-serif;
-  font-weight: 700;
+  height: 48px;
+  border-radius: 16px;
+  border: none;
+  background: linear-gradient(135deg, #ff5e36 0%, #ff8c58 100%);
+  box-shadow: 0 8px 24px rgba(255, 94, 54, 0.35);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   cursor: pointer;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.btn-launch:hover:not(:disabled) {
-  background: var(--accent-hover);
+.launch-btn-text {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
+}
+
+.launch-arrow {
+  font-size: 16px;
+  font-weight: 700;
+  transition: transform 0.2s ease;
+}
+
+.btn-gradient-launch:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  box-shadow: 0 12px 28px rgba(255, 94, 54, 0.45);
 }
 
-.btn-launch:active:not(:disabled) {
+.btn-gradient-launch:hover:not(:disabled) .launch-arrow {
+  transform: translateX(3px);
+}
+
+.btn-gradient-launch:active:not(:disabled) {
   transform: translateY(1px);
 }
 
-.btn-launch:disabled {
-  background: var(--bg-app);
-  color: var(--text-muted);
-  border-color: var(--border-color);
+.btn-gradient-launch:disabled {
+  background: #cbd5e1;
   box-shadow: none;
   cursor: not-allowed;
+  opacity: 0.8;
 }
 
-/* Login Status Badge styles */
-.login-badge-container {
-  margin-top: 2px;
-  margin-bottom: 8px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 18px;
-}
-
-.login-badge {
-  font-size: 9px;
-  font-weight: 600;
-  padding: 1px 6px;
-  border-radius: 12px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border: 1px solid transparent;
-  transition: all 0.2s ease;
-  max-width: 100px;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.login-badge span {
-  text-overflow: ellipsis;
-  overflow: hidden;
-  white-space: nowrap;
-}
-
-.badge-avatar {
-  width: 10px;
-  height: 10px;
+.spinner-dot {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
   border-radius: 50%;
-  object-fit: cover;
-  border: 1px solid rgba(16, 185, 129, 0.2);
+  animation: spin 0.8s linear infinite;
+}
+
+/* Open Drafts Option Under Launch Button */
+.open-drafts-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 10px;
+  cursor: pointer;
+  user-select: none;
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: all 0.18s ease;
+}
+
+.open-drafts-option:hover .open-drafts-label {
+  color: #1e293b;
+}
+
+.open-drafts-option:hover .dot-radio-wrapper:not(.is-checked) {
+  border-color: #94a3b8;
+}
+
+.dot-radio-wrapper {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid #cbd5e1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   flex-shrink: 0;
 }
 
-.login-badge.is-checking {
-  background: rgba(0, 0, 0, 0.03);
-  color: var(--text-muted);
-  border-color: var(--border-color);
+.dot-radio-wrapper.is-checked {
+  border-color: #2563eb;
+  background: #eff6ff;
 }
 
-.login-badge.is-logged-in {
-  background: rgba(16, 185, 129, 0.08);
-  color: #10b981;
-  border-color: rgba(16, 185, 129, 0.2);
-  cursor: pointer;
-}
-
-.login-badge.is-logged-in:hover {
-  background: rgba(16, 185, 129, 0.16);
-  border-color: rgba(16, 185, 129, 0.4);
-}
-
-.login-badge.is-not-logged-in {
-  background: rgba(239, 68, 68, 0.08);
-  color: #ef4444;
-  border-color: rgba(239, 68, 68, 0.2);
-  cursor: pointer;
-}
-
-.login-badge.is-not-logged-in:hover {
-  background: rgba(239, 68, 68, 0.15);
-  transform: scale(1.05);
-}
-
-.login-badge.is-unknown {
-  background: rgba(0, 0, 0, 0.03);
-  color: var(--text-muted);
-  border-color: var(--border-color);
-}
-
-.dot-blink {
-  width: 4px;
-  height: 4px;
-  background-color: var(--text-muted);
+.dot-radio-wrapper.is-checked .dot-inner {
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  animation: badgeBlink 1s infinite alternate;
+  background: #2563eb;
+  box-shadow: 0 0 4px rgba(37, 99, 235, 0.4);
 }
 
-@keyframes badgeBlink {
-  from { opacity: 0.3; }
+.open-drafts-label {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  letter-spacing: -0.1px;
+  transition: color 0.18s ease;
+}
+
+/* Platform Management Modal (Backdrop & Card) */
+.manage-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+  padding: 20px;
+  animation: fadeInModal 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes fadeInModal {
+  from { opacity: 0; }
   to { opacity: 1; }
 }
 
-@media (max-width: 768px) {
-  .modal-card {
-    width: 95vw !important;
-    height: 85vh !important;
-  }
-  
-  .launchpad-control-bar {
-    flex-direction: column !important;
-    gap: 12px !important;
-    align-items: stretch !important;
-  }
-  
-  .control-right {
-    justify-content: space-between !important;
-  }
-  
-  .launchpads-container {
-    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important;
-    gap: 8px !important;
-  }
-  
-  .modal-body-container {
-    padding: 12px !important;
-    gap: 12px !important;
-  }
-  
-  .modal-footer {
-    padding: 12px !important;
+.manage-modal-card {
+  width: 520px;
+  max-width: 95vw;
+  max-height: 85vh;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: popInCard 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popInCard {
+  from { opacity: 0; transform: scale(0.94) translateY(10px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.manage-modal-header {
+  padding: 18px 22px;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: #fafbfc;
+}
+
+.manage-header-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.manage-modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #0f172a;
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', Roboto, sans-serif;
+}
+
+.manage-modal-subtitle {
+  font-size: 12px;
+  color: #64748b;
+  margin: 0;
+}
+
+.manage-modal-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.manage-modal-close:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.manage-modal-body {
+  padding: 16px 20px;
+  overflow-y: auto;
+  flex: 1;
+  max-height: calc(85vh - 140px);
+}
+
+.manage-platforms-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+}
+
+.manage-platform-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  user-select: none;
+}
+
+.manage-platform-item:hover {
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+}
+
+.manage-platform-item.is-enabled {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+}
+
+.manage-item-checkbox {
+  display: flex;
+  align-items: center;
+}
+
+.manage-item-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #2563eb;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.manage-item-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+
+.manage-item-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.fallback-icon-letter {
+  font-size: 13px;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.manage-item-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.manage-item-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.manage-item-tag {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
+.manage-modal-footer {
+  padding: 14px 20px;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #fafbfc;
+  gap: 12px;
+}
+
+.manage-footer-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-manage-action {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  font-size: 12px;
+  font-weight: 500;
+  color: #475569;
+  padding: 5px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-manage-action:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+  border-color: #94a3b8;
+}
+
+.btn-manage-done {
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 7px 18px;
+  border-radius: 10px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.28);
+  transition: all 0.2s ease;
+}
+
+.btn-manage-done:hover {
+  background: #1d4ed8;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.38);
+  transform: translateY(-1px);
+}
+
+@media (max-width: 480px) {
+  .right-drawer-panel {
+    width: 100vw !important;
+    max-width: 100vw !important;
   }
 }
 </style>
