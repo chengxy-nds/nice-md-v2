@@ -1709,7 +1709,7 @@ onMounted(() => {
       </Transition>
     </Teleport>
 
-    <!-- Cover Image Selection Modal (Tab 切换形式) -->
+    <!-- Cover Image Selection Modal (文章插图库 + 本地上传 + 预设库) -->
     <Teleport to="body">
       <div 
         v-if="showCoverSelectModal" 
@@ -1720,45 +1720,38 @@ onMounted(() => {
           <div class="cover-picker-header">
             <div class="picker-header-titles">
               <h3 class="picker-modal-title">更换文章封面</h3>
-              <p class="picker-modal-subtitle">从文章正文插图中选择，或直接从本地上传图片</p>
+              <p class="picker-modal-subtitle">从文章正文插图中选取，或从本地上传自定义封面</p>
             </div>
             <button class="picker-modal-close" @click="showCoverSelectModal = false" title="关闭">
               <X size="18" />
             </button>
           </div>
 
-          <!-- Top Segmented Tab Navigation (左右 Tab 切换) -->
-          <div class="picker-tab-bar">
-            <button 
-              class="picker-tab-btn" 
-              :class="{ 'is-active': activeCoverTab === 'article' }"
-              @click="activeCoverTab = 'article'"
-            >
-              <ImageIcon size="14" />
-              <span>从文章插图中选择</span>
-              <span class="picker-tab-count">{{ articleImages.length }}</span>
-            </button>
-            <button 
-              class="picker-tab-btn" 
-              :class="{ 'is-active': activeCoverTab === 'upload' }"
-              @click="activeCoverTab = 'upload'"
-            >
-              <Upload size="14" />
-              <span>本地上传</span>
-            </button>
-            <button 
-              class="picker-tab-btn" 
-              :class="{ 'is-active': activeCoverTab === 'preset' }"
-              @click="activeCoverTab = 'preset'"
-            >
-              <Sparkles size="14" />
-              <span>推荐精选封面</span>
-            </button>
-          </div>
-
           <div class="cover-picker-body">
-            <!-- Tab 1: 从文章插图中选择 (默认激活) -->
-            <div v-if="activeCoverTab === 'article'" class="picker-tab-pane">
+            <!-- Source 1: 本地上传卡片 -->
+            <div class="picker-section">
+              <div class="picker-section-label">
+                <Upload size="13" />
+                <span>本地上传</span>
+              </div>
+              <div class="picker-upload-box" @click="triggerLocalFileUpload">
+                <div class="picker-upload-icon-circle">
+                  <Upload size="18" />
+                </div>
+                <div class="picker-upload-info">
+                  <span class="picker-upload-title">点击上传本地封面图片</span>
+                  <span class="picker-upload-desc">支持 JPG、PNG、WebP、GIF 格式</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Source 2: 文章正文插图 -->
+            <div class="picker-section">
+              <div class="picker-section-label">
+                <ImageIcon size="13" />
+                <span>从文章插图中选择 ({{ articleImages.length }} 张)</span>
+              </div>
+              
               <div v-if="articleImages.length > 0" class="picker-images-grid">
                 <div 
                   v-for="(imgUrl, idx) in articleImages" 
@@ -1773,49 +1766,17 @@ onMounted(() => {
                   </div>
                 </div>
               </div>
-              <div v-else class="picker-empty-panel">
-                <div class="picker-empty-icon">
-                  <ImageIcon size="32" />
-                </div>
-                <p class="picker-empty-title">正文中暂未检测到插入的图片</p>
-                <p class="picker-empty-desc">你可以直接从本地上传图片，或者挑选系统推荐的精选封面</p>
-                <button class="btn-empty-switch" @click="activeCoverTab = 'upload'">
-                  <Upload size="14" />
-                  <span>前往本地上传</span>
-                </button>
+              <div v-else class="picker-empty-notice">
+                <span>正文中暂未检测到图片，可直接上传本地图片</span>
               </div>
             </div>
 
-            <!-- Tab 2: 本地上传 -->
-            <div v-else-if="activeCoverTab === 'upload'" class="picker-tab-pane">
-              <div class="picker-upload-box is-large-box" @click="triggerLocalFileUpload">
-                <div class="picker-upload-icon-circle is-large-circle">
-                  <Upload size="26" />
-                </div>
-                <div class="picker-upload-info is-large-info">
-                  <span class="picker-upload-title-lg">点击选取或拖拽本地图片到此处</span>
-                  <span class="picker-upload-desc-lg">支持 JPG、PNG、WebP、GIF 格式，建议尺寸 16:9 或 2.35:1</span>
-                </div>
+            <!-- Source 3: 推荐精选封面 -->
+            <div class="picker-section">
+              <div class="picker-section-label">
+                <Sparkles size="13" />
+                <span>推荐精选封面</span>
               </div>
-
-              <!-- 若已上传过自定义封面，提供快捷预览选择 -->
-              <div v-if="customCoverUrl" class="picker-uploaded-section">
-                <span class="picker-uploaded-label">当前已上传自定义封面：</span>
-                <div 
-                  class="picker-img-item is-uploaded-item"
-                  :class="{ 'is-active': tempSelectedCover === customCoverUrl }"
-                  @click="selectCoverOption(customCoverUrl)"
-                >
-                  <img :src="customCoverUrl" alt="Uploaded cover" class="picker-thumb" />
-                  <div class="picker-active-badge" v-if="tempSelectedCover === customCoverUrl">
-                    <Check size="13" class="check-svg" />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Tab 3: 推荐精选封面 -->
-            <div v-else-if="activeCoverTab === 'preset'" class="picker-tab-pane">
               <div class="picker-images-grid">
                 <div 
                   v-for="(presetUrl, idx) in presetCovers" 
@@ -3412,7 +3373,7 @@ input:checked + .slider:before {
   opacity: 0;
 }
 
-/* Cover Image Picker Modal (Tab 模式) */
+/* Cover Image Picker Modal */
 .cover-picker-backdrop {
   position: fixed;
   inset: 0;
@@ -3441,11 +3402,12 @@ input:checked + .slider:before {
 }
 
 .cover-picker-header {
-  padding: 1rem 1.375rem 0.75rem 1.375rem;
+  padding: 1rem 1.375rem;
+  border-bottom: 1px solid #f1f5f9;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #ffffff;
+  background: #fafbfc;
   flex-shrink: 0;
 }
 
@@ -3487,97 +3449,52 @@ input:checked + .slider:before {
   color: #0f172a;
 }
 
-/* Tab Bar */
-.picker-tab-bar {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0 1.375rem 0.75rem 1.375rem;
-  border-bottom: 1px solid #f1f5f9;
-  background: #ffffff;
-  flex-shrink: 0;
-}
-
-.picker-tab-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.4375rem 0.875rem;
-  border-radius: 0.5rem;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  color: #64748b;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.picker-tab-btn:hover {
-  color: #0f172a;
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-}
-
-.picker-tab-btn.is-active {
-  background: #fff8f5;
-  color: #ff5e36;
-  border-color: #ffbba7;
-  box-shadow: 0 2px 6px rgba(255, 94, 54, 0.1);
-}
-
-.picker-tab-count {
-  padding: 0.0625rem 0.375rem;
-  border-radius: 9999px;
-  background: rgba(0, 0, 0, 0.06);
-  font-size: 0.6875rem;
-  font-weight: 700;
-}
-
-.picker-tab-btn.is-active .picker-tab-count {
-  background: #ff5e36;
-  color: #ffffff;
-}
-
 .cover-picker-body {
   padding: 1.25rem 1.375rem;
   overflow-y: auto;
   flex: 1;
-  min-height: 14rem;
-}
-
-.picker-tab-pane {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
-  animation: fadeInModal 0.2s ease;
+  gap: 1.25rem;
 }
 
-.picker-upload-box.is-large-box {
+.picker-section {
   display: flex;
   flex-direction: column;
+  gap: 0.5rem;
+}
+
+.picker-section-label {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  padding: 2.25rem 1.5rem;
+  gap: 0.375rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.picker-upload-box {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding: 0.875rem 1.125rem;
   background: #f8fafc;
-  border: 2px dashed #cbd5e1;
-  border-radius: 0.875rem;
+  border: 1.5px dashed #cbd5e1;
+  border-radius: 0.75rem;
   cursor: pointer;
-  text-align: center;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.picker-upload-box.is-large-box:hover {
+.picker-upload-box:hover {
   background: #fff8f5;
   border-color: #ff5e36;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(255, 94, 54, 0.1);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(255, 94, 54, 0.08);
 }
 
-.picker-upload-icon-circle.is-large-circle {
-  width: 3.25rem;
-  height: 3.25rem;
+.picker-upload-icon-circle {
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: 50%;
   background: #ffffff;
   border: 1px solid #e2e8f0;
@@ -3585,50 +3502,31 @@ input:checked + .slider:before {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  flex-shrink: 0;
   transition: all 0.2s ease;
 }
 
-.picker-upload-box.is-large-box:hover .picker-upload-icon-circle.is-large-circle {
+.picker-upload-box:hover .picker-upload-icon-circle {
   background: #ff5e36;
   color: #ffffff;
   border-color: #ff5e36;
-  transform: scale(1.06);
 }
 
-.picker-upload-info.is-large-info {
+.picker-upload-info {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.125rem;
 }
 
-.picker-upload-title-lg {
-  font-size: 0.9375rem;
-  font-weight: 700;
+.picker-upload-title {
+  font-size: 0.84375rem;
+  font-weight: 600;
   color: #0f172a;
 }
 
-.picker-upload-desc-lg {
-  font-size: 0.75rem;
+.picker-upload-desc {
+  font-size: 0.71875rem;
   color: #64748b;
-}
-
-.picker-uploaded-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  padding-top: 0.5rem;
-}
-
-.picker-uploaded-label {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #475569;
-}
-
-.picker-img-item.is-uploaded-item {
-  width: 12rem;
-  height: 6.75rem;
 }
 
 .picker-images-grid {
@@ -3639,7 +3537,7 @@ input:checked + .slider:before {
 
 .picker-img-item {
   position: relative;
-  height: 5.5rem;
+  height: 5.25rem;
   border-radius: 0.625rem;
   overflow: hidden;
   cursor: pointer;
@@ -3685,55 +3583,19 @@ input:checked + .slider:before {
   animation: popBadge 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.picker-empty-panel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 2.5rem 1rem;
-  text-align: center;
+@keyframes popBadge {
+  from { transform: scale(0); }
+  to { transform: scale(1); }
+}
+
+.picker-empty-notice {
+  padding: 1.25rem;
   background: #f8fafc;
   border: 1px dashed #e2e8f0;
-  border-radius: 0.75rem;
-}
-
-.picker-empty-icon {
-  color: #cbd5e1;
-  margin-bottom: 0.625rem;
-}
-
-.picker-empty-title {
-  font-size: 0.875rem;
-  font-weight: 600;
-  color: #475569;
-  margin: 0 0 0.25rem 0;
-}
-
-.picker-empty-desc {
-  font-size: 0.75rem;
+  border-radius: 0.625rem;
+  text-align: center;
+  font-size: 0.78125rem;
   color: #94a3b8;
-  margin: 0 0 1rem 0;
-}
-
-.btn-empty-switch {
-  display: flex;
-  align-items: center;
-  gap: 0.375rem;
-  background: #ff5e36;
-  color: #ffffff;
-  border: none;
-  font-size: 0.75rem;
-  font-weight: 600;
-  padding: 0.375rem 0.875rem;
-  border-radius: 0.5rem;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(255, 94, 54, 0.25);
-  transition: all 0.15s ease;
-}
-
-.btn-empty-switch:hover {
-  background: #ff784e;
-  transform: translateY(-1px);
 }
 
 .cover-picker-footer {
