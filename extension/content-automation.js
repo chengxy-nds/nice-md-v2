@@ -236,173 +236,183 @@ function simulatePaste(target, markdown, html, format = 'text/plain') {
   } catch (e) {}
 }
 
-// Automate input filling with support for custom dynamic selectors
-function injectContent(platform, payload, customSelectors) {
-  const config = customSelectors || SELECTORS[platform];
-  if (!config) return;
+// Global execution guard per window lifecycle
+if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
+  window.__NICEMD_AUTOMATION_INITIALIZED__ = true;
 
-  console.log(`[NiceMD Automation] Start filling content for ${platform}...`);
-  
-  // Imooc special: If not in Markdown mode, try to click the Markdown tab
-  if (platform === 'imooc') {
-    const mdTab = Array.from(document.querySelectorAll('a, button, span, div, li'))
-      .find(el => el.textContent.trim() === 'Markdown' && !el.classList.contains('active') && !el.classList.contains('selected') && el.children.length === 0);
-    if (mdTab) {
-      try {
-        mdTab.click();
-        console.log('[NiceMD Automation] Activated Imooc Markdown mode tab.');
-      } catch (e) {}
-    }
-  }
+  // Automate input filling with support for custom dynamic selectors
+  function injectContent(platform, payload, customSelectors) {
+    if (window.__NICEMD_INJECT_DONE__) return;
+    window.__NICEMD_INJECT_DONE__ = true;
 
-  let titleDone = false;
-  let bodyDone = false;
-  let attempts = 0;
-  
-  const interval = setInterval(() => {
-    attempts++;
+    const config = customSelectors || SELECTORS[platform];
+    if (!config) return;
+
+    console.log(`[NiceMD Automation] Start filling content for ${platform}...`);
     
-    // 1. Find and fill all matching title inputs
-    if (!titleDone) {
-      try {
-        const allTitleEls = document.querySelectorAll(config.title);
-        allTitleEls.forEach((el) => {
-          if (isElementValidTextEditable(el)) {
-            const isContentEditable = el.getAttribute('contenteditable') === 'true' || el.contentEditable === 'true';
-            if (isContentEditable) {
-              el.textContent = payload.title;
-            } else {
-              el.focus();
-              el.value = payload.title;
-              el.dispatchEvent(new Event('input', { bubbles: true }));
-              el.dispatchEvent(new Event('change', { bubbles: true }));
-              el.dispatchEvent(new Event('blur', { bubbles: true }));
-            }
-            titleDone = true;
-          }
-        });
-      } catch (e) {}
-    }
-    
-    // 2. Find and fill editor element EXACTLY ONCE
-    if (!bodyDone) {
-      const editorEl = findElement(config.editor);
-      if (editorEl) {
-        // If the editor already has substantial text (e.g. preloaded draft from server), skip injection
-        const currentLength = (editorEl.textContent || editorEl.value || '').trim().length;
-        if (currentLength > 20) {
-          console.log(`[NiceMD Automation] Editor already contains content (${currentLength} chars) from server draft, skipping duplicate injection.`);
-          bodyDone = true;
-          return;
-        }
-
-        bodyDone = true; // Mark as done immediately so it NEVER re-runs in future interval ticks
-        console.log(`[NiceMD Automation] Editor element found on attempt ${attempts}, injecting single paste.`);
-        simulatePaste(editorEl, payload.markdown, payload.html, config.format);
+    // Imooc special: If not in Markdown mode, try to click the Markdown tab
+    if (platform === 'imooc') {
+      const mdTab = Array.from(document.querySelectorAll('a, button, span, div, li'))
+        .find(el => el.textContent.trim() === 'Markdown' && !el.classList.contains('active') && !el.classList.contains('selected') && el.children.length === 0);
+      if (mdTab) {
+        try {
+          mdTab.click();
+          console.log('[NiceMD Automation] Activated Imooc Markdown mode tab.');
+        } catch (e) {}
       }
     }
+
+    let titleDone = false;
+    let bodyDone = false;
+    let attempts = 0;
     
-    // 3. Check if finished or timeout (after 20 attempts, i.e., 10 seconds)
-    if ((titleDone && bodyDone) || attempts > 20) {
-      clearInterval(interval);
-      console.log(`[NiceMD Automation] Injection complete. Status: Title=${titleDone}, Body=${bodyDone}`);
-      chrome.storage.local.remove(`pending_publish_${platform}`);
+    const interval = setInterval(() => {
+      attempts++;
       
-      if (titleDone || bodyDone) {
-        showSuccessBanner(platform);
+      // 1. Find and fill all matching title inputs
+      if (!titleDone) {
+        try {
+          const allTitleEls = document.querySelectorAll(config.title);
+          allTitleEls.forEach((el) => {
+            if (isElementValidTextEditable(el)) {
+              const isContentEditable = el.getAttribute('contenteditable') === 'true' || el.contentEditable === 'true';
+              if (isContentEditable) {
+                el.textContent = payload.title;
+              } else {
+                el.focus();
+                el.value = payload.title;
+                el.dispatchEvent(new Event('input', { bubbles: true }));
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+                el.dispatchEvent(new Event('blur', { bubbles: true }));
+              }
+              titleDone = true;
+            }
+          });
+        } catch (e) {}
       }
-    }
-  }, 500);
-}
+      
+      // 2. Find and fill editor element EXACTLY ONCE
+      if (!bodyDone) {
+        const editorEl = findElement(config.editor);
+        if (editorEl) {
+          // If the editor already has substantial text (e.g. preloaded draft from server), skip injection
+          const currentLength = (editorEl.textContent || editorEl.value || '').trim().length;
+          if (currentLength > 20) {
+            console.log(`[NiceMD Automation] Editor already contains content (${currentLength} chars) from server draft, skipping duplicate injection.`);
+            bodyDone = true;
+            clearInterval(interval);
+            chrome.storage.local.remove(`pending_publish_${platform}`);
+            return;
+          }
 
-function showSuccessBanner(platform) {
-  const banner = document.createElement('div');
-  banner.style.cssText = `
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: #10b981;
-    color: white;
-    padding: 16px 24px;
-    border-radius: 12px;
-    box-shadow: 0 10px 25px rgba(16,185,129,0.3);
-    z-index: 999999;
-    font-family: system-ui, -apple-system, sans-serif;
-    font-weight: 600;
-    font-size: 14px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  `;
-  banner.innerHTML = `
-    <span style="font-size: 18px;">🚀</span>
-    <span>NiceMD 已为您自动填充好文章标题与内容！</span>
-  `;
-  
-  const style = document.createElement('style');
-  style.innerHTML = `
-    @keyframes slideIn {
-      from { transform: translateY(-40px); opacity: 0; }
-      to { transform: translateY(0); opacity: 1; }
-    }
-  `;
-  document.head.appendChild(style);
-  document.body.appendChild(banner);
-  
-  setTimeout(() => {
-    banner.style.transform = 'translateY(-20px) scale(0.9)';
-    banner.style.opacity = '0';
-    banner.style.transition = 'all 0.3s ease';
-    setTimeout(() => banner.remove(), 300);
-  }, 4000);
-}
-
-// Initial fetch from chrome local storage
-onMounted(() => {
-  const platform = getPlatformKey();
-  if (!platform) return;
-  
-  const storageKey = `pending_publish_${platform}`;
-  
-  // CRITICAL CHECK: If this page was opened to an existing draft via draftId/article_id parameter,
-  // the backend API already saved the draft to the platform! We should NOT inject content again!
-  const searchStr = window.location.search || '';
-  const pathStr = window.location.pathname || '';
-  const isExistingDraftUrl = searchStr.includes('draftId') || 
-                             searchStr.includes('draft_id') || 
-                             searchStr.includes('article_id') || 
-                             searchStr.includes('id=') ||
-                             pathStr.includes('/edit');
-                             
-  if (isExistingDraftUrl) {
-    console.log(`[NiceMD Automation] Opening existing draft URL for ${platform}, skipping DOM injection to avoid duplicate content.`);
-    chrome.storage.local.remove(storageKey);
-    return;
+          bodyDone = true; // Mark as done immediately so it NEVER re-runs in future interval ticks
+          console.log(`[NiceMD Automation] Editor element found on attempt ${attempts}, injecting single paste.`);
+          simulatePaste(editorEl, payload.markdown, payload.html, config.format);
+        }
+      }
+      
+      // 3. Check if finished or timeout (after 20 attempts, i.e., 10 seconds)
+      if ((titleDone && bodyDone) || attempts > 20) {
+        clearInterval(interval);
+        console.log(`[NiceMD Automation] Injection complete. Status: Title=${titleDone}, Body=${bodyDone}`);
+        chrome.storage.local.remove(`pending_publish_${platform}`);
+        
+        if (titleDone || bodyDone) {
+          showSuccessBanner(platform);
+        }
+      }
+    }, 500);
   }
-  
-  chrome.storage.local.get([storageKey, 'platforms_config'], (res) => {
-    const payload = res[storageKey];
-    const platformsConfig = res.platforms_config || [];
-    const activePlatform = platformsConfig.find(p => p.id === platform);
-    
-    if (payload) {
-      const age = Date.now() - payload.timestamp;
-      if (age < 5 * 60 * 1000) {
-        chrome.storage.local.remove(storageKey); // Consume payload immediately
-        injectContent(platform, payload, activePlatform ? activePlatform.selectors : null);
-      } else {
-        console.log('[NiceMD Automation] Stale payload ignored.');
-        chrome.storage.local.remove(storageKey);
-      }
-    }
-  });
-});
 
-function onMounted(fn) {
-  if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    fn();
-  } else {
-    document.addEventListener('DOMContentLoaded', fn);
+  function showSuccessBanner(platform) {
+    const banner = document.createElement('div');
+    banner.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #10b981;
+      color: white;
+      padding: 16px 24px;
+      border-radius: 12px;
+      box-shadow: 0 10px 25px rgba(16,185,129,0.3);
+      z-index: 999999;
+      font-family: system-ui, -apple-system, sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    `;
+    banner.innerHTML = `
+      <span style="font-size: 18px;">🚀</span>
+      <span>NiceMD 已为您自动填充好文章标题与内容！</span>
+    `;
+    
+    const style = document.createElement('style');
+    style.innerHTML = `
+      @keyframes slideIn {
+        from { transform: translateY(-40px); opacity: 0; }
+        to { transform: translateY(0); opacity: 1; }
+      }
+    `;
+    document.head.appendChild(style);
+    document.body.appendChild(banner);
+    
+    setTimeout(() => {
+      banner.style.transform = 'translateY(-20px) scale(0.9)';
+      banner.style.opacity = '0';
+      banner.style.transition = 'all 0.3s ease';
+      setTimeout(() => banner.remove(), 300);
+    }, 4000);
+  }
+
+  // Initial fetch from chrome local storage
+  onMounted(() => {
+    const platform = getPlatformKey();
+    if (!platform) return;
+    
+    const storageKey = `pending_publish_${platform}`;
+    
+    // CRITICAL CHECK: If this page was opened to an existing draft via draftId/article_id parameter,
+    // the backend API already saved the draft to the platform! We should NOT inject content again!
+    const searchStr = window.location.search || '';
+    const pathStr = window.location.pathname || '';
+    const isExistingDraftUrl = searchStr.includes('draftId') || 
+                               searchStr.includes('draft_id') || 
+                               searchStr.includes('article_id') || 
+                               searchStr.includes('id=') ||
+                               pathStr.includes('/edit');
+                               
+    if (isExistingDraftUrl) {
+      console.log(`[NiceMD Automation] Opening existing draft URL for ${platform}, skipping DOM injection to avoid duplicate content.`);
+      chrome.storage.local.remove(storageKey);
+      return;
+    }
+    
+    chrome.storage.local.get([storageKey, 'platforms_config'], (res) => {
+      const payload = res[storageKey];
+      const platformsConfig = res.platforms_config || [];
+      const activePlatform = platformsConfig.find(p => p.id === platform);
+      
+      if (payload) {
+        const age = Date.now() - payload.timestamp;
+        if (age < 5 * 60 * 1000) {
+          chrome.storage.local.remove(storageKey); // Consume payload immediately
+          injectContent(platform, payload, activePlatform ? activePlatform.selectors : null);
+        } else {
+          console.log('[NiceMD Automation] Stale payload ignored.');
+          chrome.storage.local.remove(storageKey);
+        }
+      }
+    });
+  });
+
+  function onMounted(fn) {
+    if (document.readyState === 'complete' || document.readyState === 'interactive') {
+      fn();
+    } else {
+      document.addEventListener('DOMContentLoaded', fn, { once: true });
+    }
   }
 }
