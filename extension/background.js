@@ -289,8 +289,8 @@ const DEFAULT_PLATFORMS_CONFIG = [
     matchHosts: ['learnku.com'],
     silentEnabled: true,
     selectors: {
-      title: 'input[name="title"], #article-title, [placeholder*="标题"]',
-      editor: '#editor, .simditor-body, textarea[name="body"], textarea',
+      title: '#title-field, input[name="title"], input.form-control, #article-title, [placeholder*="标题"]',
+      editor: '.CodeMirror, #editor, textarea[name="body"], #body-field, .CodeMirror-code, [contenteditable="true"], textarea',
       format: 'text/plain'
     }
   },
@@ -450,7 +450,18 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           if (result.localOnly) {
             sendResponse({ success: true, localOnly: true });
           } else {
-            sendResponse({ success: true, postUrl: result.postUrl, postId: result.postId });
+            // Save payload for any platform navigating to an edit/create page
+            chrome.storage.local.set({
+              [`pending_publish_${platform}`]: {
+                title,
+                markdown: result.markdown || markdown,
+                html,
+                cover,
+                timestamp: Date.now()
+              }
+            }, () => {
+              sendResponse({ success: true, postUrl: result.postUrl, postId: result.postId });
+            });
           }
         }).catch((err) => {
           console.warn(`[NiceMD Background] Background API publish failed for ${platform}, falling back to tab automation:`, err.message);
@@ -905,6 +916,66 @@ async function registerNetRequestRules() {
       },
       condition: {
         urlFilter: '||segmentfault.com/gateway',
+        resourceTypes: ['xmlhttprequest', 'other']
+      }
+    },
+    {
+      id: 22,
+      priority: 1,
+      action: {
+        type: 'modifyHeaders',
+        requestHeaders: [
+          { header: 'Origin', operation: 'set', value: 'https://zhuanlan.zhihu.com' },
+          { header: 'Referer', operation: 'set', value: 'https://zhuanlan.zhihu.com/' }
+        ]
+      },
+      condition: {
+        urlFilter: '||api.zhihu.com',
+        resourceTypes: ['xmlhttprequest', 'other']
+      }
+    },
+    {
+      id: 23,
+      priority: 1,
+      action: {
+        type: 'modifyHeaders',
+        requestHeaders: [
+          { header: 'Origin', operation: 'set', value: 'https://zhuanlan.zhihu.com' },
+          { header: 'Referer', operation: 'set', value: 'https://zhuanlan.zhihu.com/' }
+        ]
+      },
+      condition: {
+        urlFilter: '||zhihu-pics-upload.zhimg.com',
+        resourceTypes: ['xmlhttprequest', 'other']
+      }
+    },
+    {
+      id: 24,
+      priority: 1,
+      action: {
+        type: 'modifyHeaders',
+        requestHeaders: [
+          { header: 'Origin', operation: 'set', value: 'https://zhuanlan.zhihu.com' },
+          { header: 'Referer', operation: 'set', value: 'https://zhuanlan.zhihu.com/' }
+        ]
+      },
+      condition: {
+        urlFilter: '||zhuanlan.zhihu.com/api',
+        resourceTypes: ['xmlhttprequest', 'other']
+      }
+    },
+    {
+      id: 25,
+      priority: 1,
+      action: {
+        type: 'modifyHeaders',
+        requestHeaders: [
+          { header: 'Origin', operation: 'set', value: 'https://learnku.com' },
+          { header: 'Referer', operation: 'set', value: 'https://learnku.com/articles/create' }
+        ]
+      },
+      condition: {
+        urlFilter: '||learnku.com/',
         resourceTypes: ['xmlhttprequest', 'other']
       }
     }

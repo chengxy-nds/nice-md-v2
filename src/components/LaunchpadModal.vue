@@ -849,6 +849,68 @@ watch(isOpenDraftsAfterSync, (val) => {
   } catch (e) {}
 });
 
+// ── Platform Logins Cache (30 Minutes TTL) ──
+const SAVED_LOGINS_CACHE_KEY = 'nicemd_platform_logins_cache_v2';
+const CACHE_DURATION = 30 * 60 * 1000; // 30 minutes
+
+const applyStatusesToPlatforms = (statuses) => {
+  if (!statuses) return;
+  platforms.value.forEach(p => {
+    if (p.id === 'zip-download') return;
+    
+    const info = statuses[p.id];
+    if (info !== undefined) {
+      if (typeof info === 'object') {
+        p.loginStatus = info.loggedIn ? 'logged_in' : 'not_logged_in';
+        p.userId = info.userId || '';
+        p.username = info.username || (info.loggedIn ? '已登录' : '');
+        p.avatar = info.avatar || '';
+      } else {
+        p.loginStatus = info ? 'logged_in' : 'not_logged_in';
+        p.userId = '';
+        p.username = info ? '已登录' : '';
+        p.avatar = '';
+      }
+    }
+    
+    if (p.loginStatus === 'logged_in') {
+      p.selected = true; // 默认自动勾选已登录平台
+    } else {
+      p.selected = false;
+    }
+  });
+};
+
+const loadCachedLogins = () => {
+  try {
+    const raw = localStorage.getItem(SAVED_LOGINS_CACHE_KEY);
+    if (raw) {
+      const cache = JSON.parse(raw);
+      if (cache && cache.statuses) {
+        applyStatusesToPlatforms(cache.statuses);
+        const lastChecked = cache.lastChecked || 0;
+        const isFresh = (Date.now() - lastChecked) < CACHE_DURATION;
+        return { hasCache: true, lastChecked, isFresh };
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load cached logins', e);
+  }
+  return { hasCache: false, lastChecked: 0, isFresh: false };
+};
+
+const saveLoginsToCache = (statuses) => {
+  try {
+    const data = {
+      lastChecked: Date.now(),
+      statuses
+    };
+    localStorage.setItem(SAVED_LOGINS_CACHE_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.warn('Failed to save logins cache', e);
+  }
+};
+
 const resetPlatformSyncStatuses = () => {
   platforms.value.forEach(p => {
     p.status = 'idle';
@@ -861,16 +923,29 @@ const resetPlatformSyncStatuses = () => {
 watch(() => props.isOpen, (newVal) => {
   if (newVal) {
     resetPlatformSyncStatuses();
-    checkAllLogins();
+    checkAllLogins(false);
   }
 });
 
-const checkAllLogins = () => {
+const checkAllLogins = (force = false) => {
   resetPlatformSyncStatuses();
   if (!isExtensionInstalled.value) {
     return;
   }
+
+  // 30-minute cache validation
+  if (!force) {
+    const cacheInfo = loadCachedLogins();
+    if (cacheInfo.isFresh) {
+      const minsAgo = Math.round((Date.now() - cacheInfo.lastChecked) / 60000);
+      console.log(`[NiceMD] 登录状态在 30 分钟有效期内（上次更新于 ${minsAgo} 分钟前），跳过后台重复检测。`);
+      return;
+    }
+  }
   
+  if (force) {
+    soundEngine.playClick?.();
+  }
   isCheckingLogins.value = true;
   platforms.value.forEach(p => {
     if (p.id !== 'zip-download') {
@@ -1237,7 +1312,7 @@ watch(() => props.isOpen, (newVal) => {
     initScheduledTime();
     window.postMessage({ type: 'NICEMD_GET_CONFIG' }, '*');
     if (isExtensionInstalled.value) {
-      checkAllLogins();
+      checkAllLogins(false);
     }
   }
 });
@@ -1246,47 +1321,27 @@ onMounted(() => {
   initScheduledTime();
   loadSavedEnabledPlatforms();
   loadOpenDraftsPref();
+  loadCachedLogins(); // 立即载入本地 30 分钟缓存状态，页面打开 0 秒即时呈现
+
   window.addEventListener('message', (event) => {
     if (event.source !== window) return;
     
     if (event.data && event.data.type === 'NICEMD_PONG') {
       isExtensionInstalled.value = true;
-      checkAllLogins();
+      checkAllLogins(false);
     }
 
     if (event.data && event.data.type === 'NICEMD_GET_CONFIG_RESPONSE') {
       if (event.data.success && event.data.config) {
-        checkAllLogins();
+        checkAllLogins(false);
       }
     }
 
     if (event.data && event.data.type === 'NICEMD_CHECK_LOGINS_RESPONSE') {
       isCheckingLogins.value = false;
       if (event.data.success && event.data.statuses) {
-        platforms.value.forEach(p => {
-          if (p.id === 'zip-download') return;
-          
-          const info = event.data.statuses[p.id];
-          if (info !== undefined) {
-            if (typeof info === 'object') {
-              p.loginStatus = info.loggedIn ? 'logged_in' : 'not_logged_in';
-              p.userId = info.userId || '';
-              p.username = info.username || (info.loggedIn ? '已登录' : '');
-              p.avatar = info.avatar || '';
-            } else {
-              p.loginStatus = info ? 'logged_in' : 'not_logged_in';
-              p.userId = '';
-              p.username = info ? '已登录' : '';
-              p.avatar = '';
-            }
-          }
-          
-          if (p.loginStatus === 'logged_in') {
-            p.selected = true; // 默认自动勾选已登录平台，点亮发布按钮
-          } else {
-            p.selected = false;
-          }
-        });
+        saveLoginsToCache(event.data.statuses);
+        applyStatusesToPlatforms(event.data.statuses);
       }
     }
   });
@@ -1604,6 +1659,15 @@ onMounted(() => {
           <div class="manage-header-titles">
             <div class="manage-title-row">
               <h3 class="manage-modal-title">发布平台展示管理</h3>
+              <button 
+                class="btn-manage-refresh" 
+                @click="checkAllLogins(true)" 
+                :disabled="isCheckingLogins" 
+                title="重新检测各平台登录状态"
+              >
+                <RotateCw size="11" :class="{ 'spin-anim': isCheckingLogins }" />
+                <span>刷新状态</span>
+              </button>
             </div>
             <p class="manage-modal-subtitle">自定义在右侧发布面板中展示的平台，未登录渠道可在登录后开启展示</p>
           </div>
@@ -2253,7 +2317,6 @@ onMounted(() => {
 
 .platform-row-item.is-selected {
   background: #f8fbff;
-  border-color: #dbeafe;
 }
 
 /* Row Select Checkbox */
@@ -2946,6 +3009,34 @@ input:checked + .slider:before {
   color: #0f172a;
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Segoe UI', Roboto, sans-serif;
+}
+
+.btn-manage-refresh {
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #475569;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  cursor: pointer;
+  padding: 0.21875rem 0.5625rem;
+  border-radius: 0.375rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  margin-left: 0.375rem;
+}
+
+.btn-manage-refresh:hover:not(:disabled) {
+  background: #e2e8f0;
+  color: #0f172a;
+  border-color: #cbd5e1;
+}
+
+.btn-manage-refresh:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .manage-modal-subtitle {

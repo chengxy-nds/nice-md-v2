@@ -1359,14 +1359,254 @@ class YuqueAdapter extends CodeAdapter {
   }
 }
 
+// Helper pure JS MD5 calculation
+function computeMd5(input) {
+  let bytes;
+  if (typeof input === 'string') {
+    bytes = new TextEncoder().encode(input);
+  } else if (input instanceof Uint8Array) {
+    bytes = input;
+  } else if (input instanceof ArrayBuffer) {
+    bytes = new Uint8Array(input);
+  } else {
+    bytes = new Uint8Array(input);
+  }
+
+  function toHex(array) {
+    return Array.prototype.map.call(array, x => ('00' + x.toString(16)).slice(-2)).join('');
+  }
+
+  function md5cycle(x, k) {
+    let a = x[0], b = x[1], c = x[2], d = x[3];
+    a = ff(a, b, c, d, k[0], 7, -680876936);
+    d = ff(d, a, b, c, k[1], 12, -389564586);
+    c = ff(c, d, a, b, k[2], 17, 606105819);
+    b = ff(b, c, d, a, k[3], 22, -1044525330);
+    a = ff(a, b, c, d, k[4], 7, -176418897);
+    d = ff(d, a, b, c, k[5], 12, 1200080426);
+    c = ff(c, d, a, b, k[6], 17, -1473231341);
+    b = ff(b, c, d, a, k[7], 22, -45705983);
+    a = ff(a, b, c, d, k[8], 7, 1770035416);
+    d = ff(d, a, b, c, k[9], 12, -1958414417);
+    c = ff(c, d, a, b, k[10], 17, -42063);
+    b = ff(b, c, d, a, k[11], 22, -1990404162);
+    a = ff(a, b, c, d, k[12], 7, 1804603682);
+    d = ff(d, a, b, c, k[13], 12, -40341101);
+    c = ff(c, d, a, b, k[14], 17, -1502002290);
+    b = ff(b, c, d, a, k[15], 22, 1236535329);
+
+    a = gg(a, b, c, d, k[1], 5, -165796510);
+    d = gg(d, a, b, c, k[6], 9, -1069501632);
+    c = gg(c, d, a, b, k[11], 14, 643717713);
+    b = gg(b, c, d, a, k[0], 20, -373897302);
+    a = gg(a, b, c, d, k[5], 5, -701558691);
+    d = gg(d, a, b, c, k[10], 9, 38016083);
+    c = gg(c, d, a, b, k[15], 14, -660478335);
+    b = gg(b, c, d, a, k[4], 20, -405537848);
+    a = gg(a, b, c, d, k[9], 5, 568446438);
+    d = gg(d, a, b, c, k[14], 9, -1019803690);
+    c = gg(c, d, a, b, k[3], 14, -187363961);
+    b = gg(b, c, d, a, k[8], 20, 1163531501);
+    a = gg(a, b, c, d, k[13], 5, -1444681467);
+    d = gg(d, a, b, c, k[2], 9, -51403784);
+    c = gg(c, d, a, b, k[7], 14, 1735328473);
+    b = gg(b, c, d, a, k[12], 20, -1926607734);
+
+    a = hh(a, b, c, d, k[5], 4, -378558);
+    d = hh(d, a, b, c, k[8], 11, -2022574463);
+    c = hh(c, d, a, b, k[11], 16, 1839030562);
+    b = hh(b, c, d, a, k[14], 23, -35309556);
+    a = hh(a, b, c, d, k[1], 4, -1530992060);
+    d = hh(d, a, b, c, k[4], 11, 1272893353);
+    c = hh(c, d, a, b, k[7], 16, -155497632);
+    b = hh(b, c, d, a, k[10], 23, -1094730640);
+    a = hh(a, b, c, d, k[13], 4, 681279174);
+    d = hh(d, a, b, c, k[0], 11, -358537222);
+    c = hh(c, d, a, b, k[3], 16, -722521979);
+    b = hh(b, c, d, a, k[6], 23, 76029189);
+    a = hh(a, b, c, d, k[9], 4, -640364487);
+    d = hh(d, a, b, c, k[12], 11, -421815835);
+    c = hh(c, d, a, b, k[15], 16, 530742520);
+    b = hh(b, c, d, a, k[2], 23, -995338651);
+
+    a = ii(a, b, c, d, k[0], 6, -198630844);
+    d = ii(d, a, b, c, k[7], 10, 1126891415);
+    c = ii(c, d, a, b, k[14], 15, -1416354905);
+    b = ii(b, c, d, a, k[5], 21, -57434055);
+    a = ii(a, b, c, d, k[12], 6, 1700485571);
+    d = ii(d, a, b, c, k[3], 10, -1894986606);
+    c = ii(c, d, a, b, k[10], 15, -1051523);
+    b = ii(b, c, d, a, k[1], 21, -2054922799);
+    a = ii(a, b, c, d, k[8], 6, 1873313359);
+    d = ii(d, a, b, c, k[15], 10, -30611744);
+    c = ii(c, d, a, b, k[6], 15, -1560198380);
+    b = ii(b, c, d, a, k[13], 21, 1309151649);
+    a = ii(a, b, c, d, k[4], 6, -145523070);
+    d = ii(d, a, b, c, k[11], 10, -1120210379);
+    c = ii(c, d, a, b, k[2], 15, 718787259);
+    b = ii(b, c, d, a, k[9], 21, -343485551);
+
+    x[0] = add32(a, x[0]);
+    x[1] = add32(b, x[1]);
+    x[2] = add32(c, x[2]);
+    x[3] = add32(d, x[3]);
+  }
+
+  function cmn(q, a, b, x, s, t) {
+    a = add32(add32(a, q), add32(x, t));
+    return add32((a << s) | (a >>> (32 - s)), b);
+  }
+  function ff(a, b, c, d, x, s, t) { return cmn((b & c) | ((~b) & d), a, b, x, s, t); }
+  function gg(a, b, c, d, x, s, t) { return cmn((b & d) | (c & (~d)), a, b, x, s, t); }
+  function hh(a, b, c, d, x, s, t) { return cmn(b ^ c ^ d, a, b, x, s, t); }
+  function ii(a, b, c, d, x, s, t) { return cmn(c ^ (b | (~d)), a, b, x, s, t); }
+  function add32(a, b) { return (a + b) & 0xFFFFFFFF; }
+
+  const n = bytes.length;
+  let state = [1732584193, -271733879, -1732584194, 271733878];
+  let i;
+  for (i = 64; i <= n; i += 64) {
+    let k = [];
+    for (let j = 0; j < 16; j++) {
+      k[j] = bytes[i - 64 + j * 4] | (bytes[i - 64 + j * 4 + 1] << 8) | (bytes[i - 64 + j * 4 + 2] << 16) | (bytes[i - 64 + j * 4 + 3] << 24);
+    }
+    md5cycle(state, k);
+  }
+  let tail = bytes.subarray(i - 64);
+  let k = new Array(16).fill(0);
+  for (let j = 0; j < tail.length; j++) {
+    k[j >> 2] |= tail[j] << ((j % 4) << 3);
+  }
+  k[tail.length >> 2] |= 0x80 << ((tail.length % 4) << 3);
+  if (tail.length > 55) {
+    md5cycle(state, k);
+    k.fill(0);
+  }
+  k[14] = (n * 8) & 0xFFFFFFFF;
+  k[15] = Math.floor((n * 8) / 0x100000000);
+  md5cycle(state, k);
+
+  const res = new Uint8Array(16);
+  for (let j = 0; j < 16; j++) {
+    res[j] = (state[j >> 2] >> ((j % 4) << 3)) & 0xFF;
+  }
+  return toHex(res);
+}
+
 // 9. Zhihu Adapter
 class ZhihuAdapter extends CodeAdapter {
   constructor() {
     super('zhihu');
   }
 
+  async getXsrfToken() {
+    const xsrf = await this.getCookieValue('https://www.zhihu.com', '_xsrf') ||
+                 await this.getCookieValue('https://zhuanlan.zhihu.com', '_xsrf');
+    return xsrf || '';
+  }
+
+  async hmacSha1Base64(key, message) {
+    const encoder = new TextEncoder();
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw',
+      encoder.encode(key),
+      { name: 'HMAC', hash: 'SHA-1' },
+      false,
+      ['sign']
+    );
+    const sig = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(message));
+    return btoa(String.fromCharCode(...new Uint8Array(sig)));
+  }
+
   async uploadImage(blob, src) {
-    const ext = src.split('.').pop()?.toLowerCase()?.split('?')[0] || 'jpg';
+    const xsrf = await this.getXsrfToken();
+    const buffer = await blob.arrayBuffer();
+    const imageHash = computeMd5(buffer);
+
+    console.log('[NiceMD Zhihu] Requesting image upload token for hash:', imageHash);
+    const headers = {
+      'content-type': 'application/json',
+      'x-requested-with': 'fetch'
+    };
+    if (xsrf) {
+      headers['x-xsrftoken'] = xsrf;
+      headers['x-xsrf-token'] = xsrf;
+    }
+
+    try {
+      // 1. Request image upload token from official gateway
+      const tokenRes = await this.fetch('https://api.zhihu.com/images', {
+        method: 'POST',
+        headers: headers,
+        body: JSON.stringify({
+          image_hash: imageHash,
+          source: 'article'
+        })
+      });
+
+      const tokenData = await tokenRes.json();
+      console.log('[NiceMD Zhihu] Upload token response:', tokenData);
+
+      const uploadFile = tokenData.upload_file;
+      if (uploadFile) {
+        // If image already exists on Zhihu CDN
+        if (uploadFile.state === 1) {
+          let objectKey = uploadFile.object_key;
+          if (!objectKey && uploadFile.image_id) {
+            try {
+              const detailRes = await this.fetch(`https://api.zhihu.com/images/${uploadFile.image_id}`, { headers });
+              const detailData = await detailRes.json();
+              objectKey = detailData.original_hash || detailData.object_key;
+            } catch (e) {}
+          }
+          const finalUrl = `https://pic4.zhimg.com/${objectKey || imageHash}`;
+          return { url: finalUrl };
+        }
+
+        // Upload to OSS if upload_token provided
+        if (tokenData.upload_token) {
+          const token = tokenData.upload_token;
+          const objectKey = uploadFile.object_key;
+          const contentType = blob.type || 'image/jpeg';
+          const ossDate = new Date().toUTCString();
+          const ossHeaders = {
+            'x-oss-date': ossDate,
+            'x-oss-security-token': token.access_token,
+            'x-oss-user-agent': 'aliyun-sdk-js/6.8.0'
+          };
+          const canonicalizedOSSHeaders = Object.keys(ossHeaders)
+            .sort()
+            .map(k => `${k}:${ossHeaders[k]}`)
+            .join('\n');
+          const canonicalizedResource = `/zhihu-pics/${objectKey}`;
+          const stringToSign = `PUT\n\n${contentType}\n${ossDate}\n${canonicalizedOSSHeaders}\n${canonicalizedResource}`;
+          
+          const sig = await this.hmacSha1Base64(token.access_key, stringToSign);
+          const auth = `OSS ${token.access_id}:${sig}`;
+
+          await this.fetch(`https://zhihu-pics-upload.zhimg.com/${objectKey}`, {
+            method: 'PUT',
+            headers: {
+              'Content-Type': contentType,
+              'Authorization': auth,
+              'x-oss-date': ossDate,
+              'x-oss-security-token': token.access_token,
+              'x-oss-user-agent': 'aliyun-sdk-js/6.8.0'
+            },
+            body: blob
+          });
+
+          const finalUrl = `https://pic4.zhimg.com/${objectKey}`;
+          console.log('[NiceMD Zhihu] Image uploaded to OSS successfully:', finalUrl);
+          return { url: finalUrl };
+        }
+      }
+    } catch (e) {
+      console.warn('[NiceMD Zhihu] API image upload warning, falling back to uploaded_images:', e.message);
+    }
+
+    // Fallback: try uploaded_images
+    const ext = (src && typeof src === 'string' && src.split('.').pop()?.toLowerCase()?.split('?')[0]) || 'jpg';
     const validExt = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? ext : 'jpg';
     const formData = new FormData();
     formData.append('picture', blob, `image.${validExt}`);
@@ -1374,25 +1614,30 @@ class ZhihuAdapter extends CodeAdapter {
 
     const res = await this.fetch('https://zhuanlan.zhihu.com/api/uploaded_images', {
       method: 'POST',
-      headers: {
-        'x-requested-with': 'fetch'
-      },
+      headers: headers,
       body: formData
     });
     const json = await res.json();
-    if (json.src) {
-      return { url: json.src };
+    if (json.src || json.url) {
+      return { url: json.src || json.url };
     }
     throw new Error('知乎图片上传失败');
   }
 
   async publish(article) {
+    const xsrf = await this.getXsrfToken();
+    const headers = {
+      'content-type': 'application/json',
+      'x-requested-with': 'fetch'
+    };
+    if (xsrf) {
+      headers['x-xsrftoken'] = xsrf;
+      headers['x-xsrf-token'] = xsrf;
+    }
+
     const createRes = await this.fetch('https://zhuanlan.zhihu.com/api/articles/drafts', {
       method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-requested-with': 'fetch'
-      },
+      headers: headers,
       body: JSON.stringify({
         title: article.title,
         content: '',
@@ -1424,6 +1669,13 @@ class ZhihuAdapter extends CodeAdapter {
       zhihuCoverUrl = await this.uploadCover(article.cover, (blob, src) => this.uploadImage(blob, src));
     }
 
+    if (zhihuCoverUrl) {
+      const coverFigure = `<figure data-size="normal"><img src="${zhihuCoverUrl}" class="origin_image zh-lightbox-thumb" data-original="${zhihuCoverUrl}"/></figure>`;
+      if (!content.includes(zhihuCoverUrl)) {
+        content = coverFigure + content;
+      }
+    }
+
     const patchBody = {
       title: article.title,
       content: content
@@ -1431,14 +1683,14 @@ class ZhihuAdapter extends CodeAdapter {
     if (zhihuCoverUrl) {
       patchBody.titleImage = zhihuCoverUrl;
       patchBody.title_image = zhihuCoverUrl;
+      patchBody.image_url = zhihuCoverUrl;
+      patchBody.cover = zhihuCoverUrl;
+      patchBody.title_image_url = zhihuCoverUrl;
     }
 
     const updateRes = await this.fetch(`https://zhuanlan.zhihu.com/api/articles/${draftId}/draft`, {
       method: 'PATCH',
-      headers: {
-        'content-type': 'application/json',
-        'x-requested-with': 'fetch'
-      },
+      headers: headers,
       body: JSON.stringify(patchBody)
     });
 
@@ -2194,10 +2446,103 @@ class LearnkuAdapter extends CodeAdapter {
     super('learnku');
   }
 
+  async getPageFormData() {
+    const res = await this.fetch('https://learnku.com/articles/create', {
+      method: 'GET'
+    });
+    if (!res.ok) {
+      throw new Error(`无法访问 LearnKu 发布页面: ${res.status}`);
+    }
+    const html = await res.text();
+    
+    // Extract CSRF _token
+    let token = '';
+    const tokenMatch = html.match(/name="_token"\s+value="([^"]+)"/i) || 
+                       html.match(/name="csrf-token"\s+content="([^"]+)"/i) ||
+                       html.match(/'csrfToken':\s*'([^']+)'/i);
+    if (tokenMatch) {
+      token = tokenMatch[1];
+    }
+
+    // Extract editor_unique_id
+    let editorUniqueId = 'articles-create_article_content_';
+    const editorIdMatch = html.match(/name="editor_unique_id"\s+value="([^"]+)"/i);
+    if (editorIdMatch) {
+      editorUniqueId = editorIdMatch[1];
+    }
+
+    // Extract default category_id
+    let categoryId = '8';
+    const catMatch = html.match(/<select[^>]*name="category_id"[^>]*>[\s\S]*?<option[^>]*value="(\d+)"[^>]*selected/i) ||
+                     html.match(/<select[^>]*name="category_id"[^>]*>[\s\S]*?<option[^>]*value="(\d+)"/i);
+    if (catMatch) {
+      categoryId = catMatch[1];
+    }
+
+    // Extract default community_id
+    let communityId = '19';
+    const commMatch = html.match(/name="community_id"\s+value="(\d+)"/i) ||
+                      html.match(/<select[^>]*name="community_id"[^>]*>[\s\S]*?<option[^>]*value="(\d+)"/i);
+    if (commMatch) {
+      communityId = commMatch[1];
+    }
+
+    if (!token) {
+      throw new Error('未获取到 LearnKu CSRF Token，请确认是否已在浏览器中登录 LearnKu');
+    }
+
+    return { token, editorUniqueId, categoryId, communityId };
+  }
+
+  async uploadImage(blob, src) {
+    const formData = new FormData();
+    const filename = (src && src.split('/').pop().split('?')[0]) || 'image.png';
+    const finalFilename = filename.match(/\.(png|jpe?g|gif|webp|bmp|svg)$/i) ? filename : `${filename}.png`;
+    formData.append('file', blob, finalFilename);
+
+    const guid = Date.now();
+    const response = await this.fetch(`https://learnku.com/courses/upload_image?guid=${guid}`, {
+      method: 'POST',
+      headers: {
+        'x-requested-with': 'XMLHttpRequest'
+      },
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error(`LearnKu 图片上传失败: ${response.status}`);
+    }
+
+    const resJson = await response.json();
+    const uploadedUrl = resJson.file_path || resJson.url || resJson.link || resJson.data?.url || resJson.data?.file_path || resJson.image_url;
+    if (!uploadedUrl) {
+      throw new Error('LearnKu 图片上传未返回有效图片地址');
+    }
+    return uploadedUrl;
+  }
+
   async publish(article) {
+    // 1. 获取创建文章页面的 CSRF Token 和默认表单参数
+    const formData = await this.getPageFormData();
+
+    // 2. 图片转存
+    let markdown = article.markdown || '';
+    if (markdown) {
+      try {
+        markdown = await this.processImages(
+          markdown,
+          (blob, src) => this.uploadImage(blob, src),
+          { skipPatterns: ['learnku.com', 'cdn.learnku.com', 'iocaff.com'] }
+        );
+      } catch (e) {
+        console.warn('[LearnKu Publish] Image conversion warning:', e.message);
+      }
+    }
+
     return this.createResult(true, {
       postUrl: 'https://learnku.com/articles/create',
-      draftOnly: true
+      draftOnly: true,
+      markdown: markdown
     });
   }
 }

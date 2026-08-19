@@ -86,7 +86,52 @@
 
 ---
 
+### 六、 知乎（Zhihu）同步标题与封面注入全面深度修复
+1. **函数作用域异常与标题选择器修复**：
+   - 修复了 `isElementValidTextEditable` 原先被误定义在局部函数内部导致 `injectContent` 触发 `ReferenceError` 并静默中断标题注入的致命 Bug；
+   - 适配知乎新版 `.WriteIndex-titleInput textarea`, `.WriteIndex-titleInput .Input`, `textarea.Input`, `textarea[placeholder*="请输入标题"]`；
+   - 采用 `HTMLTextAreaElement.prototype` 原型链属性赋值器触发 React 内部 `_valueTracker` 与 SyntheticEvent，解决知乎 React 受控组件值无法同步的问题。
+2. **清除过早清除定时器阻断标题/封面注入的逻辑**：
+   - 修复了当编辑器检测到服务端已存在内容（>20字符）时，原逻辑执行 `clearInterval` 导致后续标题和封面注入流程被提前永久终止的重大逻辑缺陷。
+3. **适配知乎官方 `UploadPicture-input` 与 `UploadPicture-wrapper` 真实 DOM**：
+   - 抓取知乎真实封面上传组件：`<label class="UploadPicture-wrapper"><input type="file" accept=".jpeg, .jpg, .png" class="UploadPicture-input">...添加文章封面</label>`；
+   - 适配知乎封面已上传状态检测：`<div class="css-6e7dvl"><img alt="封面图" class="css-1n3bltk"><div class="WriteCoverV2-buttonGroup">...</div></div>`；
+   - 精准通过 `label.UploadPicture-wrapper input.UploadPicture-input` 挂载 `File` 二进制对象并派发标准 `change` 与 `input` 事件，确保知乎 React 组件即时响应并渲染出带有「更换」「删除」按钮的封面图卡片。
+5. **知乎「选择文件」知识库弹窗自动勾选确认与防重执行**：
+   - 当向知乎文件输入框注入封面时，知乎会唤起「选择文件（默认储存在我的直答知识库）」弹窗；
+   - 增加了 `coverStarted` 单次防重锁，彻底杜绝定时器重复上传两张相同封面；
+   - 新增弹窗自动处理逻辑：自动识别弹窗内已就绪的封面图（剔除上传中状态），自动点击单选框（Radio）并点击底部的「确定/插入」按钮，实现弹窗全自动关闭与封面最终装载。
+
+---
+
+### 七、 多渠道分发 30 分钟登录状态缓存与全链路刷新功能
+1. **30 分钟有效期持久化缓存（TTL Cache）**：
+   - 采用 `nicemd_platform_logins_cache_v2` 本地存储缓存各渠道登录状态（`loginStatus`, `userId`, `username`, `avatar`）及检查时间戳 `lastChecked`；
+   - 只要在 30 分钟有效期内，打开多渠道内容分发抽屉或打开渠道管理弹窗时，**0 秒即时呈现已登录状态，不再重复请求后台逐个检测**，彻底消除开窗等待与卡顿；
+   - 在挂载阶段（`onMounted`）立即执行 `loadCachedLogins()`，打开即呈现已点亮的渠道列表。
+2. **多位置专属「刷新状态」按钮**：
+   - 在右侧多渠道分发主抽屉头部保留「刷新状态」按钮；
+   - 在「发布平台展示管理」弹窗标题栏右侧新增精致的「刷新状态」操作按钮（带 `RotateCw` 旋转动画与禁用态防重）；
+   - 点击任一「刷新状态」按钮均会强制触发 `checkAllLogins(true)`，忽略缓存实时重新检测所有渠道状态并刷新本地缓存。
+
+---
+
+### 八、 LearnKu 渠道标题、CodeMirror 正文与后台草稿 API 全流程适配
+1. **标题输入框适配**：
+   - 适配 LearnKu 当前真实 DOM：`<input class="form-control" type="text" name="title" id="title-field" ...>`；
+   - 选择器更新为 `#title-field, input[name="title"], input.form-control#title-field`，并结合原型链属性注入触发 `input` 与 `change`。
+2. **CodeMirror 编辑器多重注入机制**：
+   - 适配 LearnKu 的 `.CodeMirror`, `.CodeMirror-code`, `textarea#body-field`；
+   - 优先通过 `cm.setValue()` / `cm.save()` 写入，并在隔离环境下对 `.CodeMirror textarea` 派发带有 Markdown 的 `ClipboardEvent`，同步更新底层的原生 `textarea#body-field`。
+3. **后台接口直传草稿（`POST /articles`）与图片直传**：
+   - 在 `LearnkuAdapter` 中通过后台爬取页面提取 `_token`, `editor_unique_id`, `category_id`, `community_id`；
+   - 官方图片接口：`POST https://learnku.com/courses/upload_image?guid=${Date.now()}`；
+   - 官方草稿接口：`POST https://learnku.com/articles`（携带 `subject=draft`、`body`、`body_html`、`title` 等参数），直接在后台创建草稿并精准返回草稿编辑页链接（`https://learnku.com/articles/{id}/edit`）。
+
+---
+
 ## 🛠️ 技术涉及文件
-- `extension/publish-adapters.js`：思否（Segmentfault）封面上传网关鉴权与草稿 Payload 映射修复。
-- `src/App.vue`：主页全局布局、顶部 Header 胶囊工具栏、AI 润色弹窗与浮动提示。
-- `src/components/LaunchpadModal.vue`：多渠道发布抽屉、渠道管理弹窗、封面大图预览浮层与封面选择器组件。
+- `extension/publish-adapters.js`：LearnkuAdapter 官方接口草稿直传、CSRF Token 动态提取与图片转存管道。
+- `extension/content-automation.js`：LearnKu `#title-field` 标题定位、CodeMirror 多重注入与事件派发。
+- `extension/background.js`：Learnku 官方图片与发布接口 declarativeNetRequest 请求头防盗链规则配置。
+- `src/components/LaunchpadModal.vue`：多渠道分发抽屉、30 分钟登录状态持久化缓存机制、渠道管理弹窗头部刷新状态按钮与响应式布局。
