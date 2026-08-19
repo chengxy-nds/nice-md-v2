@@ -978,6 +978,21 @@ async function registerNetRequestRules() {
         urlFilter: '||learnku.com/',
         resourceTypes: ['xmlhttprequest', 'other']
       }
+    },
+    {
+      id: 26,
+      priority: 1,
+      action: {
+        type: 'modifyHeaders',
+        requestHeaders: [
+          { header: 'Origin', operation: 'set', value: 'https://developer.aliyun.com' },
+          { header: 'Referer', operation: 'set', value: 'https://developer.aliyun.com/article/new' }
+        ]
+      },
+      condition: {
+        urlFilter: '||developer.aliyun.com/developer/api/',
+        resourceTypes: ['xmlhttprequest', 'other']
+      }
     }
   ];
 

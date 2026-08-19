@@ -1048,11 +1048,7 @@ const openUserHome = (plat, event) => {
 };
 
 const getPublishTitle = () => {
-  if (props.articleTitle && props.articleTitle.trim()) {
-    return props.articleTitle.trim();
-  }
-  const titleMatch = props.markdown.match(/^#\s+(.+)$/m);
-  return titleMatch ? titleMatch[1].trim() : '未命名文章';
+  return (props.articleTitle && props.articleTitle.trim()) ? props.articleTitle.trim() : '未命名文档';
 };
 
 const downloadMarkdownFile = (markdownText) => {
@@ -1377,6 +1373,24 @@ onMounted(() => {
 
       <!-- Drawer Scrollable Content -->
       <div class="drawer-content-scroll">
+        <!-- Section 0: 当前待发布文章展示 -->
+        <div class="current-doc-banner">
+          <div class="current-doc-badge">
+            <FileText size="13" class="doc-icon" />
+            <span class="doc-badge-label">当前待发布文章</span>
+          </div>
+          <h3 class="current-doc-title" :title="getPublishTitle()">
+            {{ getPublishTitle() }}
+          </h3>
+          <div class="current-doc-meta">
+            <span class="doc-meta-item">{{ (markdown || '').length }} 字符</span>
+            <span class="doc-meta-dot">·</span>
+            <span class="doc-meta-item">{{ countArticleImages(markdown, html) }} 张图片</span>
+            <span class="doc-meta-dot">·</span>
+            <span class="doc-meta-item">实时同步编辑区文档</span>
+          </div>
+        </div>
+
         <!-- Section 1: 发布平台 -->
         <section class="drawer-section">
           <div class="drawer-section-header">
@@ -2144,6 +2158,56 @@ onMounted(() => {
 .drawer-content-scroll::-webkit-scrollbar-thumb {
   background: rgba(148, 163, 184, 0.22);
   border-radius: 0.25rem;
+}
+
+/* Current Doc Banner */
+.current-doc-banner {
+  margin-bottom: 0.875rem;
+  padding: 0.875rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-left: 3px solid #3b82f6;
+  border-radius: 0.75rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.current-doc-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: #2563eb;
+  text-transform: uppercase;
+  letter-spacing: 0.025rem;
+  margin-bottom: 0.375rem;
+}
+
+.doc-icon {
+  color: #3b82f6;
+}
+
+.current-doc-title {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.4;
+  margin: 0 0 0.375rem 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.current-doc-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.doc-meta-dot {
+  color: #cbd5e1;
 }
 
 /* Sections */

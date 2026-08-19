@@ -64,6 +64,7 @@ const markdownContent = computed({
     if (doc) {
       doc.content = val;
       doc.updatedAt = Date.now();
+      saveDocuments(documents.value);
     }
   }
 });
@@ -75,6 +76,7 @@ const customStyles = computed({
     if (doc) {
       doc.customStyles = val;
       doc.updatedAt = Date.now();
+      saveDocuments(documents.value);
     }
   }
 });

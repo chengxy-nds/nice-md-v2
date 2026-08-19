@@ -408,7 +408,6 @@ if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
         if (platform === 'learnku') {
           const lkEditor = document.querySelector('.CodeMirror, #editor, textarea[name="body"], #body-field, .CodeMirror-code');
           if (lkEditor) {
-            bodyDone = true;
             // 1. Set underlying textarea directly from content script
             const rawTa = document.querySelector('#body-field, textarea[name="body"], #editor, textarea');
             if (rawTa) {
@@ -416,24 +415,42 @@ if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
               rawTa.dispatchEvent(new Event('input', { bubbles: true }));
               rawTa.dispatchEvent(new Event('change', { bubbles: true }));
             }
-            // 2. Inject into page context to trigger CodeMirror instance
+            // 2. Inject into page context: update CodeMirror and overwrite LearnKu's internal auto-save draft localStorage
             injectIntoPageContext((text) => {
               try {
+                // A. Overwrite any auto-saved drafts in localStorage so LearnKu won't restore previous articles
+                try {
+                  for (let i = 0; i < localStorage.length; i++) {
+                    const k = localStorage.key(i);
+                    if (k && (k.includes('article') || k.includes('smde') || k.includes('editor') || k.includes('draft') || k.includes('body') || k.includes('content'))) {
+                      localStorage.setItem(k, text);
+                    }
+                  }
+                } catch (storageErr) {}
+
+                // B. Direct global editor instance
                 if (window.editor && typeof window.editor.setValue === 'function') {
                   window.editor.setValue(text);
+                  if (typeof window.editor.save === 'function') window.editor.save();
                 }
+
+                // C. All CodeMirror instances in DOM
                 const cmEls = document.querySelectorAll('.CodeMirror');
-                for (const el of cmEls) {
+                cmEls.forEach(el => {
                   if (el.CodeMirror && typeof el.CodeMirror.setValue === 'function') {
                     el.CodeMirror.setValue(text);
                     if (typeof el.CodeMirror.save === 'function') el.CodeMirror.save();
                   }
-                }
-                const ta = document.querySelector('#body-field, textarea[name="body"], #editor');
+                });
+
+                // D. Direct textarea
+                const ta = document.querySelector('#body-field, textarea[name="body"], #editor, textarea');
                 if (ta && ta.CodeMirror && typeof ta.CodeMirror.setValue === 'function') {
                   ta.CodeMirror.setValue(text);
                   if (typeof ta.CodeMirror.save === 'function') ta.CodeMirror.save();
                 }
+
+                // E. jQuery elements if present
                 if (window.$ || window.jQuery) {
                   const $ = window.$ || window.jQuery;
                   $('.CodeMirror').each(function() {
@@ -442,13 +459,17 @@ if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
                       if (this.CodeMirror.save) this.CodeMirror.save();
                     }
                   });
-                  $('#body-field, textarea[name="body"], #editor').val(text).trigger('input').trigger('change');
+                  $('#body-field, textarea[name="body"], #editor, textarea').val(text).trigger('input').trigger('change');
                 }
               } catch (e) {
-                console.error('Learnku CodeMirror injection failed:', e);
+                console.error('[NiceMD Automation] Learnku CodeMirror injection error:', e);
               }
             }, payload.markdown);
-            console.log(`[NiceMD Automation] LearnKu CodeMirror injected directly into page context on attempt ${attempts}.`);
+
+            if (attempts >= 2) {
+              bodyDone = true;
+            }
+            console.log(`[NiceMD Automation] LearnKu CodeMirror injected & draft cache updated on attempt ${attempts}.`);
           }
         } else {
           const editorEl = findElement(config.editor);
@@ -463,7 +484,7 @@ if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
       // 3. Find and inject Cover Image if present (strictly targeted to article cover / settings area)
       if (!coverDone && payload.cover) {
         try {
-          const existingCoverImg = document.querySelector('img[alt="封面图"], .css-6e7dvl img, .WriteCoverV2-buttonGroup, .cover.text, img.cover, .cover-img, .WriteCover-preview');
+          const existingCoverImg = document.querySelector('img[alt="封面图"], .css-6e7dvl img, .WriteCoverV2-buttonGroup, .cover.text, img.cover, .cover-img, .WriteCover-preview, .next-upload-list img, .upload-item img, .next-upload-list-item img');
           const hasCoverBg = existingCoverImg && ((existingCoverImg.style && existingCoverImg.style.backgroundImage && !existingCoverImg.style.backgroundImage.includes('none')) || (existingCoverImg.src && !existingCoverImg.src.includes('data:image/svg')) || existingCoverImg.tagName === 'DIV');
           
           if (hasCoverBg) {
@@ -476,6 +497,10 @@ if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
                 const el = document.querySelector(config.cover);
                 if (el) return el;
               }
+
+              // A1. Alibaba Fusion Design upload component on developer.aliyun.com
+              const nextUploadInput = document.querySelector('.next-upload input[type="file"], .next-upload-list input[type="file"], input.next-upload-file, [class*="next-upload"] input[type="file"]');
+              if (nextUploadInput) return nextUploadInput;
 
               // B. Search by textual triggers: "添加文章封面", "添加封面", "上传封面", "添加题图"
               const textCandidates = Array.from(document.querySelectorAll('button, label, div, span, p'));
@@ -498,7 +523,7 @@ if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
                 const parent = input.closest('div, label, section, form');
                 const parentText = parent?.textContent || '';
                 const parentClass = ((parent?.className || '') + ' ' + (input.className || '') + ' ' + (input.id || '') + ' ' + (input.name || '')).toLowerCase();
-                if (parentClass.includes('uploadpicture') || parentClass.includes('cover') || parentClass.includes('publish') || /添加文章封面|添加封面|上传封面|封面|题图/i.test(parentText)) {
+                if (parentClass.includes('uploadpicture') || parentClass.includes('cover') || parentClass.includes('publish') || parentClass.includes('next-upload') || /添加文章封面|添加封面|上传封面|封面|题图/i.test(parentText)) {
                   return input;
                 }
               }
@@ -552,6 +577,7 @@ if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
                 triggerProps(coverInput);
                 triggerProps(coverInput.parentElement);
                 triggerProps(coverInput.closest('label'));
+                triggerProps(coverInput.closest('.next-upload'));
 
                 console.log('[NiceMD Automation] Dispatched cover file to explicit cover input successfully:', coverInput);
               }

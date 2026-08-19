@@ -352,17 +352,21 @@ class CodeAdapter {
         if (!uploadedUrl) {
           const blob = await this.downloadImage(src);
           const uploadRes = await uploadFn(blob, src);
-          uploadedUrl = uploadRes.url;
-          uploadedMap.set(src, uploadedUrl);
+          uploadedUrl = (uploadRes && typeof uploadRes === 'object' && uploadRes.url) ? uploadRes.url : (typeof uploadRes === 'string' ? uploadRes : '');
+          if (uploadedUrl) {
+            uploadedMap.set(src, uploadedUrl);
+          }
         }
 
-        let replacement;
-        if (item.type === 'html') {
-          replacement = item.full.replace(src, uploadedUrl);
-        } else {
-          replacement = `![${item.alt || ''}](${uploadedUrl})`;
+        if (uploadedUrl && typeof uploadedUrl === 'string') {
+          let replacement;
+          if (item.type === 'html') {
+            replacement = item.full.replace(src, uploadedUrl);
+          } else {
+            replacement = `![${item.alt || ''}](${uploadedUrl})`;
+          }
+          result = result.replace(item.full, replacement);
         }
-        result = result.replace(item.full, replacement);
       } catch (err) {
         console.warn(`[NiceMD ProcessImages] Failed to process image ${src}:`, err.message);
       }
@@ -2581,10 +2585,179 @@ class AliyunAdapter extends CodeAdapter {
     super('aliyun');
   }
 
+  async getCsrfToken() {
+    try {
+      const c1 = await this.getCookieValue('https://developer.aliyun.com/article/new', 'c_csrf');
+      if (c1) return c1;
+      const c2 = await this.getCookieValue('https://developer.aliyun.com/', 'c_csrf');
+      if (c2) return c2;
+      const c3 = await this.getCookieValue('https://aliyun.com/', 'c_csrf');
+      if (c3) return c3;
+      const cookies = await chrome.cookies.getAll({ domain: 'aliyun.com' });
+      const cCsrf = cookies.find(c => c.name === 'c_csrf' && c.value);
+      if (cCsrf) return cCsrf.value;
+      const tkCookie = cookies.find(c => c.name === 'login_aliyunid_csrf' && c.value);
+      if (tkCookie) return tkCookie.value;
+    } catch (e) {}
+    try {
+      const pageRes = await this.fetch('https://developer.aliyun.com/article/new', { method: 'GET' });
+      const html = await pageRes.text();
+      const m = html.match(/c_csrf\s*[:=]\s*["']([^"']+)["']/i) || html.match(/"csrfToken":\s*"([^"]+)"/i) || html.match(/p_csrf=([^"'\s&]+)/i);
+      if (m) return m[1];
+    } catch (e) {}
+    return '';
+  }
+
+  async uploadImage(blob, src = 'image.png') {
+    const csrfToken = await this.getCsrfToken();
+    
+    // 提取合法纯文件名（过滤 URL 路径、特殊符号）
+    let cleanName = 'image.png';
+    if (typeof src === 'string') {
+      try {
+        const urlClean = src.split(/[?#]/)[0];
+        const segs = urlClean.split('/').filter(Boolean);
+        const lastSeg = segs.pop();
+        if (lastSeg && lastSeg.length < 80) {
+          cleanName = decodeURIComponent(lastSeg).replace(/[^\w\d\-_.]/g, '_');
+        }
+      } catch (e) {
+        cleanName = `image_${Date.now()}.png`;
+      }
+    }
+    const finalFilename = cleanName.match(/\.(png|jpe?g|gif|webp|bmp|svg)$/i) ? cleanName : `${cleanName}.png`;
+    const imageSize = blob && blob.size ? blob.size : 102400;
+
+    const url = `https://developer.aliyun.com/developer/api/image/getImageUploadUrl${csrfToken ? `?p_csrf=${csrfToken}` : ''}`;
+    
+    // 1. 获取预签名 OSS 上传地址及目标 CDN URL
+    const presignRes = await this.fetch(url, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'accept': '*/*',
+        'x-requested-with': 'XMLHttpRequest',
+        'origin': 'https://developer.aliyun.com',
+        'referer': 'https://developer.aliyun.com/article/new'
+      },
+      body: JSON.stringify({
+        imageName: finalFilename,
+        imageSize: imageSize
+      })
+    });
+
+    if (!presignRes.ok) {
+      throw new Error(`获取阿里云图片上传地址失败: ${presignRes.status}`);
+    }
+
+    const presignData = await presignRes.json();
+    if (!presignData.success || !presignData.data?.uploadUrl) {
+      throw new Error(presignData.message || '获取阿里云图片上传地址失败');
+    }
+
+    const { uploadUrl, imageUrl, header = {} } = presignData.data;
+
+    // 2. 直传 OSS
+    const putHeaders = {
+      'content-type': header['content-type'] || blob.type || 'image/png'
+    };
+    if (header['x-oss-meta-author']) {
+      putHeaders['x-oss-meta-author'] = header['x-oss-meta-author'];
+    }
+
+    const uploadRes = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: putHeaders,
+      body: blob
+    });
+
+    if (!uploadRes.ok) {
+      throw new Error(`阿里云 OSS 上传失败: ${uploadRes.status}`);
+    }
+
+    return { url: imageUrl, imageUrl: imageUrl };
+  }
+
   async publish(article) {
+    let markdown = article.markdown || '';
+    let coverUrl = article.cover || '';
+
+    // 1. 转存 Markdown 中的所有外部图片至阿里云 CDN（仅排除已是阿里云开发者社区官方 CDN ucc.alicdn.com 的图片）
+    if (markdown) {
+      try {
+        markdown = await this.processImages(
+          markdown,
+          (blob, src) => this.uploadImage(blob, src),
+          { skipPatterns: ['ucc.alicdn.com'] }
+        );
+      } catch (e) {
+        console.warn('[Aliyun Publish] Image conversion warning:', e.message);
+      }
+    }
+
+    // 2. 转存并设置封面图
+    if (coverUrl && !coverUrl.includes('ucc.alicdn.com')) {
+      try {
+        coverUrl = await this.uploadCover(coverUrl, (blob, src) => this.uploadImage(blob, 'article-cover.png'));
+      } catch (e) {
+        console.warn('[Aliyun Publish] Cover upload warning:', e.message);
+      }
+    }
+
+    // 3. 调用阿里云官方草稿保存接口
+    try {
+      const csrfToken = await this.getCsrfToken();
+      const draftUrl = `https://developer.aliyun.com/developer/api/articleDraft/putDraft${csrfToken ? `?p_csrf=${csrfToken}` : ''}`;
+      
+      const payload = {
+        title: article.title || '未命名文档',
+        content: markdown,
+        contentRender: '',
+        format: null,
+        aid: null,
+        productTags: [],
+        freeTierVOS: []
+      };
+      if (coverUrl) {
+        payload.cover = coverUrl;
+        payload.coverImage = coverUrl;
+        payload.coverUrl = coverUrl;
+      }
+
+      const draftRes = await this.fetch(draftUrl, {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          'accept': '*/*',
+          'x-requested-with': 'XMLHttpRequest',
+          'origin': 'https://developer.aliyun.com',
+          'referer': 'https://developer.aliyun.com/article/new'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (draftRes.ok) {
+        const draftData = await draftRes.json();
+        const aid = draftData.data?.aid || draftData.data?.id || draftData.aid || draftData.id;
+        console.log('[Aliyun Publish] Direct draft save success, aid:', aid);
+        const postUrl = aid ? `https://developer.aliyun.com/article/new?aid=${aid}` : 'https://developer.aliyun.com/article/new';
+        return this.createResult(true, {
+          postUrl: postUrl,
+          postId: aid,
+          draftOnly: true,
+          markdown: markdown,
+          cover: coverUrl
+        });
+      }
+    } catch (draftErr) {
+      console.warn('[Aliyun Publish] Direct draft save error, falling back to tab automation:', draftErr);
+    }
+
     return this.createResult(true, {
       postUrl: 'https://developer.aliyun.com/article/new',
-      draftOnly: true
+      draftOnly: true,
+      markdown: markdown,
+      cover: coverUrl
     });
   }
 }
