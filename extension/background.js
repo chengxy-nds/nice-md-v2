@@ -302,8 +302,8 @@ const DEFAULT_PLATFORMS_CONFIG = [
     matchHosts: ['cloud.tencent.com'],
     silentEnabled: true,
     selectors: {
-      title: '.article-title-input, [placeholder*="标题"], input',
-      editor: '.ProseMirror, [contenteditable="true"], textarea',
+      title: 'textarea.article-title, .article-title-wrap textarea, .article-title, textarea[placeholder*="标题"], [placeholder*="请输入标题"], .article-title-input, input',
+      editor: '.monaco-editor, .view-lines, .monaco-mouse-cursor-text, .ProseMirror, [contenteditable="true"], textarea',
       format: 'text/plain'
     }
   },
@@ -991,6 +991,21 @@ async function registerNetRequestRules() {
       },
       condition: {
         urlFilter: '||developer.aliyun.com/developer/api/',
+        resourceTypes: ['xmlhttprequest', 'other']
+      }
+    },
+    {
+      id: 27,
+      priority: 1,
+      action: {
+        type: 'modifyHeaders',
+        requestHeaders: [
+          { header: 'Origin', operation: 'set', value: 'https://cloud.tencent.com' },
+          { header: 'Referer', operation: 'set', value: 'https://cloud.tencent.com/developer/article/write' }
+        ]
+      },
+      condition: {
+        urlFilter: '||cloud.tencent.com/developer/services/ajax/',
         resourceTypes: ['xmlhttprequest', 'other']
       }
     }

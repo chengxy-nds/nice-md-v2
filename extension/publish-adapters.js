@@ -24,6 +24,34 @@ async function sha256(message) {
     .join('');
 }
 
+// HMAC-SHA1 and SHA1 helpers for Tencent Cloud COS signature
+async function hmacSha1(key, message) {
+  const enc = new TextEncoder();
+  const rawKey = typeof key === 'string' ? enc.encode(key) : key;
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    rawKey,
+    { name: 'HMAC', hash: 'SHA-1' },
+    false,
+    ['sign']
+  );
+  return crypto.subtle.sign('HMAC', cryptoKey, typeof message === 'string' ? enc.encode(message) : message);
+}
+
+async function sha1Hex(message) {
+  const enc = new TextEncoder();
+  const hashBuffer = await crypto.subtle.digest('SHA-1', enc.encode(message));
+  return Array.from(new Uint8Array(hashBuffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function bufferToHex(buffer) {
+  return Array.from(new Uint8Array(buffer))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
 function formatAmzDate(date) {
   return date.toISOString().replace(/[:-]|\.\d{3}/g, '');
 }
@@ -2557,10 +2585,305 @@ class TencentCloudAdapter extends CodeAdapter {
     super('tencentcloud');
   }
 
+  getCsrfCode(skey) {
+    if (!skey) return '';
+    let hash = 5381;
+    for (let i = 0; i < skey.length; ++i) {
+      hash += (hash << 5) + skey.charCodeAt(i);
+    }
+    return String(hash & 0x7fffffff);
+  }
+
+  async getAuthInfo() {
+    try {
+      let skey = await this.getCookieValue('https://cloud.tencent.com', 'skey');
+      let uinCookie = await this.getCookieValue('https://cloud.tencent.com', 'uin') || '';
+      if (!skey || !uinCookie) {
+        if (typeof chrome !== 'undefined' && chrome.cookies) {
+          const cookies = await chrome.cookies.getAll({ domain: 'tencent.com' });
+          const skeyObj = cookies.find(c => c.name === 'skey');
+          const uinObj = cookies.find(c => c.name === 'uin' || c.name === 'qcstats_ouin-515361725');
+          if (skeyObj) skey = skeyObj.value;
+          if (uinObj) uinCookie = uinObj.value;
+        }
+      }
+      const uin = (uinCookie || '').replace(/^o0*/, '');
+      const csrfCode = this.getCsrfCode(skey);
+      return { uin, csrfCode };
+    } catch (e) {
+      return { uin: '', csrfCode: '' };
+    }
+  }
+
+  async signCos({ method, pathname, tmpSecretId, tmpSecretKey, keyTime, host }) {
+    const cleanPath = pathname.startsWith('/') ? pathname : `/${pathname}`;
+    const formatString = [
+      method.toLowerCase(),
+      cleanPath,
+      '', // query string params
+      `host=${host}`,
+      ''
+    ].join('\n');
+    const formatStringHash = await sha1Hex(formatString);
+    const stringToSign = ['sha1', keyTime, formatStringHash, ''].join('\n');
+    const signKeyBuffer = await hmacSha1(tmpSecretKey, keyTime);
+    const signKeyHex = bufferToHex(signKeyBuffer);
+    const signatureBuffer = await hmacSha1(signKeyHex, stringToSign);
+    const signature = bufferToHex(signatureBuffer);
+    return `q-sign-algorithm=sha1&q-ak=${tmpSecretId}&q-sign-time=${keyTime}&q-key-time=${keyTime}&q-header-list=host&q-url-param-list=&q-signature=${signature}`;
+  }
+
+  async getCosSignature({ method, pathname, tmpSecretKey, keyTime, host }) {
+    const cleanPath = pathname.startsWith('/') ? pathname : `/${pathname}`;
+    const formatString = [
+      method.toLowerCase(),
+      cleanPath,
+      '',
+      `host=${host}`,
+      ''
+    ].join('\n');
+    const formatStringHash = await sha1Hex(formatString);
+    const stringToSign = ['sha1', keyTime, formatStringHash, ''].join('\n');
+    const signKeyBuffer = await hmacSha1(tmpSecretKey, keyTime);
+    const signKeyHex = bufferToHex(signKeyBuffer);
+    const signatureBuffer = await hmacSha1(signKeyHex, stringToSign);
+    return bufferToHex(signatureBuffer);
+  }
+
+  async uploadImage(blob, src = 'image.png') {
+    const { uin, csrfCode } = await this.getAuthInfo();
+    if (!csrfCode) {
+      throw new Error('未获取到腾讯云登录凭证 (skey/csrfCode)');
+    }
+
+    // 1. 获取图片后缀
+    let ext = 'png';
+    if (typeof src === 'string') {
+      const matchExt = src.split('.').pop()?.toLowerCase()?.split('?')[0];
+      if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(matchExt)) {
+        ext = matchExt === 'jpeg' ? 'jpg' : matchExt;
+      }
+    }
+    if (blob.type) {
+      const mimeExt = blob.type.split('/')[1]?.toLowerCase();
+      if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(mimeExt)) {
+        ext = mimeExt === 'jpeg' ? 'jpg' : mimeExt;
+      }
+    }
+
+    // 2. Step 1: GenObjectKey
+    const genKeyUrl = `https://cloud.tencent.com/developer/services/ajax/discovery?action=GenObjectKey${uin ? `&uin=${uin}` : ''}&csrfCode=${csrfCode}`;
+    const genKeyRes = await this.fetch(genKeyUrl, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'accept': '*/*',
+        'x-requested-with': 'XMLHttpRequest',
+        'origin': 'https://cloud.tencent.com',
+        'referer': 'https://cloud.tencent.com/developer/article/write'
+      },
+      body: JSON.stringify({
+        action: 'GenObjectKey',
+        payload: {
+          extension: ext,
+          scene: 'column.article'
+        }
+      })
+    });
+
+    if (!genKeyRes.ok) {
+      throw new Error(`GenObjectKey failed: HTTP ${genKeyRes.status}`);
+    }
+
+    const genKeyData = await genKeyRes.json();
+    const objectKey = genKeyData?.data?.objectKey || genKeyData?.data?.key;
+    if (!objectKey) {
+      throw new Error(genKeyData?.msg || '未能生成腾讯云 ObjectKey');
+    }
+
+    // 3. Step 2: GetTmpSecret
+    const secretUrl = `https://cloud.tencent.com/developer/services/ajax/discovery?action=GetTmpSecret${uin ? `&uin=${uin}` : ''}&csrfCode=${csrfCode}`;
+    const secretRes = await this.fetch(secretUrl, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'accept': '*/*',
+        'x-requested-with': 'XMLHttpRequest',
+        'origin': 'https://cloud.tencent.com',
+        'referer': 'https://cloud.tencent.com/developer/article/write'
+      },
+      body: JSON.stringify({
+        action: 'GetTmpSecret',
+        payload: {
+          objectKey: objectKey
+        }
+      })
+    });
+
+    if (!secretRes.ok) {
+      throw new Error(`GetTmpSecret failed: HTTP ${secretRes.status}`);
+    }
+
+    const secretData = await secretRes.json();
+    const creds = secretData?.data?.credentials;
+    const tmpSecretId = creds?.TmpSecretId || creds?.tmpSecretId;
+    const tmpSecretKey = creds?.TmpSecretKey || creds?.tmpSecretKey;
+    const token = creds?.Token || creds?.token || creds?.sessionToken;
+    const bucket = genKeyData?.data?.bucket || secretData?.data?.bucket || 'developer-private-1258344699';
+    const region = genKeyData?.data?.region || secretData?.data?.region || 'ap-guangzhou';
+    const startTime = secretData?.data?.startTime || Math.floor(Date.now() / 1000);
+    const expiredTime = secretData?.data?.expiredTime || (startTime + 3600);
+    const keyTime = `${startTime};${expiredTime}`;
+
+    if (!tmpSecretId || !tmpSecretKey) {
+      throw new Error('未能获取到腾讯云 COS 临时密钥 (TmpSecretId/TmpSecretKey)');
+    }
+
+    // 4. Step 3: PUT Object to Tencent Cloud COS
+    const cleanObjectKey = objectKey.startsWith('/') ? objectKey : `/${objectKey}`;
+    const host = `${bucket}.cos.${region}.myqcloud.com`;
+    const cosPutUrl = `https://${host}${cleanObjectKey}`;
+
+    const authorization = await this.signCos({
+      method: 'PUT',
+      pathname: cleanObjectKey,
+      tmpSecretId: tmpSecretId,
+      tmpSecretKey: tmpSecretKey,
+      keyTime: keyTime,
+      host: host
+    });
+
+    const mimeType = ext === 'png' ? 'image/png' : (ext === 'gif' ? 'image/gif' : (ext === 'webp' ? 'image/webp' : 'image/jpeg'));
+    const putRes = await this.fetch(cosPutUrl, {
+      method: 'PUT',
+      headers: {
+        'Authorization': authorization,
+        'x-cos-security-token': token,
+        'Content-Type': mimeType,
+        'Origin': 'https://cloud.tencent.com',
+        'Referer': 'https://cloud.tencent.com/'
+      },
+      body: blob
+    });
+
+    if (!putRes.ok) {
+      throw new Error(`COS PUT upload failed: HTTP ${putRes.status}`);
+    }
+
+    // 5. Build final Pre-signed COS URL (with GET authorization)
+    const getSignature = await this.getCosSignature({
+      method: 'GET',
+      pathname: cleanObjectKey,
+      tmpSecretKey: tmpSecretKey,
+      keyTime: keyTime,
+      host: host
+    });
+
+    const finalCosUrl = `https://${host}${cleanObjectKey}?q-sign-algorithm=sha1&q-ak=${tmpSecretId}&q-sign-time=${keyTime}&q-key-time=${keyTime}&q-header-list=host&q-url-param-list=&q-signature=${getSignature}&x-cos-security-token=${token}`;
+
+    console.log('[Tencent Cloud Publish] Image uploaded to COS successfully:', finalCosUrl);
+    return {
+      url: finalCosUrl,
+      imageUrl: finalCosUrl
+    };
+  }
+
   async publish(article) {
+    let markdown = article.markdown || '';
+    let coverUrl = article.cover || '';
+    const title = article.title || '未命名文档';
+
+    // 1. 转存 Markdown 中的所有外部图片至腾讯云官方 COS / CDN
+    if (markdown) {
+      try {
+        markdown = await this.processImages(
+          markdown,
+          (blob, src) => this.uploadImage(blob, src),
+          { skipPatterns: ['developer.qcloudimg.com', 'qcloudimg.com', 'myqcloud.com'] }
+        );
+      } catch (e) {
+        console.warn('[Tencent Cloud Publish] Image conversion warning:', e.message);
+      }
+    }
+
+    // 2. 转存并设置封面图（若未指定则自动从 Markdown 第一张图片提取）
+    if (!coverUrl && markdown) {
+      const mdMatch = markdown.match(/!\[.*?\]\((https?:\/\/[^\s\)]+)\)/);
+      if (mdMatch) {
+        coverUrl = mdMatch[1];
+      }
+    }
+
+    if (coverUrl && !coverUrl.includes('developer.qcloudimg.com') && !coverUrl.includes('qcloudimg.com')) {
+      try {
+        const res = await this.uploadCover(coverUrl, (blob, src) => this.uploadImage(blob, 'article-cover.png'));
+        coverUrl = (res && res.url) ? res.url : (typeof res === 'string' ? res : coverUrl);
+      } catch (e) {
+        console.warn('[Tencent Cloud Publish] Cover upload warning:', e.message);
+      }
+    }
+
+    let targetUrl = 'https://cloud.tencent.com/developer/article/write';
+
+    // 3. 调用腾讯云官方草稿保存接口
+    try {
+      const { uin, csrfCode } = await this.getAuthInfo();
+      if (csrfCode) {
+        const draftApiUrl = `https://cloud.tencent.com/developer/services/ajax/column/article?action=CreateArticleDraft${uin ? `&uin=${uin}` : ''}&csrfCode=${csrfCode}`;
+        const draftPayload = {
+          action: 'CreateArticleDraft',
+          payload: {
+            articleId: 0,
+            title: title,
+            content: markdown,
+            plain: markdown,
+            columnIds: [],
+            tagIds: [],
+            keywords: [],
+            sourceType: 0,
+            openComment: 1,
+            focusReadTotalAfterFollowAuthor: 0,
+            closeTextLink: 0,
+            classifyIds: []
+          }
+        };
+
+        if (coverUrl) {
+          draftPayload.payload.coverUrl = coverUrl;
+          draftPayload.payload.cover = coverUrl;
+        }
+
+        const draftRes = await this.fetch(draftApiUrl, {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            'accept': '*/*',
+            'x-requested-with': 'XMLHttpRequest',
+            'origin': 'https://cloud.tencent.com',
+            'referer': 'https://cloud.tencent.com/developer/article/write'
+          },
+          body: JSON.stringify(draftPayload)
+        });
+
+        if (draftRes.ok) {
+          const draftData = await draftRes.json();
+          console.log('[Tencent Cloud Publish] Draft created result:', draftData);
+          const articleId = draftData?.data?.articleId || draftData?.data?.id || draftData?.articleId;
+          if (articleId) {
+            targetUrl = `https://cloud.tencent.com/developer/article/write?articleId=${articleId}`;
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('[Tencent Cloud Publish] Draft API warning, falling back to frontend automation:', err.message);
+    }
+
     return this.createResult(true, {
-      postUrl: 'https://cloud.tencent.com/developer/article/write',
-      draftOnly: true
+      postUrl: targetUrl,
+      draftOnly: true,
+      markdown: markdown,
+      title: title,
+      cover: coverUrl
     });
   }
 }
@@ -2695,7 +3018,14 @@ class AliyunAdapter extends CodeAdapter {
       }
     }
 
-    // 2. 转存并设置封面图
+    // 2. 转存并设置封面图（若未指定则自动从 Markdown 第一张图片提取）
+    if (!coverUrl && markdown) {
+      const mdMatch = markdown.match(/!\[.*?\]\((https?:\/\/[^\s\)]+)\)/);
+      if (mdMatch) {
+        coverUrl = mdMatch[1];
+      }
+    }
+
     if (coverUrl && !coverUrl.includes('ucc.alicdn.com')) {
       try {
         coverUrl = await this.uploadCover(coverUrl, (blob, src) => this.uploadImage(blob, 'article-cover.png'));
@@ -2720,8 +3050,12 @@ class AliyunAdapter extends CodeAdapter {
       };
       if (coverUrl) {
         payload.cover = coverUrl;
-        payload.coverImage = coverUrl;
         payload.coverUrl = coverUrl;
+        payload.coverImage = coverUrl;
+        payload.coverPic = coverUrl;
+        payload.coverImg = coverUrl;
+        payload.headPic = coverUrl;
+        payload.articleCover = coverUrl;
       }
 
       const draftRes = await this.fetch(draftUrl, {

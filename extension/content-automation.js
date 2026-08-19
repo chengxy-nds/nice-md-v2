@@ -106,8 +106,8 @@ const SELECTORS = {
     format: 'text/plain'
   },
   tencentcloud: {
-    title: '.article-title-input, [placeholder*="标题"], input.title, input[type="text"]',
-    editor: '.ProseMirror, [contenteditable="true"], .editor-content, textarea',
+    title: 'textarea.article-title, .article-title-wrap textarea, .article-title, textarea[placeholder*="标题"], [placeholder*="请输入标题"], .article-title-input, input.title, input[type="text"]',
+    editor: '.monaco-editor, .view-lines, .monaco-mouse-cursor-text, [data-mprt], .article-content, .ProseMirror, [contenteditable="true"], textarea',
     format: 'text/plain'
   },
   nowcoder: {
@@ -269,6 +269,25 @@ function simulatePaste(target, markdown, html, format = 'text/plain') {
     }
   }
 
+  // 0.2 For Monaco Editor instances (Tencent Cloud, Aliyun, LeetCode, etc.)
+  const monacoContainer = target.closest('.monaco-editor') || (target.classList?.contains('monaco-editor') ? target : null) || document.querySelector('.monaco-editor');
+  if (monacoContainer) {
+    const monacoTa = monacoContainer.querySelector('textarea.inputarea, textarea') || document.querySelector('.monaco-editor textarea');
+    if (monacoTa) {
+      monacoTa.focus();
+      try {
+        const dt = new DataTransfer();
+        dt.setData('text/plain', markdown);
+        const pasteEv = new ClipboardEvent('paste', {
+          bubbles: true,
+          cancelable: true,
+          clipboardData: dt
+        });
+        monacoTa.dispatchEvent(pasteEv);
+      } catch (e) {}
+    }
+  }
+
   const isCodeMirrorTextarea = target.tagName === 'TEXTAREA' && target.closest('.CodeMirror');
   const isStandardInput = (target.tagName === 'TEXTAREA' || target.tagName === 'INPUT') && !isCodeMirrorTextarea;
   
@@ -390,6 +409,10 @@ if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
                 } else {
                   el.value = payload.title;
                 }
+                // Also update mirror text if present (e.g. .article-title-text for textarea auto-grow on Tencent Cloud)
+                const mirrorText = el.parentElement?.querySelector('.article-title-text');
+                if (mirrorText) mirrorText.textContent = payload.title;
+
                 el.dispatchEvent(new Event('input', { bubbles: true }));
                 el.dispatchEvent(new Event('change', { bubbles: true }));
                 el.dispatchEvent(new Event('blur', { bubbles: true }));
@@ -471,6 +494,65 @@ if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
             }
             console.log(`[NiceMD Automation] LearnKu CodeMirror injected & draft cache updated on attempt ${attempts}.`);
           }
+        } else if (platform === 'tencentcloud' || platform === 'tencent-cloud') {
+          const tcEditor = document.querySelector('.monaco-editor, .view-lines, .monaco-mouse-cursor-text, [data-mprt], .article-content, [contenteditable="true"]');
+          if (tcEditor) {
+            // 1. Paste into Monaco hidden inputarea textarea
+            const monacoTextarea = document.querySelector('.monaco-editor textarea.inputarea, .monaco-editor textarea, textarea.inputarea');
+            if (monacoTextarea) {
+              monacoTextarea.focus();
+              try {
+                const dt = new DataTransfer();
+                dt.setData('text/plain', payload.markdown);
+                const pasteEv = new ClipboardEvent('paste', {
+                  bubbles: true,
+                  cancelable: true,
+                  clipboardData: dt
+                });
+                monacoTextarea.dispatchEvent(pasteEv);
+              } catch (e) {}
+            }
+
+            // 2. Direct Monaco API in Page Context
+            injectIntoPageContext((text) => {
+              try {
+                if (window.monaco && window.monaco.editor) {
+                  const models = window.monaco.editor.getModels();
+                  if (models && models.length > 0) {
+                    models.forEach(m => {
+                      if (typeof m.setValue === 'function') m.setValue(text);
+                    });
+                  }
+                  const editors = window.monaco.editor.getEditors ? window.monaco.editor.getEditors() : [];
+                  if (editors && editors.length > 0) {
+                    editors.forEach(ed => {
+                      if (typeof ed.setValue === 'function') ed.setValue(text);
+                    });
+                  }
+                }
+                const monacoNodes = document.querySelectorAll('.monaco-editor, [data-mprt]');
+                monacoNodes.forEach(node => {
+                  for (const k of Object.keys(node)) {
+                    if (node[k] && typeof node[k].setValue === 'function') {
+                      node[k].setValue(text);
+                    }
+                  }
+                });
+                if (window.editor && typeof window.editor.setValue === 'function') {
+                  window.editor.setValue(text);
+                }
+              } catch (err) {
+                console.error('[NiceMD Automation] Tencent Cloud Monaco injection error:', err);
+              }
+            }, payload.markdown);
+
+            simulatePaste(tcEditor, payload.markdown, payload.html, 'text/plain');
+
+            if (attempts >= 2) {
+              bodyDone = true;
+            }
+            console.log(`[NiceMD Automation] Tencent Cloud Monaco Editor injected on attempt ${attempts}.`);
+          }
         } else {
           const editorEl = findElement(config.editor);
           if (editorEl) {
@@ -484,10 +566,13 @@ if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
       // 3. Find and inject Cover Image if present (strictly targeted to article cover / settings area)
       if (!coverDone && payload.cover) {
         try {
-          const existingCoverImg = document.querySelector('img[alt="封面图"], .css-6e7dvl img, .WriteCoverV2-buttonGroup, .cover.text, img.cover, .cover-img, .WriteCover-preview, .next-upload-list img, .upload-item img, .next-upload-list-item img');
-          const hasCoverBg = existingCoverImg && ((existingCoverImg.style && existingCoverImg.style.backgroundImage && !existingCoverImg.style.backgroundImage.includes('none')) || (existingCoverImg.src && !existingCoverImg.src.includes('data:image/svg')) || existingCoverImg.tagName === 'DIV');
+          const existingCoverImg = document.querySelector('.next-upload-list img, .upload-item img, .next-upload-list-item img, img[alt="封面图"], .css-6e7dvl img, img.cover, .cover-img, .WriteCover-preview img');
+          const hasValidCover = existingCoverImg && (
+            (existingCoverImg.tagName === 'IMG' && existingCoverImg.src && existingCoverImg.src.startsWith('http') && !existingCoverImg.src.includes('data:image/svg')) ||
+            (existingCoverImg.style && existingCoverImg.style.backgroundImage && existingCoverImg.style.backgroundImage.startsWith('url(') && !existingCoverImg.style.backgroundImage.includes('none'))
+          );
           
-          if (hasCoverBg) {
+          if (hasValidCover) {
             coverDone = true;
           } else {
             // Helper to find cover file input specifically
@@ -499,7 +584,14 @@ if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
               }
 
               // A1. Alibaba Fusion Design upload component on developer.aliyun.com
-              const nextUploadInput = document.querySelector('.next-upload input[type="file"], .next-upload-list input[type="file"], input.next-upload-file, [class*="next-upload"] input[type="file"]');
+              const aliyunElements = Array.from(document.querySelectorAll('.upload-btn-content, .next-form-item-control, .next-upload-list-text-image, .next-upload'));
+              for (const container of aliyunElements) {
+                if (container.textContent.includes('图片建议尺寸') || container.textContent.includes('200*120') || container.textContent.includes('重新上传') || container.textContent.includes('封面')) {
+                  const inInput = container.querySelector('input[type="file"]') || container.parentElement?.querySelector('input[type="file"]');
+                  if (inInput) return inInput;
+                }
+              }
+              const nextUploadInput = document.querySelector('.next-upload input[type="file"], .next-upload-list input[type="file"], input.next-upload-file, [class*="next-upload"] input[type="file"], .modal-trigger input[type="file"], .upload-btn-content input[type="file"]');
               if (nextUploadInput) return nextUploadInput;
 
               // B. Search by textual triggers: "添加文章封面", "添加封面", "上传封面", "添加题图"
@@ -520,10 +612,10 @@ if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
               // C. Scan all input[type="file"] whose container text/class indicates cover
               const allFileInputs = Array.from(document.querySelectorAll('input[type="file"]'));
               for (const input of allFileInputs) {
-                const parent = input.closest('div, label, section, form');
+                const parent = input.closest('div, label, section, form, .next-form-item-control');
                 const parentText = parent?.textContent || '';
                 const parentClass = ((parent?.className || '') + ' ' + (input.className || '') + ' ' + (input.id || '') + ' ' + (input.name || '')).toLowerCase();
-                if (parentClass.includes('uploadpicture') || parentClass.includes('cover') || parentClass.includes('publish') || parentClass.includes('next-upload') || /添加文章封面|添加封面|上传封面|封面|题图/i.test(parentText)) {
+                if (parentClass.includes('uploadpicture') || parentClass.includes('cover') || parentClass.includes('publish') || parentClass.includes('next-upload') || /添加文章封面|添加封面|上传封面|封面|题图|图片建议尺寸/i.test(parentText)) {
                   return input;
                 }
               }
@@ -576,8 +668,23 @@ if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
 
                 triggerProps(coverInput);
                 triggerProps(coverInput.parentElement);
+                triggerProps(coverInput.closest('.upload-btn-content'));
+                triggerProps(coverInput.closest('.next-form-item-control'));
                 triggerProps(coverInput.closest('label'));
                 triggerProps(coverInput.closest('.next-upload'));
+                triggerProps(coverInput.closest('.next-upload-card'));
+
+                // 3. Trigger in Page Context for Alibaba Fusion
+                injectIntoPageContext(() => {
+                  const fileInputs = Array.from(document.querySelectorAll('input[type="file"]'));
+                  for (const inp of fileInputs) {
+                    const box = inp.closest('.upload-btn-content, .next-form-item-control, .next-upload');
+                    if (box && (box.textContent.includes('图片建议尺寸') || box.textContent.includes('200*120') || box.textContent.includes('封面'))) {
+                      inp.dispatchEvent(new Event('change', { bubbles: true }));
+                      inp.dispatchEvent(new Event('input', { bubbles: true }));
+                    }
+                  }
+                });
 
                 console.log('[NiceMD Automation] Dispatched cover file to explicit cover input successfully:', coverInput);
               }
