@@ -266,7 +266,15 @@ const activeThemeStyles = computed(() => {
   delete s['--bg-app'];
   delete s['--bg-editor'];
   delete s['--bg-preview'];
+  delete s['--bg-card'];
+  delete s['--bg-header'];
+  delete s['--bg-sidebar'];
+  delete s['--bg-toolbar'];
   delete s['--border-color'];
+  delete s['--text-main'];
+  delete s['--text-muted'];
+  delete s['--shadow-sm'];
+  delete s['--shadow-md'];
   return s;
 });
 

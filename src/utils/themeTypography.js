@@ -136,7 +136,7 @@ export function buildThemeTypoCss(theme) {
     if (theme.previewTexture.bgSize) texDecl.push(`background-size: ${theme.previewTexture.bgSize};`);
     texDecl.push(`background-repeat: repeat, repeat;`);
     texDecl.push(`background-attachment: scroll;`);
-    parts.push(`${sBg} {\n${texDecl.join('\n')}\n}`);
+    parts.push(`html:not(.dark) ${sBg} {\n${texDecl.join('\n')}\n}`);
   }
 
   const heading = (tag, prefix, spec) => {

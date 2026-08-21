@@ -67,46 +67,48 @@ html[data-color-mode="light"] {
 }
 
 html.dark,
-html[data-color-mode="dark"] {
+html[data-color-mode="dark"],
+[data-color-mode="dark"],
+.dark {
   /* VS Code / Antigravity IDE Dark Studio Surfaces */
-  --bg-app: #1e1e1e;
-  --bg-card: #252526;
-  --bg-header: #2d2d2d;
-  --bg-sidebar: #252526;
-  --bg-toolbar: #2d2d2d;
-  --bg-editor: #1e1e1e;
-  --bg-preview: #252526;
-  --bg-popover: #252526;
-  --bg-capsule: #2d2d2d;
-  --bg-capsule-btn-hover: #37373d;
+  --bg-app: #1e1e1e !important;
+  --bg-card: #252526 !important;
+  --bg-header: #2d2d2d !important;
+  --bg-sidebar: #252526 !important;
+  --bg-toolbar: #2d2d2d !important;
+  --bg-editor: #1e1e1e !important;
+  --bg-preview: #252526 !important;
+  --bg-popover: #252526 !important;
+  --bg-capsule: #2d2d2d !important;
+  --bg-capsule-btn-hover: #37373d !important;
 
   /* Typography */
-  --text-main: #cccccc;
-  --text-muted: #969696;
-  --text-subtle: #6e7681;
+  --text-main: #cccccc !important;
+  --text-muted: #969696 !important;
+  --text-subtle: #6e7681 !important;
 
   /* Borders & Dividers */
-  --border-color: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.15);
+  --border-color: rgba(255, 255, 255, 0.08) !important;
+  --border-strong: rgba(255, 255, 255, 0.15) !important;
 
   /* Elevation / Shadows */
-  --shadow-header: 0 2px 10px rgba(0, 0, 0, 0.35);
-  --shadow-sidebar-left: 2px 0 10px rgba(0, 0, 0, 0.25);
-  --shadow-sidebar-right: -2px 0 10px rgba(0, 0, 0, 0.25);
-  --shadow-toolbar: 0 1px 3px rgba(0, 0, 0, 0.2);
-  --shadow-popover: 0 6px 20px rgba(0, 0, 0, 0.45);
-  --shadow-capsule: 0 3px 12px rgba(0, 0, 0, 0.3);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.5);
+  --shadow-header: 0 2px 10px rgba(0, 0, 0, 0.35) !important;
+  --shadow-sidebar-left: 2px 0 10px rgba(0, 0, 0, 0.25) !important;
+  --shadow-sidebar-right: -2px 0 10px rgba(0, 0, 0, 0.25) !important;
+  --shadow-toolbar: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+  --shadow-popover: 0 6px 20px rgba(0, 0, 0, 0.45) !important;
+  --shadow-capsule: 0 3px 12px rgba(0, 0, 0, 0.3) !important;
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.4) !important;
+  --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.5) !important;
 
   /* Accents & Highlights */
-  --accent-color: #3794ff;
-  --accent-hover: #1b82e6;
-  --accent-bg: rgba(55, 148, 255, 0.12);
-  --accent-coral: #ce9178;
-  --code-bg: #2d2d30;
-  --code-text: #ce9178;
+  --accent-color: #3794ff !important;
+  --accent-hover: #1b82e6 !important;
+  --accent-bg: rgba(55, 148, 255, 0.12) !important;
+  --accent-coral: #ce9178 !important;
+  --code-bg: #2d2d30 !important;
+  --code-text: #ce9178 !important;
 }
 
 * {

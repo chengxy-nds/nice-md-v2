@@ -1113,7 +1113,7 @@ watch(customStyles, () => {
 </script>
 
 <template>
-  <div class="app-container">
+  <div class="app-container" :class="{ 'dark': isDarkMode }" :data-color-mode="isDarkMode ? 'dark' : 'light'">
     <!-- Header spanning top full width -->
     <header class="app-header">
       <div class="header-left">
