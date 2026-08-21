@@ -2830,13 +2830,16 @@ class TencentCloudAdapter extends CodeAdapter {
       const { uin, csrfCode } = await this.getAuthInfo();
       if (csrfCode) {
         const draftApiUrl = `https://cloud.tencent.com/developer/services/ajax/column/article?action=CreateArticleDraft${uin ? `&uin=${uin}` : ''}&csrfCode=${csrfCode}`;
+        const encodedContent = btoa(encodeURIComponent(JSON.stringify(markdown)));
+        const encodedPlain = btoa(encodeURIComponent(JSON.stringify(markdown)));
+
         const draftPayload = {
           action: 'CreateArticleDraft',
           payload: {
             articleId: 0,
             title: title,
-            content: markdown,
-            plain: markdown,
+            content: encodedContent,
+            plain: encodedPlain,
             columnIds: [],
             tagIds: [],
             keywords: [],
