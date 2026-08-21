@@ -593,10 +593,33 @@ async function handleEditorPaste(e) {
 }
 
 function scrollToTop() {
-  if (textareaRef.value) textareaRef.value.scrollTop = 0;
+  soundEngine.playClick();
+  if (cmView && cmView.scrollDOM) {
+    cmView.scrollDOM.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  if (textareaRef.value) {
+    textareaRef.value.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  if (lineGutterRef.value) {
+    lineGutterRef.value.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  emit('focusActive', 'editor');
+  emit('scroll', 0);
 }
+
 function scrollToBottom() {
-  if (textareaRef.value) textareaRef.value.scrollTop = textareaRef.value.scrollHeight;
+  soundEngine.playClick();
+  if (cmView && cmView.scrollDOM) {
+    cmView.scrollDOM.scrollTo({ top: cmView.scrollDOM.scrollHeight, behavior: 'smooth' });
+  }
+  if (textareaRef.value) {
+    textareaRef.value.scrollTo({ top: textareaRef.value.scrollHeight, behavior: 'smooth' });
+  }
+  if (lineGutterRef.value) {
+    lineGutterRef.value.scrollTo({ top: lineGutterRef.value.scrollHeight, behavior: 'smooth' });
+  }
+  emit('focusActive', 'editor');
+  emit('scroll', 1);
 }
 
 const clearContent = async () => {
@@ -789,12 +812,16 @@ function initCodeMirror() {
       fontSize: editorFontSize.value || "14.5px",
       fontFamily: "'JetBrains Mono', Consolas, Monaco, 'Andale Mono', monospace",
       backgroundColor: "transparent",
-      color: "var(--text-main, #2b2b2b)",
-      caretColor: "var(--accent-color, #2775b6)"
+      color: "var(--text-main)",
+      caretColor: "var(--accent-color)"
     },
     ".cm-content": {
       padding: "16px",
-      lineHeight: "24px"
+      lineHeight: "24px",
+      caretColor: "var(--accent-color)"
+    },
+    ".cm-cursor, .cm-dropCursor": {
+      borderLeftColor: "var(--accent-color)"
     },
     ".cm-gutters": {
       display: "none"
@@ -807,12 +834,12 @@ function initCodeMirror() {
     },
     /* Pure Minimal Markdown Syntax Styling inside editor */
     ".cm-header": {
-      color: "var(--accent-color, #2775b6)",
+      color: "var(--accent-color)",
       fontWeight: "700"
     },
     ".cm-strong": {
       fontWeight: "700",
-      color: "var(--text-main, #111827)"
+      color: "var(--text-main)"
     },
     ".cm-emphasis": {
       fontStyle: "italic"
@@ -822,17 +849,17 @@ function initCodeMirror() {
       opacity: "0.7"
     },
     ".cm-quote": {
-      color: "var(--text-muted, #4b5563)",
+      color: "var(--text-muted)",
       fontStyle: "italic"
     },
     ".cm-inline-code": {
-      backgroundColor: "rgba(39, 117, 182, 0.1)",
-      color: "#d97706",
+      backgroundColor: "var(--accent-bg)",
+      color: "var(--code-text, #ff7a59)",
       padding: "1px 5px",
       borderRadius: "4px"
     },
     ".cm-link": {
-      color: "#2563eb",
+      color: "var(--accent-color)",
       textDecoration: "underline"
     },
     ".cm-url": {

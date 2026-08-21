@@ -259,7 +259,7 @@ export const themes = [
 
 export function applyTheme(themeId) {
   const root = document.documentElement;
-  root.setAttribute('data-theme', themeId);
+  root.setAttribute('data-article-theme', themeId);
 }
 
 function parseFontSize(val, fallback) {

@@ -229,6 +229,27 @@ function handleReorderGroups({ groupId, targetGroupId }) {
 
 const currentTheme = ref(localStorage.getItem('nicemd_theme') || 'classic-indigo');
 const currentCodeTheme = ref(localStorage.getItem('nicemd_code_theme') || 'mdnice-classic');
+const isDarkMode = ref(localStorage.getItem('nicemd_color_mode') === 'dark');
+
+function applyColorMode() {
+  const isDark = isDarkMode.value;
+  const root = document.documentElement;
+  if (isDark) {
+    root.classList.add('dark');
+    root.setAttribute('data-color-mode', 'dark');
+  } else {
+    root.classList.remove('dark');
+    root.setAttribute('data-color-mode', 'light');
+  }
+  localStorage.setItem('nicemd_color_mode', isDark ? 'dark' : 'light');
+}
+
+function toggleColorMode() {
+  soundEngine.playClick();
+  isDarkMode.value = !isDarkMode.value;
+  applyColorMode();
+}
+
 const activeThemeName = computed(() =>
   themePresets.find(t => t.id === currentTheme.value)?.name || '山海'
 );
@@ -1010,8 +1031,9 @@ onMounted(() => {
     ? savedActiveId
     : documents.value[0].id;
 
-  // 4. Apply theme
+  // 4. Apply theme & Color Mode
   applyTheme(currentTheme.value);
+  applyColorMode();
 
   // 5. Load custom themes from localStorage (append, never replace built-ins)
   try {
@@ -1192,6 +1214,7 @@ watch(customStyles, () => {
         <IconBar
           :sidebarVisible="sidebarVisible"
           :currentView="currentView"
+          :isDarkMode="isDarkMode"
           @toggle-tab="(tab) => {
             if (tab === 'docs') {
               if (currentView !== 'editor') currentView = 'editor';
@@ -1201,6 +1224,7 @@ watch(customStyles, () => {
             if (tab === 'materials') { currentView = 'materials'; }
             if (tab === 'settings') isSettingsOpen = true;
             if (tab === 'launch') isLaunchpadOpen = true;
+            if (tab === 'theme') toggleColorMode();
           }"
         />
       </div>
@@ -1487,10 +1511,11 @@ watch(customStyles, () => {
   align-items: center;
   padding: 0 20px;
   border-bottom: 1px solid var(--border-color);
-  background: var(--bg-app);
-  box-shadow: none;
+  background: var(--bg-header);
+  box-shadow: var(--shadow-header);
   z-index: 10;
   flex-shrink: 0;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .header-left {
@@ -1549,13 +1574,14 @@ watch(customStyles, () => {
   display: flex;
   align-items: center;
   gap: 2px;
-  background: #ffffff;
-  border: 1px solid #eef2f6;
+  background: var(--bg-capsule);
+  border: 1px solid var(--border-color);
   border-radius: 9999px;
   padding: 3px 6px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-capsule);
   position: relative;
   user-select: none;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .capsule-btn {
@@ -1565,7 +1591,7 @@ watch(customStyles, () => {
   padding: 5px 12px;
   border: none;
   background: transparent;
-  color: #334155;
+  color: var(--text-main);
   font-size: 13px;
   font-weight: 500;
   border-radius: 9999px;
@@ -1575,22 +1601,22 @@ watch(customStyles, () => {
 }
 
 .capsule-btn:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: var(--bg-capsule-btn-hover);
+  color: var(--text-main);
 }
 
 .capsule-btn.is-ai {
-  color: #ff5e36;
+  color: var(--accent-coral, #ff7a59);
   font-weight: 600;
 }
 
 .capsule-btn.is-ai:hover {
-  background: #fff3ed;
-  color: #ea580c;
+  background: rgba(255, 122, 89, 0.12);
+  color: var(--accent-coral, #ff7a59);
 }
 
 .capsule-btn.is-ai .ai-sparkle-icon {
-  color: #ff5e36;
+  color: var(--accent-coral, #ff7a59);
 }
 
 .capsule-btn .capsule-icon {
@@ -1606,12 +1632,13 @@ watch(customStyles, () => {
   left: 50%;
   transform: translateX(-50%);
   min-width: 170px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
+  background: var(--bg-popover);
+  border: 1px solid var(--border-color);
   border-radius: 10px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-popover);
   padding: 6px;
   z-index: 1000;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 /* Right Header Publish Button */
@@ -1670,10 +1697,10 @@ watch(customStyles, () => {
 .ai-polish-card {
   width: 500px;
   max-width: 90vw;
-  background: #ffffff;
+  background: var(--bg-card);
   border-radius: 16px;
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.16);
-  border: 1px solid #f1f5f9;
+  box-shadow: var(--shadow-modal);
+  border: 1px solid var(--border-color);
   overflow: hidden;
   animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -1683,8 +1710,8 @@ watch(customStyles, () => {
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid #f1f5f9;
-  background: #fafbfc;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-card);
 }
 
 .ai-header-title-wrap {
@@ -1697,8 +1724,8 @@ watch(customStyles, () => {
   width: 34px;
   height: 34px;
   border-radius: 10px;
-  background: #fff3ed;
-  color: #ff5e36;
+  background: rgba(255, 94, 54, 0.12);
+  color: var(--accent-coral, #ff5e36);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1708,19 +1735,19 @@ watch(customStyles, () => {
   margin: 0;
   font-size: 15px;
   font-weight: 700;
-  color: #0f172a;
+  color: var(--text-main);
 }
 
 .ai-modal-sub {
   margin: 2px 0 0 0;
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-muted);
 }
 
 .ai-modal-close-btn {
   background: transparent;
   border: none;
-  color: #94a3b8;
+  color: var(--text-muted);
   cursor: pointer;
   padding: 4px;
   border-radius: 6px;
@@ -1731,8 +1758,8 @@ watch(customStyles, () => {
 }
 
 .ai-modal-close-btn:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: var(--bg-capsule-btn-hover);
+  color: var(--text-main);
 }
 
 .ai-presets-grid {
@@ -1748,15 +1775,15 @@ watch(customStyles, () => {
   gap: 14px;
   padding: 12px 16px;
   border-radius: 12px;
-  border: 1px solid #eef2f6;
-  background: #ffffff;
+  border: 1px solid var(--border-color);
+  background: var(--bg-app);
   cursor: pointer;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .ai-preset-item:hover {
-  border-color: #ff5e36;
-  background: #fff9f6;
+  border-color: var(--accent-coral, #ff5e36);
+  background: var(--bg-capsule-btn-hover);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(255, 94, 54, 0.12);
 }
@@ -1773,12 +1800,12 @@ watch(customStyles, () => {
 .ai-preset-name {
   font-size: 13px;
   font-weight: 600;
-  color: #0f172a;
+  color: var(--text-main);
 }
 
 .ai-preset-desc {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-muted);
   margin-top: 2px;
 }
 
@@ -2107,12 +2134,13 @@ watch(customStyles, () => {
   align-items: center;
   padding: 0 16px;
   border-bottom: 1px solid var(--border-color);
-  background: var(--bg-editor);
-  box-shadow: none;
+  background: var(--bg-toolbar);
+  box-shadow: var(--shadow-toolbar);
   flex-shrink: 0;
   width: 100%;
   z-index: 10;
   box-sizing: border-box;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .header-actions {
@@ -2176,16 +2204,17 @@ watch(customStyles, () => {
   top: 100%;
   right: 0;
   margin-top: 6px;
-  background: var(--bg-editor);
+  background: var(--bg-popover);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--shadow-popover);
   padding: 4px;
   display: flex;
   flex-direction: column;
   gap: 2px;
   z-index: 200;
   min-width: 140px;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .popout-item {
@@ -2219,7 +2248,7 @@ watch(customStyles, () => {
   display: flex;
   align-items: center;
   gap: 5px;
-  background: var(--bg-editor);
+  background: var(--bg-card);
   border: 1px solid var(--border-color);
   color: var(--text-main);
   padding: 4px 8px;

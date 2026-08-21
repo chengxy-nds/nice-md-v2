@@ -3965,4 +3965,390 @@ input:checked + .slider:before {
   box-shadow: 0 6px 18px rgba(255, 94, 54, 0.42);
   transform: translateY(-1px);
 }
+
+/* ─── Full Dark Mode Support for Launchpad Modal ─── */
+:global(html.dark) .right-drawer-panel,
+:global(html[data-color-mode="dark"]) .right-drawer-panel {
+  background: var(--bg-card, #252526);
+  box-shadow: -0.9375rem 0 3.125rem rgba(0, 0, 0, 0.5);
+  border-left: 1px solid var(--border-color);
+}
+
+:global(html.dark) .ambient-glow,
+:global(html[data-color-mode="dark"]) .ambient-glow {
+  opacity: 0.12;
+}
+
+:global(html.dark) .brand-title-cn,
+:global(html[data-color-mode="dark"]) .brand-title-cn {
+  color: var(--text-main, #cccccc);
+}
+
+:global(html.dark) .brand-subtitle-cn,
+:global(html[data-color-mode="dark"]) .brand-subtitle-cn {
+  color: var(--text-muted, #969696);
+}
+
+:global(html.dark) .brand-icon-badge,
+:global(html[data-color-mode="dark"]) .brand-icon-badge {
+  background: rgba(255, 94, 54, 0.12);
+  border-color: rgba(255, 94, 54, 0.25);
+}
+
+:global(html.dark) .btn-drawer-close,
+:global(html[data-color-mode="dark"]) .btn-drawer-close {
+  background: var(--bg-toolbar, #2d2d2d);
+  border-color: var(--border-color);
+  color: var(--text-muted, #969696);
+}
+
+:global(html.dark) .btn-drawer-close:hover,
+:global(html[data-color-mode="dark"]) .btn-drawer-close:hover {
+  background: var(--bg-capsule-btn-hover, #37373d);
+  color: var(--text-main, #ffffff);
+}
+
+:global(html.dark) .current-doc-banner,
+:global(html[data-color-mode="dark"]) .current-doc-banner {
+  background: var(--bg-app, #1e1e1e);
+  border-color: var(--border-color);
+  border-left-color: var(--accent-color, #3794ff);
+}
+
+:global(html.dark) .current-doc-title,
+:global(html[data-color-mode="dark"]) .current-doc-title {
+  color: var(--text-main, #cccccc);
+}
+
+:global(html.dark) .current-doc-meta,
+:global(html[data-color-mode="dark"]) .current-doc-meta {
+  color: var(--text-muted, #969696);
+}
+
+:global(html.dark) .current-doc-badge,
+:global(html[data-color-mode="dark"]) .current-doc-badge {
+  color: var(--accent-color, #3794ff);
+}
+
+:global(html.dark) .doc-icon,
+:global(html[data-color-mode="dark"]) .doc-icon {
+  color: var(--accent-color, #3794ff);
+}
+
+:global(html.dark) .drawer-section-title,
+:global(html[data-color-mode="dark"]) .drawer-section-title {
+  color: var(--text-main, #cccccc) !important;
+}
+
+:global(html.dark) .count-label,
+:global(html[data-color-mode="dark"]) .count-label {
+  color: var(--text-muted, #969696);
+}
+
+:global(html.dark) .count-pill,
+:global(html[data-color-mode="dark"]) .count-pill {
+  background: rgba(34, 197, 94, 0.15);
+  color: #4ade80;
+}
+
+:global(html.dark) .btn-action-tool.btn-select-toggle,
+:global(html[data-color-mode="dark"]) .btn-action-tool.btn-select-toggle {
+  background: var(--accent-bg, rgba(55, 148, 255, 0.15));
+  border-color: rgba(55, 148, 255, 0.3);
+  color: var(--accent-color, #3794ff);
+}
+
+:global(html.dark) .btn-action-tool.btn-select-toggle:hover,
+:global(html[data-color-mode="dark"]) .btn-action-tool.btn-select-toggle:hover {
+  background: rgba(55, 148, 255, 0.25);
+  color: #ffffff;
+}
+
+:global(html.dark) .btn-action-tool.btn-batch-manage,
+:global(html[data-color-mode="dark"]) .btn-action-tool.btn-batch-manage {
+  background: var(--bg-app, #1e1e1e);
+  border-color: var(--border-color);
+  color: var(--text-muted, #969696);
+}
+
+:global(html.dark) .btn-action-tool.btn-batch-manage:hover,
+:global(html[data-color-mode="dark"]) .btn-action-tool.btn-batch-manage:hover {
+  background: var(--bg-capsule-btn-hover, #37373d);
+  color: var(--text-main, #ffffff);
+}
+
+:global(html.dark) .btn-action-dark.btn-refresh-status,
+:global(html[data-color-mode="dark"]) .btn-action-dark.btn-refresh-status {
+  background: var(--bg-app, #1e1e1e);
+  border: 1px solid var(--border-color);
+  color: var(--text-main, #cccccc);
+  box-shadow: none;
+}
+
+:global(html.dark) .btn-action-dark.btn-refresh-status:hover:not(:disabled),
+:global(html[data-color-mode="dark"]) .btn-action-dark.btn-refresh-status:hover:not(:disabled) {
+  background: var(--bg-capsule-btn-hover, #37373d);
+  color: #ffffff;
+}
+
+:global(html.dark) .platforms-card-box,
+:global(html[data-color-mode="dark"]) .platforms-card-box {
+  background: var(--bg-app, #1e1e1e);
+  border-color: var(--border-color);
+  box-shadow: none;
+}
+
+:global(html.dark) .platform-row-item,
+:global(html[data-color-mode="dark"]) .platform-row-item {
+  background: var(--bg-app, #1e1e1e);
+  border-bottom-color: var(--border-color);
+}
+
+:global(html.dark) .platform-row-item:hover,
+:global(html[data-color-mode="dark"]) .platform-row-item:hover {
+  background: var(--bg-capsule-btn-hover, #37373d);
+}
+
+:global(html.dark) .platform-row-item.is-selected,
+:global(html[data-color-mode="dark"]) .platform-row-item.is-selected {
+  background: rgba(55, 148, 255, 0.1);
+}
+
+:global(html.dark) .platform-name,
+:global(html[data-color-mode="dark"]) .platform-name {
+  color: var(--text-main, #cccccc);
+}
+
+:global(html.dark) .platform-sub,
+:global(html[data-color-mode="dark"]) .platform-sub {
+  color: var(--text-muted, #969696);
+}
+
+:global(html.dark) .row-select-checkbox,
+:global(html[data-color-mode="dark"]) .row-select-checkbox {
+  background: var(--bg-card, #252526);
+  border-color: var(--border-strong, rgba(255, 255, 255, 0.2));
+}
+
+:global(html.dark) .row-select-checkbox:hover,
+:global(html[data-color-mode="dark"]) .row-select-checkbox:hover {
+  border-color: var(--accent-color, #3794ff);
+  background: var(--accent-bg);
+}
+
+:global(html.dark) .row-select-checkbox.is-checked,
+:global(html[data-color-mode="dark"]) .row-select-checkbox.is-checked {
+  background: var(--accent-color, #3794ff);
+  border-color: var(--accent-color, #3794ff);
+}
+
+:global(html.dark) .platform-row-item.is-unlogged,
+:global(html[data-color-mode="dark"]) .platform-row-item.is-unlogged {
+  background: var(--bg-app, #1e1e1e);
+}
+
+:global(html.dark) .platform-row-item.is-unlogged:hover,
+:global(html[data-color-mode="dark"]) .platform-row-item.is-unlogged:hover {
+  background: var(--bg-capsule-btn-hover, #37373d);
+}
+
+:global(html.dark) .platform-row-item.is-unlogged .platform-name,
+:global(html[data-color-mode="dark"]) .platform-row-item.is-unlogged .platform-name {
+  color: var(--text-muted, #969696);
+}
+
+:global(html.dark) .platform-row-item.is-unlogged:hover .platform-name,
+:global(html[data-color-mode="dark"]) .platform-row-item.is-unlogged:hover .platform-name {
+  color: var(--text-main, #ffffff);
+}
+
+:global(html.dark) .badge-logged-in-clean,
+:global(html[data-color-mode="dark"]) .badge-logged-in-clean {
+  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(34, 197, 94, 0.3);
+  color: #4ade80;
+}
+
+:global(html.dark) .badge-logged-in-clean.is-selected-badge,
+:global(html[data-color-mode="dark"]) .badge-logged-in-clean.is-selected-badge {
+  background: rgba(55, 148, 255, 0.2);
+  border-color: rgba(55, 148, 255, 0.4);
+  color: #60a5fa;
+}
+
+:global(html.dark) .settings-card-box,
+:global(html[data-color-mode="dark"]) .settings-card-box {
+  background: var(--bg-app, #1e1e1e);
+  border-color: var(--border-color);
+  box-shadow: none;
+}
+
+:global(html.dark) .setting-title,
+:global(html[data-color-mode="dark"]) .setting-title {
+  color: var(--text-main, #cccccc);
+}
+
+:global(html.dark) .setting-desc,
+:global(html[data-color-mode="dark"]) .setting-desc {
+  color: var(--text-muted, #969696);
+}
+
+:global(html.dark) .btn-link-change-cover,
+:global(html[data-color-mode="dark"]) .btn-link-change-cover {
+  color: var(--text-muted, #969696);
+}
+
+:global(html.dark) .btn-link-change-cover:hover,
+:global(html[data-color-mode="dark"]) .btn-link-change-cover:hover {
+  color: var(--accent-color, #3794ff);
+}
+
+:global(html.dark) .setting-icon-badge.is-file,
+:global(html[data-color-mode="dark"]) .setting-icon-badge.is-file {
+  background: var(--bg-toolbar, #2d2d2d);
+  color: var(--text-muted, #969696);
+}
+
+:global(html.dark) .setting-icon-badge.is-clock,
+:global(html[data-color-mode="dark"]) .setting-icon-badge.is-clock {
+  background: rgba(245, 158, 11, 0.15);
+  color: #fbbf24;
+}
+
+:global(html.dark) .cover-preview-box,
+:global(html[data-color-mode="dark"]) .cover-preview-box {
+  border-color: var(--border-color);
+  background: var(--bg-card, #252526);
+}
+
+:global(html.dark) .cover-expand-btn,
+:global(html[data-color-mode="dark"]) .cover-expand-btn {
+  background: rgba(45, 45, 45, 0.85);
+  color: var(--text-main, #cccccc);
+}
+
+:global(html.dark) .cover-expand-btn:hover,
+:global(html[data-color-mode="dark"]) .cover-expand-btn:hover {
+  background: var(--bg-card, #252526);
+  color: #ffffff;
+}
+
+:global(html.dark) .datetime-picker-row,
+:global(html[data-color-mode="dark"]) .datetime-picker-row {
+  background: var(--bg-card, #252526);
+  border-color: var(--border-color);
+}
+
+:global(html.dark) .time-input,
+:global(html[data-color-mode="dark"]) .time-input {
+  color: var(--text-main, #cccccc);
+}
+
+:global(html.dark) .auto-open-draft-toggle,
+:global(html[data-color-mode="dark"]) .auto-open-draft-toggle {
+  color: var(--text-muted, #969696);
+}
+
+/* Modals inside Launchpad (Account Manager & Cover Picker) */
+:global(html.dark) .manage-modal-window,
+:global(html[data-color-mode="dark"]) .manage-modal-window,
+:global(html.dark) .cover-picker-modal,
+:global(html[data-color-mode="dark"]) .cover-picker-modal {
+  background: var(--bg-card, #252526);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-modal);
+}
+
+:global(html.dark) .manage-modal-header,
+:global(html[data-color-mode="dark"]) .manage-modal-header,
+:global(html.dark) .cover-picker-header,
+:global(html[data-color-mode="dark"]) .cover-picker-header {
+  background: var(--bg-card, #252526);
+  border-bottom-color: var(--border-color);
+}
+
+:global(html.dark) .manage-modal-title,
+:global(html[data-color-mode="dark"]) .manage-modal-title,
+:global(html.dark) .cover-picker-title,
+:global(html[data-color-mode="dark"]) .cover-picker-title {
+  color: var(--text-main, #cccccc);
+}
+
+:global(html.dark) .manage-modal-subtitle,
+:global(html[data-color-mode="dark"]) .manage-modal-subtitle,
+:global(html.dark) .cover-picker-subtitle,
+:global(html[data-color-mode="dark"]) .cover-picker-subtitle {
+  color: var(--text-muted, #969696);
+}
+
+:global(html.dark) .manage-modal-body-layout,
+:global(html[data-color-mode="dark"]) .manage-modal-body-layout {
+  background: var(--bg-app, #1e1e1e);
+}
+
+:global(html.dark) .manage-sidebar-left,
+:global(html[data-color-mode="dark"]) .manage-sidebar-left {
+  background: var(--bg-app, #1e1e1e);
+  border-right-color: var(--border-color);
+}
+
+:global(html.dark) .manage-content-right,
+:global(html[data-color-mode="dark"]) .manage-content-right {
+  background: var(--bg-card, #252526);
+}
+
+:global(html.dark) .manage-side-nav-btn .nav-btn-name,
+:global(html[data-color-mode="dark"]) .manage-side-nav-btn .nav-btn-name {
+  color: var(--text-muted, #969696);
+}
+
+:global(html.dark) .manage-side-nav-btn:hover,
+:global(html[data-color-mode="dark"]) .manage-side-nav-btn:hover {
+  background: var(--bg-capsule-btn-hover, #37373d);
+}
+
+:global(html.dark) .manage-side-nav-btn.active,
+:global(html[data-color-mode="dark"]) .manage-side-nav-btn.active {
+  background: var(--bg-card, #252526);
+  border-color: var(--accent-color, #3794ff);
+}
+
+:global(html.dark) .manage-side-nav-btn.active .nav-btn-name,
+:global(html[data-color-mode="dark"]) .manage-side-nav-btn.active .nav-btn-name {
+  color: var(--accent-color, #3794ff);
+}
+
+:global(html.dark) .manage-category-name,
+:global(html[data-color-mode="dark"]) .manage-category-name {
+  color: var(--text-main, #cccccc);
+}
+
+:global(html.dark) .cover-picker-body,
+:global(html[data-color-mode="dark"]) .cover-picker-body {
+  background: var(--bg-app, #1e1e1e);
+}
+
+:global(html.dark) .picker-section-label,
+:global(html[data-color-mode="dark"]) .picker-section-label {
+  color: var(--text-main, #cccccc);
+}
+
+:global(html.dark) .cover-picker-footer,
+:global(html[data-color-mode="dark"]) .cover-picker-footer {
+  background: var(--bg-card, #252526);
+  border-top-color: var(--border-color);
+}
+
+:global(html.dark) .btn-picker-cancel,
+:global(html[data-color-mode="dark"]) .btn-picker-cancel {
+  background: var(--bg-toolbar, #2d2d2d);
+  border-color: var(--border-color);
+  color: var(--text-muted, #969696);
+}
+
+:global(html.dark) .btn-picker-cancel:hover,
+:global(html[data-color-mode="dark"]) .btn-picker-cancel:hover {
+  background: var(--bg-capsule-btn-hover, #37373d);
+  color: var(--text-main, #ffffff);
+}
 </style>

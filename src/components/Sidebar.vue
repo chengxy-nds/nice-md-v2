@@ -420,10 +420,13 @@ function onGroupReorderDrop(e, targetGroupId) {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--bg-app);
+  background: var(--bg-sidebar);
   border-right: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sidebar-left);
   padding: 20px 16px 20px;
   overflow: hidden;
+  z-index: 4;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 /* ── 1. Action Buttons ── */
@@ -437,12 +440,12 @@ function onGroupReorderDrop(e, targetGroupId) {
 .btn-create-doc {
   width: 100%;
   height: 32px;
-  background: var(--text-color, #1C1C1C);
-  color: var(--bg-app, #FFFFFF);
+  background: var(--accent-color);
+  color: #ffffff;
   border: none;
   border-radius: 6px;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;

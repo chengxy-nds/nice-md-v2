@@ -1,13 +1,40 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
-:root {
-  /* Premium Studio Design System: Apple & Linear Inspired */
-  --bg-app: #FAFAF8;            /* Warm White */
+:root,
+html[data-color-mode="light"] {
+  /* Surface / Container Tokens */
+  --bg-app: #FAFAF8;            /* Warm White background */
+  --bg-card: #FFFFFF;
+  --bg-header: #FFFFFF;
+  --bg-sidebar: #FFFFFF;
+  --bg-toolbar: #FFFFFF;
   --bg-editor: #FAFAF8;
-  --bg-preview: #FAFAF8;
+  --bg-preview: #F2F2EE;
+  --bg-popover: #FFFFFF;
+  --bg-capsule: #FFFFFF;
+  --bg-capsule-btn-hover: #F1F5F9;
+
+  /* Typography Tokens */
   --text-main: #2D3139;         /* Rich Dark Gray */
   --text-muted: #626A7A;        /* Muted Slate Gray */
-  --border-color: #E6E6E2;      /* Elegant Soft Line */
+  --text-subtle: #8F97A3;
+
+  /* Border & Divider Tokens */
+  --border-color: rgba(0, 0, 0, 0.06);
+  --border-strong: rgba(0, 0, 0, 0.12);
+
+  /* Elevation / Shadow Tokens */
+  --shadow-header: 0 2px 10px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
+  --shadow-sidebar-left: 2px 0 10px rgba(0, 0, 0, 0.03);
+  --shadow-sidebar-right: -2px 0 10px rgba(0, 0, 0, 0.03);
+  --shadow-toolbar: 0 1px 3px rgba(0, 0, 0, 0.02);
+  --shadow-popover: 0 4px 16px rgba(0, 0, 0, 0.08);
+  --shadow-capsule: 0 2px 10px rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.1);
+
+  /* Accent Tokens */
   --accent-color: #5B6C8F;      /* Low-saturation Gray-Blue */
   --accent-hover: #455270;
   --accent-bg: #F2F2EE;
@@ -15,8 +42,6 @@
   --accent-sage: #A8C7A0;       /* Muted Sage Green */
   --code-bg: #F4F4F0;
   --code-text: #FF7A59;
-  --shadow-sm: 0 1px 3px rgba(91, 108, 143, 0.05);
-  --shadow-md: 0 8px 30px rgba(91, 108, 143, 0.06);
 
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-heading: 'Georgia', 'Outfit', serif;
@@ -39,6 +64,49 @@
   --hljs-variable: #e06c75;
   --hljs-mac-bg: #282c34;
   --hljs-mac-text: #5c6370;
+}
+
+html.dark,
+html[data-color-mode="dark"] {
+  /* VS Code / Antigravity IDE Dark Studio Surfaces */
+  --bg-app: #1e1e1e;
+  --bg-card: #252526;
+  --bg-header: #2d2d2d;
+  --bg-sidebar: #252526;
+  --bg-toolbar: #2d2d2d;
+  --bg-editor: #1e1e1e;
+  --bg-preview: #252526;
+  --bg-popover: #252526;
+  --bg-capsule: #2d2d2d;
+  --bg-capsule-btn-hover: #37373d;
+
+  /* Typography */
+  --text-main: #cccccc;
+  --text-muted: #969696;
+  --text-subtle: #6e7681;
+
+  /* Borders & Dividers */
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.15);
+
+  /* Elevation / Shadows */
+  --shadow-header: 0 2px 10px rgba(0, 0, 0, 0.35);
+  --shadow-sidebar-left: 2px 0 10px rgba(0, 0, 0, 0.25);
+  --shadow-sidebar-right: -2px 0 10px rgba(0, 0, 0, 0.25);
+  --shadow-toolbar: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-popover: 0 6px 20px rgba(0, 0, 0, 0.45);
+  --shadow-capsule: 0 3px 12px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.5);
+
+  /* Accents & Highlights */
+  --accent-color: #3794ff;
+  --accent-hover: #1b82e6;
+  --accent-bg: rgba(55, 148, 255, 0.12);
+  --accent-coral: #ce9178;
+  --code-bg: #2d2d30;
+  --code-text: #ce9178;
 }
 
 * {
@@ -680,5 +748,39 @@ section pre::-webkit-scrollbar,
   .workflow-arrow {
     display: none;
   }
+}
+
+/* Deep Dark Mode Adaptations for Markdown Body & Article Preview */
+html.dark .markdown-body,
+html[data-color-mode="dark"] .markdown-body {
+  color: var(--text-main);
+}
+
+html.dark .preview-body:not(.is-wechat-wrapper) .markdown-body,
+html[data-color-mode="dark"] .preview-body:not(.is-wechat-wrapper) .markdown-body {
+  background-color: transparent !important;
+}
+
+html.dark .preview-body:not(.is-wechat-wrapper) .markdown-body > section:first-child,
+html[data-color-mode="dark"] .preview-body:not(.is-wechat-wrapper) .markdown-body > section:first-child {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+html.dark .markdown-body p,
+html[data-color-mode="dark"] .markdown-body p {
+  color: var(--text-main) !important;
+}
+
+html.dark .markdown-body li,
+html[data-color-mode="dark"] .markdown-body li {
+  color: var(--text-main) !important;
+}
+
+html.dark .markdown-body blockquote,
+html[data-color-mode="dark"] .markdown-body blockquote {
+  border-left-color: var(--accent-color);
+  background: var(--bg-card);
+  color: var(--text-muted);
 }
 

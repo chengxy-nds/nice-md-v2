@@ -1339,12 +1339,13 @@ const cssLineCount = computed(() => {
   height: 100%;
   max-height: 100%;
   min-height: 0;
-  background: var(--bg-editor);
+  background: var(--bg-sidebar);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   user-select: none;
   box-sizing: border-box;
+  transition: background 0.3s ease;
 }
 
 .customizer-header {
@@ -1354,7 +1355,8 @@ const cssLineCount = computed(() => {
   padding: 12px 14px;
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
-  background: var(--bg-app);
+  background: var(--bg-sidebar);
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .customizer-header-left {
@@ -1398,9 +1400,10 @@ const cssLineCount = computed(() => {
   display: flex;
   padding: 6px 12px;
   gap: 6px;
-  background: var(--bg-app);
+  background: var(--bg-sidebar);
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .mode-tab-btn {

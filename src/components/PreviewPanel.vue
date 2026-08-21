@@ -449,6 +449,7 @@ const handleCopyMarkdownText = async () => {
   height: 100%;
   overflow: hidden;
   background: var(--bg-preview);
+  transition: background 0.3s ease;
 }
 
 .theme-sidebar-wrapper {
@@ -460,8 +461,12 @@ const handleCopyMarkdownText = async () => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  background: var(--bg-sidebar);
   border-left: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sidebar-right);
   box-sizing: border-box;
+  z-index: 6;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .preview-header {
@@ -470,7 +475,7 @@ const handleCopyMarkdownText = async () => {
   align-items: center;
   padding: 6px 16px;
   height: 48px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  border-bottom: 1px solid var(--border-color);
   box-sizing: border-box;
 }
 
@@ -490,25 +495,19 @@ const handleCopyMarkdownText = async () => {
 
 /* Right-side slider / bar styling — independent, pinned to the right edge */
 .preview-right-bar {
-  --bg-editor: #FAFAF8;
-  --bg-preview: #FAFAF8;
-  --text-main: #2D3139;
-  --text-muted: #626A7A;
-  --border-color: #E6E6E2;
-  --accent-color: #5B6C8F;
-  --accent-hover: #455270;
-  --accent-bg: #F2F2EE;
-
   width: 52px;
   flex-shrink: 0;
-  background: var(--bg-editor);
+  background: var(--bg-sidebar);
   border-left: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sidebar-right);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
   padding: 10px 0;
   box-sizing: border-box;
+  z-index: 7;
+  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 

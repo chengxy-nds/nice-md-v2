@@ -262,7 +262,12 @@ const injectedCustomCss = computed(() => {
 
 const activeThemeStyles = computed(() => {
   const theme = themes.find(t => t.id === props.themeId) || themes[0];
-  return theme.styles;
+  const s = { ...(theme.styles || {}) };
+  delete s['--bg-app'];
+  delete s['--bg-editor'];
+  delete s['--bg-preview'];
+  delete s['--border-color'];
+  return s;
 });
 
 const effectiveCodeThemeId = computed(() => {
@@ -594,7 +599,7 @@ function handlePreviewElementClick(e) {
   overflow-y: auto;
   scrollbar-width: thin;
   padding: 0;
-  background-color: var(--bg-editor);
+  background-color: var(--bg-preview);
   color: var(--text-main);
   transition: background-color 0.3s ease, color 0.3s ease;
 }
@@ -611,7 +616,7 @@ function handlePreviewElementClick(e) {
 .preview-body:not(.is-wechat-wrapper) {
   display: block;
   padding: 0;
-  background-color: var(--bg-editor);
+  background-color: var(--bg-preview);
   background-image: none;
 }
 
@@ -630,6 +635,24 @@ function handlePreviewElementClick(e) {
   box-shadow: none;
   word-break: break-word;
   overflow-wrap: break-word;
+}
+
+/* Deep dark mode support for standard preview surface */
+:global(html.dark) .preview-body:not(.is-wechat-wrapper) .markdown-body > section:first-child,
+:global(html[data-color-mode="dark"]) .preview-body:not(.is-wechat-wrapper) .markdown-body > section:first-child {
+  background-color: transparent !important;
+  background-image: none !important;
+  color: var(--text-main) !important;
+}
+
+:global(html.dark) .preview-body:not(.is-wechat-wrapper) .markdown-body p,
+:global(html[data-color-mode="dark"]) .preview-body:not(.is-wechat-wrapper) .markdown-body p {
+  color: var(--text-main) !important;
+}
+
+:global(html.dark) .preview-body:not(.is-wechat-wrapper) .markdown-body li,
+:global(html[data-color-mode="dark"]) .preview-body:not(.is-wechat-wrapper) .markdown-body li {
+  color: var(--text-main) !important;
 }
 
 .markdown-body :deep(> :first-child),
