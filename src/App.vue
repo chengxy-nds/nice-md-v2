@@ -48,6 +48,17 @@ function handleInsertMaterial(htmlSnippet) {
   currentView.value = 'editor';
   soundEngine.playChime();
 }
+
+function handleApplyBackground(mat) {
+  const normId = (mat.id || '').replace(/^bg-/, '').replace(/-classic$/, '').replace(/-none$/, '');
+  const updatedStyles = JSON.parse(JSON.stringify(customStyles.value || {}));
+  if (!updatedStyles.body) updatedStyles.body = {};
+  updatedStyles.body.backgroundTexture = normId;
+  updatedStyles.body.materialTemplateId = normId;
+  customStyles.value = updatedStyles;
+  currentView.value = 'editor';
+  soundEngine.playChime();
+}
 const documents = ref([]);
 const groups = ref([]);
 const activeDocId = ref(null);
@@ -229,26 +240,6 @@ function handleReorderGroups({ groupId, targetGroupId }) {
 
 const currentTheme = ref(localStorage.getItem('nicemd_theme') || 'classic-indigo');
 const currentCodeTheme = ref(localStorage.getItem('nicemd_code_theme') || 'mdnice-classic');
-const isDarkMode = ref(localStorage.getItem('nicemd_color_mode') === 'dark');
-
-function applyColorMode() {
-  const isDark = isDarkMode.value;
-  const root = document.documentElement;
-  if (isDark) {
-    root.classList.add('dark');
-    root.setAttribute('data-color-mode', 'dark');
-  } else {
-    root.classList.remove('dark');
-    root.setAttribute('data-color-mode', 'light');
-  }
-  localStorage.setItem('nicemd_color_mode', isDark ? 'dark' : 'light');
-}
-
-function toggleColorMode() {
-  soundEngine.playClick();
-  isDarkMode.value = !isDarkMode.value;
-  applyColorMode();
-}
 
 const activeThemeName = computed(() =>
   themePresets.find(t => t.id === currentTheme.value)?.name || '山海'
@@ -1113,7 +1104,7 @@ watch(customStyles, () => {
 </script>
 
 <template>
-  <div class="app-container" :class="{ 'dark': isDarkMode }" :data-color-mode="isDarkMode ? 'dark' : 'light'">
+  <div class="app-container" data-color-mode="light">
     <!-- Header spanning top full width -->
     <header class="app-header">
       <div class="header-left">
@@ -1214,7 +1205,6 @@ watch(customStyles, () => {
         <IconBar
           :sidebarVisible="sidebarVisible"
           :currentView="currentView"
-          :isDarkMode="isDarkMode"
           @toggle-tab="(tab) => {
             if (tab === 'docs') {
               if (currentView !== 'editor') currentView = 'editor';
@@ -1263,6 +1253,7 @@ watch(customStyles, () => {
         <MaterialCenter
           v-else-if="currentView === 'materials'"
           @insert-material="handleInsertMaterial"
+          @apply-background="handleApplyBackground"
           @back-to-editor="currentView = 'editor'"
         />
 

@@ -152,7 +152,7 @@ export function buildThemeTypoCss(theme) {
 
   if (T.p) {
     const d = [];
-    if (T.p.color) d.push(`color: var(--ct-p-color, ${T.p.color});`);
+    if (T.p.color) d.push(`color: var(--ct-p-color, var(--ct-body-color, ${T.p.color}));`);
     if (T.p.size) d.push(`font-size: var(--ct-p-size, ${T.p.size});`);
     if (T.p.lineHeight) d.push(`line-height: var(--ct-p-lineheight, ${T.p.lineHeight});`);
     if (T.p.letterSpacing) d.push(`letter-spacing: ${T.p.letterSpacing};`);

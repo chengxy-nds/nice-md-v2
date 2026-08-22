@@ -29,6 +29,7 @@ const props = defineProps({
 const emit = defineEmits(['select', 'close', 'open-customizer', 'update-prefix']);
 
 const typeLabels = {
+  body: '整体背景底纹',
   h1: 'H1 一级标题',
   h2: 'H2 二级标题',
   h3: 'H3 三级标题',

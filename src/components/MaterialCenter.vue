@@ -14,13 +14,15 @@ import {
   AlertCircle,
   Minus,
   ListOrdered,
-  UserCheck
+  UserCheck,
+  LayoutGrid,
+  Palette
 } from '@lucide/vue';
 import { materialCategories, materials } from '../utils/materialLibrary';
 import { soundEngine } from '../utils/synthAudio';
 import confetti from 'canvas-confetti';
 
-const emit = defineEmits(['back-to-editor', 'insert-material']);
+const emit = defineEmits(['back-to-editor', 'insert-material', 'apply-background']);
 
 const searchQuery = ref('');
 const activeCategory = ref('all');
@@ -28,12 +30,14 @@ const copiedId = ref(null);
 
 const categoryIcons = {
   all: Boxes,
+  backgrounds: LayoutGrid,
   headings: Heading,
   quotes: Quote,
   callouts: AlertCircle,
   dividers: Minus,
   lists: ListOrdered,
-  footer: UserCheck
+  header_widgets: Sparkles,
+  footer_widgets: UserCheck
 };
 
 const filteredMaterials = computed(() => {
@@ -70,6 +74,16 @@ function handleInsert(mat) {
   });
   emit('insert-material', mat.html);
 }
+
+function handleApplyBackground(mat) {
+  soundEngine.playChime();
+  confetti({
+    particleCount: 60,
+    spread: 50,
+    origin: { y: 0.6 }
+  });
+  emit('apply-background', mat);
+}
 </script>
 
 <template>
@@ -93,7 +107,7 @@ function handleInsert(mat) {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="搜索标题、引用、提示框等素材..."
+          placeholder="搜索背景底纹、标题、引用、提示框等素材..."
         />
         <button v-if="searchQuery" class="mc-clear-btn" @click="searchQuery = ''">
           <X size="13" />
@@ -123,30 +137,62 @@ function handleInsert(mat) {
           v-for="mat in filteredMaterials"
           :key="mat.id"
           class="mc-card"
-          @click="handleInsert(mat)"
         >
-          <!-- Top Right Tag/Badge (e.g., VIP, 135爆款) -->
-          <div v-if="mat.tag" class="mc-card-badge" :class="{ 'is-vip': mat.tag === 'VIP' }">
+          <!-- Top Right Tag/Badge (e.g., VIP, 爆款, 推荐) -->
+          <div v-if="mat.tag" class="mc-card-badge" :class="{ 'is-vip': mat.tag === 'VIP' || mat.tag === '爆款' }">
             {{ mat.tag }}
           </div>
 
-          <!-- Material Live Render Box -->
+          <!-- Pure Material Live Render Area (纯粹展示素材样式，无任何多余文字描述) -->
           <div class="mc-card-preview">
             <div class="mc-render-paper" v-html="mat.html"></div>
           </div>
 
-          <!-- Quick Action Bar -->
-          <div class="mc-card-actions" @click.stop>
-            <button class="mc-btn-secondary" @click="handleCopy(mat)">
-              <Check v-if="copiedId === mat.id" size="13" />
-              <Copy v-else size="13" />
-              <span>{{ copiedId === mat.id ? '已复制' : '复制' }}</span>
-            </button>
+          <!-- Elegant Frosted Glass Hover Overlay (鼠标划过时优雅浮现蒙版和操作按钮) -->
+          <div class="mc-card-overlay">
+            <div class="mc-overlay-actions" @click.stop>
+              <!-- Category is backgrounds -->
+              <template v-if="mat.category === 'backgrounds'">
+                <button
+                  class="mc-overlay-btn primary"
+                  @click="handleApplyBackground(mat)"
+                  title="套用为当前文章整体背景底纹"
+                >
+                  <Palette size="14" />
+                  <span>套用为整体背景</span>
+                </button>
+                <button
+                  class="mc-overlay-btn secondary"
+                  @click="handleCopy(mat)"
+                  title="复制素材 HTML"
+                >
+                  <Check v-if="copiedId === mat.id" size="14" />
+                  <Copy v-else size="14" />
+                  <span>{{ copiedId === mat.id ? '已复制' : '复制' }}</span>
+                </button>
+              </template>
 
-            <button class="mc-btn-primary" @click="handleInsert(mat)">
-              <Plus size="13" />
-              <span>插入编辑器</span>
-            </button>
+              <!-- Other categories: headings, quotes, callouts, dividers, lists, widgets, etc. -->
+              <template v-else>
+                <button
+                  class="mc-overlay-btn primary"
+                  @click="handleInsert(mat)"
+                  title="插入到当前编辑器"
+                >
+                  <Plus size="14" />
+                  <span>插入编辑器</span>
+                </button>
+                <button
+                  class="mc-overlay-btn secondary"
+                  @click="handleCopy(mat)"
+                  title="复制素材 HTML"
+                >
+                  <Check v-if="copiedId === mat.id" size="14" />
+                  <Copy v-else size="14" />
+                  <span>{{ copiedId === mat.id ? '已复制' : '复制' }}</span>
+                </button>
+              </template>
+            </div>
           </div>
         </div>
 
@@ -223,10 +269,11 @@ function handleInsert(mat) {
 }
 
 .mc-title {
-  font-size: 15px;
-  font-weight: 600;
-  margin: 0;
+  font-size: 16px;
+  font-weight: 700;
   color: var(--text-main, #111827);
+  margin: 0;
+  letter-spacing: -0.2px;
 }
 
 .mc-count {
@@ -236,7 +283,7 @@ function handleInsert(mat) {
 
 .mc-search-box {
   position: relative;
-  width: 260px;
+  width: 280px;
   display: flex;
   align-items: center;
 }
@@ -250,45 +297,70 @@ function handleInsert(mat) {
 
 .mc-search-box input {
   width: 100%;
-  padding: 6px 28px 6px 30px;
-  border-radius: 8px;
+  height: 32px;
+  padding: 0 28px 0 32px;
+  border-radius: 6px;
   border: 1px solid var(--border-color, #e5e7eb);
-  background: var(--bg-main, #f9fafb);
+  background: var(--bg-preview, #f9fafb);
   color: var(--text-main, #111827);
   font-size: 12px;
   outline: none;
+  transition: all 0.15s ease;
 }
 
 .mc-search-box input:focus {
   border-color: var(--accent-color, #2563eb);
-  background: #ffffff;
+  background: var(--bg-editor, #ffffff);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
 }
 
 .mc-clear-btn {
   position: absolute;
   right: 8px;
-  background: transparent;
+  padding: 2px;
   border: none;
+  background: transparent;
   color: var(--text-muted, #9ca3af);
   cursor: pointer;
+  border-radius: 4px;
 }
 
-/* Workspace */
+.mc-clear-btn:hover {
+  color: var(--text-main, #374151);
+}
+
+/* Content Area */
 .mc-content {
   flex: 1;
   overflow-y: auto;
-  padding: 20px 28px 36px;
+  padding: 20px 24px 40px;
+}
+
+.mc-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.mc-content::-webkit-scrollbar-thumb {
+  background: var(--border-color, #e5e7eb);
+  border-radius: 3px;
 }
 
 /* Category Tabs */
 .mc-tabs {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px;
-  border-radius: 10px;
-  background: var(--border-color, #f3f4f6);
+  gap: 6px;
   margin-bottom: 24px;
+  padding: 4px;
+  background: var(--bg-preview, #f1f5f9);
+  border-radius: 10px;
+  width: fit-content;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.mc-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .mc-tab {
@@ -304,6 +376,7 @@ function handleInsert(mat) {
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
+  white-space: nowrap;
 }
 
 .mc-tab:hover {
@@ -333,13 +406,15 @@ function handleInsert(mat) {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 140px;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .mc-card:hover {
   border-color: var(--accent-color, #2563eb);
-  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.12);
+  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.14);
   transform: translateY(-2px);
 }
 
@@ -353,89 +428,126 @@ function handleInsert(mat) {
   font-weight: 700;
   padding: 2px 9px;
   border-radius: 12px;
-  background: #f1f5f9;
+  background: rgba(241, 245, 249, 0.95);
   color: #475569;
-  border: 1px solid #e2e8f0;
+  border: 1px solid rgba(226, 232, 240, 0.8);
   letter-spacing: 0.3px;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.mc-card:hover .mc-card-badge {
+  opacity: 0;
 }
 
 .mc-card-badge.is-vip {
   background: #fef3c7;
   color: #d97706;
-  border: 1px solid #fde68a;
+  border-color: #fde68a;
   box-shadow: 0 1px 4px rgba(217, 119, 6, 0.15);
 }
 
-/* Live Render Box */
+/* Pure Material Preview Area */
 .mc-card-preview {
   flex: 1;
-  min-height: 120px;
-  background: #ffffff;
-  padding: 24px 18px 18px 18px;
+  width: 100%;
+  padding: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
+  box-sizing: border-box;
+  background: #ffffff;
 }
 
 .mc-render-paper {
   width: 100%;
-  background: #ffffff;
-  border: 1px dashed #e2e8f0;
+  background: transparent;
   border-radius: 8px;
-  padding: 12px 14px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.01);
-  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  transition: transform 0.25s ease;
 }
 
 .mc-card:hover .mc-render-paper {
-  border-color: #cbd5e1;
-  border-style: solid;
+  transform: scale(0.98);
 }
 
-/* Actions Bar */
-.mc-card-actions {
-  padding: 10px 14px 12px;
-  background: #f8fafc;
-  border-top: 1px solid #f1f5f9;
+/* Elegant Frosted Glass Hover Overlay (鼠标悬浮蒙版) */
+.mc-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   display: flex;
-  gap: 8px;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  pointer-events: none;
+  border-radius: 12px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 10;
 }
 
-.mc-btn-secondary,
-.mc-btn-primary {
-  flex: 1;
+.mc-card:hover .mc-card-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mc-overlay-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transform: translateY(8px);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mc-card:hover .mc-overlay-actions {
+  transform: translateY(0);
+}
+
+.mc-overlay-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 7px 12px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 500;
+  gap: 6px;
+  padding: 8px 15px;
+  border-radius: 8px;
+  font-size: 12.5px;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.mc-btn-secondary {
-  border: 1px solid var(--border-color, #e5e7eb);
-  background: #ffffff;
-  color: var(--text-main, #374151);
-}
-
-.mc-btn-secondary:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-}
-
-.mc-btn-primary {
   border: none;
-  background: var(--accent-color, #2563eb);
-  color: #ffffff;
+  outline: none;
+  white-space: nowrap;
+  transition: all 0.18s ease;
+  user-select: none;
 }
 
-.mc-btn-primary:hover {
-  opacity: 0.92;
+.mc-overlay-btn.primary {
+  background: #2563eb;
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45);
+}
+
+.mc-overlay-btn.primary:hover {
+  background: #1d4ed8;
+  transform: scale(1.04);
+}
+
+.mc-overlay-btn.secondary {
+  background: rgba(255, 255, 255, 0.95);
+  color: #1e293b;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.mc-overlay-btn.secondary:hover {
+  background: #ffffff;
+  color: #0f172a;
+  transform: scale(1.04);
 }
 
 .mc-empty {

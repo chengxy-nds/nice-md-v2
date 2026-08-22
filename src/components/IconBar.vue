@@ -1,10 +1,9 @@
 <script setup>
-import { FileText, LayoutTemplate, Share2, Settings, Info, Sun, Moon } from '@lucide/vue';
+import { FileText, LayoutTemplate, Share2, Settings, Info } from '@lucide/vue';
 
 defineProps({
   sidebarVisible: { type: Boolean, default: true },
-  currentView: { type: String, default: 'editor' },
-  isDarkMode: { type: Boolean, default: false }
+  currentView: { type: String, default: 'editor' }
 });
 
 defineEmits(['toggle-tab']);
@@ -58,15 +57,6 @@ defineEmits(['toggle-tab']);
     <div class="icon-bar-bottom">
       <button class="icon-btn icon-btn-subtle" @click="$emit('toggle-tab', 'info')" title="关于">
         <Info size="20" stroke-width="1.6" />
-      </button>
-      <button
-        class="icon-btn icon-btn-subtle theme-toggle-btn"
-        :class="{ 'is-dark': isDarkMode }"
-        @click="$emit('toggle-tab', 'theme')"
-        :title="isDarkMode ? '切换为亮色模式' : '切换为深色模式'"
-      >
-        <Sun v-if="isDarkMode" size="20" stroke-width="1.6" />
-        <Moon v-else size="20" stroke-width="1.6" />
       </button>
     </div>
   </nav>
@@ -127,14 +117,5 @@ defineEmits(['toggle-tab']);
 .icon-btn-subtle:hover {
   color: var(--text-main);
   background: var(--accent-bg);
-}
-
-.theme-toggle-btn {
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), color 0.15s ease;
-}
-
-.theme-toggle-btn:hover {
-  transform: rotate(15deg) scale(1.05);
-  color: var(--accent-coral, #ff7a59);
 }
 </style>

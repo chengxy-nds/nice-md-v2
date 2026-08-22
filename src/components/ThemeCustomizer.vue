@@ -2,7 +2,7 @@
 import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { Palette, X, Save, Sliders, Code2, RotateCcw, Check, Sparkles, Hash, FileType } from 'lucide-vue-next';
 import { getThemeDefaultStyles } from '../utils/themePresets';
-import { allMaterialTemplatesMap, getMaterialTemplatesForKey } from '../utils/materialLibrary';
+import { allMaterialTemplatesMap, getMaterialTemplatesForKey, backgroundTemplates } from '../utils/materialLibrary';
 import { codeThemes } from '../utils/codeThemes';
 import { EditorView, basicSetup } from 'codemirror';
 import { css } from '@codemirror/lang-css';
@@ -33,11 +33,12 @@ const materialModalOpen = ref(false);
 const currentModalKey = ref('h1');
 
 function hasMaterialSupport(key) {
-  return ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'hr', 'ul', 'ol', 'li', 'header_widget', 'footer_widget'].includes(key);
+  return ['body', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'hr', 'ul', 'ol', 'li', 'header_widget', 'footer_widget'].includes(key);
 }
 
 function getMaterialTypeLabel(key) {
   const map = {
+    body: '整体背景底纹',
     h1: 'H1 一级标题',
     h2: 'H2 二级标题',
     h3: 'H3 三级标题',
@@ -66,6 +67,9 @@ function selectMaterialTemplate(templateId) {
     updateGlobalWidget('headerWidgetId', templateId);
   } else if (key === 'footer_widget') {
     updateGlobalWidget('footerWidgetId', templateId);
+  } else if (key === 'body') {
+    updateStyle('body', 'backgroundTexture', templateId);
+    updateStyle('body', 'materialTemplateId', templateId);
   } else {
     updateStyle(key, 'materialTemplateId', templateId);
   }
@@ -277,10 +281,16 @@ function generateCssFromStyles(styles) {
 
   // Body
   if (S.body) {
+    const bgTexture = S.body.backgroundTexture || S.body.materialTemplateId;
+    const meta = (bgTexture && bgTexture !== 'none') ? { material: bgTexture } : {};
     css += addRule('#nice, xiaofu, .markdown-body', {
       color: cleanColor(S.body.color, '#2b2b2b'),
-      backgroundColor: S.body.backgroundColor
-    });
+      backgroundColor: S.body.backgroundColor,
+      fontSize: S.body.fontSize,
+      lineHeight: S.body.lineHeight,
+      letterSpacing: S.body.letterSpacing,
+      fontFamily: S.body.fontFamily
+    }, meta);
   }
 
   // Headings H1 ~ H6
@@ -497,6 +507,29 @@ function handleCssTextChange(val) {
       if (ls) localStyles.value[tag].letterSpacing = ls;
     }
   });
+
+  // Body block parsing
+  const bodyBlock = extractBlock('(?:#nice|xiaofu|\\.markdown-body)?');
+  if (bodyBlock) {
+    if (!localStyles.value.body) localStyles.value.body = {};
+    const color = getPropFromBlock(bodyBlock, 'color');
+    if (color) localStyles.value.body.color = color;
+    const bg = getPropFromBlock(bodyBlock, 'background-color') || getPropFromBlock(bodyBlock, 'background');
+    if (bg) localStyles.value.body.backgroundColor = bg;
+    const matId = getMetaFromBlock(bodyBlock, 'material');
+    if (matId) {
+      localStyles.value.body.backgroundTexture = matId;
+      localStyles.value.body.materialTemplateId = matId;
+    }
+    const fs = getPropFromBlock(bodyBlock, 'font-size');
+    if (fs) localStyles.value.body.fontSize = fs;
+    const lh = getPropFromBlock(bodyBlock, 'line-height');
+    if (lh) localStyles.value.body.lineHeight = lh;
+    const ls = getPropFromBlock(bodyBlock, 'letter-spacing');
+    if (ls) localStyles.value.body.letterSpacing = ls;
+    const ff = getPropFromBlock(bodyBlock, 'font-family');
+    if (ff) localStyles.value.body.fontFamily = ff;
+  }
 
   // Paragraph, Code, & Other Tags
   const otherTags = ['p', 'strong', 'em', 'del', 'u', 'mark', 'kbd', 'code', 'pre', 'img', 'table', 'th', 'td', 'a'];
@@ -849,7 +882,147 @@ const cssLineCount = computed(() => {
             />
           </div>
         </div>
-        <div class="style-controls">
+        <!-- Dedicated Body Customizer Section (整体背景 / 文字色 / 底纹纹理 / 字体排版) -->
+        <div v-if="el.key === 'body'" class="body-customizer-panel">
+          <!-- 1. Color Settings (文字色 & 背景色) -->
+          <div class="body-row-two-col">
+            <div class="body-setting-card">
+              <span class="body-setting-title">全局正文字色</span>
+              <div class="color-row">
+                <input
+                  type="color"
+                  :value="getStyle('body').color || '#2D3139'"
+                  @input="updateStyle('body', 'color', $event.target.value)"
+                  class="color-picker"
+                />
+                <input
+                  type="text"
+                  :value="getStyle('body').color || '#2D3139'"
+                  @input="updateStyle('body', 'color', $event.target.value)"
+                  class="value-input full-width"
+                />
+              </div>
+            </div>
+
+            <div class="body-setting-card">
+              <span class="body-setting-title">文章背景底色</span>
+              <div class="color-row">
+                <input
+                  type="color"
+                  :value="getStyle('body').backgroundColor || '#ffffff'"
+                  @input="updateStyle('body', 'backgroundColor', $event.target.value)"
+                  class="color-picker"
+                />
+                <input
+                  type="text"
+                  :value="getStyle('body').backgroundColor || '#ffffff'"
+                  @input="updateStyle('body', 'backgroundColor', $event.target.value)"
+                  class="value-input full-width"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. Background Texture / Pattern Selector (背景底纹) -->
+          <div class="body-texture-box">
+            <div class="body-texture-header">
+              <div class="body-texture-title-group">
+                <span class="body-setting-title">背景底纹样式</span>
+                <span class="body-setting-sub">选择整篇排版的背景肌理</span>
+              </div>
+              <button
+                type="button"
+                class="mini-material-btn"
+                @click="openMaterialModal('body')"
+                title="在素材中心挑选更多底纹"
+              >
+                <Sparkles class="w-3 h-3 text-amber-500 inline" />
+                <span>素材库挑选</span>
+              </button>
+            </div>
+
+            <!-- 8 Texture Pill Selection Grid -->
+            <div class="body-texture-grid">
+              <button
+                type="button"
+                v-for="bgTpl in backgroundTemplates"
+                :key="bgTpl.id"
+                class="body-texture-card"
+                :class="{ 'is-active': (getStyle('body').backgroundTexture || getStyle('body').materialTemplateId || 'grid') === bgTpl.id }"
+                @click="updateStyle('body', 'backgroundTexture', bgTpl.id); updateStyle('body', 'materialTemplateId', bgTpl.id);"
+                :title="bgTpl.description"
+              >
+                <span class="body-texture-swatch" :style="{ backgroundImage: bgTpl.bgImage, backgroundSize: bgTpl.bgSize, backgroundPosition: bgTpl.bgPosition || '0 0' }"></span>
+                <span class="body-texture-label">{{ bgTpl.name.split(' ')[0] }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- 3. Typography & Spacing (字号、行高、字间距、字体族) -->
+          <div class="body-row-two-col">
+            <div class="body-setting-card">
+              <span class="body-setting-title">默认字号</span>
+              <select
+                :value="getStyle('body').fontSize || '16px'"
+                @change="updateStyle('body', 'fontSize', $event.target.value)"
+                class="style-select full-width"
+              >
+                <option value="14px">14px (精致小字)</option>
+                <option value="15px">15px (紧凑舒适)</option>
+                <option value="16px">16px (标准推荐)</option>
+                <option value="17px">17px (宽松舒展)</option>
+                <option value="18px">18px (清晰大字)</option>
+              </select>
+            </div>
+
+            <div class="body-setting-card">
+              <span class="body-setting-title">行高倍数</span>
+              <select
+                :value="getStyle('body').lineHeight || '1.8'"
+                @change="updateStyle('body', 'lineHeight', $event.target.value)"
+                class="style-select full-width"
+              >
+                <option value="1.5">1.5 (紧凑)</option>
+                <option value="1.6">1.6 (适中)</option>
+                <option value="1.75">1.75 (舒适推荐)</option>
+                <option value="1.8">1.8 (标准推荐)</option>
+                <option value="2.0">2.0 (宽松透气)</option>
+                <option value="2.2">2.2 (大幅留白)</option>
+              </select>
+            </div>
+
+            <div class="body-setting-card">
+              <span class="body-setting-title">字间距</span>
+              <select
+                :value="getStyle('body').letterSpacing || '0.05em'"
+                @change="updateStyle('body', 'letterSpacing', $event.target.value)"
+                class="style-select full-width"
+              >
+                <option value="0px">0px (紧密)</option>
+                <option value="0.03em">0.03em (微展)</option>
+                <option value="0.05em">0.05em (标准推荐)</option>
+                <option value="0.08em">0.08em (开阔)</option>
+                <option value="0.1em">0.1em (优雅呼吸)</option>
+              </select>
+            </div>
+
+            <div class="body-setting-card">
+              <span class="body-setting-title">字体族</span>
+              <select
+                :value="getStyle('body').fontFamily || 'sans-serif'"
+                @change="updateStyle('body', 'fontFamily', $event.target.value)"
+                class="style-select full-width"
+              >
+                <option value="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">现代黑体 (Inter)</option>
+                <option value="'PingFang SC', 'Microsoft YaHei', sans-serif">微软雅黑 / 苹方</option>
+                <option value="'Songti SC', 'SimSun', STSong, serif">典雅宋体 (Songti)</option>
+                <option value="'Kaiti SC', 'KaiTi', STKaiti, serif">温润楷体 (KaiTi)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div v-else class="style-controls">
           <!-- 1. Dedicated Code Block Customizer (只支持代码主题、Mac风格、字号、行高、字间距、字体族、行内代码配色) -->
           <template v-if="el.key === 'code' || el.key === 'pre'">
             <!-- Code Theme Selector -->
@@ -2266,5 +2439,143 @@ const cssLineCount = computed(() => {
 .prefix-tag {
   background: #fef3c7;
   color: #92400e;
+}
+
+/* Dedicated Body Customizer Panel */
+.body-customizer-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.body-row-two-col {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  width: 100%;
+}
+
+.body-setting-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--bg-preview, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  padding: 8px 10px;
+  box-sizing: border-box;
+}
+
+.body-setting-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-main, #334155);
+}
+
+.body-setting-sub {
+  font-size: 10.5px;
+  color: var(--text-muted, #94a3b8);
+}
+
+.value-input.full-width,
+.style-select.full-width {
+  width: 100%;
+  flex: 1;
+}
+
+.body-texture-box {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: var(--bg-preview, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 8px;
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.body-texture-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.body-texture-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mini-material-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  background: var(--accent-bg, #eff6ff);
+  color: var(--accent-color, #2563eb);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mini-material-btn:hover {
+  background: var(--accent-color, #2563eb);
+  color: #ffffff;
+}
+
+.body-texture-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.body-texture-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 6px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+  user-select: none;
+  box-sizing: border-box;
+}
+
+.body-texture-card:hover {
+  border-color: var(--accent-color, #2563eb);
+  background: var(--accent-bg, #eff6ff);
+}
+
+.body-texture-card.is-active {
+  border-color: var(--accent-color, #2563eb);
+  background: var(--accent-bg, #eff6ff);
+  box-shadow: 0 0 0 1.5px var(--accent-color, #2563eb);
+}
+
+.body-texture-swatch {
+  width: 24px;
+  height: 24px;
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background-color: #ffffff;
+  flex-shrink: 0;
+  display: inline-block;
+}
+
+.body-texture-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-main, #1e293b);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

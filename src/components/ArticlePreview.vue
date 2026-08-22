@@ -167,8 +167,16 @@ const activeCustomStyles = computed(() => props.customStyles || {});
 const customStyleVars = computed(() => {
   const s = activeCustomStyles.value || {};
   const vars = {};
-  if (s.body?.color) vars['--ct-body-color'] = s.body.color;
+  if (s.body?.color) {
+    vars['--ct-body-color'] = s.body.color;
+    if (!s.p?.color) vars['--ct-p-color'] = s.body.color;
+    if (!s.li?.color) vars['--ct-li-color'] = s.body.color;
+  }
   if (s.body?.backgroundColor) vars['--ct-body-bg'] = s.body.backgroundColor;
+  if (s.body?.fontSize) vars['--ct-body-size'] = s.body.fontSize;
+  if (s.body?.lineHeight) vars['--ct-body-lineheight'] = s.body.lineHeight;
+  if (s.body?.letterSpacing) vars['--ct-body-spacing'] = s.body.letterSpacing;
+  if (s.body?.fontFamily) vars['--ct-body-font'] = s.body.fontFamily;
 
   if (s.h1?.color) vars['--ct-h1-color'] = s.h1.color;
   if (s.h1?.fontSize) vars['--ct-h1-size'] = s.h1.fontSize;
@@ -197,6 +205,8 @@ const customStyleVars = computed(() => {
   if (s.p?.color) vars['--ct-p-color'] = s.p.color;
   if (s.p?.fontSize) vars['--ct-p-size'] = s.p.fontSize;
   if (s.p?.lineHeight) vars['--ct-p-lineheight'] = s.p.lineHeight;
+
+  if (s.li?.color) vars['--ct-li-color'] = s.li.color;
 
   if (s.blockquote?.borderLeftColor) vars['--ct-bq-border'] = s.blockquote.borderLeftColor;
   if (s.blockquote?.backgroundColor) vars['--ct-bq-bg'] = s.blockquote.backgroundColor;
@@ -635,8 +645,10 @@ function handlePreviewElementClick(e) {
   box-sizing: border-box;
   color: var(--ct-body-color, var(--text-main));
   background: transparent;
-  line-height: 1.8;
-  font-size: 16px;
+  line-height: var(--ct-body-lineheight, 1.8);
+  font-size: var(--ct-body-size, 16px);
+  letter-spacing: var(--ct-body-spacing, 0.05em);
+  font-family: var(--ct-body-font, inherit);
   padding: 24px 28px;
   border-radius: 0;
   border: none;
@@ -698,9 +710,9 @@ function handlePreviewElementClick(e) {
 }
 
 .markdown-body :deep(p) {
-  color: var(--ct-p-color, var(--text-main));
-  font-size: var(--ct-p-size, 16px);
-  line-height: var(--ct-p-lineheight, 1.9);
+  color: var(--ct-p-color, var(--ct-body-color, var(--text-main)));
+  font-size: var(--ct-p-size, var(--ct-body-size, 16px));
+  line-height: var(--ct-p-lineheight, var(--ct-body-lineheight, 1.9));
   margin-bottom: 0;
   padding-top: 8px;
   padding-bottom: 8px;
@@ -725,6 +737,7 @@ function handlePreviewElementClick(e) {
 }
 
 .markdown-body :deep(li) {
+  color: var(--ct-li-color, var(--ct-body-color, var(--text-main)));
   margin-bottom: 0.5em;
 }
 

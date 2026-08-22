@@ -17,7 +17,7 @@ const wechatTheme = {
 import { codeThemes } from './codeThemes';
 import { themes } from './themePresets';
 import { buildWechatTypo } from './themeTypography';
-import { allMaterialTemplatesMap } from './materialLibrary';
+import { allMaterialTemplatesMap, getBackgroundPatternStyle } from './materialLibrary';
 
 function isMaterialEl(el) {
   if (!el || el.nodeType !== 1) return false;
@@ -46,17 +46,22 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
   const theme = themes.find(t => t.id === themeId) || themes[0];
   const themeStyles = theme.styles;
 
+  const bodyColor = customStyles?.body?.color || themeStyles['--text-main'] || '#3f3f3f';
+  const bodyBg = customStyles?.body?.backgroundColor || themeStyles['--bg-preview'] || '#ffffff';
+  const bgTextureId = customStyles?.body?.backgroundTexture || customStyles?.body?.materialTemplateId || 'grid';
+  const pattern = getBackgroundPatternStyle(bgTextureId);
+
   // Map colors directly to the selected theme's properties to perfectly match the Standard Preview
   let colors = {
     primary: themeStyles['--accent-color'] || '#5f6caf',
     secondary: themeStyles['--accent-hover'] || '#a7b1e2',
     bgLight: themeStyles['--code-bg'] || '#f5f6fa',
-    text: themeStyles['--text-main'] || '#3f3f3f',
+    text: bodyColor,
     muted: themeStyles['--text-muted'] || '#7f7f7f',
     codeBg: themeStyles['--code-bg'] || '#282c34',
     codeText: themeStyles['--code-text'] || '#abb2bf',
     border: themeStyles['--border-color'] || '#eaeef2',
-    bgPreview: themeStyles['--bg-preview'] || '#ffffff',
+    bgPreview: bodyBg,
     accentBg: themeStyles['--accent-bg'] || '#eef7f9',
     codeTextTheme: themeStyles['--code-text'] || '#bf616a'
   };
@@ -77,7 +82,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     }
   });
 
-  // 1. Global Container Styling
+  // 1. Global Container Styling with selected background pattern & body color
   root.setAttribute('style', cleanCss(`
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 16px;
@@ -85,8 +90,10 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     color: ${colors.text};
     letter-spacing: 0.05em;
     padding: 10px 0px;
-    background-image: linear-gradient(90deg, rgba(50, 0, 0, 0.03) 0%, rgba(255, 255, 255, 0) 11.49%), linear-gradient(360deg, rgba(50, 0, 0, 0.04) 0%, rgba(255, 255, 255, 0) 12.16%);
-    background-size: 20px 20px, 20px 20px;
+    background-image: ${pattern.backgroundImage};
+    background-size: ${pattern.backgroundSize};
+    ${pattern.backgroundPosition ? `background-position: ${pattern.backgroundPosition};` : ''}
+    background-repeat: repeat;
     background-color: ${colors.bgPreview};
   `));
 
@@ -358,6 +365,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
   `);
 
   // 3. Paragraphs & Text Elements (preserve explicit alignment if present)
+  const pCustomColor = customStyles?.p?.color || customStyles?.body?.color;
   root.querySelectorAll('p').forEach(p => {
     if (isMaterialEl(p)) return;
     const existingAlign = p.getAttribute('align') || p.style.textAlign;
@@ -365,13 +373,16 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
       font-size: 16px;
       line-height: 2em;
       letter-spacing: 0.08em;
-      color: #0d0d0d;
+      color: ${colors.text};
       margin-top: 0;
       margin-bottom: 0;
       padding: 6px 0;
       text-align: justify;
     `);
     p.setAttribute('style', baseStyle);
+    if (pCustomColor) {
+      p.style.color = pCustomColor;
+    }
     if (existingAlign) {
       p.style.textAlign = existingAlign;
     }
