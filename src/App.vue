@@ -1022,9 +1022,11 @@ onMounted(() => {
     ? savedActiveId
     : documents.value[0].id;
 
-  // 4. Apply theme & Color Mode
+  // 4. Apply theme
   applyTheme(currentTheme.value);
-  applyColorMode();
+  document.documentElement.classList.remove('dark');
+  document.documentElement.setAttribute('data-color-mode', 'light');
+  try { localStorage.removeItem('nicemd_color_mode'); } catch (e) {}
 
   // 5. Load custom themes from localStorage (append, never replace built-ins)
   try {
@@ -1171,6 +1173,12 @@ watch(customStyles, () => {
           </div>
         </div>
 
+        <!-- Publish Button moved next to the capsule bar -->
+        <button class="btn-header-publish" @click="openLaunchpad" title="一键多渠道分发发布">
+          <Send size="13" class="publish-send-icon" />
+          <span>发布</span>
+        </button>
+
         <!-- Segmented View Switcher on Mobile/Tablet -->
         <div class="mobile-view-tabs">
           <button 
@@ -1190,13 +1198,8 @@ watch(customStyles, () => {
         </div>
       </div>
 
-      <!-- Right Header Actions (Publish Button) -->
-      <div class="header-right">
-        <button class="btn-header-publish" @click="openLaunchpad" title="一键多渠道分发发布">
-          <Send size="13" class="publish-send-icon" />
-          <span>发布</span>
-        </button>
-      </div>
+      <!-- Right Header Area -->
+      <div class="header-right"></div>
     </header>
 
     <!-- App Body: Left IconBar + Main Content -->
@@ -1277,9 +1280,6 @@ watch(customStyles, () => {
               </div>
               <button @click="editorPanelRef?.clearContent()" class="btn-icon btn-danger" title="清空"><Trash2 size="15" /></button>
               <span class="toolbar-sep"></span>
-              <button @click="toggleSyncScroll" class="btn-icon" :class="{ 'is-active': syncScrollEnabled }" title="同步滚动"><Link2 v-if="syncScrollEnabled" size="15" /><Link2Off v-else size="15" /></button>
-              <button @click="togglePreview" class="btn-icon" :class="{ 'is-active': previewVisible }" title="预览"><Eye v-if="previewVisible" size="15" /><EyeOff v-else size="15" /></button>
-              <span class="toolbar-sep"></span>
 
               <!-- Export Trigger -->
               <div class="export-trigger-container">
@@ -1297,6 +1297,11 @@ watch(customStyles, () => {
               <button @click="editorPanelRef?.handleRedo()" class="btn-icon" title="重做"><Redo2 size="15" /></button>
 
               <span class="toolbar-sep"></span>
+              <button @click="toggleSyncScroll" class="btn-icon" :class="{ 'is-active': syncScrollEnabled }" title="同步滚动"><Link2 v-if="syncScrollEnabled" size="15" /><Link2Off v-else size="15" /></button>
+              <button @click="togglePreview" class="btn-icon" :class="{ 'is-active': previewVisible }" title="预览"><Eye v-if="previewVisible" size="15" /><EyeOff v-else size="15" /></button>
+
+              <!-- Spacer pushing Theme & Code style dropdowns to the far right -->
+              <span class="toolbar-spacer"></span>
 
               <!-- Document Theme Dropdown -->
               <div class="export-trigger-container">
@@ -1347,8 +1352,6 @@ watch(customStyles, () => {
                   </button>
                 </div>
               </div>
-
-              <span class="toolbar-spacer"></span>
             </div>
           </div>
 
@@ -1370,7 +1373,7 @@ watch(customStyles, () => {
                 @togglePreview="togglePreview"
               />
             </div>
-            <div class="workspace-column preview-column" v-show="previewVisible">
+            <div class="workspace-column preview-column">
               <PreviewPanel
                 :markdown="markdownContent"
                 :docTitle="activeDocument?.title ?? '未命名文档'"
@@ -1496,7 +1499,7 @@ watch(customStyles, () => {
 }
 
 .app-header {
-  height: 52px;
+  height: 4rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1557,6 +1560,7 @@ watch(customStyles, () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 12px;
   flex: 1;
   position: relative;
 }
@@ -1566,9 +1570,8 @@ watch(customStyles, () => {
   align-items: center;
   gap: 2px;
   background: var(--bg-capsule);
-  border: 1px solid var(--border-color);
   border-radius: 9999px;
-  padding: 3px 6px;
+  padding: 6px;
   box-shadow: var(--shadow-capsule);
   position: relative;
   user-select: none;
@@ -1632,13 +1635,11 @@ watch(customStyles, () => {
   transition: background 0.3s ease, border-color 0.3s ease;
 }
 
-/* Right Header Publish Button */
+/* Right Header Area (placeholder for symmetry) */
 .header-right {
   display: flex;
   align-items: center;
-  gap: 10px;
   min-width: 140px;
-  justify-content: flex-end;
 }
 
 .btn-header-publish {
@@ -1647,21 +1648,22 @@ watch(customStyles, () => {
   gap: 6px;
   padding: 6px 18px;
   border: none;
-  border-radius: 8px;
+  border-radius: 9999px;
   background: linear-gradient(135deg, #ff6b4a 0%, #ff4b2b 100%);
   color: #ffffff;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 3px 10px rgba(255, 94, 54, 0.32);
+  box-shadow: 0 3px 10px rgba(255, 94, 54, 0.28);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
+  white-space: nowrap;
 }
 
 .btn-header-publish:hover {
   transform: translateY(-1px);
-  box-shadow: 0 5px 15px rgba(255, 94, 54, 0.42);
-  filter: brightness(1.04);
+  box-shadow: 0 5px 15px rgba(255, 94, 54, 0.38);
+  filter: brightness(1.05);
 }
 
 .btn-header-publish:active {
@@ -2297,15 +2299,23 @@ watch(customStyles, () => {
 }
 
 .workspace-column.editor-column {
-  border-right: 1px solid var(--border-color) !important;
+  border-right: 1px solid var(--border-color);
 }
 
 .workspace-grid.preview-hidden .workspace-columns {
-  grid-template-columns: 1fr;
+  grid-template-columns: 1fr auto;
 }
 
-.workspace-grid.theme-panel-open .workspace-columns {
-  grid-template-columns: calc(50% - 190px) calc(50% + 190px);
+.workspace-grid.preview-hidden .workspace-column.editor-column {
+  border-right: none;
+}
+
+.workspace-grid.theme-panel-open:not(.preview-hidden) .workspace-columns {
+  grid-template-columns: calc(50% - 12rem) calc(50% + 12rem);
+}
+
+.workspace-grid.theme-panel-open.preview-hidden .workspace-columns {
+  grid-template-columns: 1fr auto;
 }
 
 .workspace-grid.theme-panel-open .preview-column {
@@ -2385,7 +2395,8 @@ watch(customStyles, () => {
     display: none;
   }
   
-  .header-capsule-bar {
+  .header-capsule-bar,
+  .btn-header-publish {
     display: none;
   }
   
@@ -2403,7 +2414,7 @@ watch(customStyles, () => {
   
   .app-header {
     padding: 0 12px;
-    height: 56px;
+    height: 4rem;
   }
   
   .header-selects {

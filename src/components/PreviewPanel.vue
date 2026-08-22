@@ -453,7 +453,7 @@ const handleCopyMarkdownText = async () => {
 }
 
 .theme-sidebar-wrapper {
-  width: 380px;
+  width: clamp(21rem, 24rem, 28rem);
   flex-shrink: 0;
   height: 100%;
   max-height: 100%;

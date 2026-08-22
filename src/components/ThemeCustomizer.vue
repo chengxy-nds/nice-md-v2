@@ -1525,7 +1525,7 @@ const cssLineCount = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 14px;
+  padding: 0.75rem 0.875rem;
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
   background: var(--bg-sidebar);
@@ -1535,8 +1535,8 @@ const cssLineCount = computed(() => {
 .customizer-header-left {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--text-main);
 }
@@ -1553,9 +1553,9 @@ const cssLineCount = computed(() => {
   background: transparent;
   border: none;
   color: var(--text-muted);
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.375rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1571,8 +1571,8 @@ const cssLineCount = computed(() => {
 /* Mode Switcher Bar */
 .customizer-mode-bar {
   display: flex;
-  padding: 6px 12px;
-  gap: 6px;
+  padding: 0.375rem 0.75rem;
+  gap: 0.375rem;
   background: var(--bg-sidebar);
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
@@ -1584,13 +1584,13 @@ const cssLineCount = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 6px 10px;
-  border-radius: 6px;
+  gap: 0.375rem;
+  padding: 0.375rem 0.625rem;
+  border-radius: 0.375rem;
   border: 1px solid transparent;
   background: transparent;
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -1614,26 +1614,26 @@ const cssLineCount = computed(() => {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 10px 12px;
+  padding: 0.625rem 0.75rem;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0.625rem;
 }
 
 .customizer-body::-webkit-scrollbar {
-  width: 4px;
+  width: 0.25rem;
 }
 
 .customizer-body::-webkit-scrollbar-thumb {
   background: var(--border-color);
-  border-radius: 2px;
+  border-radius: 0.125rem;
 }
 
 .style-section {
-  padding: 12px 14px;
+  padding: 0.75rem 0.875rem;
   background: var(--bg-editor);
   border: 1px solid var(--border-color);
-  border-radius: 10px;
+  border-radius: 0.625rem;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   transition: all 0.2s ease;
 }
@@ -1663,25 +1663,25 @@ const cssLineCount = computed(() => {
 .section-label {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 13px;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--text-main);
-  margin-bottom: 10px;
-  padding-bottom: 8px;
+  margin-bottom: 0.625rem;
+  padding-bottom: 0.5rem;
   border-bottom: 1px dashed var(--border-color);
 }
 
 .section-icon {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-family: 'SF Mono', 'Fira Code', monospace;
   font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
   background: var(--accent-bg);
   color: var(--accent-color);
   text-align: center;
-  min-width: 20px;
+  min-width: 1.25rem;
 }
 
 .reset-btn {
@@ -1689,10 +1689,10 @@ const cssLineCount = computed(() => {
   background: transparent;
   border: none;
   color: var(--text-muted);
-  font-size: 11px;
+  font-size: 0.6875rem;
   cursor: pointer;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
   font-weight: 600;
   transition: all 0.15s ease;
 }
@@ -1706,19 +1706,19 @@ const cssLineCount = computed(() => {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 8px 16px;
+  gap: 0.5rem 1rem;
 }
 
 .style-field {
   display: flex;
   align-items: center;
-  gap: 6px;
-  height: 28px;
+  gap: 0.375rem;
+  height: 1.75rem;
   flex: 0 0 auto;
 }
 
 .field-label {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   color: var(--text-muted);
   white-space: nowrap;
@@ -1727,15 +1727,15 @@ const cssLineCount = computed(() => {
 .color-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 0.25rem;
 }
 
 .color-picker {
-  width: 22px;
-  height: 22px;
+  width: 1.375rem;
+  height: 1.375rem;
   padding: 0;
   border: 1px solid var(--border-color);
-  border-radius: 5px;
+  border-radius: 0.3125rem;
   cursor: pointer;
   background: none;
   flex-shrink: 0;
@@ -1751,13 +1751,13 @@ const cssLineCount = computed(() => {
 }
 
 .value-input {
-  width: 72px;
+  width: 4.5rem;
   flex: none;
   border: 1px solid var(--border-color);
-  border-radius: 5px;
-  padding: 2px 6px;
-  height: 24px;
-  font-size: 11px;
+  border-radius: 0.3125rem;
+  padding: 0.125rem 0.375rem;
+  height: 1.5rem;
+  font-size: 0.6875rem;
   font-family: 'SF Mono', 'Fira Code', monospace;
   color: var(--text-main);
   background: var(--bg-preview);
@@ -1772,13 +1772,13 @@ const cssLineCount = computed(() => {
 }
 
 .style-select {
-  width: 105px;
+  width: 6.5rem;
   flex: none;
   border: 1px solid var(--border-color);
-  border-radius: 5px;
-  padding: 2px 6px;
-  height: 24px;
-  font-size: 11px;
+  border-radius: 0.3125rem;
+  padding: 0.125rem 0.375rem;
+  height: 1.5rem;
+  font-size: 0.6875rem;
   color: var(--text-main);
   background: var(--bg-preview);
   outline: none;
@@ -1800,13 +1800,13 @@ const cssLineCount = computed(() => {
 .mac-toggle-btn {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
   width: 100%;
-  padding: 6px 10px;
+  padding: 0.375rem 0.625rem;
   background: var(--bg-preview);
   border: 1px solid var(--border-color);
-  border-radius: 6px;
-  font-size: 11px;
+  border-radius: 0.375rem;
+  font-size: 0.6875rem;
   font-weight: 500;
   color: var(--text-muted);
   cursor: pointer;
@@ -1828,12 +1828,12 @@ const cssLineCount = computed(() => {
 .mac-dots-preview {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 0.25rem;
 }
 
 .mac-dot {
-  width: 7px;
-  height: 7px;
+  width: 0.4375rem;
+  height: 0.4375rem;
   border-radius: 50%;
   display: inline-block;
 }
@@ -1904,11 +1904,11 @@ const cssLineCount = computed(() => {
 
 /* Footer */
 .customizer-footer {
-  padding: 10px 12px;
+  padding: 0.625rem 0.75rem;
   border-top: 1px solid var(--border-color);
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
   background: var(--bg-app);
   flex-shrink: 0;
 }
@@ -1917,13 +1917,13 @@ const cssLineCount = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 8px 10px;
+  gap: 0.3125rem;
+  padding: 0.5rem 0.625rem;
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 0.375rem;
   background: var(--bg-editor);
   color: var(--text-muted);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -1940,13 +1940,13 @@ const cssLineCount = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 8px 10px;
+  gap: 0.3125rem;
+  padding: 0.5rem 0.625rem;
   border: 1px solid var(--accent-color);
-  border-radius: 6px;
+  border-radius: 0.375rem;
   background: var(--accent-color);
   color: #ffffff;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   cursor: pointer;
   position: relative;
@@ -1961,15 +1961,15 @@ const cssLineCount = computed(() => {
 
 .save-toast-tip {
   position: absolute;
-  top: -28px;
+  top: -1.75rem;
   left: 50%;
   transform: translateX(-50%);
   background: #10b981;
   color: #ffffff;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 4px;
+  padding: 0.125rem 0.5rem;
+  border-radius: 0.25rem;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15);
   pointer-events: none;
   animation: fadeInOut 0.2s ease;
@@ -1985,13 +1985,13 @@ const cssLineCount = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 8px 10px;
+  gap: 0.3125rem;
+  padding: 0.5rem 0.625rem;
   border: 1px solid var(--border-color);
-  border-radius: 6px;
+  border-radius: 0.375rem;
   background: var(--bg-editor);
   color: var(--text-main);
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
@@ -2126,10 +2126,10 @@ const cssLineCount = computed(() => {
 
 .heading-modal-content {
   width: 100%;
-  max-width: 820px;
+  max-width: 51.25rem;
   max-height: 85vh;
   background: var(--bg-editor, #ffffff);
-  border-radius: 12px;
+  border-radius: 0.75rem;
   box-shadow: 0 20px 40px rgba(0,0,0,0.25);
   display: flex;
   flex-direction: column;
@@ -2138,7 +2138,7 @@ const cssLineCount = computed(() => {
 }
 
 .heading-modal-header {
-  padding: 16px 20px;
+  padding: 1rem 1.25rem;
   border-bottom: 1px solid var(--border-color, #e2e8f0);
   display: flex;
   align-items: center;
@@ -2149,8 +2149,8 @@ const cssLineCount = computed(() => {
 .modal-title-box {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 15.5px;
+  gap: 0.5rem;
+  font-size: 0.95rem;
   font-weight: 800;
   color: var(--text-main, #0f172a);
 }
@@ -2160,8 +2160,8 @@ const cssLineCount = computed(() => {
   border: none;
   color: var(--text-muted, #64748b);
   cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
+  padding: 0.25rem;
+  border-radius: 0.375rem;
 }
 
 .modal-close-icon:hover {
@@ -2170,30 +2170,30 @@ const cssLineCount = computed(() => {
 }
 
 .heading-modal-subtext {
-  padding: 10px 20px;
+  padding: 0.625rem 1.25rem;
   background: var(--bg-editor, #ffffff);
   border-bottom: 1px solid var(--border-color, #e2e8f0);
-  font-size: 12.5px;
+  font-size: 0.78rem;
   color: var(--text-muted, #64748b);
   line-height: 1.5;
 }
 
 .heading-materials-grid {
-  padding: 18px 20px;
+  padding: 1.125rem 1.25rem;
   overflow-y: auto;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.875rem;
 }
 
 .heading-material-card {
   border: 1.5px solid var(--border-color, #e2e8f0);
-  border-radius: 8px;
-  padding: 12px;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
   background: var(--bg-editor, #ffffff);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0.625rem;
   cursor: pointer;
   transition: all 0.18s ease;
 }
@@ -2445,7 +2445,7 @@ const cssLineCount = computed(() => {
 .body-customizer-panel {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 0.625rem;
   width: 100%;
   box-sizing: border-box;
 }
@@ -2453,29 +2453,29 @@ const cssLineCount = computed(() => {
 .body-row-two-col {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 10px;
+  gap: 0.625rem;
   width: 100%;
 }
 
 .body-setting-card {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 0.375rem;
   background: var(--bg-preview, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 8px;
-  padding: 8px 10px;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.625rem;
   box-sizing: border-box;
 }
 
 .body-setting-title {
-  font-size: 11.5px;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--text-main, #334155);
 }
 
 .body-setting-sub {
-  font-size: 10.5px;
+  font-size: 0.65rem;
   color: var(--text-muted, #94a3b8);
 }
 
@@ -2488,11 +2488,11 @@ const cssLineCount = computed(() => {
 .body-texture-box {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.5rem;
   background: var(--bg-preview, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 8px;
-  padding: 10px;
+  border-radius: 0.5rem;
+  padding: 0.625rem;
   box-sizing: border-box;
 }
 
@@ -2505,19 +2505,19 @@ const cssLineCount = computed(() => {
 .body-texture-title-group {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0.125rem;
 }
 
 .mini-material-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 3px 8px;
+  gap: 0.25rem;
+  padding: 0.2rem 0.5rem;
   background: var(--accent-bg, #eff6ff);
   color: var(--accent-color, #2563eb);
   border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 4px;
-  font-size: 11px;
+  border-radius: 0.25rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -2531,17 +2531,17 @@ const cssLineCount = computed(() => {
 .body-texture-grid {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
+  gap: 0.375rem;
 }
 
 .body-texture-card {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
+  gap: 0.5rem;
+  padding: 0.375rem 0.625rem;
   background: var(--bg-card, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 6px;
+  border-radius: 0.375rem;
   cursor: pointer;
   text-align: left;
   transition: all 0.15s ease;
@@ -2561,9 +2561,9 @@ const cssLineCount = computed(() => {
 }
 
 .body-texture-swatch {
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.25rem;
   border: 1px solid rgba(0, 0, 0, 0.12);
   background-color: #ffffff;
   flex-shrink: 0;
@@ -2571,7 +2571,7 @@ const cssLineCount = computed(() => {
 }
 
 .body-texture-label {
-  font-size: 11.5px;
+  font-size: 0.72rem;
   font-weight: 600;
   color: var(--text-main, #1e293b);
   overflow: hidden;
