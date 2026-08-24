@@ -144,7 +144,7 @@ async function handleDeleteGroup(group) {
 
 // ── Computed Filtered Lists ──
 const filteredUngroupedDocs = computed(() => {
-  const all = props.documents.filter(d => d.groupId === null);
+  const all = props.documents.filter(d => !d.groupId || d.groupId === null);
   const q = searchQuery.value.trim().toLowerCase();
   if (!q) return all;
   return all.filter(d => (d.title || '').toLowerCase().includes(q));
@@ -160,7 +160,7 @@ function docsInGroup(groupId) {
 // ── Drag & Drop ──
 const dragOverGroupId = ref(null);
 
-function onListDragOver(e) {
+function onListDragOver(e, groupId) {
   if (!e.dataTransfer.types.includes('application/nicemd-doc')) return;
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
@@ -169,15 +169,17 @@ function onListDragOver(e) {
 function onListDrop(e, groupId) {
   const docId = e.dataTransfer.getData('application/nicemd-doc');
   if (!docId) return;
-  const targetGroupId = groupId === '__ungrouped__' ? null : groupId;
+  const targetGroupId = (groupId === '__default__' || groupId === '__ungrouped__' || groupId === null) ? null : groupId;
   const listDocs = targetGroupId === null
-    ? props.documents.filter(d => d.groupId === null)
+    ? props.documents.filter(d => !d.groupId || d.groupId === null)
     : props.documents.filter(d => d.groupId === targetGroupId);
   const lastDoc = listDocs[listDocs.length - 1];
   if (lastDoc && lastDoc.id !== docId) {
+    e.preventDefault();
     e.stopPropagation();
     emit('reorder-docs', { docId, targetDocId: lastDoc.id, position: 'after' });
-  } else if (!lastDoc) {
+  } else {
+    e.preventDefault();
     e.stopPropagation();
     emit('move-doc', { docId, groupId: targetGroupId });
   }
@@ -187,44 +189,43 @@ function handleDocMove({ docId, targetDocId, position }) {
   emit('reorder-docs', { docId, targetDocId, position });
 }
 
-function onGroupDragOver(e, groupId) {
-  if (!e.dataTransfer.types.includes('application/nicemd-doc')) return;
-  e.preventDefault();
-  e.stopPropagation();
-  e.dataTransfer.dropEffect = 'move';
-  dragOverGroupId.value = groupId;
+function onGroupHeaderDragOver(e, groupId) {
+  if (e.dataTransfer.types.includes('application/nicemd-doc')) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    dragOverGroupId.value = groupId;
+  } else if (e.dataTransfer.types.includes('application/nicemd-group')) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+  }
 }
 
 function onGroupDragLeave() {
   dragOverGroupId.value = null;
 }
 
-function onGroupDrop(e, groupId) {
+function onGroupHeaderDrop(e, groupId) {
   dragOverGroupId.value = null;
   const docId = e.dataTransfer.getData('application/nicemd-doc');
   if (docId) {
+    e.preventDefault();
     e.stopPropagation();
-    emit('move-doc', { docId, groupId: groupId === '__default__' ? null : groupId });
+    const targetGroupId = (groupId === '__default__' || groupId === '__ungrouped__' || groupId === null) ? null : groupId;
+    emit('move-doc', { docId, groupId: targetGroupId });
+    return;
+  }
+  const draggedGroupId = e.dataTransfer.getData('application/nicemd-group');
+  if (draggedGroupId && draggedGroupId !== groupId && groupId !== '__default__') {
+    e.preventDefault();
+    e.stopPropagation();
+    emit('reorder-groups', { groupId: draggedGroupId, targetGroupId: groupId });
   }
 }
 
 function onGroupDragStart(e, groupId) {
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('application/nicemd-group', groupId);
-}
-
-function onGroupReorderDragOver(e) {
-  if (!e.dataTransfer.types.includes('application/nicemd-group')) return;
-  e.preventDefault();
-  e.dataTransfer.dropEffect = 'move';
-}
-
-function onGroupReorderDrop(e, targetGroupId) {
-  const groupId = e.dataTransfer.getData('application/nicemd-group');
-  if (groupId && groupId !== targetGroupId) {
-    e.stopPropagation();
-    emit('reorder-groups', { groupId, targetGroupId });
-  }
 }
 </script>
 
@@ -270,10 +271,10 @@ function onGroupReorderDrop(e, targetGroupId) {
           class="group-header"
           :class="{ 'is-drop-target': dragOverGroupId === '__default__' }"
           @click="toggleGroup('__default__')"
-          @dragover="onGroupDragOver($event, '__default__')"
+          @dragover="onGroupHeaderDragOver($event, '__default__')"
           @dragenter.prevent="dragOverGroupId = '__default__'"
           @dragleave="onGroupDragLeave"
-          @drop="onGroupDrop($event, '__default__')"
+          @drop="onGroupHeaderDrop($event, '__default__')"
         >
           <span class="group-chevron">
             <ChevronRight v-if="!isGroupExpanded('__default__')" size="12" stroke-width="1.6" />
@@ -294,8 +295,8 @@ function onGroupReorderDrop(e, targetGroupId) {
         <div
           v-show="isGroupExpanded('__default__')"
           class="doc-list group-doc-list"
-          @dragover="onListDragOver"
-          @drop="onListDrop($event, null)"
+          @dragover="onListDragOver($event, '__default__')"
+          @drop="onListDrop($event, '__default__')"
         >
           <SidebarDocItem
             v-for="doc in filteredUngroupedDocs"
@@ -307,6 +308,9 @@ function onGroupReorderDrop(e, targetGroupId) {
             @delete="id => $emit('delete-doc', id)"
             @move-doc="handleDocMove"
           />
+          <div v-if="filteredUngroupedDocs.length === 0" class="empty-group-drop-hint">
+            <span>暂无文档，可拖拽至此</span>
+          </div>
         </div>
       </section>
 
@@ -318,14 +322,17 @@ function onGroupReorderDrop(e, targetGroupId) {
       >
         <div
           class="group-header"
-          :class="{ 'is-drop-target': dragOverGroupId === group.id }"
-          draggable="true"
-          @click="toggleGroup(group.id)"
+          :class="{ 
+            'is-drop-target': dragOverGroupId === group.id,
+            'is-renaming': renamingGroupId === group.id
+          }"
+          :draggable="renamingGroupId !== group.id"
+          @click="renamingGroupId === group.id ? null : toggleGroup(group.id)"
           @dragstart="onGroupDragStart($event, group.id)"
-          @dragover="onGroupDragOver($event, group.id); onGroupReorderDragOver($event)"
+          @dragover="onGroupHeaderDragOver($event, group.id)"
           @dragenter.prevent="dragOverGroupId = group.id"
           @dragleave="onGroupDragLeave"
-          @drop="onGroupDrop($event, group.id); onGroupReorderDrop($event, group.id)"
+          @drop="onGroupHeaderDrop($event, group.id)"
         >
           <span class="group-chevron">
             <ChevronRight v-if="!isGroupExpanded(group.id)" size="12" />
@@ -351,9 +358,11 @@ function onGroupReorderDrop(e, targetGroupId) {
             @keyup.enter="confirmRenameGroup"
             @keyup.escape="renamingGroupId = null"
             @click.stop
+            @mousedown.stop
+            @dblclick.stop
           />
 
-          <div class="group-header-right">
+          <div v-show="renamingGroupId !== group.id" class="group-header-right">
             <span class="group-count">{{ docsInGroup(group.id).length }}</span>
             <div class="group-actions" @click.stop>
               <button class="mini-btn" @click="handleCreateDoc(group.id)" title="添加文档">
@@ -372,7 +381,7 @@ function onGroupReorderDrop(e, targetGroupId) {
         <div
           v-show="isGroupExpanded(group.id)"
           class="doc-list group-doc-list"
-          @dragover="onListDragOver"
+          @dragover="onListDragOver($event, group.id)"
           @drop="onListDrop($event, group.id)"
         >
           <SidebarDocItem
@@ -385,6 +394,9 @@ function onGroupReorderDrop(e, targetGroupId) {
             @delete="id => $emit('delete-doc', id)"
             @move-doc="handleDocMove"
           />
+          <div v-if="docsInGroup(group.id).length === 0" class="empty-group-drop-hint">
+            <span>暂无文档，可拖拽至此</span>
+          </div>
         </div>
       </section>
 
@@ -645,14 +657,20 @@ html.dark .title-icon-btn:hover {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 5px 6px;
+  padding: 4px 6px;
   border-radius: 6px;
-  cursor: grab;
-  transition: background 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+  transition: background 0.15s ease;
   user-select: none;
+  min-height: 28px;
+  box-sizing: border-box;
 }
 
-.group-header:active {
+.group-header:not(.is-renaming) {
+  cursor: grab;
+}
+
+.group-header:not(.is-renaming):active {
   cursor: grabbing;
 }
 
@@ -665,12 +683,11 @@ html.dark .title-icon-btn:hover {
   box-shadow: inset 0 0 0 2px var(--accent-color);
 }
 
-
-
 .group-chevron {
   color: var(--text-muted);
   display: flex;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .group-icon {
@@ -680,33 +697,42 @@ html.dark .title-icon-btn:hover {
 
 .group-name {
   flex: 1;
+  min-width: 0;
   font-size: 13px;
   font-weight: 500;
   color: var(--text-main, #2c2c2c);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 20px;
+  padding: 1px 2px;
+  box-sizing: border-box;
 }
 
 .group-rename-input {
   flex: 1;
+  min-width: 0;
+  height: 22px;
   font-size: 13px;
   font-weight: 500;
-  padding: 2px 6px;
-  border: 1px solid var(--accent-color);
+  line-height: 20px;
+  padding: 0 4px;
+  margin: 0;
+  border: 1px solid var(--accent-color, #6366f1);
   border-radius: 4px;
-  background: var(--bg-editor);
+  background: var(--bg-editor, #ffffff);
   color: var(--text-main);
   outline: none;
   font-family: inherit;
+  box-sizing: border-box;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
 }
 
 .group-header-right {
   margin-left: auto;
-  position: relative;
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 .group-count {
@@ -717,34 +743,32 @@ html.dark .title-icon-btn:hover {
   padding: 1px 7px;
   border-radius: 12px;
   border: none;
-  transition: opacity 0.15s ease, visibility 0.15s ease;
+  display: block;
+}
+
+html.dark .group-count {
+  background: rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.6);
 }
 
 .group-actions {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 2px;
-  opacity: 0;
-  visibility: hidden;
-  position: absolute;
-  right: 0;
-  transition: opacity 0.15s ease, visibility 0.15s ease;
 }
 
 .group-header:hover .group-count {
-  opacity: 0;
-  visibility: hidden;
+  display: none;
 }
 
 .group-header:hover .group-actions {
-  opacity: 1;
-  visibility: visible;
+  display: flex;
 }
 
 .mini-btn {
   background: transparent;
   border: none;
-  color: var(--text-muted);
+  color: var(--text-muted, #737373);
   width: 22px;
   height: 22px;
   border-radius: 4px;
@@ -753,14 +777,40 @@ html.dark .title-icon-btn:hover {
   justify-content: center;
   cursor: pointer;
   transition: all 0.15s ease;
+  padding: 0;
 }
 
 .mini-btn:hover {
-  background: var(--border-color);
-  color: var(--text-main);
+  background: var(--bg-capsule, rgba(0, 0, 0, 0.08));
+  color: var(--text-main, #111827);
+}
+
+html.dark .mini-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #ffffff;
 }
 
 .group-doc-list {
   padding-left: 10px;
+  min-height: 14px;
+  padding-bottom: 4px;
+}
+
+.empty-group-drop-hint {
+  padding: 6px 8px;
+  margin: 2px 0 4px;
+  font-size: 11px;
+  color: var(--text-muted, #94a3b8);
+  border: 1px dashed var(--border-color, rgba(0, 0, 0, 0.12));
+  border-radius: 6px;
+  text-align: center;
+  user-select: none;
+  transition: all 0.15s ease;
+}
+
+.empty-group-drop-hint:hover {
+  border-color: var(--accent-color, #6366f1);
+  color: var(--accent-color, #6366f1);
+  background: var(--accent-bg, rgba(99, 102, 241, 0.04));
 }
 </style>

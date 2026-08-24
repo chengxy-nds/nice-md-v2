@@ -14,6 +14,7 @@ const isRenaming = ref(false);
 const renameValue = ref('');
 const renameInputRef = ref(null);
 const isDragOver = ref(false);
+const dragPosition = ref('before'); // 'before' | 'after'
 const elRef = ref(null);
 
 watch(() => props.isActive, (newVal) => {
@@ -86,18 +87,21 @@ async function handleDelete() {
 function onDragStart(e) {
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('application/nicemd-doc', props.doc.id);
-  e.dataTransfer.setData('text/plain', props.doc.title);
+  e.dataTransfer.setData('text/plain', props.doc.id);
 }
 
 function onDragOver(e) {
-  if (!e.dataTransfer.types.includes('application/nicemd-doc')) return;
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
   isDragOver.value = true;
+  if (elRef.value) {
+    const rect = elRef.value.getBoundingClientRect();
+    const relY = e.clientY - rect.top;
+    dragPosition.value = relY > rect.height / 2 ? 'after' : 'before';
+  }
 }
 
 function onDragEnter(e) {
-  if (!e.dataTransfer.types.includes('application/nicemd-doc')) return;
   e.preventDefault();
   isDragOver.value = true;
 }
@@ -108,10 +112,11 @@ function onDragLeave() {
 
 function onDrop(e) {
   isDragOver.value = false;
-  const docId = e.dataTransfer.getData('application/nicemd-doc');
+  const docId = e.dataTransfer.getData('application/nicemd-doc') || e.dataTransfer.getData('text/plain');
   if (!docId || docId === props.doc.id) return;
+  e.preventDefault();
   e.stopPropagation();
-  emit('move-doc', { docId, targetDocId: props.doc.id, position: 'before' });
+  emit('move-doc', { docId, targetDocId: props.doc.id, position: dragPosition.value });
 }
 </script>
 
@@ -119,7 +124,11 @@ function onDrop(e) {
   <div
     class="doc-item"
     ref="elRef"
-    :class="{ 'is-active': isActive, 'is-dragging': isDragOver }"
+    :class="{ 
+      'is-active': isActive, 
+      'is-dragging-before': isDragOver && dragPosition === 'before',
+      'is-dragging-after': isDragOver && dragPosition === 'after'
+    }"
     draggable="true"
     @click="$emit('select', props.doc.id)"
     @dragstart="onDragStart"
@@ -193,11 +202,11 @@ function onDrop(e) {
   box-sizing: border-box;
 }
 
-.doc-item:hover {
-  background: var(--bg-capsule, rgba(0, 0, 0, 0.04));
+.doc-item:hover:not(.is-active) {
+  background: rgba(99, 102, 241, 0.04);
 }
 
-html.dark .doc-item:hover {
+html.dark .doc-item:hover:not(.is-active) {
   background: rgba(255, 255, 255, 0.06);
 }
 
@@ -205,13 +214,26 @@ html.dark .doc-item:hover {
   background: rgba(99, 102, 241, 0.08);
 }
 
+.doc-item.is-active:hover {
+  background: rgba(99, 102, 241, 0.12);
+}
+
 html.dark .doc-item.is-active {
   background: rgba(99, 102, 241, 0.16);
 }
 
-.doc-item.is-dragging {
+html.dark .doc-item.is-active:hover {
+  background: rgba(99, 102, 241, 0.22);
+}
+
+.doc-item.is-dragging-before {
   background: var(--accent-bg);
-  box-shadow: inset 0 2px 0 var(--accent-color);
+  box-shadow: inset 0 2px 0 var(--accent-color, #6366f1);
+}
+
+.doc-item.is-dragging-after {
+  background: var(--accent-bg);
+  box-shadow: inset 0 -2px 0 var(--accent-color, #6366f1);
 }
 
 /* Leading Icon Area */
@@ -221,7 +243,6 @@ html.dark .doc-item.is-active {
   gap: 4px;
   flex-shrink: 0;
   height: 18px;
-  margin-top: 1px;
 }
 
 .grip-icon {

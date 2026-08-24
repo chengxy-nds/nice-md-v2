@@ -124,6 +124,12 @@ const SELECTORS = {
     title: 'input[placeholder*="标题"], .topic-title-input, [placeholder*="Title"], input[type="text"]',
     editor: '.cm-content, [contenteditable="true"], textarea',
     format: 'text/plain'
+  },
+  toutiao: {
+    title: '.editor-title textarea, .autofit-textarea-wrapper textarea, textarea[placeholder*="文章标题"], textarea[placeholder*="2～30个字"], .editor-title input, [placeholder*="文章标题"], .tui-textarea, .byte-input__inner',
+    editor: '.ProseMirror, .byte-editor [contenteditable="true"], .editor-content [contenteditable="true"], .tui-editor [contenteditable="true"], [contenteditable="true"], .editor-tar, .ql-editor',
+    cover: '.byte-upload input[type="file"], .upload-box input[type="file"], .s-cover-uploader input[type="file"], input[type="file"]',
+    format: 'text/html'
   }
 };
 
@@ -153,6 +159,7 @@ function getPlatformKey() {
   if (host.includes('nowcoder.com')) return 'nowcoder';
   if (host.includes('developer.aliyun.com') || host.includes('aliyun.com')) return 'aliyun';
   if (host.includes('leetcode.cn')) return 'leetcode';
+  if (host.includes('toutiao.com') || host.includes('snssdk.com')) return 'toutiao';
   return null;
 }
 
@@ -409,8 +416,8 @@ if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
                 } else {
                   el.value = payload.title;
                 }
-                // Also update mirror text if present (e.g. .article-title-text for textarea auto-grow on Tencent Cloud)
-                const mirrorText = el.parentElement?.querySelector('.article-title-text');
+                // Also update mirror text if present (e.g. .autofit-textarea-content for Toutiao, .article-title-text for Tencent Cloud)
+                const mirrorText = el.parentElement?.querySelector('.autofit-textarea-content, .article-title-text, pre');
                 if (mirrorText) mirrorText.textContent = payload.title;
 
                 el.dispatchEvent(new Event('input', { bubbles: true }));
@@ -733,6 +740,94 @@ if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
         console.warn('[NiceMD Automation] Modal confirm warning:', modalErr);
       }
 
+      // 3.6 Auto-handle Toutiao (今日头条) cover selection
+      if (platform === 'toutiao') {
+        try {
+          if (!payload.cover) {
+            // User chose no cover -> auto select "无封面" / "无图" or "自动"
+            const noCoverOption = Array.from(document.querySelectorAll('label, .byte-radio, .byte-radio-wrapper, span, div')).find(el => {
+              const t = el.textContent?.trim();
+              return (t === '无封面' || t === '无图' || t === '自动') && el.children.length <= 3;
+            });
+            if (noCoverOption) {
+              const target = noCoverOption.querySelector('input') || noCoverOption;
+              target.click();
+              coverDone = true;
+            }
+          } else {
+            // User has a cover -> ensure "单图" is selected
+            const singleCoverOption = Array.from(document.querySelectorAll('label, .byte-radio, .byte-radio-wrapper, span, div')).find(el => {
+              const t = el.textContent?.trim();
+              return (t === '单图' || t === '单封面') && el.children.length <= 3;
+            });
+            if (singleCoverOption) {
+              const target = singleCoverOption.querySelector('input') || singleCoverOption;
+              target.click();
+            }
+
+            // Look for "从正文中选择" or "选择封面" or cover slot to open image picker modal
+            const openModalBtn = Array.from(document.querySelectorAll('button, div, span, a, label')).find(el => {
+              const t = el.textContent?.trim();
+              return (t === '从正文中选择' || t === '从正文选择' || t === '选择封面' || t === '+ 添加封面' || t === '添加封面' || t === '从正文提取') && el.children.length <= 2;
+            });
+            if (openModalBtn) {
+              openModalBtn.click();
+            }
+
+            // If image picker modal is open, select thumbnail and click "确定"
+            const modals = Array.from(document.querySelectorAll('.byte-modal, .tui-modal, [role="dialog"], .semi-modal, div')).filter(el => {
+              const t = el.textContent || '';
+              return (t.includes('从正文中选择') || t.includes('正文图片') || t.includes('选择封面') || t.includes('图片素材') || t.includes('本地上传')) && el.querySelector('button');
+            });
+
+            if (modals.length > 0) {
+              const modal = modals[modals.length - 1];
+              // Switch to "正文图片" tab if present
+              const articleTab = Array.from(modal.querySelectorAll('.byte-tabs-header-title, .semi-tabs-header-tab, .tab-item, div, span')).find(el => {
+                return el.textContent?.trim() === '正文图片' || el.textContent?.trim() === '文章图片';
+              });
+              if (articleTab && !articleTab.classList.contains('is-active') && !articleTab.classList.contains('active')) {
+                articleTab.click();
+                await new Promise(r => setTimeout(r, 100));
+              }
+
+              // Find thumbnail images in modal
+              const imgItems = Array.from(modal.querySelectorAll('.image-item, .img-item, .pic-item, .card-item, .byte-image, .tui-image, img, [class*="image"], [class*="thumb"]')).filter(el => {
+                return el.tagName === 'IMG' || el.querySelector('img') || el.style.backgroundImage;
+              });
+
+              if (imgItems.length > 0) {
+                const firstImg = imgItems[0];
+                firstImg.click();
+                const checkbox = firstImg.querySelector('input[type="checkbox"], input[type="radio"], [class*="checkbox"], [class*="check"], svg') || firstImg;
+                checkbox.click();
+                await new Promise(r => setTimeout(r, 120));
+              }
+
+              // Click confirm button
+              const modalButtons = Array.from(modal.querySelectorAll('button'));
+              const confirmBtn = modalButtons.find(btn => {
+                const text = btn.textContent?.trim();
+                return (text === '确定' || text === '确认' || text === '下一步' || text === '完成' || text === '使用') && !btn.disabled;
+              });
+
+              if (confirmBtn) {
+                confirmBtn.click();
+                console.log('[NiceMD Automation] Toutiao cover modal confirmed successfully!');
+                coverDone = true;
+              }
+            }
+
+            const toutiaoCoverPreview = document.querySelector('.cover-preview, .s-cover-preview, .image-preview, .upload-preview img, .cover-img');
+            if (toutiaoCoverPreview) {
+              coverDone = true;
+            }
+          }
+        } catch (ttErr) {
+          console.warn('[NiceMD Automation] Toutiao cover auto-select warning:', ttErr);
+        }
+      }
+
       // Check if cover is fully loaded on page
       const currentCoverImg = document.querySelector('img[alt="封面图"], .css-6e7dvl img, .WriteCoverV2-buttonGroup, .cover.text, img.cover, .cover-img, .WriteCover-preview');
       if (currentCoverImg) {
@@ -809,7 +904,7 @@ if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
     // CRITICAL CHECK: Only skip injection if this is an already created draft from server (not creation pages)
     const searchStr = window.location.search || '';
     const pathStr = window.location.pathname || '';
-    const isCreatePage = pathStr.includes('/create') || pathStr.includes('/new') || pathStr.includes('/write');
+    const isCreatePage = pathStr.includes('/create') || pathStr.includes('/new') || pathStr.includes('/write') || pathStr.includes('/publish');
     const isExistingDraftUrl = !isCreatePage && (
       searchStr.includes('draftId') || 
       searchStr.includes('draft_id') || 

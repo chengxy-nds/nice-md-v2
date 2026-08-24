@@ -242,18 +242,32 @@ function handleDeleteGroup(id) {
 
 function handleMoveDoc({ docId, groupId }) {
   const doc = documents.value.find(d => d.id === docId);
-  if (doc) { doc.groupId = groupId; doc.updatedAt = Date.now(); }
-  saveDocuments(documents.value);
+  if (doc) {
+    doc.groupId = groupId || null;
+    doc.updatedAt = Date.now();
+    const idx = documents.value.findIndex(d => d.id === docId);
+    if (idx !== -1) {
+      const [moved] = documents.value.splice(idx, 1);
+      documents.value.push(moved);
+    }
+    documents.value = [...documents.value];
+    saveDocuments(documents.value);
+  }
 }
 
 function handleReorderDocs({ docId, targetDocId, position }) {
   const srcIdx = documents.value.findIndex(d => d.id === docId);
-  let tgtIdx = documents.value.findIndex(d => d.id === targetDocId);
-  if (srcIdx === -1 || tgtIdx === -1 || srcIdx === tgtIdx) return;
-  // Remove source, adjust target index, insert before target
+  const targetDoc = documents.value.find(d => d.id === targetDocId);
+  if (srcIdx === -1 || !targetDoc || docId === targetDocId) return;
+
   const [moved] = documents.value.splice(srcIdx, 1);
-  if (srcIdx < tgtIdx) tgtIdx--; // array shifted left
-  documents.value.splice(position === 'after' ? tgtIdx + 1 : tgtIdx, 0, moved);
+  moved.groupId = targetDoc.groupId || null;
+  moved.updatedAt = Date.now();
+
+  const tgtIdx = documents.value.findIndex(d => d.id === targetDocId);
+  const insertIdx = position === 'after' ? tgtIdx + 1 : tgtIdx;
+  documents.value.splice(insertIdx, 0, moved);
+  documents.value = [...documents.value];
   saveDocuments(documents.value);
 }
 

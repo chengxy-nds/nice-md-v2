@@ -67,6 +67,7 @@ const isScheduled = ref(false);
 const scheduledTime = ref('');
 const isOriginalDeclaration = ref(true);
 const customCoverUrl = ref('');
+const hasNoCover = ref(false);
 const fileInputRef = ref(null);
 
 // Preset curated covers
@@ -103,10 +104,17 @@ const articleImages = computed(() => {
 
 // Auto-extract first image from markdown or fallback
 const coverImage = computed(() => {
+  if (hasNoCover.value) return '';
   if (customCoverUrl.value) return customCoverUrl.value;
   if (articleImages.value.length > 0) return articleImages.value[0];
   return presetCovers[0];
 });
+
+const handleRemoveCover = () => {
+  soundEngine.playClick('backspace');
+  hasNoCover.value = true;
+  customCoverUrl.value = '';
+};
 
 // Format scheduled time helper
 const initScheduledTime = () => {
@@ -132,7 +140,7 @@ const activeCoverTab = ref('article'); // 'article' | 'upload' | 'preset'
 
 const openCoverSelectModal = () => {
   soundEngine.playClick();
-  tempSelectedCover.value = coverImage.value;
+  tempSelectedCover.value = coverImage.value || (articleImages.value[0] || presetCovers[0]);
   activeCoverTab.value = 'article'; // 默认从文章图中选择
   showCoverPreviewModal.value = false; // 关闭大图预览
   showCoverSelectModal.value = true;
@@ -146,6 +154,7 @@ const selectCoverOption = (url) => {
 const confirmCoverSelection = () => {
   soundEngine.playChime();
   if (tempSelectedCover.value) {
+    hasNoCover.value = false;
     customCoverUrl.value = tempSelectedCover.value;
   }
   showCoverSelectModal.value = false;
@@ -162,6 +171,7 @@ const handleCoverUpload = (e) => {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = (event) => {
+    hasNoCover.value = false;
     customCoverUrl.value = event.target.result;
     tempSelectedCover.value = event.target.result;
     soundEngine.playChime();
@@ -927,6 +937,12 @@ watch(() => props.isOpen, (newVal) => {
   }
 });
 
+watch(showPlatformManageModal, (newVal) => {
+  if (newVal && isExtensionInstalled.value) {
+    checkAllLogins(true);
+  }
+});
+
 const checkAllLogins = (force = false) => {
   resetPlatformSyncStatuses();
   if (!isExtensionInstalled.value) {
@@ -1606,10 +1622,20 @@ onMounted(() => {
                   <span class="setting-title">文章封面</span>
                   <span class="setting-desc">为你的文章选择一个吸引人的封面</span>
                 </div>
-                <button class="btn-link-change-cover" @click="triggerCoverUpload">
-                  <span>更换封面</span>
-                  <ChevronRight size="13" />
-                </button>
+                <div class="cover-header-actions">
+                  <button 
+                    v-if="coverImage" 
+                    class="btn-link-remove-cover" 
+                    @click="handleRemoveCover" 
+                    title="去掉封面（不设置封面）"
+                  >
+                    <span>不设置封面</span>
+                  </button>
+                  <button class="btn-link-change-cover" @click="triggerCoverUpload">
+                    <span>{{ coverImage ? '更换封面' : '添加封面' }}</span>
+                    <ChevronRight size="13" />
+                  </button>
+                </div>
               </div>
 
               <!-- Hidden File Input for Custom Cover Upload -->
@@ -1622,11 +1648,17 @@ onMounted(() => {
               />
 
               <!-- Cover Image Preview Frame (点击查看大图预览) -->
-              <div class="cover-preview-box" @click="openCoverPreview" title="点击查看大图预览">
+              <div v-if="coverImage" class="cover-preview-box" @click="openCoverPreview" title="点击查看大图预览">
                 <img :src="coverImage" alt="Article Cover" class="cover-img" />
                 <div class="cover-expand-btn" @click.stop="openCoverPreview" title="预览封面大图">
                   <Maximize2 size="13" />
                 </div>
+              </div>
+
+              <!-- Empty Cover State -->
+              <div v-else class="cover-empty-placeholder" @click="triggerCoverUpload" title="点击添加封面">
+                <ImageIcon size="18" class="empty-cover-icon" />
+                <span class="empty-cover-text">未设置封面，点击添加</span>
               </div>
             </div>
           </div>
@@ -2710,6 +2742,29 @@ onMounted(() => {
   color: #94a3b8;
 }
 
+.cover-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.btn-link-remove-cover {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  transition: all 0.15s ease;
+}
+
+.btn-link-remove-cover:hover {
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.08);
+}
+
 .btn-link-change-cover {
   background: transparent;
   border: none;
@@ -2724,6 +2779,36 @@ onMounted(() => {
 
 .btn-link-change-cover:hover {
   color: #1e293b;
+}
+
+.cover-empty-placeholder {
+  width: 100%;
+  height: 4.5rem;
+  border: 1px dashed #cbd5e1;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  color: #94a3b8;
+  cursor: pointer;
+  background: #f8fafc;
+  transition: all 0.2s ease;
+}
+
+.cover-empty-placeholder:hover {
+  border-color: #ff5e36;
+  color: #ff5e36;
+  background: rgba(255, 94, 54, 0.04);
+}
+
+.empty-cover-icon {
+  color: currentColor;
+}
+
+.empty-cover-text {
+  font-size: 0.78125rem;
+  font-weight: 500;
 }
 
 .settings-divider {
@@ -2884,22 +2969,21 @@ input:checked + .slider:before {
   color: #0f172a;
 }
 
-/* Drawer Footer */
+/* Drawer Footer (上下垂直结构) */
 .drawer-footer {
-  padding: 0.875rem 1.25rem 1.25rem 1.25rem;
+  padding: 0.75rem 1.25rem 1.25rem 1.25rem;
   background: transparent;
   position: relative;
   z-index: 2;
   flex-shrink: 0;
   display: flex;
-  flex-direction: row;
+  flex-direction: column;
   align-items: center;
   gap: 0.625rem;
 }
 
 .btn-gradient-launch {
-  flex: 4;
-  min-width: 0;
+  width: 100%;
   height: 2.875rem;
   border-radius: 0.875rem;
   border: none;
@@ -2912,7 +2996,7 @@ input:checked + .slider:before {
   gap: 0.375rem;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  padding: 0 0.75rem;
+  padding: 0 1rem;
   white-space: nowrap;
 }
 
@@ -2961,21 +3045,18 @@ input:checked + .slider:before {
   flex-shrink: 0;
 }
 
-/* Open Drafts Option Beside Launch Button */
+/* Open Drafts Option Underneath Launch Button */
 .open-drafts-option {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.3125rem;
-  margin-top: 0;
+  gap: 0.375rem;
   cursor: pointer;
   user-select: none;
-  padding: 0.5rem 0.25rem;
-  border-radius: 0.625rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 0.5rem;
   transition: all 0.18s ease;
   white-space: nowrap;
-  flex-shrink: 0;
 }
 
 .open-drafts-option:hover .open-drafts-label {

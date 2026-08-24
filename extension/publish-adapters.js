@@ -1694,7 +1694,8 @@ class ZhihuAdapter extends CodeAdapter {
       console.warn('[Zhihu Publish] Image processing failed:', e.message);
     }
 
-    content = content.replace(/<section\b[^>]*>/gi, '<div>').replace(/<\/section>/gi, '</div>');
+    // 知乎专属 Draft.js 内容净化与格式适配（去除 style 样式、规范化 figure 与 table）
+    content = this.transformZhihuHtml(content);
 
     let zhihuCoverUrl = '';
     if (article.cover) {
@@ -1726,8 +1727,8 @@ class ZhihuAdapter extends CodeAdapter {
       body: JSON.stringify(patchBody)
     });
 
-    const updateJson = await updateRes.json();
-    if (updateJson && (updateJson.id || updateJson.title)) {
+    const updateJson = await updateRes.json().catch(() => null);
+    if (updateRes.ok || (updateJson && (updateJson.id || updateJson.title))) {
       return this.createResult(true, {
         postId: String(draftId),
         postUrl: `https://zhuanlan.zhihu.com/p/${draftId}/edit`,
@@ -1736,6 +1737,62 @@ class ZhihuAdapter extends CodeAdapter {
     }
 
     throw new Error('知乎保存草稿内容失败');
+  }
+
+  /**
+   * 知乎内容转换 - 适配 Draft.js 编辑器格式，去除可能导致服务端解析置空的内联 CSS 与无效属性
+   */
+  transformZhihuHtml(html) {
+    if (!html) return '';
+    let result = html;
+
+    // 1. 去除 style 标签及内容
+    result = result.replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, '');
+
+    // 2. 解构并重构 table 为知乎专属结构
+    result = result.replace(/<figure[^>]*>\s*(<table[\s\S]*?<\/table>)\s*<\/figure>/gi, '$1');
+    result = result.replace(/<table[^>]*>([\s\S]*?)<\/table>/gi, (_match, tableContent) => {
+      const theadMatch = tableContent.match(/<thead[^>]*>([\s\S]*?)<\/thead>/i);
+      const tbodyMatch = tableContent.match(/<tbody[^>]*>([\s\S]*?)<\/tbody>/i);
+      let headerRows = '';
+      let bodyRows = '';
+      if (theadMatch) {
+        headerRows = theadMatch[1].replace(/<td([^>]*)>/gi, '<th$1>').replace(/<\/td>/gi, '</th>');
+      }
+      if (tbodyMatch) {
+        bodyRows = tbodyMatch[1];
+      } else {
+        bodyRows = tableContent.replace(/<thead[^>]*>[\s\S]*?<\/thead>/gi, '').replace(/<\/?tbody[^>]*>/gi, '');
+      }
+      if (!theadMatch) {
+        const firstRowMatch = bodyRows.match(/<tr[^>]*>([\s\S]*?)<\/tr>/i);
+        if (firstRowMatch && /<th[^>]*>/i.test(firstRowMatch[1]) && !/<td[^>]*>/i.test(firstRowMatch[1])) {
+          headerRows = firstRowMatch[0];
+          bodyRows = bodyRows.replace(firstRowMatch[0], '');
+        }
+      }
+      return `<table data-draft-node="block" data-draft-type="table" data-size="normal" data-row-style="normal"><tbody>${headerRows}${bodyRows}</tbody></table>`;
+    });
+
+    // 3. 将 section 与 div 转换为 p
+    result = result.replace(/<section\b[^>]*>/gi, '<p>').replace(/<\/section>/gi, '</p>');
+    result = result.replace(/<div\b[^>]*>/gi, '<p>').replace(/<\/div>/gi, '</p>');
+
+    // 4. 图片使用 figure 包裹
+    result = result.replace(/<figure[^>]*>\s*(<img[^>]+>)\s*<\/figure>/gi, '$1');
+    result = result.replace(/<img([^>]+src=["'][^"']+["'][^>]*)>/gi, '<figure data-size="normal"><img$1/></figure>');
+
+    // 5. 代码块转换
+    result = result.replace(/<pre><code class="language-(\w+)">/gi, '<pre lang="$1"><code>');
+
+    // 6. 剔除所有内联 style 属性与非知乎 data-* 属性（防止被知乎 Draft.js 解析器拒绝或清空）
+    result = result.replace(/\s*style="[^"]*"/gi, '');
+    result = result.replace(/\s*data-(?!draft)[a-z0-9-]+="[^"]*"/gi, '');
+
+    // 7. 去除连续空 p
+    result = result.replace(/<p>\s*<\/p>/gi, '');
+
+    return result;
   }
 }
 

@@ -263,8 +263,8 @@ const DEFAULT_PLATFORMS_CONFIG = [
     matchHosts: ['toutiao.com', 'mp.toutiao.com'],
     silentEnabled: true,
     selectors: {
-      title: '.byte-input__inner, [placeholder*="标题"], input',
-      editor: '.ProseMirror, [contenteditable="true"], textarea',
+      title: '.editor-title textarea, .autofit-textarea-wrapper textarea, textarea[placeholder*="文章标题"], textarea[placeholder*="2～30个字"], .editor-title input, [placeholder*="文章标题"], .tui-textarea, .byte-input__inner',
+      editor: '.ProseMirror, .byte-editor [contenteditable="true"], .editor-content [contenteditable="true"], .tui-editor [contenteditable="true"], [contenteditable="true"], .editor-tar, .ql-editor',
       format: 'text/html'
     }
   },
@@ -1484,30 +1484,48 @@ async function checkLoginStatus(platformId, writeUrl) {
 
     if (platformId === 'toutiao') {
       try {
-        // 1. Try mp.toutiao.com user basic info API
-        try {
-          const response = await fetch('https://mp.toutiao.com/mp/agw/article_meta/basic_info', {
-            method: 'GET',
-            credentials: 'include',
-            cache: 'no-cache'
-          });
-          const json = await response.json();
-          if (json && (json.code === 0 || json.message === 'success') && json.data) {
-            const d = json.data;
-            return {
-              loggedIn: true,
-              userId: d.user_id ? String(d.user_id) : (d.media_id ? String(d.media_id) : ''),
-              username: d.user_name || d.name || d.screen_name || '今日头条创作者',
-              avatar: d.avatar_url || d.user_avatar || null
-            };
-          }
-        } catch (e) {}
+        // 1. 全域 Cookie 聚合（包含 mp.toutiao.com 与 www.toutiao.com 的 host 及 domain 级别的 Cookie）
+        const [mpCookies, wwwCookies, rootCookies] = await Promise.all([
+          chrome.cookies.getAll({ url: 'https://mp.toutiao.com/' }).catch(() => []),
+          chrome.cookies.getAll({ url: 'https://www.toutiao.com/' }).catch(() => []),
+          chrome.cookies.getAll({ domain: 'toutiao.com' }).catch(() => [])
+        ]);
 
-        // 2. Try mp.toutiao.com creator author info API
+        const cookieMap = new Map();
+        [...mpCookies, ...wwwCookies, ...rootCookies].forEach(c => {
+          if (c && c.name && c.value) {
+            cookieMap.set(c.name, c.value);
+          }
+        });
+
+        const hasSession = !!(
+          (cookieMap.get('sessionid_ss') && cookieMap.get('sessionid_ss').length > 5) ||
+          (cookieMap.get('sessionid') && cookieMap.get('sessionid').length > 5) ||
+          (cookieMap.get('sid_tt') && cookieMap.get('sid_tt').length > 5) ||
+          (cookieMap.get('sid_guard') && cookieMap.get('sid_guard').length > 5) ||
+          cookieMap.get('passport_auth_status') === '1' ||
+          cookieMap.get('passport_auth_status_ss') === '1' ||
+          cookieMap.get('login_flag') === '1'
+        );
+
+        let detectedUid = cookieMap.get('user_id') || cookieMap.get('uid_tt') || cookieMap.get('uid_tt_ss') || '';
+        let detectedName = '';
+        let detectedAvatar = null;
+
+        const rawNick = cookieMap.get('user_name') || cookieMap.get('user_name_ss') || cookieMap.get('screen_name') || '';
+        if (rawNick) {
+          try { detectedName = decodeURIComponent(rawNick); } catch (e) { detectedName = rawNick; }
+        }
+
+        // 2. 尝试 mp.toutiao.com 创作者信息接口 (author_info)
         try {
           const resAuthor = await fetch('https://mp.toutiao.com/mp/agw/creator/home/author_info', {
             method: 'GET',
             credentials: 'include',
+            headers: {
+              'Accept': 'application/json, text/plain, */*',
+              'Referer': 'https://mp.toutiao.com/profile_v4/index'
+            },
             cache: 'no-cache'
           });
           const jsonAuthor = await resAuthor.json();
@@ -1515,18 +1533,45 @@ async function checkLoginStatus(platformId, writeUrl) {
             const d = jsonAuthor.data;
             return {
               loggedIn: true,
-              userId: d.user_id ? String(d.user_id) : (d.author_id ? String(d.author_id) : ''),
-              username: d.author_name || d.user_name || d.name || '今日头条创作者',
+              userId: d.user_id ? String(d.user_id) : (d.author_id ? String(d.author_id) : detectedUid),
+              username: d.author_name || d.user_name || d.name || detectedName || '今日头条创作者',
               avatar: d.avatar_url || d.avatar || null
             };
           }
         } catch (e) {}
 
-        // 3. Try toutiao.com user info API
+        // 3. 尝试 mp.toutiao.com 图文基础信息接口 (basic_info)
+        try {
+          const response = await fetch('https://mp.toutiao.com/mp/agw/article_meta/basic_info', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              'Accept': 'application/json, text/plain, */*',
+              'Referer': 'https://mp.toutiao.com/profile_v4/graphic/publish'
+            },
+            cache: 'no-cache'
+          });
+          const json = await response.json();
+          if (json && (json.code === 0 || json.message === 'success') && json.data) {
+            const d = json.data;
+            return {
+              loggedIn: true,
+              userId: d.user_id ? String(d.user_id) : (d.media_id ? String(d.media_id) : detectedUid),
+              username: d.user_name || d.name || d.screen_name || detectedName || '今日头条创作者',
+              avatar: d.avatar_url || d.user_avatar || null
+            };
+          }
+        } catch (e) {}
+
+        // 4. 尝试 www.toutiao.com 用户信息接口 (user/info)
         try {
           const resMain = await fetch('https://www.toutiao.com/api/pc/user/info', {
             method: 'GET',
             credentials: 'include',
+            headers: {
+              'Accept': 'application/json, text/plain, */*',
+              'Referer': 'https://www.toutiao.com/'
+            },
             cache: 'no-cache'
           });
           const jsonMain = await resMain.json();
@@ -1535,15 +1580,15 @@ async function checkLoginStatus(platformId, writeUrl) {
             if (d.user_id || d.name || d.screen_name) {
               return {
                 loggedIn: true,
-                userId: d.user_id ? String(d.user_id) : '',
-                username: d.name || d.screen_name || '今日头条创作者',
+                userId: d.user_id ? String(d.user_id) : detectedUid,
+                username: d.name || d.screen_name || detectedName || '今日头条创作者',
                 avatar: d.avatar_url || null
               };
             }
           }
         } catch (e) {}
 
-        // 4. Try fetching publish page and checking redirected URL & HTML
+        // 5. 尝试拉取 mp 发布页检测重定向与内嵌数据
         try {
           const resPage = await fetch('https://mp.toutiao.com/profile_v4/graphic/publish', {
             method: 'GET',
@@ -1552,34 +1597,30 @@ async function checkLoginStatus(platformId, writeUrl) {
             cache: 'no-cache'
           });
           const finalUrl = resPage.url || '';
-          if (!finalUrl.includes('/login') && !finalUrl.includes('/auth/page')) {
+          if (resPage.ok && !finalUrl.includes('/login') && !finalUrl.includes('/auth/page')) {
             const html = await resPage.text();
             const userMatch = html.match(/"user_name":\s*"([^"]+)"/) || 
                               html.match(/"screen_name":\s*"([^"]+)"/) ||
                               html.match(/"name":\s*"([^"]+)"/);
             const avatarMatch = html.match(/"avatar_url":\s*"([^"]+)"/);
             const uidMatch = html.match(/"user_id":\s*"?(\d+)"?/);
-            if (userMatch || uidMatch) {
+            if (userMatch || uidMatch || html.includes('byte-input')) {
               return {
                 loggedIn: true,
-                userId: uidMatch ? uidMatch[1] : '',
-                username: userMatch ? userMatch[1] : '今日头条创作者',
+                userId: uidMatch ? uidMatch[1] : detectedUid,
+                username: userMatch ? userMatch[1] : (detectedName || '今日头条创作者'),
                 avatar: avatarMatch ? avatarMatch[1] : null
               };
             }
           }
         } catch (e) {}
 
-        // 5. Inspect Cookies for toutiao.com and mp.toutiao.com
-        const cookies = await chrome.cookies.getAll({ domain: 'toutiao.com' });
-        const sessionCookie = cookies.find(c => (c.name === 'sessionid' || c.name === 'sessionid_ss' || c.name === 'sid_tt') && c.value && c.value.length > 5);
-        const userCookie = cookies.find(c => (c.name === 'user_id' || c.name === 'uid_tt' || c.name === 'passport_auth_status') && c.value);
-        if (sessionCookie || (userCookie && userCookie.value !== '0')) {
-          const nickCookie = cookies.find(c => (c.name === 'user_name' || c.name === 'screen_name') && c.value);
+        // 6. Cookie 判定兜底
+        if (hasSession) {
           return {
             loggedIn: true,
-            userId: userCookie ? userCookie.value : '',
-            username: nickCookie ? decodeURIComponent(nickCookie.value) : '今日头条创作者',
+            userId: detectedUid,
+            username: detectedName || '今日头条创作者',
             avatar: null
           };
         }

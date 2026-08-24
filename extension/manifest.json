@@ -29,6 +29,7 @@
     {
       "matches": [
         "https://*.zhihu.com/write*",
+        "https://*.zhihu.com/p/*",
         "https://juejin.cn/editor/drafts/new*",
         "https://juejin.cn/editor/drafts/*",
         "https://editor.csdn.net/*",
