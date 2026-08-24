@@ -2011,6 +2011,76 @@ const cssLineCount = computed(() => {
   margin-left: auto;
 }
 
+.heading-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  z-index: 3000;
+}
+
+.heading-modal-content {
+  width: 100%;
+  max-width: 51.25rem;
+  max-height: 85vh;
+  background: var(--glass-bg, rgba(255, 255, 255, 0.9));
+  backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
+  -webkit-backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
+  border: 1.5px solid var(--glass-border, rgba(255, 255, 255, 0.85));
+  border-radius: 1.5rem;
+  box-shadow: 
+    0 1.5rem 4rem rgba(0, 0, 0, 0.15),
+    0 0.125rem 0.5rem rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  font-family: var(--font-sans);
+}
+
+.heading-modal-header {
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.modal-title-box {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--wandor-text, #1a1a1a);
+  font-family: var(--font-sans);
+}
+
+.modal-close-icon {
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  color: var(--wandor-muted, #767676);
+  cursor: pointer;
+  padding: 0.3125rem;
+  border-radius: 9999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.modal-close-icon:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--wandor-text, #1a1a1a);
+  transform: scale(1.06);
+}
+
 .replace-material-btn {
   display: flex;
   align-items: center;
@@ -2112,70 +2182,14 @@ const cssLineCount = computed(() => {
 }
 
 /* Modal Overlay & Card Grid */
-.heading-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 99999;
-  background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-
-.heading-modal-content {
-  width: 100%;
-  max-width: 51.25rem;
-  max-height: 85vh;
-  background: var(--bg-editor, #ffffff);
-  border-radius: 0.75rem;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.25);
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  border: 1px solid var(--border-color, #e2e8f0);
-}
-
-.heading-modal-header {
-  padding: 1rem 1.25rem;
-  border-bottom: 1px solid var(--border-color, #e2e8f0);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--bg-app, #f8fafc);
-}
-
-.modal-title-box {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.95rem;
-  font-weight: 800;
-  color: var(--text-main, #0f172a);
-}
-
-.modal-close-icon {
-  background: transparent;
-  border: none;
-  color: var(--text-muted, #64748b);
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 0.375rem;
-}
-
-.modal-close-icon:hover {
-  background: var(--border-color, #f1f5f9);
-  color: var(--text-main, #0f172a);
-}
-
 .heading-modal-subtext {
   padding: 0.625rem 1.25rem;
-  background: var(--bg-editor, #ffffff);
-  border-bottom: 1px solid var(--border-color, #e2e8f0);
+  background: rgba(255, 255, 255, 0.4);
+  border-bottom: 1px solid var(--border-color);
   font-size: 0.78rem;
-  color: var(--text-muted, #64748b);
+  color: var(--wandor-muted, #767676);
   line-height: 1.5;
+  font-family: var(--font-sans);
 }
 
 .heading-materials-grid {
@@ -2213,16 +2227,16 @@ const cssLineCount = computed(() => {
 .card-top {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .tag-badge {
   background: #eff6ff;
   color: #2563eb;
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 800;
-  padding: 1px 6px;
-  border-radius: 4px;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 0.25rem;
   white-space: nowrap;
 }
 
@@ -2232,7 +2246,7 @@ const cssLineCount = computed(() => {
 }
 
 .card-name {
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 700;
   color: var(--text-main, #0f172a);
   white-space: nowrap;
@@ -2241,10 +2255,10 @@ const cssLineCount = computed(() => {
 }
 
 .card-preview-area {
-  padding: 8px 10px;
+  padding: 0.5rem 0.625rem;
   background: var(--bg-app, #f8fafc);
-  border-radius: 6px;
-  min-height: 52px;
+  border-radius: 0.375rem;
+  min-height: 3.25rem;
   display: flex;
   align-items: center;
   border: 1px solid var(--border-color, #e2e8f0);
@@ -2253,12 +2267,12 @@ const cssLineCount = computed(() => {
 .card-bottom {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 0.5rem;
   margin-top: auto;
 }
 
 .card-desc {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: var(--text-muted, #64748b);
   line-height: 1.35;
   margin: 0;
@@ -2266,9 +2280,9 @@ const cssLineCount = computed(() => {
 
 .apply-btn {
   width: 100%;
-  padding: 6px;
-  border-radius: 6px;
-  font-size: 11.5px;
+  padding: 0.375rem;
+  border-radius: 0.375rem;
+  font-size: 0.72rem;
   font-weight: 700;
   border: 1px solid var(--border-color, #cbd5e1);
   background: var(--bg-app, #f8fafc);
@@ -2296,53 +2310,53 @@ const cssLineCount = computed(() => {
 }
 
 .global-badge {
-  font-size: 10px;
+  font-size: 0.625rem;
   font-weight: 700;
   color: #15803d;
   background: #dcfce7;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
 }
 
 .global-widget-subtext {
-  font-size: 11.5px;
+  font-size: 0.72rem;
   color: #166534;
   line-height: 1.4;
-  margin: 0 0 10px 0;
+  margin: 0 0 0.625rem 0;
 }
 
 .widget-row-box {
   background: #ffffff;
   border: 1px solid #dcfce7;
-  border-radius: 8px;
-  padding: 10px;
-  margin-bottom: 8px;
+  border-radius: 0.5rem;
+  padding: 0.625rem;
+  margin-bottom: 0.5rem;
 }
 
 .widget-row-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 6px;
+  gap: 0.375rem;
 }
 
 .widget-title {
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 700;
   color: #0f172a;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 0.3125rem;
 }
 
 .widget-choose-btn {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: #15803d;
   background: #f0fdf4;
   border: 1px solid #86efac;
-  padding: 3px 8px;
-  border-radius: 5px;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 0.3125rem;
   cursor: pointer;
   transition: all 0.15s ease;
 }

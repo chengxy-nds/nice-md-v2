@@ -9,11 +9,6 @@ import {
   Copy,
   Check,
   Sparkles,
-  MessageSquare,
-  BookOpen,
-  Globe,
-  FileCode,
-  Send,
   Palette
 } from '@lucide/vue';
 import { copyToWeChat, compileToWeChatHtml } from '../utils/wechatStyles';
@@ -338,19 +333,9 @@ const handleCopyMarkdownText = async () => {
       />
     </div>
 
-    <!-- Right Area: Icon Slider / Sidebar (52px wide) -->
+    <!-- Right Area: Icon Slider / Sidebar (56px wide, matching left sidebar) -->
     <aside class="preview-right-bar" :class="{ 'is-standalone': !previewVisible }">
       <div class="bar-top">
-        <!-- 0. Launchpad button -->
-        <button
-          class="bar-action-btn btn-launch-slider"
-          @click="emit('open-launchpad')"
-          title="一键分发"
-        >
-          <Send size="16" />
-          <span class="bar-label">分发</span>
-        </button>
-
         <!-- 1. Mode Switcher: Web / Mobile -->
         <button
           class="bar-action-btn"
@@ -358,9 +343,8 @@ const handleCopyMarkdownText = async () => {
           @click="isWeChatMode = !isWeChatMode"
           :title="isWeChatMode ? '当前为手机模拟，点击切换为网页标准预览' : '当前为网页预览，点击切换为手机模拟预览'"
         >
-          <Smartphone v-if="isWeChatMode" size="16" />
-          <Monitor v-else size="16" />
-          <span class="bar-label">{{ isWeChatMode ? '手机' : '网页' }}</span>
+          <Smartphone v-if="isWeChatMode" size="20" stroke-width="1.6" />
+          <Monitor v-else size="20" stroke-width="1.6" />
         </button>
 
         <!-- 2. Preview toggle -->
@@ -370,9 +354,8 @@ const handleCopyMarkdownText = async () => {
           @click="$emit('togglePreview')"
           :title="previewVisible ? '隐藏预览区（仅编辑）' : '恢复双栏布局'"
         >
-          <Eye v-if="previewVisible" size="16" />
-          <EyeOff v-else size="16" />
-          <span class="bar-label">{{ previewVisible ? '预览' : '编辑' }}</span>
+          <Eye v-if="previewVisible" size="20" stroke-width="1.6" />
+          <EyeOff v-else size="20" stroke-width="1.6" />
         </button>
 
         <!-- 3. Copy Options with hover popout -->
@@ -381,33 +364,32 @@ const handleCopyMarkdownText = async () => {
             class="bar-action-btn"
             title="复制到各平台"
           >
-            <Copy size="16" />
-            <span class="bar-label">复制</span>
+            <Copy size="20" stroke-width="1.6" />
           </button>
 
           <div class="copy-popout-panel">
             <div class="popout-title">一键复制至</div>
             <button class="popout-item" @click="handleCopyWeChat">
-              <MessageSquare size="14" class="icon-wechat" />
+              <img src="/svg/微信.svg" class="popout-brand-icon" alt="微信公众号" />
               <span>微信公众号</span>
             </button>
             <button class="popout-item" @click="handleCopyZhihu">
-              <BookOpen size="14" class="icon-zhihu" />
+              <img src="/svg/知乎.svg" class="popout-brand-icon" alt="知乎专栏" />
               <span>知乎专栏</span>
             </button>
             <button class="popout-item" @click="handleCopyToutiao">
-              <Globe size="14" class="icon-toutiao" />
+              <img src="/svg/今日头条.svg" class="popout-brand-icon" alt="今日头条" />
               <span>今日头条</span>
             </button>
             <button class="popout-item" @click="handleCopyMarkdownText">
-              <FileCode size="14" class="icon-markdown" />
+              <img src="/svg/md.svg" class="popout-brand-icon" alt="Markdown 源码" />
               <span>Markdown 源码</span>
             </button>
           </div>
         </div>
       </div>
 
-      <!-- 3. Theme Customizer button -->
+      <!-- 4. Theme Customizer button -->
       <div class="bar-bottom">
         <button
           class="bar-action-btn"
@@ -415,8 +397,7 @@ const handleCopyMarkdownText = async () => {
           @click="$emit('update:themePanelVisible', !themePanelVisible)"
           title="自定义主题"
         >
-          <Palette size="16" />
-          <span class="bar-label">主题</span>
+          <Palette size="20" stroke-width="1.6" />
         </button>
       </div>
     </aside>
@@ -453,7 +434,7 @@ const handleCopyMarkdownText = async () => {
 }
 
 .theme-sidebar-wrapper {
-  width: clamp(21rem, 24rem, 28rem);
+  width: clamp(18.5rem, 23vw, 25rem);
   flex-shrink: 0;
   height: 100%;
   max-height: 100%;
@@ -493,9 +474,9 @@ const handleCopyMarkdownText = async () => {
   font-family: 'Outfit', sans-serif;
 }
 
-/* Right-side slider / bar styling — independent, pinned to the right edge */
+/* Right-side slider / bar styling — independent, pinned to the right edge, matching left sidebar */
 .preview-right-bar {
-  width: 52px;
+  width: 56px;
   flex-shrink: 0;
   background: var(--bg-sidebar);
   border-left: 1px solid var(--border-color);
@@ -504,40 +485,38 @@ const handleCopyMarkdownText = async () => {
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  padding: 10px 0;
+  padding: 24px 0 20px;
   box-sizing: border-box;
   z-index: 7;
   transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
-
 
 .bar-top,
 .bar-bottom {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: 18px;
 }
 
 .bar-action-btn {
-  width: 36px;
-  padding: 6px 0 4px;
-  border-radius: 8px;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
   background: transparent;
   border: none;
   color: var(--text-muted);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 2px;
   cursor: pointer;
   transition: all 0.15s ease;
+  padding: 0;
 }
 
 .bar-action-btn:hover {
+  color: var(--text-main);
   background: var(--accent-bg);
-  color: var(--accent-color);
 }
 
 .bar-action-btn:active {
@@ -549,26 +528,6 @@ const handleCopyMarkdownText = async () => {
   background: var(--accent-bg);
 }
 
-.bar-label {
-  font-size: 9px;
-  font-weight: 600;
-  line-height: 1;
-  letter-spacing: 0.02em;
-}
-
-.bar-label-light {
-  color: rgba(255,255,255,0.85);
-}
-
-.btn-launch-slider {
-  color: var(--accent-color) !important;
-  background: var(--accent-bg) !important;
-}
-
-.btn-launch-slider:hover {
-  background: var(--accent-color) !important;
-  color: #ffffff !important;
-}
 .slider-trigger-container {
   position: relative;
 }
@@ -577,49 +536,57 @@ const handleCopyMarkdownText = async () => {
   position: absolute;
   right: 100%;
   top: 50%;
-  transform: translateY(-50%) translateX(-12px);
-  background: var(--bg-editor);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  box-shadow: var(--shadow-lg);
-  padding: 8px;
+  transform: translateY(-50%) translateX(-0.75rem);
+  background: var(--glass-bg, rgba(255, 255, 255, 0.85));
+  backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
+  -webkit-backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
+  border: 1.5px solid var(--glass-border, rgba(255, 255, 255, 0.8));
+  border-radius: 1rem;
+  box-shadow: 
+    0 1rem 2.5rem rgba(0, 0, 0, 0.1),
+    0 0.125rem 0.5rem rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  padding: 0.5rem;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-width: 190px;
+  gap: 0.25rem;
+  min-width: 12rem;
   opacity: 0;
   visibility: hidden;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 100;
+  font-family: var(--font-sans);
 }
 
 /* Trigger display on hover */
 .slider-trigger-container:hover .copy-popout-panel {
   opacity: 1;
   visibility: visible;
-  transform: translateY(-50%) translateX(-4px);
+  transform: translateY(-50%) translateX(-0.375rem);
 }
+
 .popout-title {
-  font-size: 10px;
-  font-weight: 800;
-  color: var(--text-muted);
-  padding: 4px 8px;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--wandor-muted, #767676);
+  padding: 0.25rem 0.5rem;
   text-transform: uppercase;
-  letter-spacing: 0.8px;
+  letter-spacing: 0.04em;
   border-bottom: 1px solid var(--border-color);
-  margin-bottom: 4px;
+  margin-bottom: 0.25rem;
+  font-family: var(--font-sans);
 }
 
 .popout-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.625rem;
   background: transparent;
   border: none;
-  color: var(--text-main);
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 12px;
+  color: var(--wandor-text, #1a1a1a);
+  padding: 0.4375rem 0.625rem;
+  border-radius: 0.5rem;
+  font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   text-align: left;
@@ -627,26 +594,25 @@ const handleCopyMarkdownText = async () => {
   white-space: nowrap;
   width: 100%;
   box-sizing: border-box;
+  font-family: var(--font-sans);
 }
 
 .popout-item:hover {
-  background: var(--accent-bg);
+  background: rgba(0, 0, 0, 0.04);
   color: var(--accent-color);
-  padding-left: 14px;
+  padding-left: 0.8125rem;
 }
 
-/* Brand specific icon colors */
-.icon-wechat {
-  color: #07c160;
+html.dark .popout-item:hover {
+  background: rgba(255, 255, 255, 0.06);
 }
-.icon-zhihu {
-  color: #0084ff;
-}
-.icon-toutiao {
-  color: #f85959;
-}
-.icon-markdown {
-  color: #4f4f4f;
+
+.popout-brand-icon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
+  object-fit: contain;
+  display: inline-block;
 }
 
 /* Floating copy toast alert */

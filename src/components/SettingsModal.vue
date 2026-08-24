@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { ref, watch, onMounted, computed } from 'vue';
 import {
   X,
@@ -872,7 +872,9 @@ const supportsSilent = (id) => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.45);
+  background: rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -891,72 +893,84 @@ const supportsSilent = (id) => {
   opacity: 0;
 }
 
+/* Wandor Liquid Glass Modal Card */
 .modal-card {
-  background: var(--bg-editor);
-  border: 2px solid var(--border-color);
-  border-radius: 20px;
-  box-shadow: var(--shadow-md);
+  background: var(--glass-bg, rgba(255, 255, 255, 0.88));
+  backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
+  -webkit-backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
+  border: 1.5px solid var(--glass-border, rgba(255, 255, 255, 0.8));
+  border-radius: 1.5rem;
+  box-shadow: 
+    0 1.5rem 3.75rem rgba(0, 0, 0, 0.12),
+    0 0.125rem 0.5rem rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  font-family: var(--font-sans);
 }
 /* Card slides up inside the fading overlay */
 .modal-enter-active .modal-card {
-  transition: transform 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.25s ease;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
 }
 .modal-leave-active .modal-card {
   transition: transform 0.15s ease, opacity 0.15s ease;
 }
 .modal-enter-from .modal-card {
-  transform: translateY(24px);
+  transform: translateY(20px) scale(0.96);
   opacity: 0;
 }
 .modal-leave-to .modal-card {
-  transform: translateY(12px);
+  transform: translateY(10px) scale(0.98);
   opacity: 0;
 }
 
 .modal-header {
-  padding: 16px 24px;
+  padding: 1rem 1.5rem;
   border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(0,0,0,0.01);
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .title-area {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.5rem;
 }
 
 .title-area h2 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 800;
-  font-family: 'Outfit', sans-serif;
-  color: var(--text-main);
-  letter-spacing: -0.3px;
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: var(--font-sans);
+  color: var(--wandor-text, #1a1a1a);
+  letter-spacing: -0.02em;
 }
 
 .btn-close {
-  background: transparent;
-  border: none;
+  background: rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.06);
   color: var(--text-muted);
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 9999px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .btn-close:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--text-main);
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--wandor-text, #1a1a1a);
+  transform: scale(1.05);
+}
+
+.btn-close:active {
+  transform: scale(0.95);
 }
 
 .settings-card {
@@ -1234,25 +1248,26 @@ const supportsSilent = (id) => {
 }
 
 .modal-footer {
-  padding: 16px 24px;
+  padding: 1rem 1.5rem;
   border-top: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(0, 0, 0, 0.01);
+  background: rgba(255, 255, 255, 0.25);
 }
 
 .connection-status {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 11px;
-  color: var(--text-muted);
+  gap: 0.5rem;
+  font-size: 0.72rem;
+  color: var(--wandor-muted, #767676);
+  font-family: var(--font-sans);
 }
 
 .status-dot {
-  width: 6px;
-  height: 6px;
+  width: 0.375rem;
+  height: 0.375rem;
   border-radius: 50%;
   background: #88888e;
 }
@@ -1264,57 +1279,67 @@ const supportsSilent = (id) => {
 
 .footer-actions {
   display: flex;
-  gap: 12px;
+  gap: 0.75rem;
 }
 
 .btn-secondary-action {
-  background: transparent;
-  border: 1px solid var(--border-color);
-  color: var(--text-muted);
-  padding: 8px 16px;
-  border-radius: 8px;
-  font-size: 12px;
+  background: rgba(255, 255, 255, 0.65);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: var(--wandor-text, #1a1a1a);
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
   cursor: pointer;
-  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+  font-family: var(--font-sans);
+  transition: all 0.15s ease;
 }
 
 .btn-secondary-action:hover {
-  background: rgba(0,0,0,0.03);
-  color: var(--text-main);
-}
-
-.btn-save-settings {
-  background: var(--accent-color);
-  border: 1px solid var(--border-color);
-  color: #1e1e1e;
-  padding: 8px 20px;
-  border-radius: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  box-shadow: var(--shadow-sm);
-  transition: background-color 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), color 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-}
-
-.btn-save-settings:hover {
-  background: var(--accent-hover);
+  background: rgba(0, 0, 0, 0.05);
   transform: translateY(-1px);
 }
 
+.btn-secondary-action:active {
+  transform: scale(0.95);
+}
+
+.btn-save-settings {
+  background: var(--wandor-dark, #0a0a0a);
+  border: none;
+  color: #fafafa;
+  padding: 0.5rem 1.25rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  transition: all 0.15s ease;
+}
+
+.btn-save-settings:hover {
+  background: #333333;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+}
+
 .btn-save-settings:active {
-  transform: translateY(1px);
+  transform: scale(0.95);
 }
 
 .btn-save-settings.success {
   background: #10b981;
   color: white;
+  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.3);
 }
 
 .checkbox-container {

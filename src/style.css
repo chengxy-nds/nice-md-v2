@@ -1,13 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
-  font-size: 16px;
-}
-
-@media (min-width: 1920px) {
-  :root {
-    font-size: 16.5px;
-  }
+  font-size: 15px;
 }
 
 @media (min-width: 2560px) {
@@ -16,16 +10,41 @@
   }
 }
 
-@media (max-width: 1366px) {
+@media (min-width: 1920px) and (max-width: 2559px) {
+  :root {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 1441px) and (max-width: 1919px) {
   :root {
     font-size: 15px;
+  }
+}
+
+@media (max-width: 1440px) {
+  :root {
+    font-size: 14.5px;
+  }
+}
+
+@media (max-width: 1280px) {
+  :root {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 1024px) {
+  :root {
+    font-size: 13.5px;
   }
 }
 
 :root,
 html[data-color-mode="light"] {
   /* Surface / Container Tokens */
-  --bg-app: #FAFAF8;            /* Warm White background */
+  --bg-app: #FAFAF8;
+  /* Warm White background */
   --bg-card: #FFFFFF;
   --bg-header: #FFFFFF;
   --bg-sidebar: #FFFFFF;
@@ -37,8 +56,10 @@ html[data-color-mode="light"] {
   --bg-capsule-btn-hover: #F1F5F9;
 
   /* Typography Tokens */
-  --text-main: #2D3139;         /* Rich Dark Gray */
-  --text-muted: #626A7A;        /* Muted Slate Gray */
+  --text-main: #2D3139;
+  /* Rich Dark Gray */
+  --text-muted: #626A7A;
+  /* Muted Slate Gray */
   --text-subtle: #8F97A3;
 
   /* Border & Divider Tokens */
@@ -57,17 +78,31 @@ html[data-color-mode="light"] {
   --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.1);
 
   /* Accent Tokens */
-  --accent-color: #5B6C8F;      /* Low-saturation Gray-Blue */
+  --accent-color: #5B6C8F;
+  /* Low-saturation Gray-Blue */
   --accent-hover: #455270;
   --accent-bg: #F2F2EE;
-  --accent-coral: #FF7A59;      /* Soft Coral Orange */
-  --accent-sage: #A8C7A0;       /* Muted Sage Green */
+  --accent-coral: #FF7A59;
+  /* Soft Coral Orange */
+  --accent-sage: #A8C7A0;
+  /* Muted Sage Green */
   --code-bg: #F4F4F0;
   --code-text: #FF7A59;
 
-  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-heading: 'Georgia', 'Outfit', serif;
+  --font-sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-heading: 'Outfit', 'Geist', sans-serif;
+  --font-display: 'Special Elite', 'Georgia', serif;
   --font-mono: 'JetBrains Mono', Consolas, Courier, monospace;
+
+  /* Wandor & Liquid Glass Design Tokens */
+  --wandor-dark: #0a0a0a;
+  --wandor-text: #1a1a1a;
+  --wandor-muted: #767676;
+  --wandor-prompt: #905831;
+  --glass-bg: rgba(255, 255, 255, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.75);
+  --glass-blur: blur(20px) saturate(180%);
+  --glass-shadow: 0 1.25rem 3.125rem rgba(0, 0, 0, 0.08), 0 0.125rem 0.5rem rgba(0, 0, 0, 0.03);
 
   /* Default Code Theme: Atom Dark */
   --hljs-bg: #282c34;
@@ -90,8 +125,16 @@ html[data-color-mode="light"] {
 
 html.dark,
 html[data-color-mode="dark"],
-[data-color-mode="dark"],
-.dark {
+body.dark {
+  /* Dark Mode Liquid Glass & Wandor Tokens */
+  --wandor-dark: #fafafa;
+  --wandor-text: #f3f4f6;
+  --wandor-muted: #9ca3af;
+  --wandor-prompt: #d97706;
+  --glass-bg: rgba(20, 20, 24, 0.82);
+  --glass-border: rgba(255, 255, 255, 0.14);
+  --glass-shadow: 0 1.25rem 3.125rem rgba(0, 0, 0, 0.45);
+
   /* VS Code / Antigravity IDE Dark Studio Surfaces */
   --bg-app: #1e1e1e !important;
   --bg-card: #252526 !important;
@@ -174,7 +217,12 @@ body {
 }
 
 /* Hide code block horizontal scrollbar while preserving smooth left-right scrolling */
-pre, code, .hljs, pre code, section pre, .markdown-body pre {
+pre,
+code,
+.hljs,
+pre code,
+section pre,
+.markdown-body pre {
   overflow-x: auto !important;
   -ms-overflow-style: none !important;
   scrollbar-width: none !important;
@@ -191,18 +239,57 @@ section pre::-webkit-scrollbar,
 }
 
 /* Highlight.js token colors using CSS variables */
-.hljs-keyword { color: var(--hljs-keyword) !important; font-weight: bold; }
-.hljs-string { color: var(--hljs-string) !important; }
-.hljs-number { color: var(--hljs-number) !important; }
-.hljs-literal { color: var(--hljs-literal) !important; }
-.hljs-built_in, .hljs-type { color: var(--hljs-type) !important; }
-.hljs-title, .hljs-function { color: var(--hljs-title) !important; }
-.hljs-attr { color: var(--hljs-attr) !important; }
-.hljs-comment { color: var(--hljs-comment) !important; font-style: italic; }
-.hljs-meta { color: var(--hljs-title) !important; }
-.hljs-operator { color: var(--hljs-literal) !important; }
-.hljs-property { color: var(--hljs-property) !important; }
-.hljs-variable { color: var(--hljs-variable) !important; }
+.hljs-keyword {
+  color: var(--hljs-keyword) !important;
+  font-weight: bold;
+}
+
+.hljs-string {
+  color: var(--hljs-string) !important;
+}
+
+.hljs-number {
+  color: var(--hljs-number) !important;
+}
+
+.hljs-literal {
+  color: var(--hljs-literal) !important;
+}
+
+.hljs-built_in,
+.hljs-type {
+  color: var(--hljs-type) !important;
+}
+
+.hljs-title,
+.hljs-function {
+  color: var(--hljs-title) !important;
+}
+
+.hljs-attr {
+  color: var(--hljs-attr) !important;
+}
+
+.hljs-comment {
+  color: var(--hljs-comment) !important;
+  font-style: italic;
+}
+
+.hljs-meta {
+  color: var(--hljs-title) !important;
+}
+
+.hljs-operator {
+  color: var(--hljs-literal) !important;
+}
+
+.hljs-property {
+  color: var(--hljs-property) !important;
+}
+
+.hljs-variable {
+  color: var(--hljs-variable) !important;
+}
 
 /* Premium Creator Command Center & Homepage Styles */
 .home-view {
@@ -219,8 +306,15 @@ section pre::-webkit-scrollbar,
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(15px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 /* Hero Section */
@@ -322,7 +416,7 @@ section pre::-webkit-scrollbar,
   position: relative;
   margin-top: 20px;
   border-radius: 16px;
-  background: linear-gradient(180deg, rgba(242,242,238,0.3) 0%, rgba(250,250,248,0) 100%);
+  background: linear-gradient(180deg, rgba(242, 242, 238, 0.3) 0%, rgba(250, 250, 248, 0) 100%);
   border: 1px dashed var(--border-color);
   overflow: hidden;
 }
@@ -405,16 +499,51 @@ section pre::-webkit-scrollbar,
   border-color: var(--accent-color);
 }
 
-.dest-node.wechat { top: 60px; left: 60px; }
-.dest-node.wechat .dot { background-color: #07c160; }
-.dest-node.zhihu { bottom: 60px; left: 60px; }
-.dest-node.zhihu .dot { background-color: #0084ff; }
-.dest-node.juejin { top: 60px; right: 60px; }
-.dest-node.juejin .dot { background-color: #1e80ff; }
-.dest-node.csdn { bottom: 60px; right: 60px; }
-.dest-node.csdn .dot { background-color: #fc5531; }
-.dest-node.bilibili { top: 40px; left: 50%; transform: translateX(-50%); }
-.dest-node.bilibili .dot { background-color: #fb7299; }
+.dest-node.wechat {
+  top: 60px;
+  left: 60px;
+}
+
+.dest-node.wechat .dot {
+  background-color: #07c160;
+}
+
+.dest-node.zhihu {
+  bottom: 60px;
+  left: 60px;
+}
+
+.dest-node.zhihu .dot {
+  background-color: #0084ff;
+}
+
+.dest-node.juejin {
+  top: 60px;
+  right: 60px;
+}
+
+.dest-node.juejin .dot {
+  background-color: #1e80ff;
+}
+
+.dest-node.csdn {
+  bottom: 60px;
+  right: 60px;
+}
+
+.dest-node.csdn .dot {
+  background-color: #fc5531;
+}
+
+.dest-node.bilibili {
+  top: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.dest-node.bilibili .dot {
+  background-color: #fb7299;
+}
 
 .dest-node .dot {
   width: 8px;
@@ -761,14 +890,21 @@ section pre::-webkit-scrollbar,
 
 /* Responsiveness for homepage */
 @media (max-width: 960px) {
-  .hero-title { font-size: 40px; }
-  .benefits-grid, .integrations-grid, .testimonials-grid {
+  .hero-title {
+    font-size: 40px;
+  }
+
+  .benefits-grid,
+  .integrations-grid,
+  .testimonials-grid {
     grid-template-columns: 1fr;
   }
+
   .workflow-container {
     flex-direction: column;
     gap: 32px;
   }
+
   .workflow-arrow {
     display: none;
   }
@@ -785,8 +921,8 @@ html[data-color-mode="dark"] .preview-body:not(.is-wechat-wrapper) .markdown-bod
   background-color: transparent !important;
 }
 
-html.dark .preview-body:not(.is-wechat-wrapper) .markdown-body > section:first-child,
-html[data-color-mode="dark"] .preview-body:not(.is-wechat-wrapper) .markdown-body > section:first-child {
+html.dark .preview-body:not(.is-wechat-wrapper) .markdown-body>section:first-child,
+html[data-color-mode="dark"] .preview-body:not(.is-wechat-wrapper) .markdown-body>section:first-child {
   background-color: transparent !important;
   background-image: none !important;
 }
@@ -807,4 +943,3 @@ html[data-color-mode="dark"] .markdown-body blockquote {
   background: var(--bg-card);
   color: var(--text-muted);
 }
-

@@ -2010,20 +2010,23 @@ onMounted(() => {
 }
 
 /* Right Side Drawer Panel */
-/* Right Side Drawer Panel */
 .right-drawer-panel {
   width: min(28.75rem, 95vw);
   max-width: 95vw;
   height: 100vh;
   max-height: 100vh;
-  background: #f8faff;
-  box-shadow: -0.9375rem 0 3.125rem rgba(0, 0, 0, 0.12);
+  background: var(--glass-bg, rgba(255, 255, 255, 0.9));
+  backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
+  -webkit-backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
+  border-left: 1.5px solid var(--glass-border, rgba(255, 255, 255, 0.8));
+  box-shadow: -1.25rem 0 3.75rem rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.9);
   display: flex;
   flex-direction: column;
   position: relative;
   overflow: hidden;
   animation: slideDrawer 0.32s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
+  font-family: var(--font-sans);
 }
 
 @keyframes slideDrawer {
@@ -3011,13 +3014,14 @@ input:checked + .slider:before {
 .manage-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.55);
-  backdrop-filter: blur(10px);
+  background: rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 3000;
-  padding: 20px;
+  padding: 1.25rem;
   animation: fadeInModal 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -3031,12 +3035,19 @@ input:checked + .slider:before {
   max-width: 95vw;
   height: min(38rem, 86vh);
   max-height: 86vh;
-  background: #ffffff;
-  border-radius: 1.125rem;
-  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  background: var(--glass-bg, rgba(255, 255, 255, 0.92));
+  backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
+  -webkit-backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
+  border: 1.5px solid var(--glass-border, rgba(255, 255, 255, 0.85));
+  border-radius: 1.5rem;
+  box-shadow: 
+    0 1.5rem 4rem rgba(0, 0, 0, 0.15),
+    0 0.125rem 0.5rem rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  font-family: var(--font-sans);
   animation: popInCard 0.24s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -3047,11 +3058,11 @@ input:checked + .slider:before {
 
 .manage-modal-header {
   padding: 1rem 1.375rem;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid var(--border-color);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: #fafbfc;
+  background: rgba(255, 255, 255, 0.25);
   flex-shrink: 0;
 }
 

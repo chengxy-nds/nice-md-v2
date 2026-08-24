@@ -1325,126 +1325,146 @@ textarea::placeholder {
   color: var(--text-muted);
 }
 
-/* ── Inline Find Bar ── */
+/* ── Inline Find Bar (Responsive & Compact rem sizing) ── */
 .find-bar {
   position: absolute;
-  top: 0;
-  right: 6px;
+  top: 0.25rem;
+  right: 0.5rem;
   z-index: 50;
   background: var(--bg-editor);
   border: 1px solid var(--border-color);
-  border-radius: 8px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.10);
-  padding: 6px 8px;
+  border-radius: 0.375rem;
+  box-shadow: 0 0.1875rem 0.75rem rgba(0, 0, 0, 0.08);
+  padding: 0.25rem 0.375rem;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-width: min(340px, calc(100vw - 60px));
+  gap: 0.25rem;
+  min-width: min(18.5rem, calc(100vw - 2.5rem));
 }
+
 .find-bar-row {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 0.25rem;
 }
+
 .find-input-wrap {
   flex: 1;
   position: relative;
   display: flex;
   align-items: center;
 }
+
 .find-input-icon {
   position: absolute;
-  left: 8px;
+  left: 0.4375rem;
   color: var(--text-muted);
   pointer-events: none;
 }
+
 .find-input {
   width: 100%;
-  padding: 5px 56px 5px 26px;
+  padding: 0.125rem 3rem 0.125rem 1.625rem;
   border: 1px solid var(--border-color);
-  border-radius: 5px;
-  font-size: 12px;
+  border-radius: 0.25rem;
+  font-size: 0.75rem;
   font-family: inherit;
   background: var(--bg-app);
   color: var(--text-main);
   outline: none;
-  height: 28px;
+  height: 1.625rem;
+  box-sizing: border-box;
 }
+
 .find-input:focus {
   border-color: var(--accent-color);
 }
+
 .find-count {
   position: absolute;
-  right: 8px;
-  font-size: 10px;
+  right: 0.4375rem;
+  font-size: 0.65rem;
   font-weight: 600;
   color: var(--text-muted);
   white-space: nowrap;
 }
-.find-nav-btn, .find-opt-btn, .find-close-btn, .find-action-btn {
+
+.find-nav-btn,
+.find-opt-btn,
+.find-close-btn,
+.find-action-btn {
   background: transparent;
   border: none;
   color: var(--text-muted);
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 0.25rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 28px;
-  width: 28px;
-  font-size: 11px;
+  height: 1.625rem;
+  width: 1.625rem;
+  font-size: 0.6875rem;
   font-weight: 600;
   font-family: inherit;
   transition: all 0.12s ease;
   flex-shrink: 0;
 }
-.find-nav-btn:hover, .find-opt-btn:hover, .find-close-btn:hover {
+
+.find-nav-btn:hover,
+.find-opt-btn:hover,
+.find-close-btn:hover {
   background: var(--accent-bg);
   color: var(--text-main);
 }
+
 .find-opt-btn.is-active {
   background: var(--accent-color);
   color: #fff;
 }
+
 .find-action-btn {
   width: auto;
-  padding: 0 10px;
-  font-size: 11px;
+  padding: 0 0.5rem;
+  font-size: 0.6875rem;
   border: 1px solid var(--border-color);
 }
+
 .find-action-btn:hover {
   background: var(--accent-bg);
   color: var(--accent-color);
   border-color: var(--accent-color);
 }
+
 .find-close-btn:hover {
-  background: rgba(239,68,68,0.1);
+  background: rgba(239, 68, 68, 0.1);
   color: #ef4444;
 }
 
 @media (max-width: 480px) {
   .find-bar {
-    left: 4px;
-    right: 4px;
+    left: 0.25rem;
+    right: 0.25rem;
     min-width: 0;
-    padding: 5px 6px;
+    padding: 0.25rem;
   }
   .find-bar-row {
-    gap: 2px;
+    gap: 0.125rem;
   }
   .find-input {
-    padding: 4px 46px 4px 22px;
-    height: 26px;
-    font-size: 11px;
+    padding: 0.125rem 2.5rem 0.125rem 1.375rem;
+    height: 1.5rem;
+    font-size: 0.6875rem;
   }
-  .find-nav-btn, .find-opt-btn, .find-close-btn {
-    width: 26px;
-    height: 26px;
+  .find-nav-btn,
+  .find-opt-btn,
+  .find-close-btn {
+    width: 1.5rem;
+    height: 1.5rem;
   }
   .find-action-btn {
-    height: 26px;
-    padding: 0 8px;
-    font-size: 10px;
+    height: 1.5rem;
+    padding: 0 0.375rem;
+    font-size: 0.65rem;
   }
 }
 

@@ -138,12 +138,7 @@ function handleApplyBackground(mat) {
           :key="mat.id"
           class="mc-card"
         >
-          <!-- Top Right Tag/Badge (e.g., VIP, 爆款, 推荐) -->
-          <div v-if="mat.tag" class="mc-card-badge" :class="{ 'is-vip': mat.tag === 'VIP' || mat.tag === '爆款' }">
-            {{ mat.tag }}
-          </div>
-
-          <!-- Pure Material Live Render Area (纯粹展示素材样式，无任何多余文字描述) -->
+          <!-- Pure Material Live Render Area (纯粹展示素材样式，无任何多余文字描述与角标) -->
           <div class="mc-card-preview">
             <div class="mc-render-paper" v-html="mat.html"></div>
           </div>
@@ -418,37 +413,6 @@ function handleApplyBackground(mat) {
   transform: translateY(-2px);
 }
 
-/* Badge (Top Right) */
-.mc-card-badge {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  z-index: 5;
-  font-size: 11px;
-  font-weight: 700;
-  padding: 2px 9px;
-  border-radius: 12px;
-  background: rgba(241, 245, 249, 0.95);
-  color: #475569;
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  letter-spacing: 0.3px;
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
-  pointer-events: none;
-  transition: opacity 0.2s ease;
-}
-
-.mc-card:hover .mc-card-badge {
-  opacity: 0;
-}
-
-.mc-card-badge.is-vip {
-  background: #fef3c7;
-  color: #d97706;
-  border-color: #fde68a;
-  box-shadow: 0 1px 4px rgba(217, 119, 6, 0.15);
-}
-
 /* Pure Material Preview Area */
 .mc-card-preview {
   flex: 1;
@@ -475,22 +439,29 @@ function handleApplyBackground(mat) {
   transform: scale(0.98);
 }
 
-/* Elegant Frosted Glass Hover Overlay (鼠标悬浮蒙版) */
+/* iOS 26 / VisionOS Ultra-Refined Liquid Glass Hover Overlay */
 .mc-card-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  background: rgba(255, 255, 255, 0.45);
+  backdrop-filter: blur(18px) saturate(190%);
+  -webkit-backdrop-filter: blur(18px) saturate(190%);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 16px;
+  padding: 1rem;
   opacity: 0;
   pointer-events: none;
-  border-radius: 12px;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 0.875rem;
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 10;
+}
+
+html.dark .mc-card-overlay,
+[data-color-mode="dark"] .mc-card-overlay {
+  background: rgba(15, 23, 42, 0.6);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
 }
 
 .mc-card:hover .mc-card-overlay {
@@ -501,53 +472,95 @@ function handleApplyBackground(mat) {
 .mc-overlay-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
-  transform: translateY(8px);
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  gap: 0.625rem;
+  transform: translateY(6px) scale(0.96);
+  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .mc-card:hover .mc-overlay-actions {
-  transform: translateY(0);
+  transform: translateY(0) scale(1);
 }
 
+/* iOS 26 / VisionOS Tactile Floating Capsule Buttons */
 .mc-overlay-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 15px;
-  border-radius: 8px;
-  font-size: 12.5px;
+  gap: 0.375rem;
+  padding: 0.5rem 0.9375rem;
+  border-radius: 9999px;
+  font-size: 0.78125rem;
   font-weight: 600;
+  letter-spacing: -0.01em;
   cursor: pointer;
   border: none;
   outline: none;
   white-space: nowrap;
-  transition: all 0.18s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
 }
 
+.mc-overlay-btn:active {
+  transform: scale(0.94) !important;
+}
+
+/* Primary Capsule (Apple Vibrance Blue Gradient + Top Inset Glow) */
 .mc-overlay-btn.primary {
-  background: #2563eb;
+  background: linear-gradient(135deg, #0071e3 0%, #0056b3 100%);
   color: #ffffff;
-  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 
+    0 0.25rem 0.875rem rgba(0, 113, 227, 0.38),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.45);
 }
 
 .mc-overlay-btn.primary:hover {
-  background: #1d4ed8;
-  transform: scale(1.04);
+  background: linear-gradient(135deg, #0077ed 0%, #005fb8 100%);
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 
+    0 0.4375rem 1.125rem rgba(0, 113, 227, 0.5),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.6);
 }
 
+/* Secondary Capsule (Frosted Glass Pill + Inset Light Reflection) */
 .mc-overlay-btn.secondary {
-  background: rgba(255, 255, 255, 0.95);
-  color: #1e293b;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(14px) saturate(180%);
+  -webkit-backdrop-filter: blur(14px) saturate(180%);
+  color: #1d1d1f;
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  box-shadow: 
+    0 0.25rem 0.75rem rgba(0, 0, 0, 0.08),
+    inset 0 1px 0.5px #ffffff;
 }
 
 .mc-overlay-btn.secondary:hover {
-  background: #ffffff;
-  color: #0f172a;
-  transform: scale(1.04);
+  background: rgba(255, 255, 255, 0.95);
+  color: #000000;
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 
+    0 0.4375rem 1rem rgba(0, 0, 0, 0.12),
+    inset 0 1px 0.5px #ffffff;
+}
+
+html.dark .mc-overlay-btn.secondary,
+[data-color-mode="dark"] .mc-overlay-btn.secondary {
+  background: rgba(45, 45, 48, 0.8);
+  border-color: rgba(255, 255, 255, 0.16);
+  color: #f8fafc;
+  box-shadow: 
+    0 0.25rem 0.75rem rgba(0, 0, 0, 0.4),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.18);
+}
+
+html.dark .mc-overlay-btn.secondary:hover,
+[data-color-mode="dark"] .mc-overlay-btn.secondary:hover {
+  background: rgba(65, 65, 70, 0.95);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+  box-shadow: 
+    0 0.4375rem 1rem rgba(0, 0, 0, 0.5),
+    inset 0 1px 0.5px rgba(255, 255, 255, 0.25);
 }
 
 .mc-empty {

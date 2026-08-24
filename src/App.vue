@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import html2canvas from 'html2canvas';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ImageRun, AlignmentType } from 'docx';
 import {
@@ -24,6 +24,7 @@ import confetti from 'canvas-confetti';
 import { defaultMarkdown } from './utils/defaultMarkdown';
 import TemplateCenter from './components/TemplateCenter.vue';
 import MaterialCenter from './components/MaterialCenter.vue';
+import HomeLandingView from './components/HomeLandingView.vue';
 import {
   loadDocuments, saveDocuments,
   loadGroups, saveGroups,
@@ -33,7 +34,7 @@ import {
 } from './utils/docStorage';
 
 // ── view & document state ──
-const currentView = ref('editor'); // 'editor' | 'templates' | 'materials'
+const currentView = ref('editor'); // 'home' | 'editor' | 'templates' | 'materials'
 
 function handleInsertMaterial(htmlSnippet) {
   let snippet = htmlSnippet ? htmlSnippet.trim() : '';
@@ -171,6 +172,34 @@ function handleRenameDoc({ id, title }) {
   const doc = documents.value.find(d => d.id === id);
   if (doc) { doc.title = title; doc.updatedAt = Date.now(); }
   saveDocuments(documents.value);
+}
+
+// ── Toolbar document title inline rename ──
+const isRenamingToolbarDoc = ref(false);
+const toolbarDocRenameValue = ref('');
+const toolbarDocInputRef = ref(null);
+
+function startRenameToolbarDoc() {
+  if (!activeDocument.value) return;
+  toolbarDocRenameValue.value = activeDocument.value.title || '未命名文档';
+  isRenamingToolbarDoc.value = true;
+  nextTick(() => {
+    toolbarDocInputRef.value?.focus();
+    toolbarDocInputRef.value?.select();
+  });
+}
+
+function confirmRenameToolbarDoc() {
+  if (!isRenamingToolbarDoc.value) return;
+  const trimmed = toolbarDocRenameValue.value.trim();
+  if (trimmed && activeDocument.value) {
+    handleRenameDoc({ id: activeDocument.value.id, title: trimmed });
+  }
+  isRenamingToolbarDoc.value = false;
+}
+
+function cancelRenameToolbarDoc() {
+  isRenamingToolbarDoc.value = false;
 }
 
 function handleDeleteDoc(id) {
@@ -1106,164 +1135,222 @@ watch(customStyles, () => {
 </script>
 
 <template>
-  <div class="app-container" data-color-mode="light">
-    <!-- Header spanning top full width -->
-    <header class="app-header">
-      <div class="header-left">
-        <div class="brand-logo">
-          <div class="logo-icon-box">
-            <Sparkles size="15" class="brand-icon" />
+  <div class="app-container" :class="{ 'is-standalone-home': currentView === 'home' }" data-color-mode="light">
+    <!-- 0. 官方独立全屏首页 (Wandor Liquid Glass Full Viewport Landing Page) -->
+    <HomeLandingView
+      v-if="currentView === 'home'"
+      @enter-editor="(prompt) => {
+        if (prompt && typeof prompt === 'string') {
+          markdownContent = '# 创作草稿\n\n' + prompt;
+        }
+        currentView = 'editor';
+      }"
+      @open-templates="currentView = 'templates'"
+      @open-materials="currentView = 'materials'"
+      @open-launchpad="isLaunchpadOpen = true"
+      @insert-sample="editorPanelRef?.insertSample(); currentView = 'editor';"
+      @import-file="(file) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          markdownContent = e.target.result || '';
+          currentView = 'editor';
+        };
+        reader.readAsText(file);
+      }"
+    />
+
+    <!-- 工作台模式（含顶部 Header + 左侧 IconBar + 编辑排版双栏） -->
+    <template v-else>
+      <!-- Header spanning top full width -->
+      <header class="app-header">
+        <div class="header-left">
+          <div class="brand-logo" @click="currentView = 'home'" style="cursor: pointer;" title="返回官方首页">
+            <div class="logo-icon-box">
+              <Sparkles size="15" class="brand-icon" />
+            </div>
+            <span class="brand-name">NiceMD</span>
+            <span class="brand-pro-tag">Pro</span>
           </div>
-          <span class="brand-name">NiceMD</span>
-          <span class="brand-pro-tag">Pro</span>
+          <button class="btn-menu-toggle" @click="toggleMobileSidebar" title="文档列表">
+            <Menu size="18" />
+          </button>
         </div>
-        <button class="btn-menu-toggle" @click="toggleMobileSidebar" title="文档列表">
-          <Menu size="18" />
-        </button>
-      </div>
 
-      <!-- Center Floating Pill Toolbar (AI 润色 / 智能排版 / 插入图片 / 生成封面 / 更多工具) -->
-      <div class="header-center">
-        <div class="header-capsule-bar">
-          <button class="capsule-btn is-ai" @click="handleAiPolish" title="AI 智能润色与优化">
-            <Sparkles size="14" class="capsule-icon ai-sparkle-icon" />
-            <span>AI 润色</span>
-          </button>
-          <button class="capsule-btn" @click="handleAutoFormat" title="智能中英文排版与规范">
-            <Wand2 size="14" class="capsule-icon" />
-            <span>智能排版</span>
-          </button>
-          <button class="capsule-btn" @click="editorPanelRef?.handleImageUpload()" title="插入图片">
-            <Image size="14" class="capsule-icon" />
-            <span>插入图片</span>
-          </button>
-          <button class="capsule-btn" @click="handleCoverGenerate" title="生成与更换文章封面">
-            <Palette size="14" class="capsule-icon" />
-            <span>生成封面</span>
-          </button>
-
-          <!-- More Tools Dropdown -->
-          <div class="capsule-dropdown-wrapper">
-            <button class="capsule-btn" :class="{ 'is-active': showMoreTools }" @click="showMoreTools = !showMoreTools" title="更多常用工具">
-              <LayoutGrid size="14" class="capsule-icon" />
-              <span>更多工具</span>
+        <!-- Center Floating Pill Toolbar (AI 润色 / 智能排版 / 插入图片 / 生成封面 / 更多工具) -->
+        <div class="header-center">
+          <div class="header-capsule-bar">
+            <button class="capsule-btn is-ai" @click="handleAiPolish" title="AI 智能润色与优化">
+              <Sparkles size="14" class="capsule-icon ai-sparkle-icon" />
+              <span>AI 润色</span>
             </button>
-            <div class="header-popout-panel capsule-popout" v-if="showMoreTools" @mouseleave="showMoreTools = false">
-              <button class="popout-item" @click="editorPanelRef?.openFindReplace(); showMoreTools = false">
-                <Search size="14" />
-                <span>查找与替换</span>
+            <button class="capsule-btn" @click="handleAutoFormat" title="智能中英文排版与规范">
+              <Wand2 size="14" class="capsule-icon" />
+              <span>智能排版</span>
+            </button>
+            <button class="capsule-btn" @click="editorPanelRef?.handleImageUpload()" title="插入图片">
+              <Image size="14" class="capsule-icon" />
+              <span>插入图片</span>
+            </button>
+            <button class="capsule-btn" @click="handleCoverGenerate" title="生成与更换文章封面">
+              <Palette size="14" class="capsule-icon" />
+              <span>生成封面</span>
+            </button>
+
+            <!-- More Tools Dropdown -->
+            <div class="capsule-dropdown-wrapper">
+              <button class="capsule-btn" :class="{ 'is-active': showMoreTools }" @click="showMoreTools = !showMoreTools" title="更多常用工具">
+                <LayoutGrid size="14" class="capsule-icon" />
+                <span>更多工具</span>
               </button>
-              <button class="popout-item" @click="editorPanelRef?.toggleUrlImport(); showMoreTools = false">
-                <Link size="14" />
-                <span>URL 文章抓取导入</span>
-              </button>
-              <button class="popout-item" @click="editorPanelRef?.insertSample(); showMoreTools = false">
-                <HelpCircle size="14" />
-                <span>插入示例模板</span>
-              </button>
-              <button class="popout-item" @click="editorPanelRef?.clearContent(); showMoreTools = false">
-                <Trash2 size="14" />
-                <span>清空编辑器内容</span>
-              </button>
-              <button class="popout-item" @click="openSettings(); showMoreTools = false">
-                <Settings size="14" />
-                <span>系统偏好设置</span>
-              </button>
+              <div class="header-popout-panel capsule-popout" v-if="showMoreTools" @mouseleave="showMoreTools = false">
+                <button class="popout-item" @click="editorPanelRef?.openFindReplace(); showMoreTools = false">
+                  <Search size="14" />
+                  <span>查找与替换</span>
+                </button>
+                <button class="popout-item" @click="editorPanelRef?.toggleUrlImport(); showMoreTools = false">
+                  <Link size="14" />
+                  <span>URL 文章抓取导入</span>
+                </button>
+                <button class="popout-item" @click="editorPanelRef?.insertSample(); showMoreTools = false">
+                  <HelpCircle size="14" />
+                  <span>插入示例模板</span>
+                </button>
+                <button class="popout-item" @click="editorPanelRef?.clearContent(); showMoreTools = false">
+                  <Trash2 size="14" />
+                  <span>清空编辑器内容</span>
+                </button>
+                <button class="popout-item" @click="openSettings(); showMoreTools = false">
+                  <Settings size="14" />
+                  <span>系统偏好设置</span>
+                </button>
+              </div>
             </div>
           </div>
+
+          <!-- Publish Button moved next to the capsule bar -->
+          <button class="btn-header-publish" @click="openLaunchpad" title="一键多渠道分发发布">
+            <Send size="13" class="publish-send-icon" />
+            <span>发布</span>
+          </button>
+
+          <!-- Segmented View Switcher on Mobile/Tablet -->
+          <div class="mobile-view-tabs">
+            <button 
+              class="tab-view-btn" 
+              :class="{ 'is-active': mobileActiveView === 'editor' }" 
+              @click="mobileActiveView = 'editor'"
+            >
+              编辑
+            </button>
+            <button 
+              class="tab-view-btn" 
+              :class="{ 'is-active': mobileActiveView === 'preview' }" 
+              @click="mobileActiveView = 'preview'"
+            >
+              预览
+            </button>
+          </div>
         </div>
 
-        <!-- Publish Button moved next to the capsule bar -->
-        <button class="btn-header-publish" @click="openLaunchpad" title="一键多渠道分发发布">
-          <Send size="13" class="publish-send-icon" />
-          <span>发布</span>
-        </button>
+        <!-- Right Header Area -->
+        <div class="header-right"></div>
+      </header>
 
-        <!-- Segmented View Switcher on Mobile/Tablet -->
-        <div class="mobile-view-tabs">
-          <button 
-            class="tab-view-btn" 
-            :class="{ 'is-active': mobileActiveView === 'editor' }" 
-            @click="mobileActiveView = 'editor'"
-          >
-            编辑
-          </button>
-          <button 
-            class="tab-view-btn" 
-            :class="{ 'is-active': mobileActiveView === 'preview' }" 
-            @click="mobileActiveView = 'preview'"
-          >
-            预览
-          </button>
+      <!-- App Body: Left IconBar + Main Content -->
+      <div class="app-body">
+        <div class="app-left">
+          <IconBar
+            :sidebarVisible="sidebarVisible"
+            :currentView="currentView"
+            @toggle-tab="(tab) => {
+              if (tab === 'home') { currentView = 'home'; }
+              if (tab === 'docs') {
+                if (currentView !== 'editor') currentView = 'editor';
+                else sidebarVisible = !sidebarVisible;
+              }
+              if (tab === 'templates') { currentView = 'templates'; }
+              if (tab === 'materials') { currentView = 'materials'; }
+              if (tab === 'settings') isSettingsOpen = true;
+              if (tab === 'launch') isLaunchpadOpen = true;
+              if (tab === 'theme') toggleColorMode();
+            }"
+          />
         </div>
-      </div>
 
-      <!-- Right Header Area -->
-      <div class="header-right"></div>
-    </header>
+        <main class="app-main">
+          <!-- Sidebar Backdrop on Mobile -->
+          <div v-if="mobileSidebarOpen" class="sidebar-backdrop" @click="mobileSidebarOpen = false"></div>
 
-    <!-- App Body: Left IconBar + Main Content -->
-    <div class="app-body">
-      <div class="app-left">
-        <IconBar
-          :sidebarVisible="sidebarVisible"
-          :currentView="currentView"
-          @toggle-tab="(tab) => {
-            if (tab === 'docs') {
-              if (currentView !== 'editor') currentView = 'editor';
-              else sidebarVisible = !sidebarVisible;
-            }
-            if (tab === 'templates') { currentView = 'templates'; }
-            if (tab === 'materials') { currentView = 'materials'; }
-            if (tab === 'settings') isSettingsOpen = true;
-            if (tab === 'launch') isLaunchpadOpen = true;
-            if (tab === 'theme') toggleColorMode();
-          }"
-        />
-      </div>
+          <Sidebar
+            :class="{ 'mobile-drawer-open': mobileSidebarOpen }"
+            v-if="(sidebarVisible || mobileSidebarOpen) && currentView === 'editor'"
+            :documents="documents"
+            :groups="groups"
+            :activeDocId="activeDocId"
+            :currentView="currentView"
+            @select-doc="(id) => { handleSelectDoc(id); currentView = 'editor'; mobileSidebarOpen = false; }"
+            @create-doc="(groupId) => { handleCreateDoc(groupId); currentView = 'editor'; }"
+            @open-templates="currentView = 'templates'"
+            @open-materials="currentView = 'materials'"
+            @rename-doc="handleRenameDoc"
+            @delete-doc="handleDeleteDoc"
+            @create-group="handleCreateGroup"
+            @rename-group="handleRenameGroup"
+            @delete-group="handleDeleteGroup"
+            @move-doc="handleMoveDoc"
+            @reorder-docs="handleReorderDocs"
+            @reorder-groups="handleReorderGroups"
+          />
 
-      <main class="app-main">
-        <!-- Sidebar Backdrop on Mobile -->
-        <div v-if="mobileSidebarOpen" class="sidebar-backdrop" @click="mobileSidebarOpen = false"></div>
+          <!-- 1. 模板中心 -->
+          <TemplateCenter
+            v-if="currentView === 'templates'"
+            @apply-theme="handleApplyTheme"
+            @back-to-editor="currentView = 'editor'"
+          />
 
-        <Sidebar
-          :class="{ 'mobile-drawer-open': mobileSidebarOpen }"
-          v-if="sidebarVisible || mobileSidebarOpen"
-          :documents="documents"
-          :groups="groups"
-          :activeDocId="activeDocId"
-          :currentView="currentView"
-          @select-doc="(id) => { handleSelectDoc(id); currentView = 'editor'; mobileSidebarOpen = false; }"
-          @create-doc="(groupId) => { handleCreateDoc(groupId); currentView = 'editor'; }"
-          @open-templates="currentView = 'templates'"
-          @open-materials="currentView = 'materials'"
-          @rename-doc="handleRenameDoc"
-          @delete-doc="handleDeleteDoc"
-          @create-group="handleCreateGroup"
-          @rename-group="handleRenameGroup"
-          @delete-group="handleDeleteGroup"
-          @move-doc="handleMoveDoc"
-          @reorder-docs="handleReorderDocs"
-          @reorder-groups="handleReorderGroups"
-        />
+          <!-- 2. 素材中心 -->
+          <MaterialCenter
+            v-else-if="currentView === 'materials'"
+            @insert-material="handleInsertMaterial"
+            @apply-background="handleApplyBackground"
+            @back-to-editor="currentView = 'editor'"
+          />
 
-        <TemplateCenter
-          v-if="currentView === 'templates'"
-          @apply-theme="handleApplyTheme"
-          @back-to-editor="currentView = 'editor'"
-        />
-
-        <MaterialCenter
-          v-else-if="currentView === 'materials'"
-          @insert-material="handleInsertMaterial"
-          @apply-background="handleApplyBackground"
-          @back-to-editor="currentView = 'editor'"
-        />
-
-        <div v-else class="workspace-grid" :class="[`active-view-${mobileActiveView}`, { 'preview-hidden': !previewVisible, 'theme-panel-open': showThemePanel }]">
+          <!-- 3. 编辑与排版双栏工作台 -->
+          <div v-else class="workspace-grid" :class="[`active-view-${mobileActiveView}`, { 'preview-hidden': !previewVisible, 'theme-panel-open': showThemePanel }]">
           <!-- Top Toolbar: editor-header spanning 100% width across the top of both columns -->
           <div class="editor-header workspace-toolbar">
             <div class="header-actions">
+              <!-- Current Active Document Title with Double-Click Inline Rename -->
+              <div
+                class="toolbar-doc-title-box"
+                :class="{ 'is-editing': isRenamingToolbarDoc }"
+                title="双击编辑文档名称"
+                @dblclick.stop="startRenameToolbarDoc"
+              >
+                <FileText size="14" class="toolbar-doc-icon" />
+                <span
+                  v-if="!isRenamingToolbarDoc"
+                  class="toolbar-doc-name"
+                >
+                  {{ activeDocument?.title || '未命名文档' }}
+                </span>
+                <input
+                  v-else
+                  ref="toolbarDocInputRef"
+                  v-model="toolbarDocRenameValue"
+                  class="toolbar-doc-input"
+                  placeholder="输入文档名称"
+                  @blur="confirmRenameToolbarDoc"
+                  @keyup.enter="confirmRenameToolbarDoc"
+                  @keyup.escape="cancelRenameToolbarDoc"
+                  @click.stop
+                />
+              </div>
+
+              <span class="toolbar-sep"></span>
+
               <button @click="editorPanelRef?.openFindReplace()" class="btn-icon" title="查找替换"><Search size="15" /></button>
               <button @click="editorPanelRef?.handleImageUpload()" class="btn-icon" title="图片"><Image size="15" /></button>
               <span class="toolbar-sep"></span>
@@ -1398,6 +1485,7 @@ watch(customStyles, () => {
         </div>
       </main>
     </div>
+  </template>
 
     <!-- Launchpad Modal -->
     <LaunchpadModal
@@ -1498,6 +1586,18 @@ watch(customStyles, () => {
   overflow: hidden;
 }
 
+.app-container.is-standalone-home {
+  height: 100vh;
+  width: 100vw;
+  display: block;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+html.dark .app-container.is-standalone-home {
+  background: #0a0a0a;
+}
+
 .app-header {
   height: 4rem;
   display: flex;
@@ -1506,7 +1606,6 @@ watch(customStyles, () => {
   padding: 0 20px;
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-header);
-  box-shadow: var(--shadow-header);
   z-index: 10;
   flex-shrink: 0;
   transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
@@ -2143,6 +2242,60 @@ watch(customStyles, () => {
   width: 100%;
 }
 
+.toolbar-doc-title-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  border-radius: 6px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  user-select: none;
+  width: 150px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.toolbar-doc-title-box:hover:not(.is-editing) {
+  background: var(--accent-bg);
+  border-color: var(--border-color);
+}
+
+.toolbar-doc-icon {
+  color: var(--accent-color);
+  flex-shrink: 0;
+}
+
+.toolbar-doc-name {
+  flex: 1;
+  min-width: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-main);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.toolbar-doc-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-main);
+  background: var(--bg-card);
+  border: 1px solid var(--accent-color);
+  border-radius: 5px;
+  padding: 2px 6px;
+  outline: none;
+  box-shadow: 0 0 0 2px var(--accent-bg);
+  font-family: inherit;
+}
+
 .toolbar-sep {
   width: 1px;
   height: 16px;
@@ -2196,61 +2349,78 @@ watch(customStyles, () => {
   position: absolute;
   top: 100%;
   right: 0;
-  margin-top: 6px;
-  background: var(--bg-popover);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  box-shadow: var(--shadow-popover);
-  padding: 4px;
+  margin-top: 0.375rem;
+  background: var(--glass-bg, rgba(255, 255, 255, 0.85));
+  backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
+  -webkit-backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
+  border: 1.5px solid var(--glass-border, rgba(255, 255, 255, 0.8));
+  border-radius: 0.875rem;
+  box-shadow: 
+    0 1rem 2.5rem rgba(0, 0, 0, 0.1),
+    0 0.125rem 0.5rem rgba(0, 0, 0, 0.04),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  padding: 0.375rem;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 0.25rem;
   z-index: 200;
-  min-width: 140px;
-  transition: background 0.3s ease, border-color 0.3s ease;
+  min-width: 9.5rem;
+  font-family: var(--font-sans);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .popout-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
+  gap: 0.5rem;
+  padding: 0.375rem 0.625rem;
   border: none;
   background: transparent;
-  color: var(--text-main);
-  font-size: 12px;
+  color: var(--wandor-text, #1a1a1a);
+  font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
-  border-radius: 5px;
+  border-radius: 0.5rem;
   transition: all 0.12s ease;
   width: 100%;
   text-align: left;
+  font-family: var(--font-sans);
 }
 
 .popout-item:hover {
-  background: var(--accent-bg);
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--accent-color);
+}
+
+html.dark .popout-item:hover {
+  background: rgba(255, 255, 255, 0.06);
 }
 
 .popout-item.is-active {
-  background: var(--accent-bg);
+  background: rgba(0, 0, 0, 0.06);
   color: var(--accent-color);
   font-weight: 600;
+}
+
+html.dark .popout-item.is-active {
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .btn-toolbar-dropdown {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 0.3125rem;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
-  color: var(--text-main);
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 11px;
-  font-weight: 500;
+  color: var(--wandor-text, #1a1a1a);
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  font-size: 0.6875rem;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
+  font-family: var(--font-sans);
 }
 
 .btn-toolbar-dropdown:hover,

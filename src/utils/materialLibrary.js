@@ -23,7 +23,7 @@ export const materialCategories = [
 ];
 
 export const materials = [
-  // ── 背景底纹精选素材 ──
+  // ── 背景底纹精选素材 (纯底纹展示) ──
   {
     id: 'bg-grid-classic',
     category: 'backgrounds',
@@ -31,10 +31,7 @@ export const materials = [
     title: '经典淡雅网格 (Classic Grid)',
     description: '20px 经典淡雅网格质感',
     tags: ['经典网格', '山海风', '底纹'],
-    html: `<section style="margin: 0; padding: 24px 20px; min-height: 100px; background-color: #ffffff; background-image: linear-gradient(90deg, rgba(50, 0, 0, 0.04) 0%, rgba(255, 255, 255, 0) 11.49%), linear-gradient(360deg, rgba(50, 0, 0, 0.045) 0%, rgba(255, 255, 255, 0) 12.16%); background-size: 20px 20px, 20px 20px; border-radius: 8px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;" data-material="true">
-  <div style="font-size: 16px; font-weight: 800; color: #1e293b; letter-spacing: 0.5px; margin-bottom: 6px;">深入理解现代响应式设计架构</div>
-  <div style="font-size: 13.5px; color: #475569; line-height: 1.7;">在极简排版中，呼吸感与节奏感是决定读者停留时长的核心要素。</div>
-</section>`
+    html: `<section style="margin: 0; width: 100%; height: 100%; min-height: 100px; background-color: #ffffff; background-image: linear-gradient(90deg, rgba(50, 0, 0, 0.04) 0%, rgba(255, 255, 255, 0) 11.49%), linear-gradient(360deg, rgba(50, 0, 0, 0.045) 0%, rgba(255, 255, 255, 0) 12.16%); background-size: 20px 20px, 20px 20px; border-radius: 8px; box-sizing: border-box;" data-material="true"></section>`
   },
   {
     id: 'bg-dot-matrix',
@@ -43,10 +40,7 @@ export const materials = [
     title: '波点矩阵底纹 (Dot Matrix)',
     description: '18px 规整波点矩阵',
     tags: ['波点矩阵', '现代设计', '科技感'],
-    html: `<section style="margin: 0; padding: 24px 20px; min-height: 100px; background-color: #ffffff; background-image: radial-gradient(rgba(0, 0, 0, 0.09) 1.5px, transparent 1.5px); background-size: 18px 18px; border-radius: 8px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;" data-material="true">
-  <div style="font-size: 16px; font-weight: 800; color: #6d28d9; letter-spacing: 0.5px; margin-bottom: 6px;">打造高并发系统的演进法则</div>
-  <div style="font-size: 13.5px; color: #334155; line-height: 1.7;">通过点阵网格构建理性的秩序美学，适合科技测评与架构复盘。</div>
-</section>`
+    html: `<section style="margin: 0; width: 100%; height: 100%; min-height: 100px; background-color: #ffffff; background-image: radial-gradient(rgba(0, 0, 0, 0.12) 1.5px, transparent 1.5px); background-size: 18px 18px; border-radius: 8px; box-sizing: border-box;" data-material="true"></section>`
   },
   {
     id: 'bg-grid-dense',
@@ -55,10 +49,7 @@ export const materials = [
     title: '密集坐标纸底纹 (Micro Grid)',
     description: '10px 紧凑坐标微格',
     tags: ['坐标纸', '工程', '严谨'],
-    html: `<section style="margin: 0; padding: 24px 20px; min-height: 100px; background-color: #ffffff; background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.035) 1px, transparent 1px), linear-gradient(0deg, rgba(0, 0, 0, 0.035) 1px, transparent 1px); background-size: 10px 10px, 10px 10px; border-radius: 8px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;" data-material="true">
-  <div style="font-size: 16px; font-weight: 800; color: #047857; letter-spacing: 0.5px; margin-bottom: 6px;">硬核算法与底层数据结构</div>
-  <div style="font-size: 13.5px; color: #334155; line-height: 1.7;">严谨的工程坐标方格纸纹理，赋予技术长文出版级沉浸感。</div>
-</section>`
+    html: `<section style="margin: 0; width: 100%; height: 100%; min-height: 100px; background-color: #ffffff; background-image: linear-gradient(90deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px), linear-gradient(0deg, rgba(0, 0, 0, 0.05) 1px, transparent 1px); background-size: 10px 10px, 10px 10px; border-radius: 8px; box-sizing: border-box;" data-material="true"></section>`
   },
   {
     id: 'bg-stripes-diag',
@@ -67,10 +58,7 @@ export const materials = [
     title: '极简斜线纹理 (Diagonal Lines)',
     description: '45° 细腻微斜纹',
     tags: ['斜纹', '纸质感', '高级'],
-    html: `<section style="margin: 0; padding: 24px 20px; min-height: 100px; background-color: #ffffff; background-image: repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.025) 0px, rgba(0, 0, 0, 0.025) 1px, transparent 1px, transparent 10px); border-radius: 8px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;" data-material="true">
-  <div style="font-size: 16px; font-weight: 800; color: #b45309; letter-spacing: 0.5px; margin-bottom: 6px;">关于质感生活的美学随笔</div>
-  <div style="font-size: 13.5px; color: #334155; line-height: 1.7;">45° 细腻微斜纹肌理，营造纸质特种纸触感。</div>
-</section>`
+    html: `<section style="margin: 0; width: 100%; height: 100%; min-height: 100px; background-color: #ffffff; background-image: repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.035) 0px, rgba(0, 0, 0, 0.035) 1px, transparent 1px, transparent 10px); border-radius: 8px; box-sizing: border-box;" data-material="true"></section>`
   },
   {
     id: 'bg-paper-lines',
@@ -79,10 +67,7 @@ export const materials = [
     title: '信笺横格本 (Ruled Paper)',
     description: '28px 笔记本信笺横线',
     tags: ['信笺', '横格', '手账'],
-    html: `<section style="margin: 0; padding: 24px 20px; min-height: 100px; background-color: #fefcf8; background-image: repeating-linear-gradient(180deg, transparent 0, transparent 27px, rgba(0, 0, 0, 0.05) 28px); background-size: 100% 28px; border-radius: 8px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;" data-material="true">
-  <div style="font-size: 16px; font-weight: 800; color: #7c2d12; letter-spacing: 0.5px; margin-bottom: 4px; line-height: 28px;">见字如面 · 岁月静好</div>
-  <div style="font-size: 13.5px; color: #451a03; line-height: 28px;">笔记本信笺横线，记录生活闪光时刻。</div>
-</section>`
+    html: `<section style="margin: 0; width: 100%; height: 100%; min-height: 100px; background-color: #fefcf8; background-image: repeating-linear-gradient(180deg, transparent 0, transparent 27px, rgba(0, 0, 0, 0.07) 28px); background-size: 100% 28px; border-radius: 8px; box-sizing: border-box;" data-material="true"></section>`
   },
   {
     id: 'bg-blueprint',
@@ -91,10 +76,7 @@ export const materials = [
     title: '蓝调科技方阵 (Blueprint)',
     description: '24px 科技蓝图方阵网格',
     tags: ['蓝图', '科技', '蓝调'],
-    html: `<section style="margin: 0; padding: 24px 20px; min-height: 100px; background-color: #f8fafc; background-image: linear-gradient(rgba(37, 99, 235, 0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(37, 99, 235, 0.07) 1px, transparent 1px); background-size: 24px 24px, 24px 24px; border-radius: 8px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;" data-material="true">
-  <div style="font-size: 16px; font-weight: 800; color: #1d4ed8; letter-spacing: 0.5px; margin-bottom: 6px;">Next-Gen AI 生产力指南</div>
-  <div style="font-size: 13.5px; color: #1e3a8a; line-height: 1.7;">蓝调科技工程方格网，科技感与现代感兼备。</div>
-</section>`
+    html: `<section style="margin: 0; width: 100%; height: 100%; min-height: 100px; background-color: #f8fafc; background-image: linear-gradient(rgba(37, 99, 235, 0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(37, 99, 235, 0.1) 1px, transparent 1px); background-size: 24px 24px, 24px 24px; border-radius: 8px; box-sizing: border-box;" data-material="true"></section>`
   },
   {
     id: 'bg-cross',
@@ -103,10 +85,7 @@ export const materials = [
     title: '微十字星位矩阵 (Cross Grid)',
     description: '24px 交叉十字星位矩阵',
     tags: ['十字', '矩阵', '留白'],
-    html: `<section style="margin: 0; padding: 24px 20px; min-height: 100px; background-color: #ffffff; background-image: radial-gradient(rgba(0, 0, 0, 0.07) 2px, transparent 2px), radial-gradient(rgba(0, 0, 0, 0.07) 2px, transparent 2px); background-position: 0 0, 12px 12px; background-size: 24px 24px; border-radius: 8px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;" data-material="true">
-  <div style="font-size: 16px; font-weight: 800; color: #334155; letter-spacing: 0.5px; margin-bottom: 6px;">极简留白与视觉张力</div>
-  <div style="font-size: 13.5px; color: #475569; line-height: 1.7;">微十字星位阵列，赋予版面极高的呼吸感与纯净度。</div>
-</section>`
+    html: `<section style="margin: 0; width: 100%; height: 100%; min-height: 100px; background-color: #ffffff; background-image: radial-gradient(rgba(0, 0, 0, 0.1) 2px, transparent 2px), radial-gradient(rgba(0, 0, 0, 0.1) 2px, transparent 2px); background-position: 0 0, 12px 12px; background-size: 24px 24px; border-radius: 8px; box-sizing: border-box;" data-material="true"></section>`
   },
   {
     id: 'bg-clean-none',
@@ -115,10 +94,7 @@ export const materials = [
     title: '极简纯色 (无底纹)',
     description: '纯色背景无叠加纹理',
     tags: ['纯色', '极简', '纯净'],
-    html: `<section style="margin: 0; padding: 24px 20px; min-height: 100px; background-color: #ffffff; border-radius: 8px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: center;" data-material="true">
-  <div style="font-size: 16px; font-weight: 800; color: #0f172a; letter-spacing: 0.5px; margin-bottom: 6px;">纯粹质感 · 极简阅读</div>
-  <div style="font-size: 13.5px; color: #334155; line-height: 1.7;">无底纹干扰，还原最干净纯粹的文字排版力量。</div>
-</section>`
+    html: `<section style="margin: 0; width: 100%; height: 100%; min-height: 100px; background-color: #ffffff; border-radius: 8px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 1px dashed rgba(0, 0, 0, 0.08);" data-material="true"></section>`
   },
   // ── 135 爆款精选 ──
   {

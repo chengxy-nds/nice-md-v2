@@ -1,5 +1,5 @@
 <script setup>
-import { FileText, LayoutTemplate, Share2, Settings, Info } from '@lucide/vue';
+import { Compass, FileText, LayoutTemplate, Share2, Settings, Info } from '@lucide/vue';
 
 defineProps({
   sidebarVisible: { type: Boolean, default: true },
@@ -13,6 +13,16 @@ defineEmits(['toggle-tab']);
   <nav class="icon-bar select-none">
     <!-- Top icon group -->
     <div class="icon-bar-top">
+      <!-- 0. 官方首页 -->
+      <button
+        class="icon-btn"
+        :class="{ 'is-active': currentView === 'home' }"
+        @click="$emit('toggle-tab', 'home')"
+        title="官方首页"
+      >
+        <Compass size="20" stroke-width="1.6" />
+      </button>
+
       <!-- 1. 文档 -->
       <button
         class="icon-btn"
