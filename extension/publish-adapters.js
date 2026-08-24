@@ -1552,24 +1552,51 @@ class ZhihuAdapter extends CodeAdapter {
 
   async uploadImage(blob, src) {
     const xsrf = await this.getXsrfToken();
+
+    // 1. 优先尝试知乎远程 URL 快速同步（如果是 http/https 链接）
+    if (src && typeof src === 'string' && src.startsWith('http') && !src.includes('data:')) {
+      try {
+        const urlRes = await this.fetch('https://zhuanlan.zhihu.com/api/uploaded_images', {
+          method: 'POST',
+          headers: {
+            'x-requested-with': 'fetch',
+            'content-type': 'application/x-www-form-urlencoded',
+            ...(xsrf ? { 'x-xsrftoken': xsrf, 'x-xsrf-token': xsrf } : {})
+          },
+          body: new URLSearchParams({
+            url: src,
+            source: 'article'
+          })
+        });
+        const urlData = await urlRes.json().catch(() => null);
+        if (urlData && (urlData.src || urlData.url)) {
+          const finalUrl = urlData.src || urlData.url;
+          console.log('[NiceMD Zhihu] Image uploaded via URL sync successfully:', finalUrl);
+          return { url: finalUrl };
+        }
+      } catch (e) {
+        console.warn('[NiceMD Zhihu] URL upload failed, proceeding with binary upload:', e.message);
+      }
+    }
+
+    // 2. 二进制 MD5 签名与 OSS 协议上传
     const buffer = await blob.arrayBuffer();
     const imageHash = computeMd5(buffer);
 
     console.log('[NiceMD Zhihu] Requesting image upload token for hash:', imageHash);
-    const headers = {
+    const jsonHeaders = {
       'content-type': 'application/json',
       'x-requested-with': 'fetch'
     };
     if (xsrf) {
-      headers['x-xsrftoken'] = xsrf;
-      headers['x-xsrf-token'] = xsrf;
+      jsonHeaders['x-xsrftoken'] = xsrf;
+      jsonHeaders['x-xsrf-token'] = xsrf;
     }
 
     try {
-      // 1. Request image upload token from official gateway
       const tokenRes = await this.fetch('https://api.zhihu.com/images', {
         method: 'POST',
-        headers: headers,
+        headers: jsonHeaders,
         body: JSON.stringify({
           image_hash: imageHash,
           source: 'article'
@@ -1581,12 +1608,12 @@ class ZhihuAdapter extends CodeAdapter {
 
       const uploadFile = tokenData.upload_file;
       if (uploadFile) {
-        // If image already exists on Zhihu CDN
+        // A. 图片已在知乎 CDN 缓存命中
         if (uploadFile.state === 1) {
           let objectKey = uploadFile.object_key;
           if (!objectKey && uploadFile.image_id) {
             try {
-              const detailRes = await this.fetch(`https://api.zhihu.com/images/${uploadFile.image_id}`, { headers });
+              const detailRes = await this.fetch(`https://api.zhihu.com/images/${uploadFile.image_id}`, { headers: jsonHeaders });
               const detailData = await detailRes.json();
               objectKey = detailData.original_hash || detailData.object_key;
             } catch (e) {}
@@ -1595,7 +1622,7 @@ class ZhihuAdapter extends CodeAdapter {
           return { url: finalUrl };
         }
 
-        // Upload to OSS if upload_token provided
+        // B. 上传至知乎阿里云 OSS
         if (tokenData.upload_token) {
           const token = tokenData.upload_token;
           const objectKey = uploadFile.object_key;
@@ -1634,23 +1661,31 @@ class ZhihuAdapter extends CodeAdapter {
         }
       }
     } catch (e) {
-      console.warn('[NiceMD Zhihu] API image upload warning, falling back to uploaded_images:', e.message);
+      console.warn('[NiceMD Zhihu] API image upload warning, falling back to multipart form upload:', e.message);
     }
 
-    // Fallback: try uploaded_images
+    // 3. 兜底回退：知乎标准 Multipart FormData 上传（注意：不得携带 content-type: application/json）
     const ext = (src && typeof src === 'string' && src.split('.').pop()?.toLowerCase()?.split('?')[0]) || 'jpg';
     const validExt = ['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext) ? ext : 'jpg';
     const formData = new FormData();
-    formData.append('picture', blob, `image.${validExt}`);
+    formData.append('picture', blob, `cover_${Date.now()}.${validExt}`);
     formData.append('source', 'article');
+
+    const formHeaders = {
+      'x-requested-with': 'fetch'
+    };
+    if (xsrf) {
+      formHeaders['x-xsrftoken'] = xsrf;
+      formHeaders['x-xsrf-token'] = xsrf;
+    }
 
     const res = await this.fetch('https://zhuanlan.zhihu.com/api/uploaded_images', {
       method: 'POST',
-      headers: headers,
+      headers: formHeaders,
       body: formData
     });
-    const json = await res.json();
-    if (json.src || json.url) {
+    const json = await res.json().catch(() => null);
+    if (json && (json.src || json.url)) {
       return { url: json.src || json.url };
     }
     throw new Error('知乎图片上传失败');
