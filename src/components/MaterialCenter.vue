@@ -396,7 +396,7 @@ function handleApplyBackground(mat) {
 .mc-card {
   position: relative;
   background: var(--bg-editor, #ffffff);
-  border: 1px solid var(--border-color, #eaebed);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
   border-radius: 12px;
   overflow: hidden;
   display: flex;
@@ -408,9 +408,18 @@ function handleApplyBackground(mat) {
 }
 
 .mc-card:hover {
-  border-color: var(--accent-color, #2563eb);
-  box-shadow: 0 10px 28px rgba(37, 99, 235, 0.14);
+  border-color: var(--accent-color, #6366f1);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
   transform: translateY(-2px);
+}
+
+html.dark .mc-card {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+html.dark .mc-card:hover {
+  border-color: var(--accent-color, #818cf8);
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
 }
 
 /* Pure Material Preview Area */
@@ -422,7 +431,7 @@ function handleApplyBackground(mat) {
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  background: #ffffff;
+  background: var(--bg-editor, #ffffff);
 }
 
 .mc-render-paper {
@@ -439,29 +448,27 @@ function handleApplyBackground(mat) {
   transform: scale(0.98);
 }
 
-/* iOS 26 / VisionOS Ultra-Refined Liquid Glass Hover Overlay */
+/* Ultra-Refined Frosted Hover Overlay */
 .mc-card-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.45);
-  backdrop-filter: blur(18px) saturate(190%);
-  -webkit-backdrop-filter: blur(18px) saturate(190%);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1rem;
   opacity: 0;
   pointer-events: none;
-  border-radius: 0.875rem;
-  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 11px;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 10;
 }
 
 html.dark .mc-card-overlay,
 [data-color-mode="dark"] .mc-card-overlay {
-  background: rgba(15, 23, 42, 0.6);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+  background: rgba(18, 18, 22, 0.75);
 }
 
 .mc-card:hover .mc-card-overlay {
@@ -472,95 +479,83 @@ html.dark .mc-card-overlay,
 .mc-overlay-actions {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
-  transform: translateY(6px) scale(0.96);
-  transition: all 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+  gap: 0.5rem;
+  transform: translateY(4px) scale(0.96);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .mc-card:hover .mc-overlay-actions {
   transform: translateY(0) scale(1);
 }
 
-/* iOS 26 / VisionOS Tactile Floating Capsule Buttons */
+/* Tactile Floating Capsule Buttons */
 .mc-overlay-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.375rem;
-  padding: 0.5rem 0.9375rem;
-  border-radius: 9999px;
+  gap: 0.35rem;
+  padding: 0.45rem 0.875rem;
+  border-radius: 20px;
   font-size: 0.78125rem;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: -0.01em;
   cursor: pointer;
   border: none;
   outline: none;
   white-space: nowrap;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
 }
 
 .mc-overlay-btn:active {
-  transform: scale(0.94) !important;
+  transform: scale(0.95) !important;
 }
 
-/* Primary Capsule (Apple Vibrance Blue Gradient + Top Inset Glow) */
+/* Primary Capsule: Brand Purple */
 .mc-overlay-btn.primary {
-  background: linear-gradient(135deg, #0071e3 0%, #0056b3 100%);
+  background: var(--accent-color, #6366f1);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  box-shadow: 
-    0 0.25rem 0.875rem rgba(0, 113, 227, 0.38),
-    inset 0 1px 0.5px rgba(255, 255, 255, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
 }
 
 .mc-overlay-btn.primary:hover {
-  background: linear-gradient(135deg, #0077ed 0%, #005fb8 100%);
-  transform: translateY(-2px) scale(1.03);
-  box-shadow: 
-    0 0.4375rem 1.125rem rgba(0, 113, 227, 0.5),
-    inset 0 1px 0.5px rgba(255, 255, 255, 0.6);
+  background: #4f46e5;
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.45);
 }
 
-/* Secondary Capsule (Frosted Glass Pill + Inset Light Reflection) */
+/* Secondary Capsule: Clean Glass/White Pill */
 .mc-overlay-btn.secondary {
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(14px) saturate(180%);
-  -webkit-backdrop-filter: blur(14px) saturate(180%);
-  color: #1d1d1f;
-  border: 1px solid rgba(255, 255, 255, 0.7);
-  box-shadow: 
-    0 0.25rem 0.75rem rgba(0, 0, 0, 0.08),
-    inset 0 1px 0.5px #ffffff;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  color: #1e293b;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .mc-overlay-btn.secondary:hover {
-  background: rgba(255, 255, 255, 0.95);
-  color: #000000;
-  transform: translateY(-2px) scale(1.03);
-  box-shadow: 
-    0 0.4375rem 1rem rgba(0, 0, 0, 0.12),
-    inset 0 1px 0.5px #ffffff;
+  background: #ffffff;
+  color: #0f172a;
+  border-color: rgba(0, 0, 0, 0.15);
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 html.dark .mc-overlay-btn.secondary,
 [data-color-mode="dark"] .mc-overlay-btn.secondary {
-  background: rgba(45, 45, 48, 0.8);
-  border-color: rgba(255, 255, 255, 0.16);
-  color: #f8fafc;
-  box-shadow: 
-    0 0.25rem 0.75rem rgba(0, 0, 0, 0.4),
-    inset 0 1px 0.5px rgba(255, 255, 255, 0.18);
+  background: rgba(39, 39, 42, 0.9);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f4f4f5;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 html.dark .mc-overlay-btn.secondary:hover,
 [data-color-mode="dark"] .mc-overlay-btn.secondary:hover {
-  background: rgba(65, 65, 70, 0.95);
-  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(63, 63, 70, 0.95);
+  border-color: rgba(255, 255, 255, 0.2);
   color: #ffffff;
-  box-shadow: 
-    0 0.4375rem 1rem rgba(0, 0, 0, 0.5),
-    inset 0 1px 0.5px rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .mc-empty {

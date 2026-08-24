@@ -37,19 +37,26 @@ function headingDecl(spec, theme, ctPrefix, tag) {
 
   switch (spec.variant) {
     case 'pill':
-      d.push(`display: block;`);
+      d.push(`display: table;`);
+      d.push(`margin-left: auto;`);
+      d.push(`margin-right: auto;`);
       d.push(`text-align: ${spec.align || 'center'};`);
       d.push(`background: ${spec.bg || 'var(--accent-color)'};`);
       d.push(`color: ${spec.color || '#ffffff'};`);
-      d.push(`border-radius: ${spec.radius || '999px'};`);
-      d.push(`padding: ${spec.padding || '0.35em 1em'};`);
-      d.push(`line-height: 1.4;`);
+      d.push(`border-radius: ${spec.radius || '9999px'};`);
+      d.push(`padding: ${spec.padding || '6px 22px'};`);
+      d.push(`line-height: 1.5;`);
+      d.push(`box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);`);
+      d.push(`max-width: 90%;`);
+      d.push(`word-break: break-word;`);
       break;
     case 'bar':
+      d.push(`display: block;`);
       d.push(`border-left: ${spec.borderWidth || '4px'} solid ${spec.borderColor || 'var(--accent-color)'};`);
       d.push(`padding-left: ${spec.padding || '0.6em'};`);
       break;
     case 'underline':
+      d.push(`display: block;`);
       d.push(`border-bottom: ${spec.borderWidth || '2px'} solid ${spec.borderColor || 'var(--accent-color)'};`);
       d.push(`padding-bottom: 0.3em;`);
       break;
@@ -257,18 +264,23 @@ export function buildWechatTypo(theme, colors) {
 
   const heading = (tag, spec) => {
     if (!spec) return;
-    const s = ['display: block', 'font-weight: bold'];
+    const isPill = spec.variant === 'pill';
+    const s = [isPill ? 'display: table' : 'display: block', 'font-weight: bold'];
     if (spec.size) s.push(`font-size: ${spec.size}`);
     if (spec.marginTop) s.push(`margin-top: ${spec.marginTop}`);
     if (spec.marginBottom) s.push(`margin-bottom: ${spec.marginBottom}`);
     switch (spec.variant) {
       case 'pill':
+        s.push(`margin-left: auto`);
+        s.push(`margin-right: auto`);
         s.push(`text-align: center`);
         s.push(`background-color: {primary}`);
         s.push(`color: #ffffff`);
-        s.push(`border-radius: 999px`);
-        s.push(`padding: 10px 20px`);
+        s.push(`border-radius: ${spec.radius || '9999px'}`);
+        s.push(`padding: ${spec.padding || '6px 22px'}`);
         s.push(`line-height: 1.5`);
+        s.push(`box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08)`);
+        s.push(`max-width: 90%`);
         break;
       case 'bar':
         s.push(`border-left: 4px solid {primary}`);

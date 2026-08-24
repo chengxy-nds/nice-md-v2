@@ -616,6 +616,7 @@ function handlePreviewElementClick(e) {
   flex: 1;
   overflow-y: auto;
   scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
   padding: 0;
   background-color: var(--bg-preview);
   color: var(--text-main);
@@ -623,11 +624,17 @@ function handlePreviewElementClick(e) {
 }
 
 .preview-body::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
+}
+.preview-body::-webkit-scrollbar-track {
+  background: transparent;
 }
 .preview-body::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
-  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.12);
+  border-radius: 4px;
+}
+.preview-body:hover::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.25);
 }
 
 /* Standard Markdown Styles */

@@ -33,10 +33,31 @@ import mammoth from 'mammoth/mammoth.browser.js';
 import { htmlToMarkdown } from '../utils/htmlToMarkdown';
 import { isStorageEnabled, uploadToOSS } from '../utils/fileStorage';
 import { defaultMarkdown } from '../utils/defaultMarkdown';
-import { EditorView, basicSetup } from 'codemirror';
+import {
+  EditorView,
+  highlightActiveLineGutter,
+  highlightSpecialChars,
+  drawSelection,
+  dropCursor,
+  rectangularSelection,
+  crosshairCursor,
+  highlightActiveLine,
+  keymap,
+  gutter,
+  GutterMarker
+} from '@codemirror/view';
+import { EditorState } from '@codemirror/state';
+import {
+  foldGutter,
+  indentOnInput,
+  syntaxHighlighting,
+  defaultHighlightStyle,
+  bracketMatching
+} from '@codemirror/language';
+import { history, defaultKeymap, historyKeymap, indentWithTab } from '@codemirror/commands';
+import { highlightSelectionMatches, searchKeymap } from '@codemirror/search';
+import { closeBrackets, autocompletion, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete';
 import { markdown } from '@codemirror/lang-markdown';
-import { keymap } from '@codemirror/view';
-import { indentWithTab } from '@codemirror/commands';
 
 const props = defineProps({
   modelValue: {
@@ -105,6 +126,13 @@ const loadPreferences = () => {
   isMuted.value = soundEngine.getMuteState();
   editorFontSize.value = localStorage.getItem('nicemd_font_size') || '14.5px';
   showLineNumbers.value = localStorage.getItem('nicemd_line_numbers') !== 'false';
+  if (cmView) {
+    cmView.destroy();
+    cmView = null;
+    nextTick(() => {
+      initCodeMirror();
+    });
+  }
 };
 
 
@@ -176,7 +204,17 @@ const startUrlExtraction = async () => {
 };
 
 watch(() => props.modelValue, (newVal) => {
-  editorText.value = newVal;
+  if (newVal !== editorText.value) {
+    editorText.value = newVal || '';
+    if (cmView && !isUpdatingFromCodeMirror) {
+      const currentDoc = cmView.state.doc.toString();
+      if (currentDoc !== newVal) {
+        cmView.dispatch({
+          changes: { from: 0, to: currentDoc.length, insert: newVal || '' }
+        });
+      }
+    }
+  }
 });
 
 // Update value and emit event
@@ -233,9 +271,54 @@ function getLineStart(text, pos) {
 }
 
 function insertFormat(type) {
+  soundEngine.playClick();
+  if (cmView) {
+    const range = cmView.state.selection.main;
+    const sel = cmView.state.sliceDoc(range.from, range.to);
+
+    const prefixLineCM = (prefix) => {
+      const line = cmView.state.doc.lineAt(range.from);
+      cmView.dispatch({
+        changes: { from: line.from, to: line.from, insert: prefix }
+      });
+      cmView.focus();
+    };
+
+    if (type === 'h1') return prefixLineCM('# ');
+    if (type === 'h2') return prefixLineCM('## ');
+    if (type === 'h3') return prefixLineCM('### ');
+    if (type === 'h4') return prefixLineCM('#### ');
+    if (type === 'h5') return prefixLineCM('##### ');
+    if (type === 'h6') return prefixLineCM('###### ');
+    if (type === 'quote') return prefixLineCM('> ');
+    if (type === 'ul') return prefixLineCM('- ');
+    if (type === 'ol') return prefixLineCM('1. ');
+    if (type === 'tasklist') return prefixLineCM('- [ ] ');
+    if (type === 'hr') return insertBlock(null, 0, 0, '\n---\n');
+    if (type === 'codeblock') return insertBlock(null, 0, 0, '\n```\n' + (sel || 'code') + '\n```\n');
+    if (type === 'table') return insertBlock(null, 0, 0, '\n| 列1 | 列2 | 列3 |\n| --- | --- | --- |\n| 内容 | 内容 | 内容 |\n');
+
+    const fmt = {
+      bold: [`**${sel || '粗体文字'}**`, 2, 2],
+      italic: [`*${sel || '斜体文字'}*`, 1, 1],
+      strike: [`~~${sel || '删除文字'}~~`, 2, 2],
+      code: ['`' + (sel || 'code') + '`', 1, 1],
+      link: ['[' + (sel || '链接文字') + '](url)', 0, 0]
+    };
+    const f = fmt[type];
+    if (f) {
+      const [text, preLen, postLen] = f;
+      cmView.dispatch({
+        changes: { from: range.from, to: range.to, insert: text },
+        selection: { anchor: sel ? range.from + text.length - postLen : range.from + preLen }
+      });
+      cmView.focus();
+    }
+    return;
+  }
+
   const ta = textareaRef.value;
   if (!ta) return;
-  soundEngine.playClick();
   const start = ta.selectionStart;
   const end = ta.selectionEnd;
   const sel = ta.value.substring(start, end);
@@ -273,6 +356,19 @@ function insertFormat(type) {
 }
 
 function insertBlock(ta, start, end, text) {
+  if (cmView) {
+    const range = cmView.state.selection.main;
+    cmView.dispatch({
+      changes: { from: range.from, to: range.to, insert: text },
+      selection: { anchor: range.from + text.length }
+    });
+    cmView.focus();
+    return;
+  }
+  if (!ta) ta = textareaRef.value;
+  if (!ta) return;
+  if (start === undefined) start = ta.selectionStart;
+  if (end === undefined) end = ta.selectionEnd;
   ta.setRangeText(text, start, end, 'end');
   editorText.value = ta.value;
   emit('update:modelValue', ta.value);
@@ -280,18 +376,14 @@ function insertBlock(ta, start, end, text) {
 }
 
 function insertTableAt(rows, cols) {
-  const ta = textareaRef.value;
-  if (!ta) return;
   soundEngine.playClick();
-  const start = ta.selectionStart;
-  const end = ta.selectionEnd;
   const header = '| ' + Array.from({ length: cols }, (_, i) => `列${i + 1}`).join(' | ') + ' |';
   const sep = '| ' + Array.from({ length: cols }, () => '---').join(' | ') + ' |';
   const body = Array.from({ length: rows - 1 }, () =>
     '| ' + Array.from({ length: cols }, () => '内容').join(' | ') + ' |'
   );
   const table = ['', header, sep, ...body, ''].join('\n');
-  insertBlock(ta, start, end, table);
+  insertBlock(textareaRef.value, undefined, undefined, table);
   showFloatBar.value = false;
   showTablePicker.value = false;
 }
@@ -800,6 +892,61 @@ const insertSample = () => {
 // ── CodeMirror 6 Markdown Syntax Highlighting ──
 const isSyntaxHighlightActive = ref(true);
 const cmContainerRef = ref(null);
+// ── CodeMirror 6 Visual Line Numbers (每一行折行文案独立行号) ──
+class VisualLineMarker extends GutterMarker {
+  constructor(numbers) {
+    super();
+    this.numbers = numbers;
+  }
+  eq(other) {
+    if (!other || !other.numbers || this.numbers.length !== other.numbers.length) return false;
+    return this.numbers.every((n, i) => n === other.numbers[i]);
+  }
+  toDOM() {
+    const parent = document.createElement('div');
+    parent.className = 'cm-visual-line-numbers';
+    for (const num of this.numbers) {
+      const child = document.createElement('div');
+      child.className = 'cm-visual-line-number';
+      child.textContent = String(num);
+      parent.appendChild(child);
+    }
+    return parent;
+  }
+}
+
+const visualLineNumbersGutter = gutter({
+  class: 'cm-lineNumbers',
+  lineMarker(view, line) {
+    const doc = view.state.doc;
+    const lineObj = doc.lineAt(line.from);
+    const currentLineNum = lineObj.number;
+    const singleLineHeight = view.defaultLineHeight || 24;
+    const count = Math.max(1, Math.round(line.height / singleLineHeight));
+
+    // 计算当前逻辑行之前的视觉行总数
+    let startVisualLine = 1;
+    for (let i = 1; i < currentLineNum; i++) {
+      const prevLine = doc.line(i);
+      const prevBlock = view.lineBlockAt(prevLine.from);
+      const prevCount = Math.max(1, Math.round(prevBlock.height / singleLineHeight));
+      startVisualLine += prevCount;
+    }
+
+    const numbers = [];
+    for (let j = 0; j < count; j++) {
+      numbers.push(startVisualLine + j);
+    }
+    return new VisualLineMarker(numbers);
+  },
+  initialSpacer() {
+    return new VisualLineMarker([1]);
+  },
+  updateSpacer(spacer) {
+    return spacer;
+  }
+});
+
 let cmView = null;
 let isUpdatingFromCodeMirror = false;
 
@@ -824,13 +971,52 @@ function initCodeMirror() {
       borderLeftColor: "var(--accent-color)"
     },
     ".cm-gutters": {
-      display: "none"
+      display: showLineNumbers.value ? "flex" : "none",
+      backgroundColor: "transparent",
+      borderRight: "1px solid var(--border-color, #EDEDED)",
+      color: "var(--text-muted, #9ca3af)",
+      minWidth: "40px"
+    },
+    ".cm-lineNumbers": {
+      minWidth: "40px",
+      display: "flex",
+      flexDirection: "column"
+    },
+    ".cm-lineNumbers .cm-gutterElement": {
+      padding: "0 4px",
+      minWidth: "38px",
+      textAlign: "center",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "flex-start",
+      alignItems: "stretch",
+      fontSize: "11px",
+      fontFamily: "'JetBrains Mono', Consolas, monospace",
+      color: "var(--text-muted, #9ca3af)",
+      opacity: "0.55",
+      boxSizing: "border-box"
+    },
+    ".cm-visual-line-numbers": {
+      display: "flex",
+      flexDirection: "column",
+      height: "100%",
+      width: "100%"
+    },
+    ".cm-visual-line-number": {
+      flex: "1",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      lineHeight: "24px",
+      minHeight: "24px",
+      textAlign: "center"
     },
     ".cm-activeLine": {
       backgroundColor: "transparent"
     },
     ".cm-line": {
-      padding: "0"
+      padding: "0",
+      lineHeight: "24px"
     },
     /* Pure Minimal Markdown Syntax Styling inside editor */
     ".cm-header": {
@@ -880,11 +1066,34 @@ function initCodeMirror() {
   cmView = new EditorView({
     doc: editorText.value || '',
     extensions: [
-      basicSetup,
+      visualLineNumbersGutter,
+      highlightActiveLineGutter(),
+      highlightSpecialChars(),
+      history(),
+      foldGutter(),
+      drawSelection(),
+      dropCursor(),
+      EditorState.allowMultipleSelections.of(true),
+      indentOnInput(),
+      syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+      bracketMatching(),
+      closeBrackets(),
+      autocompletion(),
+      rectangularSelection(),
+      crosshairCursor(),
+      highlightActiveLine(),
+      highlightSelectionMatches(),
       markdown(),
       EditorView.lineWrapping,
       customMarkdownTheme,
-      keymap.of([indentWithTab]),
+      keymap.of([
+        ...closeBracketsKeymap,
+        ...defaultKeymap,
+        ...searchKeymap,
+        ...historyKeymap,
+        ...completionKeymap,
+        indentWithTab
+      ]),
       updateListener
     ],
     parent: cmContainerRef.value
@@ -959,8 +1168,8 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
     @mouseenter="emit('focusActive', 'editor')"
   >
     <div class="editor-body">
-      <!-- Line number gutter -->
-      <div class="line-gutter" ref="lineGutterRef" v-if="showLineNumbers">
+      <!-- Fallback Line number gutter for standard textarea mode -->
+      <div class="line-gutter" ref="lineGutterRef" v-if="!isSyntaxHighlightActive && showLineNumbers">
         <div
           v-for="num in lineNumbers"
           :key="num"
@@ -1205,23 +1414,29 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
 
 .line-gutter {
   padding: 16px 0;
-  width: 38px;
+  width: 40px;
   background: transparent;
   border-right: 1px solid var(--border-color);
-  text-align: right;
+  text-align: center;
   user-select: none;
   font-family: 'JetBrains Mono', Consolas, monospace;
   font-size: 11px;
-  font-weight: 400;
+  font-weight: 500;
   color: var(--text-muted);
-  opacity: 0.45;
+  opacity: 0.55;
   overflow-y: hidden;
+  box-sizing: border-box;
+  flex-shrink: 0;
 }
 
 .line-number {
-  padding-right: 8px;
   height: 24px;
   line-height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 0;
 }
 
 textarea {

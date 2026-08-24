@@ -230,20 +230,12 @@ function onGroupReorderDrop(e, targetGroupId) {
 
 <template>
   <aside class="sidebar-container select-none">
-    <!-- Top Action Buttons -->
-    <div class="action-buttons-group">
-      <button class="btn-create-doc" @click="handleCreateDoc(null)">
-        <Plus size="14" stroke-width="2.2" />
-        <span>新建文档</span>
-      </button>
-    </div>
-
     <!-- Section Header: 我的文档 -->
     <div class="section-title-row">
       <span class="section-title">我的文档</span>
       <div class="section-icons">
         <button class="title-icon-btn" @click="handleCreateDoc(null)" title="新建文档">
-          <Plus size="16" stroke-width="1.8" />
+          <Plus size="16" stroke-width="2" />
         </button>
         <button class="title-icon-btn" @click="handleCreateGroupClick" title="新建分组">
           <FolderPlus size="15" stroke-width="1.8" />
@@ -253,13 +245,21 @@ function onGroupReorderDrop(e, targetGroupId) {
 
     <!-- Always Visible Search Filter Input -->
     <div class="search-input-wrap">
-      <Search size="13" class="search-icon-inside" />
+      <Search size="14" class="search-icon-inside" />
       <input
         v-model="searchQuery"
         type="text"
         placeholder="搜索文档名称..."
         class="search-input"
       />
+      <button 
+        v-if="searchQuery" 
+        class="search-clear-btn" 
+        @click="searchQuery = ''"
+        title="清空搜索"
+      >
+        <X size="12" />
+      </button>
     </div>
 
     <!-- Sidebar Body / Document Tree -->
@@ -437,60 +437,36 @@ function onGroupReorderDrop(e, targetGroupId) {
   margin-bottom: 12px;
 }
 
-.btn-create-doc {
-  width: 100%;
-  height: 32px;
-  background: var(--accent-color);
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  padding: 0 12px;
-}
-
-.btn-create-doc:hover {
-  opacity: 0.9;
-  transform: translateY(-0.5px);
-}
-
 /* ── 2. Section Header: 我的文档 ── */
 .section-title-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 6px 4px 6px 6px;
-  margin-bottom: 4px;
+  padding: 4px 2px 10px 4px;
 }
 
 .section-title {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 700;
-  color: var(--text-main);
+  color: var(--text-main, #18181b);
   letter-spacing: -0.01em;
 }
 
 .section-icons {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
 }
 
 .title-icon-btn {
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--text-muted, #71717a);
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -498,12 +474,12 @@ function onGroupReorderDrop(e, targetGroupId) {
 
 .title-icon-btn:hover {
   background: rgba(0, 0, 0, 0.05);
-  color: var(--text-main);
+  color: var(--text-main, #18181b);
 }
 
-.title-icon-btn.is-active {
-  background: var(--accent-bg);
-  color: var(--accent-color);
+html.dark .title-icon-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #ffffff;
 }
 
 /* ── 3. Search Filter Input ── */
@@ -511,32 +487,54 @@ function onGroupReorderDrop(e, targetGroupId) {
   position: relative;
   display: flex;
   align-items: center;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .search-icon-inside {
   position: absolute;
-  left: 8px;
-  color: var(--text-muted, #8c8c8c);
+  left: 11px;
+  color: var(--text-muted, #94a3b8);
   pointer-events: none;
 }
 
 .search-input {
   width: 100%;
-  height: 28px;
-  padding: 0 8px 0 26px;
-  font-size: 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: var(--bg-editor);
-  color: var(--text-main);
+  height: 34px;
+  padding: 0 28px 0 32px;
+  font-size: 12.5px;
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  border-radius: 17px;
+  background: var(--bg-editor, #ffffff);
+  color: var(--text-main, #18181b);
   outline: none;
   box-sizing: border-box;
-  transition: border-color 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .search-input:focus {
-  border-color: var(--accent-color);
+  border-color: var(--accent-color, #6366f1);
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
+}
+
+.search-clear-btn {
+  position: absolute;
+  right: 8px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #94a3b8);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  transition: all 0.15s ease;
+}
+
+.search-clear-btn:hover {
+  background: rgba(0, 0, 0, 0.08);
+  color: var(--text-main);
 }
 
 /* ── 4. Inline Create Group Row ── */
@@ -763,7 +761,6 @@ function onGroupReorderDrop(e, targetGroupId) {
 }
 
 .group-doc-list {
-  padding-left: 18px;
-  margin-top: 1px;
+  padding-left: 10px;
 }
 </style>

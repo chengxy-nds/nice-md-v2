@@ -8,6 +8,7 @@ import {
   Smartphone,
   Copy,
   Check,
+  CircleCheck,
   Sparkles,
   Palette
 } from '@lucide/vue';
@@ -202,22 +203,56 @@ watch(isWeChatMode, (newVal) => {
   localStorage.setItem('nicemd_wechat_mode', newVal.toString());
 });
 
-const copyMessage = ref('');
+const toastList = ref([]);
+let toastCounter = 0;
+
+const getToastStyle = (index) => {
+  const offset = toastList.value.length - 1 - index;
+  if (offset === 0) {
+    return {
+      transform: 'translateY(0) scale(1)',
+      zIndex: 100,
+      opacity: 1,
+    };
+  } else if (offset === 1) {
+    return {
+      transform: 'translateY(-10px) scale(0.95)',
+      zIndex: 90,
+      opacity: 0.88,
+    };
+  } else if (offset === 2) {
+    return {
+      transform: 'translateY(-19px) scale(0.90)',
+      zIndex: 80,
+      opacity: 0.65,
+    };
+  } else {
+    return {
+      transform: 'translateY(-27px) scale(0.85)',
+      zIndex: 70,
+      opacity: 0,
+    };
+  }
+};
 
 const showToast = (msg) => {
-  copyMessage.value = msg;
+  const id = ++toastCounter;
+  toastList.value.push({ id, msg });
+  if (toastList.value.length > 4) {
+    toastList.value.shift();
+  }
   
   // Confetti effect for premium feel!
   confetti({
-    particleCount: 60,
-    spread: 40,
-    origin: { y: 0.8 },
+    particleCount: 45,
+    spread: 35,
+    origin: { y: 0.85 },
     colors: ['#5f6caf', '#88c0d0', '#ffde47', '#7fa87f']
   });
 
   setTimeout(() => {
-    copyMessage.value = '';
-  }, 2500);
+    toastList.value = toastList.value.filter(t => t.id !== id);
+  }, 2600);
 };
 
 // Copy WeChat styled HTML — 100% clean WeChat MP Editor generator
@@ -236,7 +271,7 @@ const handleCopyWeChat = async () => {
     previewDom
   );
   if (success) {
-    showToast('已复制公众号格式 (带完整样式)');
+    showToast('已复制微信公众号排版');
   }
 };
 
@@ -252,7 +287,7 @@ const handleCopyZhihu = async () => {
       'text/plain': textBlob
     });
     await navigator.clipboard.write([item]);
-    showToast('已复制知乎格式');
+    showToast('已复制知乎专栏排版');
   } catch (err) {
     console.error('[NiceMD] Zhihu copy failed, falling back to text copy:', err);
     await navigator.clipboard.writeText(props.markdown || '');
@@ -272,7 +307,7 @@ const handleCopyToutiao = async () => {
       'text/plain': textBlob
     });
     await navigator.clipboard.write([item]);
-    showToast('已复制今日头条格式');
+    showToast('已复制今日头条排版');
   } catch (err) {
     console.error('[NiceMD] Toutiao copy failed, falling back to text copy:', err);
     await navigator.clipboard.writeText(props.markdown || '');
@@ -358,33 +393,51 @@ const handleCopyMarkdownText = async () => {
           <EyeOff v-else size="20" stroke-width="1.6" />
         </button>
 
-        <!-- 3. Copy Options with hover popout -->
-        <div class="slider-trigger-container">
+        <!-- 3. Copy Options with hover popout (no tooltip to avoid overlay clutter) -->
+        <div class="slider-trigger-container" data-no-tooltip="true">
           <button
-            class="bar-action-btn"
-            title="复制到各平台"
+            class="bar-action-btn copy-main-btn"
+            data-no-tooltip="true"
+            aria-label="一键复制"
           >
-            <Copy size="20" stroke-width="1.6" />
+            <Copy size="19" stroke-width="1.7" />
           </button>
 
           <div class="copy-popout-panel">
-            <div class="popout-title">一键复制至</div>
-            <button class="popout-item" @click="handleCopyWeChat">
-              <img src="/svg/微信.svg" class="popout-brand-icon" alt="微信公众号" />
-              <span>微信公众号</span>
-            </button>
-            <button class="popout-item" @click="handleCopyZhihu">
-              <img src="/svg/知乎.svg" class="popout-brand-icon" alt="知乎专栏" />
-              <span>知乎专栏</span>
-            </button>
-            <button class="popout-item" @click="handleCopyToutiao">
-              <img src="/svg/今日头条.svg" class="popout-brand-icon" alt="今日头条" />
-              <span>今日头条</span>
-            </button>
-            <button class="popout-item" @click="handleCopyMarkdownText">
-              <img src="/svg/md.svg" class="popout-brand-icon" alt="Markdown 源码" />
-              <span>Markdown 源码</span>
-            </button>
+            <div class="popout-header">
+              <span class="popout-title">一键复制排版</span>
+            </div>
+            <div class="popout-items">
+              <button class="popout-item" @click="handleCopyWeChat">
+                <div class="popout-icon-box wechat-bg">
+                  <img src="/svg/微信.svg" class="popout-brand-icon" alt="微信" />
+                </div>
+                <span class="popout-item-name">微信公众号</span>
+              </button>
+
+              <button class="popout-item" @click="handleCopyZhihu">
+                <div class="popout-icon-box zhihu-bg">
+                  <img src="/svg/知乎.svg" class="popout-brand-icon" alt="知乎" />
+                </div>
+                <span class="popout-item-name">知乎专栏</span>
+              </button>
+
+              <button class="popout-item" @click="handleCopyToutiao">
+                <div class="popout-icon-box toutiao-bg">
+                  <img src="/svg/今日头条.svg" class="popout-brand-icon" alt="今日头条" />
+                </div>
+                <span class="popout-item-name">今日头条</span>
+              </button>
+
+              <div class="popout-divider"></div>
+
+              <button class="popout-item" @click="handleCopyMarkdownText">
+                <div class="popout-icon-box md-bg">
+                  <img src="/svg/md.svg" class="popout-brand-icon" alt="Markdown" />
+                </div>
+                <span class="popout-item-name">Markdown 源码</span>
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -402,12 +455,21 @@ const handleCopyMarkdownText = async () => {
       </div>
     </aside>
 
-    <Transition name="toast">
-      <div v-if="copyMessage" class="copy-toast">
-        <Check size="16" class="toast-check-icon" />
-        <span>{{ copyMessage }}</span>
+    <Teleport to="body">
+      <div class="toast-deck-container">
+        <TransitionGroup name="toast-deck">
+          <div 
+            v-for="(toast, index) in toastList" 
+            :key="toast.id" 
+            class="toast-deck-card"
+            :style="getToastStyle(index)"
+          >
+            <CircleCheck size="16" :stroke-width="2" class="toast-check-icon" />
+            <span class="toast-text">{{ toast.msg }}</span>
+          </div>
+        </TransitionGroup>
       </div>
-    </Transition>
+    </Teleport>
   </div>
 </template>
 
@@ -478,17 +540,16 @@ const handleCopyMarkdownText = async () => {
 .preview-right-bar {
   width: 56px;
   flex-shrink: 0;
-  background: var(--bg-sidebar);
-  border-left: 1px solid var(--border-color);
-  box-shadow: var(--shadow-sidebar-right);
+  background: var(--bg-sidebar, #f0f0ee);
+  border-left: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  padding: 24px 0 20px;
+  padding: 16px 0 16px;
   box-sizing: border-box;
   z-index: 7;
-  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: background 0.3s ease, border-color 0.3s ease;
 }
 
 .bar-top,
@@ -496,36 +557,50 @@ const handleCopyMarkdownText = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 18px;
+  gap: 12px;
+  width: 100%;
 }
 
 .bar-action-btn {
-  width: 42px;
-  height: 42px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
+  border-radius: 8px;
   background: transparent;
   border: none;
-  color: var(--text-muted);
+  color: var(--text-muted, #64748b);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease;
   padding: 0;
 }
 
 .bar-action-btn:hover {
-  color: var(--text-main);
-  background: var(--accent-bg);
+  color: var(--text-main, #0f172a);
+  background: #ebebeb;
+}
+
+html.dark .bar-action-btn:hover {
+  background: rgba(255, 255, 255, 0.09);
+  color: #ffffff;
 }
 
 .bar-action-btn:active {
-  transform: scale(0.95);
+  transform: scale(0.96);
 }
 
 .bar-action-btn.is-active {
-  color: var(--accent-color);
-  background: var(--accent-bg);
+  color: var(--accent-color, #4f46e5);
+  background: rgba(99, 102, 241, 0.08);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+html.dark .bar-action-btn.is-active {
+  color: var(--accent-color, #818cf8);
+  background: rgba(99, 102, 241, 0.16);
+  box-shadow: none;
 }
 
 .slider-trigger-container {
@@ -534,125 +609,197 @@ const handleCopyMarkdownText = async () => {
 
 .copy-popout-panel {
   position: absolute;
-  right: 100%;
+  right: calc(100% + 8px);
   top: 50%;
-  transform: translateY(-50%) translateX(-0.75rem);
-  background: var(--glass-bg, rgba(255, 255, 255, 0.85));
-  backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
-  -webkit-backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
-  border: 1.5px solid var(--glass-border, rgba(255, 255, 255, 0.8));
-  border-radius: 1rem;
+  transform: translateY(-50%) translateX(-4px);
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  border-radius: 10px;
   box-shadow: 
-    0 1rem 2.5rem rgba(0, 0, 0, 0.1),
-    0 0.125rem 0.5rem rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  padding: 0.5rem;
+    0 10px 28px rgba(0, 0, 0, 0.12),
+    0 2px 6px rgba(0, 0, 0, 0.04);
+  padding: 5px;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  min-width: 12rem;
+  gap: 2px;
+  width: 156px;
   opacity: 0;
   visibility: hidden;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 100;
   font-family: var(--font-sans);
+}
+
+/* Invisible bridge so moving cursor between button and panel doesn't flicker/close */
+.copy-popout-panel::after {
+  content: '';
+  position: absolute;
+  right: -12px;
+  top: 0;
+  width: 12px;
+  height: 100%;
 }
 
 /* Trigger display on hover */
 .slider-trigger-container:hover .copy-popout-panel {
   opacity: 1;
   visibility: visible;
-  transform: translateY(-50%) translateX(-0.375rem);
+  pointer-events: auto;
+  transform: translateY(-50%) translateX(0);
+}
+
+.popout-header {
+  padding: 5px 6px 5px;
+  border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+  margin-bottom: 2px;
 }
 
 .popout-title {
-  font-size: 0.6875rem;
+  font-size: 10.5px;
   font-weight: 700;
-  color: var(--wandor-muted, #767676);
-  padding: 0.25rem 0.5rem;
+  color: var(--text-muted, #71717a);
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  border-bottom: 1px solid var(--border-color);
-  margin-bottom: 0.25rem;
-  font-family: var(--font-sans);
+  letter-spacing: 0.4px;
+}
+
+.popout-items {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
 }
 
 .popout-item {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: 8px;
   background: transparent;
   border: none;
-  color: var(--wandor-text, #1a1a1a);
-  padding: 0.4375rem 0.625rem;
-  border-radius: 0.5rem;
-  font-size: 0.8125rem;
-  font-weight: 600;
+  color: var(--text-main, #18181b);
+  padding: 6px 7px;
+  border-radius: 6px;
   cursor: pointer;
   text-align: left;
-  transition: all 0.15s ease;
-  white-space: nowrap;
+  transition: all 0.14s ease;
   width: 100%;
   box-sizing: border-box;
-  font-family: var(--font-sans);
 }
 
 .popout-item:hover {
-  background: rgba(0, 0, 0, 0.04);
-  color: var(--accent-color);
-  padding-left: 0.8125rem;
+  background: var(--bg-capsule, #f4f4f5);
 }
 
 html.dark .popout-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.popout-icon-box {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--bg-app, #fafafa);
+  transition: transform 0.14s ease;
+}
+
+.popout-item:hover .popout-icon-box {
+  transform: scale(1.08);
 }
 
 .popout-brand-icon {
-  width: 1.125rem;
-  height: 1.125rem;
+  width: 15px;
+  height: 15px;
   flex-shrink: 0;
   object-fit: contain;
-  display: inline-block;
+  display: block;
 }
 
-/* Floating copy toast alert */
-.copy-toast {
-  --accent-color: #5B6C8F;
-  --border-color: #E6E6E2;
+.popout-item-name {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-main, #18181b);
+  line-height: 1;
+  white-space: nowrap;
+}
 
+.popout-divider {
+  height: 1px;
+  background: var(--border-color, rgba(0, 0, 0, 0.06));
+  margin: 3px 4px;
+}
+
+/* Card Deck 3D Layered Notifications matching Screenshot */
+.toast-deck-container {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  width: auto;
+  min-width: 220px;
+  height: 42px;
+  z-index: 999999;
+  pointer-events: none;
+}
+
+.toast-deck-card {
   position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--accent-color);
-  color: #ffffff;
-  padding: 10px 20px;
-  border-radius: 30px;
-  box-shadow: var(--shadow-lg);
+  right: 0;
+  bottom: 0;
+  background: var(--bg-card, #ffffff);
+  color: var(--text-main, #18181b);
+  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  border-radius: 8px;
+  box-shadow: 
+    0 8px 24px -2px rgba(0, 0, 0, 0.1),
+    0 2px 6px rgba(0, 0, 0, 0.04);
+  padding: 9px 16px;
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
-  font-weight: 700;
-  z-index: 200;
-  border: 1px solid var(--border-color);
+  font-family: var(--font-sans);
+  user-select: none;
+  transform-origin: center bottom;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 0.35s ease;
+  white-space: nowrap;
+}
+
+html.dark .toast-deck-card {
+  background: #22252a;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f3f4f6;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 
 .toast-check-icon {
-  color: #ffffff;
+  color: #10b981;
+  flex-shrink: 0;
 }
 
-/* Vue Toast Transition */
-.toast-enter-active, .toast-leave-active {
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+.toast-text {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.3;
+  white-space: nowrap;
 }
-.toast-enter-from {
-  opacity: 0;
-  transform: translate(-50%, 20px);
+
+/* Toast Deck Vue Transitions */
+.toast-deck-enter-active,
+.toast-deck-leave-active {
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.toast-leave-to {
-  opacity: 0;
-  transform: translate(-50%, 20px);
+
+.toast-deck-enter-from {
+  opacity: 0 !important;
+  transform: translateY(24px) scale(0.9) !important;
+}
+
+.toast-deck-leave-to {
+  opacity: 0 !important;
+  transform: translateY(12px) scale(0.92) !important;
 }
 .preview-body {
   flex: 1;

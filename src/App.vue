@@ -1033,6 +1033,31 @@ onMounted(() => {
   groups.value = loadGroups();
   sidebarVisible.value = loadSidebarVisible();
 
+  // 1.5 Sanitize legacy auto-generated h1 background from document customStyles
+  let docModified = false;
+  documents.value.forEach(doc => {
+    if (doc.customStyles?.h1) {
+      if (doc.customStyles.h1.display === 'block' || doc.customStyles.h1.padding === '10px 24px' || (doc.customStyles.h1.backgroundColor && doc.customStyles.h1.color === '#ffffff')) {
+        delete doc.customStyles.h1.backgroundColor;
+        delete doc.customStyles.h1.display;
+        delete doc.customStyles.h1.padding;
+        delete doc.customStyles.h1.borderRadius;
+        delete doc.customStyles.h1.textAlign;
+        if (doc.customStyles.h1.color === '#ffffff') {
+          doc.customStyles.h1.color = '#2775b6';
+        }
+        docModified = true;
+      }
+    }
+    if (doc.customStyles?.customCss && /#nice h1[^{]*\{[^}]*background-color:[^}]*\}/i.test(doc.customStyles.customCss)) {
+      doc.customStyles.customCss = doc.customStyles.customCss.replace(/#nice h1[^{]*\{[^}]*background-color:[^}]*\}/gi, '');
+      docModified = true;
+    }
+  });
+  if (docModified) {
+    saveDocuments(documents.value);
+  }
+
   // 2. First-time migration: seed default document
   if (documents.value.length === 0) {
     const id = generateId();

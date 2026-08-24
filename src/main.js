@@ -8,6 +8,7 @@ import { marked } from 'marked'
 import hljs from 'highlight.js'
 import 'highlight.js/styles/atom-one-dark.css'
 import { injectThemeTypographyCss } from './utils/themeTypography'
+import { initGlobalTooltip } from './utils/globalTooltip'
 
 marked.use({
   renderer: {
@@ -32,5 +33,8 @@ marked.use({
 // non-scoped [data-theme="..."] rules override the components' scoped
 // :deep() defaults (equal specificity → later source order wins).
 injectThemeTypographyCss();
+
+// Initialize sleek universal dark tooltip
+initGlobalTooltip();
 
 createApp(App).mount('#app')

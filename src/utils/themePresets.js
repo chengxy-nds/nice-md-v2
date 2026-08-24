@@ -22,11 +22,11 @@ export const themes = [
       '--shadow-md': '0 8px 24px rgba(0,0,0,0.04)'
     },
     previewTexture: {
-      bgImage: 'linear-gradient(90deg, rgba(50, 0, 0, 0.03) 0%, rgba(255, 255, 255, 0) 11.49%), linear-gradient(360deg, rgba(50, 0, 0, 0.04) 0%, rgba(255, 255, 255, 0) 12.16%)',
+      bgImage: 'linear-gradient(90deg, rgba(39, 117, 182, 0.015) 0%, rgba(255, 255, 255, 0) 11.49%), linear-gradient(360deg, rgba(39, 117, 182, 0.02) 0%, rgba(255, 255, 255, 0) 12.16%)',
       bgSize: '20px 20px, 20px 20px'
     },
     typography: {
-      h1: { variant: 'pill', size: '1.6em', weight: 700, align: 'center', bg: '#2775b6', color: '#ffffff', radius: '8px', padding: '10px 24px', letterSpacing: '-0.3px' },
+      h1: { variant: 'pill', size: '1.25em', weight: 700, align: 'center', bg: '#2775b6', color: '#ffffff', radius: '9999px', padding: '6px 24px', letterSpacing: '0.02em', marginTop: '1.6em', marginBottom: '1.2em' },
       h2: { variant: 'bar', size: '1.35em', weight: 700, borderColor: '#2775b6', padding: '0.3em 0.6em', letterSpacing: '-0.2px' },
       h3: { variant: 'icon', size: '18px', weight: 700, color: '#2b2b2b', iconUrl: 'https://files.mdnice.com/mountain_2.png', iconSize: '30px', iconMarginBottom: '8px', textMarginTop: '30px', lineHeight: '2.4em', marginTop: '15px', marginBottom: '15px', letterSpacing: '0em' },
       p: { size: '16px', lineHeight: 2, letterSpacing: '0.08em', color: '#0d0d0d' },
@@ -61,7 +61,7 @@ export const themes = [
       '--shadow-md': '0 8px 24px rgba(0,0,0,0.04)'
     },
     typography: {
-      h1: { variant: 'pill', size: '1.6em', weight: 700, align: 'center', bg: '#965829', color: '#ffffff', radius: '8px', padding: '10px 24px' },
+      h1: { variant: 'pill', size: '1.25em', weight: 700, align: 'center', bg: '#965829', color: '#ffffff', radius: '9999px', padding: '6px 24px', marginTop: '1.6em', marginBottom: '1.2em' },
       h2: { variant: 'bar', size: '1.35em', weight: 700, borderColor: '#965829', padding: '0.3em 0.6em' },
       h3: { variant: 'simple', size: '18px', weight: 700, color: '#965829' },
       p: { size: '16px', lineHeight: 2, color: '#3d3229' },
@@ -92,7 +92,7 @@ export const themes = [
       '--shadow-md': '0 8px 24px rgba(0,0,0,0.04)'
     },
     typography: {
-      h1: { variant: 'pill', size: '1.6em', weight: 700, align: 'center', bg: '#0d6848', color: '#ffffff', radius: '8px', padding: '10px 24px' },
+      h1: { variant: 'pill', size: '1.25em', weight: 700, align: 'center', bg: '#0d6848', color: '#ffffff', radius: '9999px', padding: '6px 24px', marginTop: '1.6em', marginBottom: '1.2em' },
       h2: { variant: 'bar', size: '1.35em', weight: 700, borderColor: '#0d6848', padding: '0.3em 0.6em' },
       h3: { variant: 'simple', size: '18px', weight: 700, color: '#0d6848' },
       p: { size: '16px', lineHeight: 2, color: '#1b382b' },
@@ -123,7 +123,7 @@ export const themes = [
       '--shadow-md': '0 8px 24px rgba(0,0,0,0.04)'
     },
     typography: {
-      h1: { variant: 'pill', size: '1.5em', weight: 700, align: 'center', bg: '#8a9a86', color: '#ffffff', radius: '6px', padding: '8px 20px' },
+      h1: { variant: 'pill', size: '1.2em', weight: 700, align: 'center', bg: '#8a9a86', color: '#ffffff', radius: '9999px', padding: '6px 22px', marginTop: '1.6em', marginBottom: '1.2em' },
       h2: { variant: 'bar', size: '1.3em', weight: 700, borderColor: '#8a9a86', padding: '0.3em 0.6em' },
       h3: { variant: 'simple', size: '17px', weight: 700, color: '#6f7e6b' },
       p: { size: '15.5px', lineHeight: 1.9, color: '#3a3a3a' },
@@ -154,7 +154,7 @@ export const themes = [
       '--shadow-md': '0 8px 24px rgba(0,0,0,0.04)'
     },
     typography: {
-      h1: { variant: 'pill', size: '1.5em', weight: 700, align: 'center', bg: '#a62b2b', color: '#ffffff', radius: '4px', padding: '8px 22px' },
+      h1: { variant: 'pill', size: '1.2em', weight: 700, align: 'center', bg: '#a62b2b', color: '#ffffff', radius: '9999px', padding: '6px 22px', marginTop: '1.6em', marginBottom: '1.2em' },
       h2: { variant: 'bar', size: '1.3em', weight: 700, borderColor: '#a62b2b', padding: '0.3em 0.6em' },
       h3: { variant: 'simple', size: '17px', weight: 700, color: '#a62b2b' },
       p: { size: '16px', lineHeight: 2, color: '#2d2621' },
@@ -287,21 +287,17 @@ export function getThemeDefaultStyles(themeId = 'classic-indigo') {
   const codeText = styles['--code-text'] || '#bb2243';
   const borderColor = styles['--border-color'] || '#eaeef2';
 
-  const isH1Pill = typo.h1?.variant === 'pill';
-  const h1Bg = typo.h1?.bg || (isH1Pill ? primary : undefined);
-  const h1Color = h1Bg ? (typo.h1?.color || '#ffffff') : (typo.h1?.color && typo.h1.color !== '#ffffff' ? typo.h1.color : primary);
-
   return {
     body: { color: textMain, backgroundColor: bgPreview },
     h1: {
-      fontSize: parseFontSize(typo.h1?.size, '26px'),
-      color: h1Color,
+      fontSize: parseFontSize(typo.h1?.size, '24px'),
+      color: typo.h1?.color && typo.h1.color !== '#ffffff' ? typo.h1.color : primary,
       fontWeight: String(typo.h1?.weight || 700),
-      backgroundColor: h1Bg,
-      padding: typo.h1?.padding || (h1Bg ? '10px 24px' : undefined),
-      borderRadius: typo.h1?.radius || (h1Bg ? '8px' : undefined),
-      textAlign: typo.h1?.align || (h1Bg ? 'center' : undefined),
-      display: h1Bg ? 'block' : undefined
+      backgroundColor: undefined,
+      padding: undefined,
+      borderRadius: undefined,
+      textAlign: undefined,
+      display: undefined
     },
     h2: { fontSize: parseFontSize(typo.h2?.size, '22px'), color: typo.h2?.borderColor || primary, fontWeight: String(typo.h2?.weight || 700) },
     h3: { fontSize: parseFontSize(typo.h3?.size, '18px'), color: typo.h3?.color || textMain, fontWeight: String(typo.h3?.weight || 700) },

@@ -1482,6 +1482,115 @@ async function checkLoginStatus(platformId, writeUrl) {
       return { loggedIn: false };
     }
 
+    if (platformId === 'toutiao') {
+      try {
+        // 1. Try mp.toutiao.com user basic info API
+        try {
+          const response = await fetch('https://mp.toutiao.com/mp/agw/article_meta/basic_info', {
+            method: 'GET',
+            credentials: 'include',
+            cache: 'no-cache'
+          });
+          const json = await response.json();
+          if (json && (json.code === 0 || json.message === 'success') && json.data) {
+            const d = json.data;
+            return {
+              loggedIn: true,
+              userId: d.user_id ? String(d.user_id) : (d.media_id ? String(d.media_id) : ''),
+              username: d.user_name || d.name || d.screen_name || '今日头条创作者',
+              avatar: d.avatar_url || d.user_avatar || null
+            };
+          }
+        } catch (e) {}
+
+        // 2. Try mp.toutiao.com creator author info API
+        try {
+          const resAuthor = await fetch('https://mp.toutiao.com/mp/agw/creator/home/author_info', {
+            method: 'GET',
+            credentials: 'include',
+            cache: 'no-cache'
+          });
+          const jsonAuthor = await resAuthor.json();
+          if (jsonAuthor && (jsonAuthor.code === 0 || jsonAuthor.message === 'success') && jsonAuthor.data) {
+            const d = jsonAuthor.data;
+            return {
+              loggedIn: true,
+              userId: d.user_id ? String(d.user_id) : (d.author_id ? String(d.author_id) : ''),
+              username: d.author_name || d.user_name || d.name || '今日头条创作者',
+              avatar: d.avatar_url || d.avatar || null
+            };
+          }
+        } catch (e) {}
+
+        // 3. Try toutiao.com user info API
+        try {
+          const resMain = await fetch('https://www.toutiao.com/api/pc/user/info', {
+            method: 'GET',
+            credentials: 'include',
+            cache: 'no-cache'
+          });
+          const jsonMain = await resMain.json();
+          if (jsonMain && (jsonMain.code === 0 || jsonMain.message === 'success') && jsonMain.data) {
+            const d = jsonMain.data;
+            if (d.user_id || d.name || d.screen_name) {
+              return {
+                loggedIn: true,
+                userId: d.user_id ? String(d.user_id) : '',
+                username: d.name || d.screen_name || '今日头条创作者',
+                avatar: d.avatar_url || null
+              };
+            }
+          }
+        } catch (e) {}
+
+        // 4. Try fetching publish page and checking redirected URL & HTML
+        try {
+          const resPage = await fetch('https://mp.toutiao.com/profile_v4/graphic/publish', {
+            method: 'GET',
+            credentials: 'include',
+            redirect: 'follow',
+            cache: 'no-cache'
+          });
+          const finalUrl = resPage.url || '';
+          if (!finalUrl.includes('/login') && !finalUrl.includes('/auth/page')) {
+            const html = await resPage.text();
+            const userMatch = html.match(/"user_name":\s*"([^"]+)"/) || 
+                              html.match(/"screen_name":\s*"([^"]+)"/) ||
+                              html.match(/"name":\s*"([^"]+)"/);
+            const avatarMatch = html.match(/"avatar_url":\s*"([^"]+)"/);
+            const uidMatch = html.match(/"user_id":\s*"?(\d+)"?/);
+            if (userMatch || uidMatch) {
+              return {
+                loggedIn: true,
+                userId: uidMatch ? uidMatch[1] : '',
+                username: userMatch ? userMatch[1] : '今日头条创作者',
+                avatar: avatarMatch ? avatarMatch[1] : null
+              };
+            }
+          }
+        } catch (e) {}
+
+        // 5. Inspect Cookies for toutiao.com and mp.toutiao.com
+        const cookies = await chrome.cookies.getAll({ domain: 'toutiao.com' });
+        const sessionCookie = cookies.find(c => (c.name === 'sessionid' || c.name === 'sessionid_ss' || c.name === 'sid_tt') && c.value && c.value.length > 5);
+        const userCookie = cookies.find(c => (c.name === 'user_id' || c.name === 'uid_tt' || c.name === 'passport_auth_status') && c.value);
+        if (sessionCookie || (userCookie && userCookie.value !== '0')) {
+          const nickCookie = cookies.find(c => (c.name === 'user_name' || c.name === 'screen_name') && c.value);
+          return {
+            loggedIn: true,
+            userId: userCookie ? userCookie.value : '',
+            username: nickCookie ? decodeURIComponent(nickCookie.value) : '今日头条创作者',
+            avatar: null
+          };
+        }
+
+        return { loggedIn: false };
+      } catch (e) {
+        console.warn('[NiceMD Check Login] Toutiao check error:', e);
+        return { loggedIn: false };
+      }
+    }
+
     if (platformId === 'infoq') {
       try {
         const response = await fetch('https://xie.infoq.cn/article/draft/new', {
