@@ -102,7 +102,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:modelValue', 'update:currentTheme', 'update:currentCodeTheme', 'import', 'scroll', 'focusActive', 'toggleSyncScroll', 'togglePreview', 'export-md', 'export-html', 'export-word', 'export-pdf', 'export-pdf-raw', 'export-png']);
+const emit = defineEmits(['update:modelValue', 'update:currentTheme', 'update:currentCodeTheme', 'import', 'scroll', 'focusActive', 'editor-click', 'toggleSyncScroll', 'togglePreview', 'export-md', 'export-html', 'export-word', 'export-pdf', 'export-pdf-raw', 'export-png']);
 
 const showDocThemeMenu = ref(false);
 const showCodeThemeMenu = ref(false);
@@ -1086,6 +1086,16 @@ function initCodeMirror() {
       markdown(),
       EditorView.lineWrapping,
       customMarkdownTheme,
+      EditorView.domEventHandlers({
+        focus: () => {
+          emit('focusActive', 'editor');
+          emit('editor-click');
+        },
+        click: () => {
+          emit('focusActive', 'editor');
+          emit('editor-click');
+        }
+      }),
       keymap.of([
         ...closeBracketsKeymap,
         ...defaultKeymap,
@@ -1165,6 +1175,7 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
     @dragover="onDragOver"
     @dragleave="onDragLeave"
     @drop="onDrop"
+    @click="emit('editor-click'); emit('focusActive', 'editor')"
     @mouseenter="emit('focusActive', 'editor')"
   >
     <div class="editor-body">
@@ -1192,6 +1203,8 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
           @keyup="onTextSelect"
           @contextmenu.prevent="onContextMenu"
           @paste="handleEditorPaste"
+          @focus="emit('editor-click'); emit('focusActive', 'editor')"
+          @click="emit('editor-click'); emit('focusActive', 'editor')"
           placeholder="在这里输入 Markdown 内容，或者直接将 .md / .html 文件拖拽进这里..."
           spellcheck="false"
         ></textarea>

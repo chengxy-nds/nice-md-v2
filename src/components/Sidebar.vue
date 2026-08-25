@@ -82,17 +82,33 @@ function handleCreateDoc(groupId) {
 // ── Group Expansion State ──
 const expandedGroups = ref(new Set());
 
-watch(() => props.activeDocId, (newId) => {
-  if (newId) {
-    const doc = props.documents.find(d => d.id === newId);
+function expandActiveGroup() {
+  if (props.activeDocId) {
+    const doc = props.documents.find(d => d.id === props.activeDocId);
     const groupId = doc?.groupId || '__default__';
     const s = new Set(expandedGroups.value);
     if (!s.has(groupId)) {
       s.add(groupId);
       expandedGroups.value = s;
+      nextTick(() => {
+        const activeEl = sidebarBodyRef.value?.querySelector('.sidebar-doc-item.is-active, .doc-item.active');
+        if (activeEl) {
+          activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      });
     }
   }
+}
+
+watch(() => props.activeDocId, (newId) => {
+  if (newId) {
+    expandActiveGroup();
+  }
 }, { immediate: true });
+
+defineExpose({
+  expandActiveGroup
+});
 const renamingGroupId = ref(null);
 const renameGroupValue = ref('');
 const renameGroupInputRef = ref(null);

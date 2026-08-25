@@ -564,8 +564,16 @@ if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
           const editorEl = findElement(config.editor);
           if (editorEl) {
             bodyDone = true; // Mark as done immediately so it NEVER re-runs in future interval ticks
-            console.log(`[NiceMD Automation] Editor element found on attempt ${attempts}, injecting single paste.`);
-            simulatePaste(editorEl, payload.markdown, payload.html, config.format);
+            const currentContent = (editorEl.value || editorEl.textContent || '').trim();
+            if (currentContent.length > 20 && (
+              (payload.title && currentContent.includes(payload.title)) || 
+              (payload.markdown && currentContent.includes(payload.markdown.slice(0, 30)))
+            )) {
+              console.log(`[NiceMD Automation] Editor already contains article content for ${platform}, skipping duplicate paste.`);
+            } else {
+              console.log(`[NiceMD Automation] Editor element found on attempt ${attempts}, injecting single paste.`);
+              simulatePaste(editorEl, payload.markdown, payload.html, config.format);
+            }
           }
         }
       }
@@ -901,20 +909,25 @@ if (!window.__NICEMD_AUTOMATION_INITIALIZED__) {
     
     const storageKey = `pending_publish_${platform}`;
     
-    // CRITICAL CHECK: Only skip injection if this is an already created draft from server (not creation pages)
+    // CRITICAL CHECK: Only skip injection if this is an already created draft from server
     const searchStr = window.location.search || '';
     const pathStr = window.location.pathname || '';
-    const isCreatePage = pathStr.includes('/create') || pathStr.includes('/new') || pathStr.includes('/write') || pathStr.includes('/publish');
-    const isExistingDraftUrl = !isCreatePage && (
-      searchStr.includes('draftId') || 
-      searchStr.includes('draft_id') || 
-      searchStr.includes('article_id') || 
-      searchStr.includes('id=') ||
-      pathStr.includes('/edit')
-    );
+    
+    const hasDraftParam = searchStr.includes('draftId=') || 
+                          searchStr.includes('draft_id=') || 
+                          searchStr.includes('article_id=') || 
+                          searchStr.includes('postId=') ||
+                          searchStr.includes('post_id=') ||
+                          searchStr.includes('id=');
+
+    const hasDraftPath = pathStr.includes('/edit') || 
+                         /\/drafts\/\d+/.test(pathStr) || 
+                         (pathStr.includes('/editor/drafts/') && !pathStr.includes('/editor/drafts/new'));
+
+    const isExistingDraftUrl = hasDraftParam || hasDraftPath;
                                
     if (isExistingDraftUrl) {
-      console.log(`[NiceMD Automation] Opening existing draft URL for ${platform}, skipping DOM injection to avoid duplicate content.`);
+      console.log(`[NiceMD Automation] Opening existing draft URL for ${platform} (${window.location.href}), skipping DOM injection to avoid duplicate content.`);
       chrome.storage.local.remove(storageKey);
       return;
     }

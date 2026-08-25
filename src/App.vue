@@ -5,7 +5,8 @@ import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, Ta
 import {
   Menu, Sparkles, Search, Image, HelpCircle, Link, Upload, Trash2,
   Link2, Link2Off, Eye, EyeOff, Download, Undo2, Redo2, Palette, Code2,
-  ChevronDown, FileCode, FileText, Globe, Wand2, LayoutGrid, Send, Settings, Check, X
+  ChevronDown, FileCode, FileText, Globe, Wand2, LayoutGrid, Send, Settings, Check, X,
+  Pencil
 } from '@lucide/vue';
 import { applyTheme, getThemeDefaultStyles, themes as themePresets } from './utils/themePresets';
 import { codeThemes } from './utils/codeThemes';
@@ -1032,6 +1033,8 @@ const toggleMobileSidebar = () => {
   mobileSidebarOpen.value = !mobileSidebarOpen.value;
 };
 
+const sidebarRef = ref(null);
+
 const handleScroll = (percentage) => {
   if (!syncScrollEnabled.value) return;
   scrollPercentage.value = percentage;
@@ -1039,6 +1042,13 @@ const handleScroll = (percentage) => {
 
 const handleFocusActive = (pane) => {
   activeScrollPane.value = pane;
+  if (pane === 'editor') {
+    sidebarRef.value?.expandActiveGroup();
+  }
+};
+
+const handleEditorClick = () => {
+  sidebarRef.value?.expandActiveGroup();
 };
 
 onMounted(() => {
@@ -1321,6 +1331,7 @@ watch(customStyles, () => {
           <div v-if="mobileSidebarOpen" class="sidebar-backdrop" @click="mobileSidebarOpen = false"></div>
 
           <Sidebar
+            ref="sidebarRef"
             :class="{ 'mobile-drawer-open': mobileSidebarOpen }"
             v-if="(sidebarVisible || mobileSidebarOpen) && currentView === 'editor'"
             :documents="documents"
@@ -1365,7 +1376,7 @@ watch(customStyles, () => {
               <div
                 class="toolbar-doc-title-box"
                 :class="{ 'is-editing': isRenamingToolbarDoc }"
-                title="双击编辑文档名称"
+                title="双击重命名文档"
                 @dblclick.stop="startRenameToolbarDoc"
               >
                 <FileText size="14" class="toolbar-doc-icon" />
@@ -1375,6 +1386,7 @@ watch(customStyles, () => {
                 >
                   {{ activeDocument?.title || '未命名文档' }}
                 </span>
+                <Pencil v-if="!isRenamingToolbarDoc" size="11" class="toolbar-doc-edit-hint" />
                 <input
                   v-else
                   ref="toolbarDocInputRef"
@@ -1483,7 +1495,7 @@ watch(customStyles, () => {
 
           <!-- Split Workspace Columns below Toolbar -->
           <div class="workspace-columns">
-            <div class="workspace-column editor-column">
+            <div class="workspace-column editor-column" @click="handleEditorClick">
               <EditorPanel
                 ref="editorPanelRef"
                 v-model="markdownContent"
@@ -1495,6 +1507,7 @@ watch(customStyles, () => {
                 @import="handleImport"
                 @scroll="handleScroll"
                 @focusActive="handleFocusActive"
+                @editor-click="handleEditorClick"
                 @toggleSyncScroll="toggleSyncScroll"
                 @togglePreview="togglePreview"
               />
@@ -2285,37 +2298,72 @@ html.dark .app-container.is-standalone-home {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 8px;
+  padding: 4px 8px;
   border-radius: 6px;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
-  width: 150px;
+  max-width: 260px;
+  min-width: 0;
+  width: auto;
   flex-shrink: 0;
   box-sizing: border-box;
   cursor: pointer;
   border: 1px solid transparent;
+  background: transparent;
 }
 
 .toolbar-doc-title-box:hover:not(.is-editing) {
-  background: var(--accent-bg);
-  border-color: var(--border-color);
+  background: rgba(0, 0, 0, 0.04);
+}
+
+[data-color-mode="dark"] .toolbar-doc-title-box:hover:not(.is-editing) {
+  background: rgba(255, 255, 255, 0.07);
 }
 
 .toolbar-doc-icon {
   color: var(--accent-color);
+  opacity: 0.85;
   flex-shrink: 0;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.toolbar-doc-title-box:hover:not(.is-editing) .toolbar-doc-icon {
+  opacity: 1;
+  transform: scale(1.08);
 }
 
 .toolbar-doc-name {
   flex: 1;
   min-width: 0;
-  font-size: 13px;
+  font-size: 13.5px;
   font-weight: 600;
   color: var(--text-main);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.4;
+  letter-spacing: -0.01em;
+}
+
+.toolbar-doc-edit-hint {
+  color: var(--text-muted);
+  opacity: 0;
+  transform: scale(0.85);
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  margin-left: -2px;
+}
+
+.toolbar-doc-title-box:hover:not(.is-editing) .toolbar-doc-edit-hint {
+  opacity: 0.55;
+  transform: scale(1);
+}
+
+.toolbar-doc-title-box.is-editing {
+  background: var(--bg-card);
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px rgba(91, 108, 143, 0.15);
+  padding: 2px 8px;
 }
 
 .toolbar-doc-input {
@@ -2323,15 +2371,13 @@ html.dark .app-container.is-standalone-home {
   min-width: 0;
   width: 100%;
   box-sizing: border-box;
-  font-size: 12.5px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--text-main);
-  background: var(--bg-card);
-  border: 1px solid var(--accent-color);
-  border-radius: 5px;
-  padding: 2px 6px;
+  background: transparent;
+  border: none;
+  padding: 1px 2px;
   outline: none;
-  box-shadow: 0 0 0 2px var(--accent-bg);
   font-family: inherit;
 }
 
