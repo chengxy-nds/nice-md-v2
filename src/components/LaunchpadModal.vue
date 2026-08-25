@@ -25,6 +25,7 @@ import {
 import { soundEngine } from '../utils/synthAudio';
 import { compileToWeChatHtml } from '../utils/wechatStyles';
 import confetti from 'canvas-confetti';
+import BrandLogo from './BrandLogo.vue';
 
 const props = defineProps({
   isOpen: {
@@ -1379,10 +1380,7 @@ onMounted(() => {
       <!-- Drawer Header Bar (EasyMD Logo + Titles + Close Button) -->
       <div class="drawer-top-bar">
         <div class="brand-header-left">
-          <div class="brand-icon-badge">
-            <img src="/logo.png" alt="EasyMD Logo" class="brand-modal-logo logo-light" />
-            <img src="/logo-dark.png" alt="EasyMD Logo" class="brand-modal-logo logo-dark" />
-          </div>
+          <BrandLogo :size="36" />
           <div class="brand-title-wrap">
             <h2 class="brand-title-cn">多渠道内容分发</h2>
             <p class="brand-subtitle-cn">一键发布到多个平台</p>
@@ -2122,11 +2120,10 @@ onMounted(() => {
 }
 
 .brand-modal-logo {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.625rem;
+  height: 2.625rem;
   object-fit: contain;
-  border-radius: 0.55rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.08));
 }
 
 .brand-title-wrap {
@@ -2406,7 +2403,7 @@ html.dark .btn-action-dark.btn-refresh-status {
 
 /* Platforms Card Box */
 .platforms-card-box {
-  background: #ffffff;
+  gap:3px;
   border-radius: 0.875rem;
   padding: 0.375rem 0.875rem;
   box-shadow: 0 0.25rem 1.25rem rgba(0, 0, 0, 0.03);
@@ -2714,7 +2711,6 @@ html.dark .badge-logged-in-clean.is-selected-badge {
 
 /* Settings Card Box */
 .settings-card-box {
-  background: #ffffff;
   border-radius: 0.75rem;
   padding: 1rem;
   box-shadow: 0 0.25rem 1.25rem rgba(0, 0, 0, 0.03);

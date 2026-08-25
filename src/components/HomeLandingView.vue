@@ -16,6 +16,7 @@ import {
   Code,
   ShieldCheck
 } from '@lucide/vue';
+import BrandLogo from './BrandLogo.vue';
 
 const emit = defineEmits([
   'enter-editor', 
@@ -121,12 +122,9 @@ function scrollToChannels() {
 
       <!-- Top Navigation Bar (Wandor Visual Style) -->
       <header class="wandor-header-nav">
-        <!-- Brand Wordmark with Light/Dark Adaptive Logo -->
+        <!-- Brand Wordmark with Light/Dark Adaptive Vector Logo -->
         <div class="wandor-brand-box" @click="emit('enter-editor')">
-          <div class="brand-logo-wrapper">
-            <img src="/logo.png" alt="EasyMD Logo" class="brand-logo-img logo-light" />
-            <img src="/logo-dark.png" alt="EasyMD Logo" class="brand-logo-img logo-dark" />
-          </div>
+          <BrandLogo :size="36" />
           <span class="wandor-wordmark">easymd</span>
         </div>
 
@@ -286,10 +284,7 @@ function scrollToChannels() {
     <!-- Minimalist Wandor Footer -->
     <footer class="wandor-footer">
       <div class="footer-brand-side">
-        <div class="footer-logo-wrapper">
-          <img src="/logo.png" alt="EasyMD Logo" class="footer-logo-img logo-light" />
-          <img src="/logo-dark.png" alt="EasyMD Logo" class="footer-logo-img logo-dark" />
-        </div>
+        <BrandLogo :size="24" />
         <span class="footer-wordmark">easymd</span>
         <span class="footer-copyright">© 2026 EasyMD Studio · 让优质内容自由流动</span>
       </div>
@@ -429,8 +424,8 @@ html.dark .wandor-top-gradient-mask {
 
 .brand-logo-wrapper {
   position: relative;
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.5rem;
+  height: 2.5rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -441,9 +436,10 @@ html.dark .wandor-top-gradient-mask {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  border-radius: 0.55rem;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  border-radius: 9px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .wandor-brand-box:hover .brand-logo-img {

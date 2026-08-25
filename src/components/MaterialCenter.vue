@@ -16,7 +16,9 @@ import {
   ListOrdered,
   UserCheck,
   LayoutGrid,
-  Palette
+  Palette,
+  Code,
+  Table
 } from '@lucide/vue';
 import { materialCategories, materials } from '../utils/materialLibrary';
 import { soundEngine } from '../utils/synthAudio';
@@ -34,8 +36,10 @@ const categoryIcons = {
   headings: Heading,
   quotes: Quote,
   callouts: AlertCircle,
-  dividers: Minus,
   lists: ListOrdered,
+  tech_cards: Code,
+  tables: Table,
+  dividers: Minus,
   header_widgets: Sparkles,
   footer_widgets: UserCheck
 };

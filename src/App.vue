@@ -26,6 +26,7 @@ import { defaultMarkdown } from './utils/defaultMarkdown';
 import TemplateCenter from './components/TemplateCenter.vue';
 import MaterialCenter from './components/MaterialCenter.vue';
 import HomeLandingView from './components/HomeLandingView.vue';
+import BrandLogo from './components/BrandLogo.vue';
 import {
   loadDocuments, saveDocuments,
   loadGroups, saveGroups,
@@ -1214,10 +1215,7 @@ watch(customStyles, () => {
       <header class="app-header">
         <div class="header-left">
           <div class="wandor-brand-box" @click="currentView = 'home'" title="返回官方首页">
-            <div class="brand-logo-wrapper">
-              <img src="/logo.png" alt="EasyMD Logo" class="brand-logo-img logo-light" />
-              <img src="/logo-dark.png" alt="EasyMD Logo" class="brand-logo-img logo-dark" />
-            </div>
+            <BrandLogo :size="32" />
             <span class="wandor-wordmark">easymd</span>
             <span class="wandor-pro-badge">PRO</span>
           </div>
@@ -1652,7 +1650,7 @@ html.dark .app-container.is-standalone-home {
 }
 
 .app-header {
-  height: 4rem;
+  height: 3.875rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1673,7 +1671,7 @@ html.dark .app-container.is-standalone-home {
 .wandor-brand-box {
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.625rem;
   cursor: pointer;
   user-select: none;
   padding: 4px 6px;
@@ -1682,13 +1680,13 @@ html.dark .app-container.is-standalone-home {
 }
 
 .wandor-brand-box:hover {
-  opacity: 0.8;
+  opacity: 0.82;
 }
 
 .brand-logo-wrapper {
   position: relative;
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1699,9 +1697,10 @@ html.dark .app-container.is-standalone-home {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  border-radius: 7px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  border-radius: 8px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .wandor-brand-box:hover .brand-logo-img {
@@ -1724,7 +1723,7 @@ html.dark .logo-dark {
 
 .wandor-wordmark {
   font-family: 'Special Elite', serif;
-  font-size: 1.45rem;
+  font-size: 1.5rem;
   font-weight: 700;
   color: var(--wandor-dark, #0a0a0a);
   letter-spacing: -0.04em;
@@ -2576,27 +2575,6 @@ html.dark .popout-item.is-active {
   height: calc(100% - 42px);
   width: 100%;
   overflow: hidden;
-}
-
-/* Ambient glow backdrop for the floating workspace cards */
-.workspace-grid::before,
-.workspace-grid::after {
-  content: '';
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(70px);
-  pointer-events: none;
-  z-index: 0;
-}
-.workspace-grid::before {
-  width: 340px; height: 340px;
-  top: -120px; right: 12%;
-  background: radial-gradient(circle, rgba(39,117,182,0.16), transparent 70%);
-}
-.workspace-grid::after {
-  width: 300px; height: 300px;
-  bottom: -110px; left: 8%;
-  background: radial-gradient(circle, rgba(39,117,182,0.10), transparent 70%);
 }
 
 .workspace-column {
