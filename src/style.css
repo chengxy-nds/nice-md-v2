@@ -42,18 +42,17 @@
 
 :root,
 html[data-color-mode="light"] {
-  /* Surface / Container Tokens */
-  --bg-app: #FAFAF8;
-  /* Warm White background */
+  /* Surface / Container Tokens (Wandor Warm Palette) */
+  --bg-app: #FDFBF7;
   --bg-card: #FFFFFF;
   --bg-header: #FFFFFF;
   --bg-sidebar: #FFFFFF;
   --bg-toolbar: #FFFFFF;
-  --bg-editor: #FAFAF8;
+  --bg-editor: #FFFFFF;
   --bg-preview: #FFFFFF;
   --bg-popover: #FFFFFF;
   --bg-capsule: #FFFFFF;
-  --bg-capsule-btn-hover: #F1F5F9;
+  --bg-capsule-btn-hover: #F6F4F0;
 
   /* Typography Tokens */
   --text-main: #2D3139;

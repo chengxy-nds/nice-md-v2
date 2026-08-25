@@ -133,16 +133,15 @@ html.dark .icon-btn:hover {
 }
 
 .icon-btn.is-active {
-  color: var(--accent-color, #4f46e5);
-  background: rgba(99, 102, 241, 0.08);
-  border-radius: 8px;
+  color: var(--wandor-dark, #0a0a0a);
+  background: rgba(0, 0, 0, 0.07);
+  border-radius: 9px;
   box-shadow: none;
 }
 
 html.dark .icon-btn.is-active {
-  color: var(--accent-color, #818cf8);
-  background: rgba(99, 102, 241, 0.16);
-  box-shadow: none;
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.14);
 }
 
 .icon-btn-subtle {

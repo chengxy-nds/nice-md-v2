@@ -1,8 +1,8 @@
-export const defaultMarkdown = `# NiceMD 全语法 Markdown 排版全集模板
+export const defaultMarkdown = `# EasyMD 全语法 Markdown 排版全集模板
 
-欢迎使用 **NiceMD** —— 专为微信公众号、知乎、掘金、CSDN 等平台打造的极简 Markdown 微信排版工具。
+欢迎使用 **EasyMD** —— 专为微信公众号、知乎、掘金、CSDN 等平台打造的极简 Markdown 微信排版工具。
 
-本篇文档汇总了 **NiceMD 支持的所有 Markdown 语法与排版元素**。你可以用它来测试各大主题的渲染效果，也可以作为日常创作的参考指南！
+本篇文档汇总了 **EasyMD 支持的所有 Markdown 语法与排版元素**。你可以用它来测试各大主题的渲染效果，也可以作为日常创作的参考指南！
 
 ---
 
@@ -140,43 +140,22 @@ sequenceDiagram
     Actor 用户
     Participant 编辑器
     Participant 后端API
-    用户->>编辑器: 点击一键分发
-    编辑器->>后端API: 发送文章 HTML & 凭证
-    后端API-->>编辑器: 返回同步成功结果
-    编辑器-->>用户: 播放解压礼花动画
-\`\`\`
-
-### 3. 饼图 (Pie Chart)
-\`\`\`mermaid
-pie title 常见文章分发渠道占比
-    "微信公众号" : 45
-    "知乎专栏" : 25
-    "掘金 / CSDN" : 20
-    "个人博客" : 10
+    A[撰写 Markdown] --> B[EasyMD 实时渲染]
+    B --> C{选择排版主题}
+    C -->|经典山海| D[商务深度长文]
+    C -->|Typora Vue| E[清新技术博客]
+    C -->|暖沙| F[生活随笔专栏]
+    D --> G[一键分发至全网平台]
+    E --> G
+    F --> G
 \`\`\`
 
 ---
 
-## 八、 LaTeX 数学公式 (LaTeX Math)
+## 九、 表格样式 (Tables)
 
-### 1. 行内数学公式
-例如著名的质能方程 $E = mc^2$，欧拉恒等式 $e^{i\\pi} + 1 = 0$，以及勾股定理 $a^2 + b^2 = c^2$。
-
-### 2. 块级数学公式
-$$
-\\sum_{i=1}^{n} i = \\frac{n(n+1)}{2}
-$$
-
-$$
-f(x) = \\int_{-\\infty}^{\\infty} \\hat{f}(\\xi)\\,e^{2\\pi i \\xi x}\\,d\\xi
-$$
-
----
-
-## 九、 多对齐方式表格 (Tables)
-
-| 语法名称 | 源码写法示例 | 渲染效果 | 适用排版场景 |
-| :--- | :---: | :---: | ---: |
+| 语法类型 | Markdown 格式 | 渲染效果 | 适用场景 |
+| :--- | :--- | :--- | :--- |
 | **标题 H1~H6** | \`# 标题名称\` | 各种级别标题 | 章节划分 |
 | **粗体** | \`**文本**\` | **粗体** | 重点强调 |
 | **删除线** | \`~~文本~~\` | ~~删除线~~ | 作废/改动标注 |
@@ -188,11 +167,11 @@ $$
 ## 十、 链接与多媒体 (Links & Images)
 
 ### 1. 链接说明
-* 外部链接（分发时自动降级为文本脚注，符合微信规范）：[NiceMD 官方网站](https://github.com)
+* 外部链接（分发时自动降级为文本脚注，符合微信规范）：[EasyMD 官方网站](https://github.com)
 * 微信内部文章链接（分发时保留超链接）：https://mp.weixin.qq.com/s/sample
 
 ### 2. 图片排版与阴影样式
-![NiceMD 效果展示图](/images/demo-banner.png)
+![EasyMD 效果展示图](/images/demo-banner.png)
 
 ---
 
@@ -200,7 +179,7 @@ $$
 
 <details>
   <summary>🔍 点击展开查看折叠的高阶技术说明</summary>
-  <p>NiceMD 支持原生的 HTML 混排语法，您可以直接在 Markdown 中嵌入 kbd 标签、自定义 HTML 容器以及内联 Style 样式！</p>
+  <p>EasyMD 支持原生的 HTML 混排语法，您可以直接在 Markdown 中嵌入 kbd 标签、自定义 HTML 容器以及内联 Style 样式！</p>
 </details>
 
 ---

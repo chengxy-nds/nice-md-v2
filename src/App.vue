@@ -1213,12 +1213,13 @@ watch(customStyles, () => {
       <!-- Header spanning top full width -->
       <header class="app-header">
         <div class="header-left">
-          <div class="brand-logo" @click="currentView = 'home'" style="cursor: pointer;" title="返回官方首页">
-            <div class="logo-icon-box">
-              <Sparkles size="15" class="brand-icon" />
+          <div class="wandor-brand-box" @click="currentView = 'home'" title="返回官方首页">
+            <div class="brand-logo-wrapper">
+              <img src="/logo.png" alt="EasyMD Logo" class="brand-logo-img logo-light" />
+              <img src="/logo-dark.png" alt="EasyMD Logo" class="brand-logo-img logo-dark" />
             </div>
-            <span class="brand-name">NiceMD</span>
-            <span class="brand-pro-tag">Pro</span>
+            <span class="wandor-wordmark">easymd</span>
+            <span class="wandor-pro-badge">PRO</span>
           </div>
           <button class="btn-menu-toggle" @click="toggleMobileSidebar" title="文档列表">
             <Menu size="18" />
@@ -1669,41 +1670,86 @@ html.dark .app-container.is-standalone-home {
   gap: 12px;
 }
 
-.brand-logo {
+.wandor-brand-box {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 0.55rem;
+  cursor: pointer;
   user-select: none;
+  padding: 4px 6px;
+  border-radius: 8px;
+  transition: opacity 0.18s ease;
 }
 
-.logo-icon-box {
-  width: 26px;
-  height: 26px;
-  border-radius: 7px;
-  background: var(--accent-bg);
-  display: flex;
+.wandor-brand-box:hover {
+  opacity: 0.8;
+}
+
+.brand-logo-wrapper {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  color: var(--accent-color);
+  flex-shrink: 0;
 }
 
-.brand-name {
-  font-family: 'Outfit', sans-serif;
+.brand-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 7px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+
+.wandor-brand-box:hover .brand-logo-img {
+  transform: scale(1.08) rotate(-2deg);
+}
+
+.logo-light {
+  display: block;
+}
+.logo-dark {
+  display: none;
+}
+
+html.dark .logo-light {
+  display: none;
+}
+html.dark .logo-dark {
+  display: block;
+}
+
+.wandor-wordmark {
+  font-family: 'Special Elite', serif;
+  font-size: 1.45rem;
   font-weight: 700;
-  font-size: 16px;
-  color: var(--text-main);
-  letter-spacing: -0.3px;
+  color: var(--wandor-dark, #0a0a0a);
+  letter-spacing: -0.04em;
+  line-height: 1;
 }
 
-.brand-pro-tag {
-  font-size: 11px;
-  font-weight: 600;
-  background: var(--accent-bg);
-  color: var(--accent-color);
-  border: 1px solid var(--border-color);
-  padding: 2px 7px;
-  border-radius: 6px;
+html.dark .wandor-wordmark {
+  color: #ffffff;
+}
+
+.wandor-pro-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  background: var(--wandor-dark, #0a0a0a);
+  color: #ffffff;
+  padding: 1.5px 5.5px;
+  border-radius: 9999px;
   line-height: 1;
+  letter-spacing: 0.04em;
+  margin-left: 2px;
+}
+
+html.dark .wandor-pro-badge {
+  background: #ffffff;
+  color: #0a0a0a;
 }
 
 /* Center Floating Capsule Toolbar */
@@ -1721,12 +1767,13 @@ html.dark .app-container.is-standalone-home {
   align-items: center;
   gap: 2px;
   background: var(--bg-capsule);
+  border: 1px solid var(--border-color);
   border-radius: 9999px;
-  padding: 6px;
-  box-shadow: var(--shadow-capsule);
+  padding: 4px 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
   position: relative;
   user-select: none;
-  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  transition: all 0.3s ease;
 }
 
 .capsule-btn {
@@ -1797,28 +1844,34 @@ html.dark .app-container.is-standalone-home {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 18px;
+  padding: 6px 16px;
   border: none;
   border-radius: 9999px;
-  background: linear-gradient(135deg, #ff6b4a 0%, #ff4b2b 100%);
+  background: var(--wandor-dark, #0a0a0a);
   color: #ffffff;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 3px 10px rgba(255, 94, 54, 0.28);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
   white-space: nowrap;
 }
 
 .btn-header-publish:hover {
   transform: translateY(-1px);
-  box-shadow: 0 5px 15px rgba(255, 94, 54, 0.38);
-  filter: brightness(1.05);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  filter: brightness(1.1);
 }
 
 .btn-header-publish:active {
   transform: translateY(0);
+}
+
+html.dark .btn-header-publish {
+  background: #ffffff;
+  color: #0a0a0a;
+  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.08);
 }
 
 .publish-send-icon {

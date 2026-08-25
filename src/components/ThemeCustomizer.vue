@@ -233,7 +233,7 @@ function emitUpdate() {
 function generateCssFromStyles(styles) {
   const S = styles || {};
   let css = `/* ============================================================ */\n`;
-  css += `/* NiceMD 文章全量 Markdown 模版 CSS 规则 (标准 CSS 语法)          */\n`;
+  css += `/* EasyMD 文章全量 Markdown 模版 CSS 规则 (标准 CSS 语法)          */\n`;
   css += `/* 支持 #nice、xiaofu 或 .markdown-body 等全局选择器            */\n`;
   css += `/* ============================================================ */\n\n`;
 

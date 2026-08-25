@@ -829,7 +829,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     if (parent && !parent.classList.contains('table-container')) {
       const container = doc.createElement('section');
       container.className = 'table-container';
-      container.setAttribute('data-tool', 'NiceMD编辑器');
+      container.setAttribute('data-tool', 'EasyMD编辑器');
       container.setAttribute('style', cleanCss('margin: 16px 0; padding: 0; overflow-x: auto; display: block;'));
       parent.replaceChild(container, table);
       container.appendChild(table);
@@ -1097,7 +1097,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
   }
 
   root.setAttribute('id', 'nice');
-  root.setAttribute('data-tool', 'NiceMD编辑器');
+  root.setAttribute('data-tool', 'EasyMD编辑器');
   root.setAttribute('data-website', 'https://github.com/chengxy-nds/nice-md');
 
   // Resolve all CSS variables (var(--...)) into explicit color values so WeChat MP UEditor never strips styles
@@ -1783,7 +1783,7 @@ export function previewDomToWechatHtml(previewEl, primaryColor) {
     'padding: 10px 0px;'
   ));
   wrapper.setAttribute('id', 'nice');
-  wrapper.setAttribute('data-tool', 'NiceMD编辑器');
+  wrapper.setAttribute('data-tool', 'EasyMD编辑器');
   wrapper.setAttribute('data-website', 'https://github.com/chengxy-nds/nice-md');
 
   while (clone.firstChild) wrapper.appendChild(clone.firstChild);

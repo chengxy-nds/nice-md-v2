@@ -11,7 +11,7 @@ function createWindow() {
     height: 850,
     minWidth: 960,
     minHeight: 600,
-    title: 'NiceMD',
+    title: 'EasyMD',
     backgroundColor: '#ffffff',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),

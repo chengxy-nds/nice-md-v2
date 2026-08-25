@@ -247,6 +247,12 @@ function onGroupDragStart(e, groupId) {
 
 <template>
   <aside class="sidebar-container select-none">
+    <!-- Wandor Style Primary Action: Black Pill New Document Button -->
+    <button class="btn-create-doc-primary" @click="handleCreateDoc(null)" title="新建文档">
+      <Plus size="15" stroke-width="2.5" />
+      <span>新建文档</span>
+    </button>
+
     <!-- Section Header: 我的文档 -->
     <div class="section-title-row">
       <span class="section-title">我的文档</span>
@@ -448,13 +454,51 @@ function onGroupDragStart(e, groupId) {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--bg-sidebar);
-  border-right: 1px solid var(--border-color);
+  background: var(--bg-sidebar, #ffffff);
+  border-right: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
   box-shadow: var(--shadow-sidebar-left);
-  padding: 20px 16px 20px;
+  padding: 16px 14px;
   overflow: hidden;
   z-index: 4;
   transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.btn-create-doc-primary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  height: 38px;
+  border: none;
+  border-radius: 9999px;
+  background: var(--wandor-dark, #0a0a0a);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  margin-bottom: 12px;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.btn-create-doc-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
+  filter: brightness(1.1);
+}
+
+.btn-create-doc-primary:active {
+  transform: translateY(0);
+}
+
+html.dark .btn-create-doc-primary {
+  background: #ffffff;
+  color: #0a0a0a;
+  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.08);
 }
 
 /* ── 1. Action Buttons ── */

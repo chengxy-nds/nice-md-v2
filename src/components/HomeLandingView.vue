@@ -121,10 +121,13 @@ function scrollToChannels() {
 
       <!-- Top Navigation Bar (Wandor Visual Style) -->
       <header class="wandor-header-nav">
-        <!-- Brand Wordmark -->
+        <!-- Brand Wordmark with Light/Dark Adaptive Logo -->
         <div class="wandor-brand-box" @click="emit('enter-editor')">
-          <span class="wandor-brand-dot"></span>
-          <span class="wandor-wordmark">nicemd</span>
+          <div class="brand-logo-wrapper">
+            <img src="/logo.png" alt="EasyMD Logo" class="brand-logo-img logo-light" />
+            <img src="/logo-dark.png" alt="EasyMD Logo" class="brand-logo-img logo-dark" />
+          </div>
+          <span class="wandor-wordmark">easymd</span>
         </div>
 
         <!-- Center Nav Links (Tailored to NiceMD) -->
@@ -283,9 +286,12 @@ function scrollToChannels() {
     <!-- Minimalist Wandor Footer -->
     <footer class="wandor-footer">
       <div class="footer-brand-side">
-        <span class="footer-dot"></span>
-        <span class="footer-wordmark">nicemd</span>
-        <span class="footer-copyright">© 2026 NiceMD Studio · 让优质内容自由流动</span>
+        <div class="footer-logo-wrapper">
+          <img src="/logo.png" alt="EasyMD Logo" class="footer-logo-img logo-light" />
+          <img src="/logo-dark.png" alt="EasyMD Logo" class="footer-logo-img logo-dark" />
+        </div>
+        <span class="footer-wordmark">easymd</span>
+        <span class="footer-copyright">© 2026 EasyMD Studio · 让优质内容自由流动</span>
       </div>
       <div class="footer-links-side">
         <button class="footer-link" @click="emit('enter-editor')">排版工作台</button>
@@ -416,19 +422,46 @@ html.dark .wandor-top-gradient-mask {
 .wandor-brand-box {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: 0.75rem;
   cursor: pointer;
+  user-select: none;
 }
 
-.wandor-brand-dot {
-  width: 0.875rem;
-  height: 0.875rem;
-  border-radius: 50%;
-  background-color: #0a0a0a;
+.brand-logo-wrapper {
+  position: relative;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-html.dark .wandor-brand-dot {
-  background-color: #ffffff;
+.brand-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 0.55rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+}
+
+.wandor-brand-box:hover .brand-logo-img {
+  transform: scale(1.08) rotate(-2deg);
+}
+
+.logo-light {
+  display: block;
+}
+.logo-dark {
+  display: none;
+}
+
+html.dark .logo-light {
+  display: none;
+}
+html.dark .logo-dark {
+  display: block;
 }
 
 .wandor-wordmark {
@@ -1063,18 +1096,24 @@ html.dark .wandor-footer {
 .footer-brand-side {
   display: flex;
   align-items: center;
-  gap: 0.875rem;
+  gap: 0.75rem;
 }
 
-.footer-dot {
-  width: 0.625rem;
-  height: 0.625rem;
-  border-radius: 50%;
-  background-color: #0a0a0a;
+.footer-logo-wrapper {
+  position: relative;
+  width: 1.625rem;
+  height: 1.625rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-html.dark .footer-dot {
-  background-color: #ffffff;
+.footer-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 0.375rem;
 }
 
 .footer-wordmark {

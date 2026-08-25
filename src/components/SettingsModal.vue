@@ -827,7 +827,7 @@ const supportsSilent = (id) => {
                 <span class="checkbox-label-text">开启后台 API 静默分发（无需弹出浏览器页签）</span>
               </label>
               <small class="help-text">
-                开启后，NiceMD 将直接通过后台 API 默默创建草稿并返回编辑链接，完全不在浏览器中打开任何新窗口。如果关闭，则使用原来的方式：在新标签页拉起页面并模拟手动填装。
+                开启后，EasyMD 将直接通过后台 API 默默创建草稿并返回编辑链接，完全不在浏览器中打开任何新窗口。如果关闭，则使用原来的方式：在新标签页拉起页面并模拟手动填装。
               </small>
             </div>
           </div>

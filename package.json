@@ -1,9 +1,9 @@
 {
-  "name": "nice-md",
+  "name": "easymd",
   "private": true,
   "version": "1.0.0",
-  "description": "NiceMD Markdown Editor",
-  "author": "NiceMD",
+  "description": "EasyMD Markdown Editor",
+  "author": "EasyMD",
   "type": "module",
   "main": "electron/main.cjs",
   "scripts": {
@@ -51,8 +51,8 @@
     "wait-on": "^9.1.0"
   },
   "build": {
-    "appId": "com.nicemd.app",
-    "productName": "NiceMD",
+    "appId": "com.easymd.app",
+    "productName": "EasyMD",
     "npmRebuild": false,
     "nodeGypRebuild": false,
     "asar": true,
