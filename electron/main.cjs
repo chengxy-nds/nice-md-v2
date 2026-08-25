@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, ipcMain } = require('electron');
+const { app, BrowserWindow, shell, ipcMain, session } = require('electron');
 const path = require('path');
 const { setupWebRequestRules, openLoginWindow, checkAllLogins } = require('./desktop-bridge.cjs');
 
@@ -21,23 +21,9 @@ function createWindow() {
     },
   });
 
-  // Intercept external links: if it's a known creator/login site, open in in-app window, else external browser
+  // Open external links (e.g. user profile, published draft view, help links) in user's default system browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
     if (url.startsWith('http:') || url.startsWith('https:')) {
-      const isKnownPlatform = [
-        'zhihu.com', 'juejin.cn', 'csdn.net', 'cnblogs.com', 'toutiao.com',
-        'segmentfault.com', 'weibo.com', 'bilibili.com', 'baidu.com',
-        'oschina.net', 'douban.com', '51cto.com', 'xueqiu.com', 'imooc.com',
-        'woshipm.com', 'jianshu.com', 'eastmoney.com', 'sohu.com', 'yuque.com',
-        'infoq.cn', 'learnku.com', 'cloud.tencent.com', 'nowcoder.com',
-        'aliyun.com', 'leetcode.cn', 'qq.com'
-      ].some(domain => url.includes(domain));
-
-      if (isKnownPlatform) {
-        openLoginWindow(mainWindow, { url });
-        return { action: 'deny' };
-      }
-
       shell.openExternal(url);
       return { action: 'deny' };
     }
@@ -72,6 +58,33 @@ app.whenReady().then(() => {
       return { success: true, html, finalUrl: res.url };
     } catch (e) {
       return { success: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('nicemd-get-cookie', async (event, { url, name, domain }) => {
+    try {
+      if (url) {
+        const urlFilter = { url };
+        if (name) urlFilter.name = name;
+        const cookies = await session.defaultSession.cookies.get(urlFilter);
+        if (cookies && cookies.length > 0) {
+          return cookies[0].value;
+        }
+      }
+
+      const filter = {};
+      if (domain) filter.domain = domain;
+      if (name) filter.name = name;
+      if (domain || name) {
+        const cookies = await session.defaultSession.cookies.get(filter);
+        if (cookies && cookies.length > 0) {
+          return cookies[0].value;
+        }
+      }
+
+      return null;
+    } catch (e) {
+      return null;
     }
   });
 

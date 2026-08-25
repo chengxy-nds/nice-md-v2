@@ -1,15 +1,27 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
+// Define global cookie helper for adapters inside preload context
+globalThis.__NICEMD_GET_COOKIE__ = async (url, name, domain) => {
+  try {
+    return await ipcRenderer.invoke('nicemd-get-cookie', { url, name, domain });
+  } catch (e) {
+    return null;
+  }
+};
+
+const { publishAdapters } = require('./publish-adapters.cjs');
+
 // Expose Electron API to Renderer
 contextBridge.exposeInMainWorld('electronAPI', {
   isElectron: true,
   platform: process.platform,
   checkLogins: (platforms) => ipcRenderer.invoke('nicemd-check-logins', platforms),
   openLoginWindow: (url, platformId) => ipcRenderer.invoke('nicemd-open-login-window', { url, platformId }),
-  fetchUrl: (url) => ipcRenderer.invoke('nicemd-fetch-url', url)
+  fetchUrl: (url) => ipcRenderer.invoke('nicemd-fetch-url', url),
+  getCookie: (url, name, domain) => ipcRenderer.invoke('nicemd-get-cookie', { url, name, domain })
 });
 
-// Automatic Bridge: Bridge window.postMessage with Electron IPC
+// Automatic Bridge: Bridge window.postMessage with Electron IPC & Publish Adapters
 window.addEventListener('message', async (event) => {
   const message = event.data;
   if (!message || typeof message !== 'object') return;
@@ -37,7 +49,50 @@ window.addEventListener('message', async (event) => {
     return;
   }
 
-  // 4. FETCH URL (CORS bypass)
+  // 4. PUBLISH ARTICLE (Execute Platform Adapters)
+  if (message.type === 'NICEMD_PUBLISH') {
+    const { platform, title, markdown, html, cover, isScheduled, scheduledTime, isOriginal } = message.payload || {};
+    try {
+      const adapter = publishAdapters ? (publishAdapters[platform] || publishAdapters[platform.toLowerCase()]) : null;
+      if (adapter && typeof adapter.publish === 'function') {
+        const result = await adapter.publish({
+          title,
+          markdown,
+          html,
+          cover,
+          isScheduled,
+          scheduledTime,
+          isOriginal
+        });
+
+        window.postMessage({
+          type: 'NICEMD_PUBLISH_RESPONSE',
+          success: true,
+          platform,
+          postUrl: result ? (result.postUrl || result.draftUrl) : null,
+          postId: result ? result.postId : null
+        }, '*');
+      } else {
+        window.postMessage({
+          type: 'NICEMD_PUBLISH_RESPONSE',
+          success: false,
+          platform,
+          error: `未找到 ${platform} 平台的草稿发布适配器`
+        }, '*');
+      }
+    } catch (err) {
+      console.error(`[NiceMD Desktop Publish Error - ${platform}]`, err);
+      window.postMessage({
+        type: 'NICEMD_PUBLISH_RESPONSE',
+        success: false,
+        platform,
+        error: err.message || '草稿同步失败'
+      }, '*');
+    }
+    return;
+  }
+
+  // 5. FETCH URL (CORS bypass)
   if (message.type === 'NICEMD_FETCH_URL') {
     try {
       const res = await ipcRenderer.invoke('nicemd-fetch-url', message.url);

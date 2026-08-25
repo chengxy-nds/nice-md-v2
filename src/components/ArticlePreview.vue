@@ -573,6 +573,21 @@ function handlePreviewElementClick(e) {
 
           <!-- Single persistent content element for v-html to prevent Vue VNode unmount errors -->
           <div
+            v-if="wechatStyledHtml"
+            class="markdown-body wechat-body"
+            :style="codeThemeStyles"
+            v-html="wechatStyledHtml"
+          ></div>
+          <div
+            v-else-if="props.isWeChatMode"
+            class="phone-empty-placeholder"
+          >
+            <div class="phone-empty-icon">📝</div>
+            <div class="phone-empty-title">暂无文章内容</div>
+            <div class="phone-empty-sub">在左侧输入 Markdown 内容即可在此实时预览微信手机排版效果</div>
+          </div>
+          <div
+            v-else
             class="markdown-body wechat-body"
             :style="codeThemeStyles"
             v-html="wechatStyledHtml"
@@ -882,7 +897,7 @@ function handlePreviewElementClick(e) {
 /* WeChat Simulated Phone Frame */
 .preview-body.is-wechat-wrapper {
   background: rgba(0, 0, 0, 0.04);
-  padding: 1.875rem 1.25rem;
+  padding: 24px 16px;
   display: flex;
   justify-content: center;
   align-items: flex-start;
@@ -890,18 +905,32 @@ function handlePreviewElementClick(e) {
   min-height: 100%;
 }
 
+:global(html.dark) .preview-body.is-wechat-wrapper,
+:global(html[data-color-mode="dark"]) .preview-body.is-wechat-wrapper {
+  background: rgba(0, 0, 0, 0.25);
+}
+
 .preview-content-frame.wechat-phone-frame {
   display: flex;
   flex-direction: column;
-  width: 23.5rem;
+  width: 375px;
+  height: 780px;
+  min-height: 780px;
   background: #ffffff;
   border-radius: 2.75rem;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.1);
   border: 4px solid #1e293b;
   overflow: hidden;
   position: relative;
   flex-shrink: 0;
-  margin: 0 auto;
+  margin: 12px auto 24px;
+  box-sizing: border-box;
+}
+
+:global(html.dark) .preview-content-frame.wechat-phone-frame,
+:global(html[data-color-mode="dark"]) .preview-content-frame.wechat-phone-frame {
+  border-color: #334155;
+  box-shadow: 0 0 60px rgba(0, 0, 0, 0.5);
 }
 
 .standard-screen-scroll {
@@ -910,13 +939,13 @@ function handlePreviewElementClick(e) {
 
 .phone-dynamic-island {
   position: absolute;
-  top: 0.5rem;
+  top: 8px;
   left: 50%;
   transform: translateX(-50%);
-  width: 5rem;
-  height: 1.125rem;
+  width: 88px;
+  height: 20px;
   background: #000000;
-  border-radius: 1rem;
+  border-radius: 10px;
   z-index: 20;
 }
 
@@ -924,31 +953,70 @@ function handlePreviewElementClick(e) {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.5rem 1.5rem 0.25rem;
-  font-size: 0.75rem;
+  padding: 8px 20px 4px;
+  font-size: 12px;
   font-weight: 600;
   color: #000000;
   background: #ffffff;
+  flex-shrink: 0;
+  user-select: none;
 }
 
 .phone-screen-scroll {
-  padding: 1rem 1rem 2rem;
-  max-height: 40rem;
+  flex: 1;
+  min-height: 0;
+  padding: 0.75rem 1rem 1.5rem;
   overflow-y: auto;
   scrollbar-width: thin;
+  display: flex;
+  flex-direction: column;
 }
 
 .phone-article-header {
-  margin-bottom: 0.5rem !important;
+  margin-bottom: 0.75rem !important;
   border-bottom: 1px solid #f1f5f9 !important;
   padding-bottom: 0.5rem !important;
   background: transparent !important;
   border-radius: 0 !important;
   box-shadow: none !important;
+  flex-shrink: 0;
 }
 
 .wechat-body {
   width: 100%;
+  flex: 1;
+}
+
+.phone-empty-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 240px;
+  padding: 32px 16px;
+  text-align: center;
+  color: #94a3b8;
+  gap: 8px;
+  user-select: none;
+}
+
+.phone-empty-icon {
+  font-size: 32px;
+  margin-bottom: 4px;
+}
+
+.phone-empty-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.phone-empty-sub {
+  font-size: 12px;
+  line-height: 1.6;
+  max-width: 240px;
+  color: #94a3b8;
 }
 
 .wechat-phone-frame .markdown-body {
@@ -1003,19 +1071,21 @@ function handlePreviewElementClick(e) {
   align-items: center;
   font-size: 0.75rem;
   color: #94a3b8;
+  flex-shrink: 0;
 }
 
 .phone-home-indicator {
-  height: 1rem;
+  height: 1.25rem;
   background: #ffffff;
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .phone-home-indicator::after {
   content: '';
-  width: 8rem;
+  width: 7.5rem;
   height: 0.25rem;
   background: #cbd5e1;
   border-radius: 0.125rem;
