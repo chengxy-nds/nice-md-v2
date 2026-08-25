@@ -70,11 +70,15 @@ function hasPrefixOption(id) {
   <Teleport to="body">
     <div v-if="visible" class="material-popup-mask" @click.self="emit('close')">
       <div class="material-popup-modal">
+        <!-- Ambient subtle space light -->
+        <div class="popup-glow popup-glow-a"></div>
+        <div class="popup-glow popup-glow-b"></div>
+
         <!-- Header -->
         <div class="popup-header">
           <div class="header-title-group">
             <div class="header-icon">
-              <Sparkles class="w-4 h-4 text-indigo-500" />
+              <Sparkles size="14" />
             </div>
             <div>
               <div class="popup-title">选择 {{ titleText }} 视觉样式</div>
@@ -97,11 +101,11 @@ function hasPrefixOption(id) {
 
             <button class="open-detail-btn" @click="emit('open-customizer', props.elementKey)" title="在侧边栏打开详细参数调节">
               <span>自定义微调</span>
-              <ExternalLink class="w-3 h-3 ml-1 inline opacity-70" />
+              <ExternalLink size="12" />
             </button>
 
             <button class="modal-close-btn" @click="emit('close')" title="关闭">
-              <X class="w-4 h-4" />
+              <X size="15" />
             </button>
           </div>
         </div>
@@ -119,7 +123,8 @@ function hasPrefixOption(id) {
             <div class="card-meta-bar">
               <span class="card-title">{{ item.name }}</span>
               <span v-if="(props.currentMaterialId || 'none') === item.id" class="active-badge">
-                <Check class="w-3 h-3 inline mr-0.5" /> 已选用
+                <Check size="12" />
+                <span>已选用</span>
               </span>
               <span v-else class="card-tag">{{ item.tag }}</span>
             </div>
@@ -136,21 +141,18 @@ function hasPrefixOption(id) {
 <style scoped>
 .material-popup-mask {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(15, 23, 42, 0.55);
-  backdrop-filter: blur(5px);
-  -webkit-backdrop-filter: blur(5px);
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   z-index: 999999;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 20px;
-  animation: modalFadeIn 0.16s ease-out;
+  padding: 1.25rem;
+  animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes modalFadeIn {
@@ -159,211 +161,336 @@ function hasPrefixOption(id) {
 }
 
 .material-popup-modal {
+  position: relative;
   width: 820px;
   max-width: 94vw;
   max-height: 84vh;
-  background: var(--bg-preview, #ffffff);
-  border-radius: 12px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.08);
+  background: #f4f5f7;
+  border-radius: 1rem;
+  box-shadow: 
+    0 1.5rem 3.5rem -0.75rem rgba(0, 0, 0, 0.25),
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset;
   display: flex;
   flex-direction: column;
   overflow: hidden;
 }
 
+/* Ambient glow blobs */
+.popup-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(3.5rem);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.popup-glow-a {
+  width: 16rem;
+  height: 16rem;
+  top: -4rem;
+  right: 10%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(243, 244, 246, 0) 70%);
+}
+
+.popup-glow-b {
+  width: 18rem;
+  height: 18rem;
+  bottom: -4rem;
+  left: 10%;
+  background: radial-gradient(circle, rgba(226, 232, 240, 0.55) 0%, rgba(243, 244, 246, 0) 70%);
+}
+
 .popup-header {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--border-color, #e2e8f0);
-  background: var(--bg-hover, #f8fafc);
-  gap: 12px;
+  padding: 0.875rem 1.25rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  gap: 0.75rem;
   flex-shrink: 0;
 }
 
 .header-title-group {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.625rem;
 }
 
 .header-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  background: #eef2ff;
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 0.4375rem;
+  background: var(--wandor-dark, #0a0a0a);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
 }
 
 .popup-title {
-  font-size: 15px;
+  font-size: 0.9375rem;
   font-weight: 700;
-  color: var(--text-primary, #0f172a);
+  color: var(--text-main, #0f172a);
   line-height: 1.2;
+  letter-spacing: -0.0125rem;
 }
 
 .popup-subtitle {
-  font-size: 11.5px;
+  font-size: 0.6875rem;
   color: var(--text-muted, #64748b);
-  margin-top: 2px;
+  margin-top: 0.125rem;
 }
 
 .header-right-tools {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 0.5rem;
 }
 
 .inline-prefix-box {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 0.375rem;
   background: #ffffff;
-  border: 1px solid #cbd5e1;
-  padding: 3px 8px;
-  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  padding: 0.25rem 0.5rem;
+  border-radius: 9999px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .prefix-label {
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   color: #475569;
 }
 
 .prefix-input {
-  width: 70px;
-  height: 22px;
-  padding: 0 4px;
-  font-size: 11.5px;
+  width: 4rem;
+  height: 1.375rem;
+  padding: 0 0.375rem;
+  font-size: 0.6875rem;
   font-weight: 700;
-  border: 1px solid #94a3b8;
-  border-radius: 4px;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.25rem;
   color: #1e293b;
   outline: none;
 }
 
 .prefix-input:focus {
-  border-color: #2563eb;
+  border-color: #3b82f6;
 }
 
 .open-detail-btn {
-  font-size: 11.5px;
+  font-size: 0.75rem;
   font-weight: 600;
-  color: #475569;
+  color: #1e293b;
   background: #ffffff;
-  border: 1px solid #cbd5e1;
-  padding: 5px 10px;
-  border-radius: 6px;
+  border: 1px solid #e2e8f0;
+  padding: 0.375rem 0.75rem;
+  border-radius: 9999px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  transition: all 0.15s ease;
+  gap: 0.3125rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .open-detail-btn:hover {
   background: #f1f5f9;
-  color: #0f172a;
+  color: #000000;
 }
 
 .modal-close-btn {
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  border: none;
-  background: transparent;
-  color: #64748b;
+  width: 1.875rem;
+  height: 1.875rem;
+  border-radius: 50%;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-card, #ffffff);
+  color: var(--text-muted, #64748b);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
 }
 
 .modal-close-btn:hover {
-  background: #e2e8f0;
-  color: #0f172a;
+  background: #f1f5f9;
+  color: #000000;
+  transform: scale(1.06);
 }
 
 .popup-grid-container {
+  position: relative;
+  z-index: 1;
   flex: 1;
   overflow-y: auto;
-  padding: 16px 20px;
+  padding: 1rem 1.25rem;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 14px;
-  background: var(--bg-main, #f8fafc);
+  gap: 0.75rem;
+  background: #f4f5f7;
+}
+
+.popup-grid-container::-webkit-scrollbar {
+  width: 0.25rem;
+}
+
+.popup-grid-container::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.22);
+  border-radius: 0.25rem;
 }
 
 .visual-preview-card {
-  background: var(--bg-preview, #ffffff);
-  border: 1.5px solid var(--border-color, #e2e8f0);
-  border-radius: 10px;
-  padding: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
+  padding: 0.75rem;
   display: flex;
   flex-direction: column;
   cursor: pointer;
-  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .visual-preview-card:hover {
-  border-color: var(--accent-color, #6366f1);
-  box-shadow: 0 6px 16px rgba(99, 102, 241, 0.12);
-  transform: translateY(-1.5px);
+  border-color: #cbd5e1;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
+  transform: translateY(-0.0625rem);
 }
 
 .visual-preview-card.is-active {
-  border-color: var(--accent-color, #6366f1);
-  background: rgba(99, 102, 241, 0.06);
-  box-shadow: 0 0 0 1px var(--accent-color, #6366f1), 0 4px 12px rgba(99, 102, 241, 0.12);
+  border-color: var(--wandor-dark, #0a0a0a);
+  background: #f8fbff;
+  box-shadow: 0 0 0 1px var(--wandor-dark, #0a0a0a), 0 4px 12px rgba(0, 0, 0, 0.06);
 }
 
 .card-meta-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
+  margin-bottom: 0.5rem;
 }
 
 .card-title {
-  font-size: 12.5px;
+  font-size: 0.8125rem;
   font-weight: 700;
-  color: var(--text-primary, #0f172a);
+  color: var(--text-main, #0f172a);
 }
 
 .card-tag {
-  font-size: 10.5px;
+  font-size: 0.625rem;
   font-weight: 600;
   color: #64748b;
   background: #f1f5f9;
-  padding: 2px 6px;
-  border-radius: 4px;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 0.25rem;
 }
 
 .active-badge {
-  font-size: 10.5px;
+  font-size: 0.625rem;
   font-weight: 700;
-  color: #ffffff;
-  background: var(--accent-color, #6366f1);
-  padding: 2px 6px;
-  border-radius: 4px;
+  color: #16a34a;
+  background: #edfdf2;
+  padding: 0.0625rem 0.4375rem;
+  border-radius: 9999px;
   display: inline-flex;
   align-items: center;
+  gap: 0.1875rem;
 }
 
 .card-canvas {
-  min-height: 60px;
+  min-height: 3.75rem;
   background: #ffffff;
-  border: 1px solid var(--border-color, #f1f5f9);
-  border-radius: 8px;
-  padding: 12px;
+  border: 1px solid #f1f5f9;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
   box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+/* ── Dark Mode ── */
+:global(html.dark) .material-popup-modal,
+:global(html[data-color-mode="dark"]) .material-popup-modal {
+  background: var(--bg-card, #1e1e1e);
+  box-shadow: 0 1.5rem 3.5rem -0.75rem rgba(0, 0, 0, 0.6);
+}
+
+:global(html.dark) .popup-header,
+:global(html[data-color-mode="dark"]) .popup-header {
+  background: var(--bg-card, #1e1e1e);
+  border-bottom-color: var(--border-color, #2d2d2d);
+}
+
+:global(html.dark) .header-icon,
+:global(html[data-color-mode="dark"]) .header-icon {
+  background: #ffffff;
+  color: #0a0a0a;
+}
+
+:global(html.dark) .popup-title,
+:global(html[data-color-mode="dark"]) .popup-title {
+  color: var(--text-main, #cccccc);
+}
+
+:global(html.dark) .open-detail-btn,
+:global(html[data-color-mode="dark"]) .open-detail-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
+}
+
+:global(html.dark) .modal-close-btn,
+:global(html[data-color-mode="dark"]) .modal-close-btn {
+  background: var(--bg-toolbar, #2d2d2d);
+  border-color: var(--border-color, #37373d);
+  color: var(--text-muted, #969696);
+}
+
+:global(html.dark) .modal-close-btn:hover,
+:global(html[data-color-mode="dark"]) .modal-close-btn:hover {
+  background: var(--bg-capsule-btn-hover, #37373d);
+  color: #ffffff;
+}
+
+:global(html.dark) .popup-grid-container,
+:global(html[data-color-mode="dark"]) .popup-grid-container {
+  background: var(--bg-app, #18181c);
+}
+
+:global(html.dark) .visual-preview-card,
+:global(html[data-color-mode="dark"]) .visual-preview-card {
+  background: var(--bg-card, #252526);
+  border-color: var(--border-color, #2d2d2d);
+}
+
+:global(html.dark) .visual-preview-card.is-active,
+:global(html[data-color-mode="dark"]) .visual-preview-card.is-active {
+  border-color: #ffffff;
+  box-shadow: 0 0 0 1px #ffffff, 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+:global(html.dark) .card-title,
+:global(html[data-color-mode="dark"]) .card-title {
+  color: var(--text-main, #cccccc);
+}
+
+:global(html.dark) .card-canvas,
+:global(html[data-color-mode="dark"]) .card-canvas {
+  background: var(--bg-card, #1e1e1e);
+  border-color: var(--border-color, #2d2d2d);
 }
 </style>

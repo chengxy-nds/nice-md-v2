@@ -3,7 +3,7 @@ import { ref, computed } from 'vue';
 import {
   Search,
   Check,
-  ChevronLeft,
+  ArrowLeft,
   X,
   Copy,
   Plus,
@@ -19,7 +19,7 @@ import {
   Palette,
   Code,
   Table
-} from '@lucide/vue';
+} from 'lucide-vue-next';
 import { materialCategories, materials } from '../utils/materialLibrary';
 import { soundEngine } from '../utils/synthAudio';
 import confetti from 'canvas-confetti';
@@ -92,15 +92,22 @@ function handleApplyBackground(mat) {
 
 <template>
   <div class="mc-root">
+    <!-- Ambient subtle space light -->
+    <div class="mc-glow mc-glow-a"></div>
+    <div class="mc-glow mc-glow-b"></div>
+
     <!-- Header -->
     <header class="mc-header">
       <div class="mc-header-left">
         <button class="mc-back-btn" @click="emit('back-to-editor')">
-          <ChevronLeft size="15" />
+          <ArrowLeft size="15" />
           <span>返回编辑器</span>
         </button>
         <span class="mc-divider"></span>
         <div class="mc-title-group">
+          <span class="mc-title-badge">
+            <Sparkles size="14" />
+          </span>
           <h1 class="mc-title">素材中心</h1>
           <span class="mc-count">{{ filteredMaterials.length }} 款排版素材</span>
         </div>
@@ -130,7 +137,7 @@ function handleApplyBackground(mat) {
           :class="{ 'is-active': activeCategory === cat.id }"
           @click="activeCategory = cat.id; soundEngine.playClick();"
         >
-          <component :is="categoryIcons[cat.id] || Boxes" size="14" />
+          <component :is="categoryIcons[cat.id] || Boxes" size="13" />
           <span>{{ cat.name }}</span>
         </button>
       </nav>
@@ -142,12 +149,12 @@ function handleApplyBackground(mat) {
           :key="mat.id"
           class="mc-card"
         >
-          <!-- Pure Material Live Render Area (纯粹展示素材样式，无任何多余文字描述与角标) -->
+          <!-- Pure Material Live Render Area -->
           <div class="mc-card-preview">
             <div class="mc-render-paper" v-html="mat.html"></div>
           </div>
 
-          <!-- Elegant Frosted Glass Hover Overlay (鼠标划过时优雅浮现蒙版和操作按钮) -->
+          <!-- Elegant Frosted Glass Hover Overlay -->
           <div class="mc-card-overlay">
             <div class="mc-overlay-actions" @click.stop>
               <!-- Category is backgrounds -->
@@ -157,7 +164,7 @@ function handleApplyBackground(mat) {
                   @click="handleApplyBackground(mat)"
                   title="套用为当前文章整体背景底纹"
                 >
-                  <Palette size="14" />
+                  <Palette size="13" />
                   <span>套用为整体背景</span>
                 </button>
                 <button
@@ -165,8 +172,8 @@ function handleApplyBackground(mat) {
                   @click="handleCopy(mat)"
                   title="复制素材 HTML"
                 >
-                  <Check v-if="copiedId === mat.id" size="14" />
-                  <Copy v-else size="14" />
+                  <Check v-if="copiedId === mat.id" size="13" />
+                  <Copy v-else size="13" />
                   <span>{{ copiedId === mat.id ? '已复制' : '复制' }}</span>
                 </button>
               </template>
@@ -178,7 +185,7 @@ function handleApplyBackground(mat) {
                   @click="handleInsert(mat)"
                   title="插入到当前编辑器"
                 >
-                  <Plus size="14" />
+                  <Plus size="13" />
                   <span>插入编辑器</span>
                 </button>
                 <button
@@ -186,8 +193,8 @@ function handleApplyBackground(mat) {
                   @click="handleCopy(mat)"
                   title="复制素材 HTML"
                 >
-                  <Check v-if="copiedId === mat.id" size="14" />
-                  <Copy v-else size="14" />
+                  <Check v-if="copiedId === mat.id" size="13" />
+                  <Copy v-else size="13" />
                   <span>{{ copiedId === mat.id ? '已复制' : '复制' }}</span>
                 </button>
               </template>
@@ -206,156 +213,228 @@ function handleApplyBackground(mat) {
 
 <style scoped>
 .mc-root {
+  position: relative;
   display: flex;
   flex-direction: column;
   height: 100%;
   width: 100%;
-  background: var(--bg-main, #fcfcfc);
-  color: var(--text-main, #111827);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", "PingFang SC", sans-serif;
+  background: #f4f5f7;
+  color: var(--text-main, #1e293b);
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Segoe UI', Roboto, sans-serif);
   overflow: hidden;
 }
 
-/* Header */
+/* Ambient subtle space light */
+.mc-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(3.75rem);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.mc-glow-a {
+  width: 22rem;
+  height: 22rem;
+  top: -6rem;
+  right: 15%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(243, 244, 246, 0) 70%);
+}
+
+.mc-glow-b {
+  width: 24rem;
+  height: 24rem;
+  bottom: -6rem;
+  left: 10%;
+  background: radial-gradient(circle, rgba(226, 232, 240, 0.55) 0%, rgba(243, 244, 246, 0) 70%);
+}
+
+/* Header (高度 52px，比例紧凑精致) */
 .mc-header {
-  height: 52px;
-  padding: 0 24px;
-  background: var(--bg-editor, #ffffff);
-  border-bottom: 1px solid var(--border-color, #eaebed);
+  position: relative;
+  z-index: 2;
+  height: 3.25rem;
+  padding: 0 1.25rem;
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02);
 }
 
 .mc-header-left {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 0.75rem;
 }
 
 .mc-back-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  padding: 5px 10px;
-  border-radius: 6px;
-  border: 1px solid var(--border-color, #e5e7eb);
-  background: var(--bg-main, #f9fafb);
-  color: var(--text-main, #374151);
-  font-size: 12px;
-  font-weight: 500;
+  gap: 0.375rem;
+  height: 2rem;
+  padding: 0 0.75rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-card, #ffffff);
+  color: var(--text-main, #1e293b);
+  font-size: 0.75rem;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  user-select: none;
 }
 
 .mc-back-btn:hover {
-  background: var(--accent-bg, #eff6ff);
-  color: var(--accent-color, #2563eb);
-  border-color: var(--accent-color, #2563eb);
+  background: #f1f5f9;
+  color: #000000;
+  transform: translateX(-0.0625rem);
 }
 
 .mc-divider {
-  width: 1px;
-  height: 18px;
-  background: var(--border-color, #e5e7eb);
+  width: 0.0625rem;
+  height: 1.125rem;
+  background: var(--border-color, #e2e8f0);
 }
 
 .mc-title-group {
   display: flex;
-  align-items: baseline;
-  gap: 8px;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mc-title-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 0.375rem;
+  color: #ffffff;
+  background: var(--wandor-dark, #0a0a0a);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
 }
 
 .mc-title {
-  font-size: 16px;
+  font-size: 1rem;
   font-weight: 700;
-  color: var(--text-main, #111827);
+  color: var(--text-main, #1e293b);
   margin: 0;
-  letter-spacing: -0.2px;
+  letter-spacing: -0.0125rem;
+  line-height: 1.2;
 }
 
 .mc-count {
-  font-size: 12px;
-  color: var(--text-muted, #6b7280);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #16a34a;
+  background: #edfdf2;
+  padding: 0.0625rem 0.4375rem;
+  border-radius: 9999px;
+  box-shadow: 0 1px 2px rgba(22, 163, 74, 0.06);
 }
 
 .mc-search-box {
   position: relative;
-  width: 280px;
+  width: 17.5rem;
+  height: 2rem;
   display: flex;
   align-items: center;
 }
 
 .mc-search-icon {
   position: absolute;
-  left: 10px;
-  color: var(--text-muted, #9ca3af);
+  left: 0.75rem;
+  color: var(--text-muted, #94a3b8);
   pointer-events: none;
+  transition: color 0.2s ease;
 }
 
 .mc-search-box input {
   width: 100%;
-  height: 32px;
-  padding: 0 28px 0 32px;
-  border-radius: 6px;
-  border: 1px solid var(--border-color, #e5e7eb);
-  background: var(--bg-preview, #f9fafb);
-  color: var(--text-main, #111827);
-  font-size: 12px;
+  height: 100%;
+  padding: 0 1.875rem 0 2rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-card, #ffffff);
+  color: var(--text-main, #1e293b);
+  font-size: 0.75rem;
+  font-weight: 500;
   outline: none;
-  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: all 0.2s ease;
+}
+
+.mc-search-box input::placeholder {
+  color: #94a3b8;
 }
 
 .mc-search-box input:focus {
-  border-color: var(--accent-color, #2563eb);
-  background: var(--bg-editor, #ffffff);
-  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.1);
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  background: #ffffff;
 }
 
 .mc-clear-btn {
   position: absolute;
-  right: 8px;
-  padding: 2px;
+  right: 0.5rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  border-radius: 50%;
+  background: #f1f5f9;
   border: none;
-  background: transparent;
-  color: var(--text-muted, #9ca3af);
+  color: var(--text-muted, #64748b);
   cursor: pointer;
-  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
 }
 
 .mc-clear-btn:hover {
-  color: var(--text-main, #374151);
+  background: #e2e8f0;
+  color: #0f172a;
 }
 
 /* Content Area */
 .mc-content {
+  position: relative;
+  z-index: 1;
   flex: 1;
   overflow-y: auto;
-  padding: 20px 24px 40px;
+  padding: 0.875rem 1.25rem 2.5rem 1.25rem;
 }
 
 .mc-content::-webkit-scrollbar {
-  width: 6px;
+  width: 0.25rem;
 }
 
 .mc-content::-webkit-scrollbar-thumb {
-  background: var(--border-color, #e5e7eb);
-  border-radius: 3px;
+  background: rgba(148, 163, 184, 0.22);
+  border-radius: 0.25rem;
 }
 
-/* Category Tabs */
+/* Category Tabs (精致胶囊切换栏) */
 .mc-tabs {
   display: flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 24px;
-  padding: 4px;
-  background: var(--bg-preview, #f1f5f9);
-  border-radius: 10px;
+  gap: 0.25rem;
+  margin-bottom: 1rem;
+  padding: 0.25rem;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
   width: fit-content;
   max-width: 100%;
   overflow-x: auto;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .mc-tabs::-webkit-scrollbar {
@@ -365,43 +444,45 @@ function handleApplyBackground(mat) {
 .mc-tab {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 6px 14px;
-  border-radius: 8px;
+  gap: 0.375rem;
+  padding: 0.375rem 0.875rem;
+  border-radius: 9999px;
   border: none;
   background: transparent;
-  color: var(--text-muted, #6b7280);
-  font-size: 12px;
+  color: #64748b;
+  font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: nowrap;
+  user-select: none;
 }
 
 .mc-tab:hover {
-  color: var(--text-main, #111827);
+  color: #0f172a;
+  background: rgba(241, 245, 249, 0.7);
 }
 
 .mc-tab.is-active {
-  background: var(--bg-editor, #ffffff);
-  color: var(--text-main, #111827);
+  background: var(--wandor-dark, #0a0a0a);
+  color: #ffffff;
   font-weight: 600;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 
 /* Grid */
 .mc-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 20px;
+  gap: 0.75rem;
 }
 
-/* Card */
+/* Card (12px 统一圆角，纯白卡片，平滑悬浮阴影) */
 .mc-card {
   position: relative;
-  background: var(--bg-editor, #ffffff);
-  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
-  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.75rem;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -412,36 +493,27 @@ function handleApplyBackground(mat) {
 }
 
 .mc-card:hover {
-  border-color: var(--accent-color, #6366f1);
-  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.12), 0 2px 6px rgba(0, 0, 0, 0.04);
-  transform: translateY(-2px);
-}
-
-html.dark .mc-card {
-  border-color: rgba(255, 255, 255, 0.08);
-}
-
-html.dark .mc-card:hover {
-  border-color: var(--accent-color, #818cf8);
-  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.2);
+  border-color: #cbd5e1;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.02);
+  transform: translateY(-0.125rem);
 }
 
 /* Pure Material Preview Area */
 .mc-card-preview {
   flex: 1;
   width: 100%;
-  padding: 16px;
+  padding: 1.25rem 1rem;
   display: flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  background: var(--bg-editor, #ffffff);
+  background: #ffffff;
 }
 
 .mc-render-paper {
   width: 100%;
   background: transparent;
-  border-radius: 8px;
+  border-radius: 0.5rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -449,14 +521,14 @@ html.dark .mc-card:hover {
 }
 
 .mc-card:hover .mc-render-paper {
-  transform: scale(0.98);
+  transform: scale(0.985);
 }
 
 /* Ultra-Refined Frosted Hover Overlay */
 .mc-card-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.72);
+  background: rgba(255, 255, 255, 0.82);
   backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
   display: flex;
@@ -465,14 +537,9 @@ html.dark .mc-card:hover {
   padding: 1rem;
   opacity: 0;
   pointer-events: none;
-  border-radius: 11px;
+  border-radius: 0.75rem;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   z-index: 10;
-}
-
-html.dark .mc-card-overlay,
-[data-color-mode="dark"] .mc-card-overlay {
-  background: rgba(18, 18, 22, 0.75);
 }
 
 .mc-card:hover .mc-card-overlay {
@@ -484,7 +551,7 @@ html.dark .mc-card-overlay,
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  transform: translateY(4px) scale(0.96);
+  transform: translateY(0.25rem) scale(0.96);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
@@ -497,83 +564,164 @@ html.dark .mc-card-overlay,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.35rem;
-  padding: 0.45rem 0.875rem;
-  border-radius: 20px;
-  font-size: 0.78125rem;
-  font-weight: 500;
+  gap: 0.3125rem;
+  height: 1.875rem;
+  padding: 0 0.875rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
   letter-spacing: -0.01em;
   cursor: pointer;
   border: none;
   outline: none;
   white-space: nowrap;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
 }
 
 .mc-overlay-btn:active {
-  transform: scale(0.95) !important;
+  transform: scale(0.96) !important;
 }
 
-/* Primary Capsule: Brand Purple */
+/* Primary Capsule: Dark Wandor CTA */
 .mc-overlay-btn.primary {
-  background: var(--accent-color, #6366f1);
+  background: var(--wandor-dark, #0a0a0a);
   color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  border: none;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
 }
 
 .mc-overlay-btn.primary:hover {
-  background: #4f46e5;
-  transform: translateY(-1px) scale(1.02);
-  box-shadow: 0 6px 18px rgba(99, 102, 241, 0.45);
+  background: #1e293b;
+  transform: translateY(-0.0625rem);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.24);
 }
 
 /* Secondary Capsule: Clean Glass/White Pill */
 .mc-overlay-btn.secondary {
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(8px);
+  background: #ffffff;
   color: #1e293b;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 .mc-overlay-btn.secondary:hover {
-  background: #ffffff;
-  color: #0f172a;
-  border-color: rgba(0, 0, 0, 0.15);
-  transform: translateY(-1px) scale(1.02);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-}
-
-html.dark .mc-overlay-btn.secondary,
-[data-color-mode="dark"] .mc-overlay-btn.secondary {
-  background: rgba(39, 39, 42, 0.9);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: #f4f4f5;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-}
-
-html.dark .mc-overlay-btn.secondary:hover,
-[data-color-mode="dark"] .mc-overlay-btn.secondary:hover {
-  background: rgba(63, 63, 70, 0.95);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  background: #f8fafc;
+  color: #000000;
+  border-color: #cbd5e1;
+  transform: translateY(-0.0625rem);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 
 .mc-empty {
   grid-column: 1 / -1;
-  padding: 60px 0;
+  padding: 3.75rem 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--text-muted, #9ca3af);
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.8125rem;
 }
 
 .mc-empty-icon {
-  margin-bottom: 10px;
-  opacity: 0.5;
+  margin-bottom: 0.625rem;
+  opacity: 0.4;
+}
+
+/* ── Dark Mode (深色模式全面适配) ── */
+:global(html.dark) .mc-root,
+:global(html[data-color-mode="dark"]) .mc-root {
+  background: var(--bg-app, #18181c);
+  color: var(--text-main, #cccccc);
+}
+
+:global(html.dark) .mc-header,
+:global(html[data-color-mode="dark"]) .mc-header {
+  background: var(--bg-card, #1e1e1e);
+  border-bottom-color: var(--border-color, #2d2d2d);
+}
+
+:global(html.dark) .mc-title-badge,
+:global(html[data-color-mode="dark"]) .mc-title-badge {
+  background: #ffffff;
+  color: #0a0a0a;
+}
+
+:global(html.dark) .mc-title,
+:global(html[data-color-mode="dark"]) .mc-title {
+  color: var(--text-main, #cccccc);
+}
+
+:global(html.dark) .mc-back-btn,
+:global(html[data-color-mode="dark"]) .mc-back-btn {
+  background: var(--bg-toolbar, #2d2d2d);
+  border-color: var(--border-color, #37373d);
+  color: var(--text-main, #cccccc);
+}
+
+:global(html.dark) .mc-back-btn:hover,
+:global(html[data-color-mode="dark"]) .mc-back-btn:hover {
+  background: var(--bg-capsule-btn-hover, #37373d);
+  color: #ffffff;
+}
+
+:global(html.dark) .mc-search-box input,
+:global(html[data-color-mode="dark"]) .mc-search-box input {
+  background: var(--bg-card, #252526);
+  border-color: var(--border-color, #37373d);
+  color: var(--text-main, #cccccc);
+}
+
+:global(html.dark) .mc-tabs,
+:global(html[data-color-mode="dark"]) .mc-tabs {
+  background: var(--bg-card, #252526);
+  border-color: var(--border-color, #2d2d2d);
+}
+
+:global(html.dark) .mc-tab,
+:global(html[data-color-mode="dark"]) .mc-tab {
+  color: #94a3b8;
+}
+
+:global(html.dark) .mc-tab:hover,
+:global(html[data-color-mode="dark"]) .mc-tab:hover {
+  background: #2d2d2d;
+  color: #ffffff;
+}
+
+:global(html.dark) .mc-tab.is-active,
+:global(html[data-color-mode="dark"]) .mc-tab.is-active {
+  background: #ffffff;
+  color: #0a0a0a;
+}
+
+:global(html.dark) .mc-card,
+:global(html[data-color-mode="dark"]) .mc-card {
+  background: var(--bg-card, #1e1e1e);
+  border-color: var(--border-color, #2d2d2d);
+}
+
+:global(html.dark) .mc-card-preview,
+:global(html[data-color-mode="dark"]) .mc-card-preview {
+  background: var(--bg-card, #1e1e1e);
+}
+
+:global(html.dark) .mc-card-overlay,
+:global(html[data-color-mode="dark"]) .mc-card-overlay {
+  background: rgba(18, 18, 22, 0.78);
+}
+
+:global(html.dark) .mc-overlay-btn.primary,
+:global(html[data-color-mode="dark"]) .mc-overlay-btn.primary {
+  background: #ffffff;
+  color: #0a0a0a;
+}
+
+:global(html.dark) .mc-overlay-btn.secondary,
+:global(html[data-color-mode="dark"]) .mc-overlay-btn.secondary {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
 }
 </style>
