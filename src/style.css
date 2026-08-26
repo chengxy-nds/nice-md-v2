@@ -93,11 +93,15 @@ html[data-color-mode="light"] {
   --font-display: 'Special Elite', 'Georgia', serif;
   --font-mono: 'JetBrains Mono', Consolas, Courier, monospace;
 
-  /* Wandor & Liquid Glass Design Tokens */
-  --wandor-dark: #0a0a0a;
+  /* Wandor & Apple Dark Titanium Glass Design Tokens */
+  --wandor-dark: #2a2a2c;
   --wandor-text: #1a1a1a;
   --wandor-muted: #767676;
   --wandor-prompt: #905831;
+  --dark-titanium-bg: radial-gradient(140% 120% at 50% 0%, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.02) 60%, rgba(0, 0, 0, 0.12) 100%), #2a2a2c;
+  --dark-titanium-hover: radial-gradient(140% 120% at 50% 0%, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0.06) 60%, rgba(0, 0, 0, 0.06) 100%), #333336;
+  --dark-titanium-border: rgba(255, 255, 255, 0.14);
+  --dark-titanium-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 4px 14px rgba(42, 42, 44, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.2), inset 0 -1px 0 rgba(0, 0, 0, 0.3);
   --glass-bg: rgba(255, 255, 255, 0.82);
   --glass-border: rgba(255, 255, 255, 0.75);
   --glass-blur: blur(20px) saturate(180%);
@@ -1044,4 +1048,7 @@ html[data-color-mode="dark"] .markdown-body blockquote {
   transform: translateX(-50%);
   border-width: 0 5px 5px 5px;
   border-color: transparent transparent #242424 transparent;
+}
+
+border-color: transparent transparent #242424 transparent;
 }

@@ -375,8 +375,9 @@ async function handleElementClick(sectionName) {
   height: 1.5rem;
   border-radius: 0.375rem;
   color: #ffffff;
-  background: var(--wandor-dark, #0a0a0a);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  background: radial-gradient(140% 120% at 50% 0%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 70%), #2a2a2c;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .tc-title-badge-sm {
@@ -590,7 +591,7 @@ async function handleElementClick(sectionName) {
 }
 
 .tc-list-check {
-  color: var(--wandor-dark, #0a0a0a);
+  color: #2a2a2c;
   flex-shrink: 0;
 }
 
@@ -661,10 +662,10 @@ async function handleElementClick(sectionName) {
 }
 
 .tc-btn-icon.is-active {
-  background: var(--wandor-dark, #0a0a0a);
+  background: radial-gradient(140% 120% at 50% 0%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 70%), #2a2a2c;
   color: #ffffff;
-  border-color: var(--wandor-dark, #0a0a0a);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  border-color: rgba(255, 255, 255, 0.14);
+  box-shadow: 0 2px 6px rgba(42, 42, 44, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .tc-btn-secondary {
@@ -704,24 +705,34 @@ async function handleElementClick(sectionName) {
   height: 1.875rem;
   padding: 0 0.875rem;
   border-radius: 9999px;
-  border: none;
-  background: var(--wandor-dark, #0a0a0a);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: radial-gradient(140% 120% at 50% 0%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.02) 60%, rgba(0, 0, 0, 0.15) 100%), #2a2a2c;
   color: #ffffff;
   font-size: 0.75rem;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.16);
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.1),
+    0 2px 10px rgba(42, 42, 44, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
 }
 
 .tc-btn-primary.tc-apply-btn:hover {
+  background: radial-gradient(140% 120% at 50% 0%, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.06) 60%, rgba(0, 0, 0, 0.08) 100%), #333336;
+  border-color: rgba(255, 255, 255, 0.24);
   transform: translateY(-0.0625rem);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.24);
+  box-shadow: 
+    0 2px 6px rgba(0, 0, 0, 0.12),
+    0 4px 14px rgba(42, 42, 44, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4);
 }
 
 .tc-btn-primary.tc-apply-btn:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.98);
 }
 
 .tc-preview-body-container {

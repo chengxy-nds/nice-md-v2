@@ -1,4 +1,4 @@
-﻿<script setup>
+<script setup>
 import { ref, computed, onMounted } from 'vue';
 import { marked } from 'marked';
 import {
@@ -119,16 +119,27 @@ function handlePublish() {
 
 // ── Image paste → OSS upload ──
 async function handleEditorPaste(e) {
-  if (!isStorageEnabled()) return;
+  const clipboardData = e.clipboardData;
+  if (!clipboardData) return;
 
-  const items = e.clipboardData?.items;
-  if (!items) return;
-
+  const items = clipboardData.items;
+  const files = clipboardData.files;
   let imageFile = null;
-  for (const item of items) {
-    if (item.type.startsWith('image/')) {
-      imageFile = item.getAsFile();
-      break;
+
+  if (files && files.length > 0) {
+    for (const file of files) {
+      if (file.type.startsWith('image/')) {
+        imageFile = file;
+        break;
+      }
+    }
+  }
+  if (!imageFile && items && items.length > 0) {
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        imageFile = item.getAsFile();
+        break;
+      }
     }
   }
   if (!imageFile) return;
@@ -136,28 +147,46 @@ async function handleEditorPaste(e) {
   e.preventDefault();
 
   const textarea = e.target;
-  const start = textarea.selectionStart;
-  const end = textarea.selectionEnd;
+  const start = textarea.selectionStart || 0;
+  const end = textarea.selectionEnd || 0;
+  const alt = imageFile.name ? imageFile.name.replace(/\.[^.]+$/, '') : 'image';
 
-  const placeholder = '![⏳ 正在上传图片...]()';
-  const before = articleContent.value.slice(0, start);
-  const after = articleContent.value.slice(end);
-  articleContent.value = before + '\n' + placeholder + '\n' + after;
+  if (isStorageEnabled()) {
+    const placeholder = `![⏳ 正在上传图片 (${alt})...]()`;
+    const before = articleContent.value.slice(0, start);
+    const after = articleContent.value.slice(end);
+    articleContent.value = before + '\n' + placeholder + '\n' + after;
 
-  isUploadingImage.value = true;
+    isUploadingImage.value = true;
 
-  try {
-    const url = await uploadToOSS(imageFile, {});
-    articleContent.value = articleContent.value.replace(
-      placeholder,
-      `![图片](${url})`,
-    );
-    toast('图片已上传到 OSS ✓');
-  } catch (err) {
-    articleContent.value = articleContent.value.replace('\n' + placeholder + '\n', '');
-    toast('上传失败: ' + err.message);
-  } finally {
-    isUploadingImage.value = false;
+    try {
+      const url = await uploadToOSS(imageFile, { skipEnableCheck: true });
+      articleContent.value = articleContent.value.replace(
+        placeholder,
+        `![${alt}](${url})`,
+      );
+      toast('图片已上传到 OSS ✓');
+    } catch (err) {
+      console.warn('OSS upload failed, fallback to base64:', err);
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const dataUrl = ev.target.result;
+        articleContent.value = articleContent.value.replace(placeholder, `![${alt}](${dataUrl})`);
+      };
+      reader.readAsDataURL(imageFile);
+      toast('云端上传受阻，已转为本地图片: ' + err.message);
+    } finally {
+      isUploadingImage.value = false;
+    }
+  } else {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target.result;
+      const before = articleContent.value.slice(0, start);
+      const after = articleContent.value.slice(end);
+      articleContent.value = before + '\n' + `![${alt}](${dataUrl})` + '\n' + after;
+    };
+    reader.readAsDataURL(imageFile);
   }
 }
 </script>

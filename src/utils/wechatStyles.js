@@ -103,7 +103,9 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
       if (isMaterialEl(el)) return;
       const cleanedStyle = cleanCss(styleStr);
       if (/^h[1-6]$/i.test(el.tagName)) {
+        const hTag = el.tagName.toLowerCase();
         const section = doc.createElement('section');
+        section.setAttribute('data-heading', hTag);
         section.setAttribute('style', cleanedStyle);
         // Copy children to section
         while (el.firstChild) {
@@ -662,15 +664,15 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
       `));
       
       const langSpan = (showCodeLang && langName) 
-        ? `<span style="display: block; float: right; font-size: 10px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: ${macText}; text-transform: uppercase; letter-spacing: 0.05em; line-height: 28px;">${langName}</span>`
+        ? `<span style="float: right; font-size: 10px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: ${macText}; text-transform: uppercase; letter-spacing: 0.05em; line-height: 28px;">${langName}</span>`
         : '';
 
+      const macDotsSvg = `<svg xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: middle; width: 44px; height: 12px; min-width: 44px; min-height: 12px;" viewBox="0 0 44 12" width="44" height="12"><circle cx="6" cy="6" r="4.5" fill="#ff5f56"></circle><circle cx="20" cy="6" r="4.5" fill="#ffbd2e"></circle><circle cx="34" cy="6" r="4.5" fill="#27c93f"></circle></svg>`;
+
       header.innerHTML = `
-        <span style="display: inline-block; vertical-align: middle; line-height: 0; font-size: 0;">
-          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #ff5f56; margin-right: 6px; vertical-align: middle;"></span>
-          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #ffbd2e; margin-right: 6px; vertical-align: middle;"></span>
-          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background-color: #27c93f; vertical-align: middle;"></span>
-        </span>
+        <section style="display: inline-block; vertical-align: middle; line-height: 0; font-size: 0; margin-top: -2px;">
+          ${macDotsSvg}
+        </section>
         ${langSpan}
       `;
       wrapper.appendChild(header);
@@ -1459,7 +1461,6 @@ function convertNonStandardInlineTagsToSpans(root) {
  */
 function applyCustomCssRules(root, customCss) {
   if (!customCss || typeof customCss !== 'string') return;
-  const cleanCssStr = (css) => css.replace(/\s+/g, ' ').trim();
 
   const ruleRegex = /([^{}]+)\{([^}]+)\}/g;
   let match;
@@ -1470,23 +1471,36 @@ function applyCustomCssRules(root, customCss) {
 
     // Convert selector aliases like "#nice code", "xiaofu code", ".markdown-body code"
     let cleanSelector = rawSelector
-      .replace(/(?:#nice|xiaofu|\.markdown-body|\.wechat-body)\s+/g, '')
+      .replace(/(?:#nice|xiaofu|\.markdown-body|\.wechat-body)\s*/g, '')
       .trim();
 
-    if (!cleanSelector) continue;
+    if (!cleanSelector) {
+      cleanSelector = ':scope, [id="nice"], .markdown-body, .wechat-body';
+    }
 
-    // Expand heading selectors (h1..h6) to target both tag and all descendants of section[data-heading="h1..h6"]
+    // Expand selectors so custom CSS applies cleanly to tags and converted sections
     if (/^h[1-6]$/i.test(cleanSelector)) {
       const h = cleanSelector.toLowerCase();
-      cleanSelector = `${h}, [data-heading="${h}"]:not([data-material="true"]), [data-heading="${h}"]:not([data-material="true"]) *`;
+      cleanSelector = `${h}, [data-heading="${h}"], [data-heading="${h}"] *`;
     } else if (cleanSelector === 'blockquote') {
-      cleanSelector = 'blockquote:not([data-material="true"])';
+      cleanSelector = 'blockquote:not([data-material="true"]), blockquote:not([data-material="true"]) *';
     } else if (cleanSelector === 'hr') {
       cleanSelector = 'hr:not([data-material="true"])';
+    } else if (cleanSelector === 'p') {
+      cleanSelector = 'p:not([data-material="true"])';
+    } else if (cleanSelector === 'code') {
+      cleanSelector = 'code:not([data-material="true"]), span[data-tag="code"], .hljs';
+    } else if (cleanSelector === 'strong' || cleanSelector === 'em' || cleanSelector === 'del' || cleanSelector === 'u' || cleanSelector === 'mark') {
+      cleanSelector = `${cleanSelector}, span[data-tag="${cleanSelector}"]`;
     }
 
     try {
-      root.querySelectorAll(cleanSelector).forEach(el => {
+      const matchedEls = cleanSelector.startsWith(':scope')
+        ? [root, ...root.querySelectorAll(cleanSelector.replace(/^:scope,?\s*/, ''))]
+        : Array.from(root.querySelectorAll(cleanSelector));
+
+      matchedEls.forEach(el => {
+        if (!el || el.nodeType !== 1) return;
         if (isMaterialEl(el)) return;
         declarations.split(';').forEach(decl => {
           const parts = decl.split(':');

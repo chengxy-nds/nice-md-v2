@@ -619,68 +619,147 @@ watch(findCaseSensitive, () => {
   if (showFindReplace.value) updateFindStats();
 });
 
-// ── image ──
+// ── Unified Image Insertion Engine (OSS auto-detection & Direct Upload) ──
+function insertTextAtCursor(text) {
+  const insertion = '\n' + text + '\n';
+  if (cmView) {
+    const range = cmView.state.selection.main;
+    cmView.dispatch({
+      changes: { from: range.from, to: range.to, insert: insertion },
+      selection: { anchor: range.from + insertion.length }
+    });
+    cmView.focus();
+  } else if (textareaRef.value) {
+    const ta = textareaRef.value;
+    const start = ta.selectionStart || 0;
+    const end = ta.selectionEnd || 0;
+    ta.setRangeText(insertion, start, end, 'end');
+    editorText.value = ta.value;
+    emit('update:modelValue', ta.value);
+  } else {
+    editorText.value += insertion;
+    emit('update:modelValue', editorText.value);
+  }
+}
+
+function replaceEditorText(target, replacement) {
+  if (cmView) {
+    const docStr = cmView.state.doc.toString();
+    const idx = docStr.indexOf(target);
+    if (idx !== -1) {
+      cmView.dispatch({
+        changes: { from: idx, to: idx + target.length, insert: replacement }
+      });
+    }
+  } else if (textareaRef.value) {
+    const ta = textareaRef.value;
+    ta.value = ta.value.replace(target, replacement);
+    editorText.value = ta.value;
+    emit('update:modelValue', ta.value);
+  } else {
+    editorText.value = editorText.value.replace(target, replacement);
+    emit('update:modelValue', editorText.value);
+  }
+}
+
+async function processImageInsertion(file) {
+  if (!file || !file.type?.startsWith('image/')) return;
+  const alt = file.name ? file.name.replace(/\.[^.]+$/, '') : 'image';
+
+  // 1. Auto-detect if OSS cloud storage is configured
+  if (isStorageEnabled()) {
+    const placeholder = `![⏳ 正在上传云端图片 (${alt})...](${Date.now()})`;
+    insertTextAtCursor(placeholder);
+
+    try {
+      // Direct upload to OSS
+      const url = await uploadToOSS(file);
+      replaceEditorText(placeholder, `![${alt}](${url})`);
+      soundEngine.playChime();
+    } catch (err) {
+      console.error('[OSS Upload Failed]', err);
+      // Fallback: convert to base64 so user's image is not lost
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const dataUrl = ev.target.result;
+        replaceEditorText(placeholder, `![${alt}](${dataUrl})`);
+      };
+      reader.readAsDataURL(file);
+      // Notify user with clear error cause
+      alert('【OSS 图床上传提示】\n图片未能成功上传到 OSS (' + err.message + ')\n已为您自动转为本地图片插入。');
+    }
+  } else {
+    // 2. OSS is not configured -> Convert to base64 data URL
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const dataUrl = ev.target.result;
+      insertTextAtCursor(`![${alt}](${dataUrl})`);
+      soundEngine.playClick();
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+// ── Toolbar image upload button ──
 function handleImageUpload() {
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = 'image/*';
-  input.onchange = (e) => {
-    const file = e.target.files[0];
+  input.onchange = async (e) => {
+    const file = e.target.files?.[0];
     if (!file) return;
     soundEngine.playClick();
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target.result;
-      const alt = file.name.replace(/\.[^.]+$/, '');
-      const md = `![${alt}](${dataUrl})`;
-      const ta = textareaRef.value;
-      if (ta) {
-        const start = ta.selectionStart;
-        ta.setRangeText('\n' + md + '\n', start, ta.selectionEnd, 'end');
-        editorText.value = ta.value;
-        emit('update:modelValue', ta.value);
-      }
-    };
-    reader.readAsDataURL(file);
+    await processImageInsertion(file);
   };
   input.click();
 }
 
-// ── Image paste → OSS upload ──
+// ── Clipboard Paste Event Handler ──
 async function handleEditorPaste(e) {
-  if (!isStorageEnabled()) return;
+  const clipboardData = e.clipboardData;
+  if (!clipboardData) return;
 
-  const items = e.clipboardData?.items;
-  if (!items) return;
-
+  const items = clipboardData.items;
+  const files = clipboardData.files;
   let imageFile = null;
-  for (const item of items) {
-    if (item.type.startsWith('image/')) {
-      imageFile = item.getAsFile();
-      break;
+
+  if (files && files.length > 0) {
+    for (const file of files) {
+      if (file.type.startsWith('image/')) {
+        imageFile = file;
+        break;
+      }
     }
   }
-  if (!imageFile) return;
+  if (!imageFile && items && items.length > 0) {
+    for (const item of items) {
+      if (item.type.startsWith('image/')) {
+        imageFile = item.getAsFile();
+        break;
+      }
+    }
+  }
 
-  e.preventDefault();
+  if (imageFile) {
+    e.preventDefault();
+    await processImageInsertion(imageFile);
+  }
+}
 
-  const textarea = e.target;
-  const start = textarea.selectionStart;
-  const end = textarea.selectionEnd;
+// ── Drag & Drop Event Handler ──
+async function handleEditorDrop(e) {
+  const dataTransfer = e.dataTransfer;
+  if (!dataTransfer) return;
 
-  const placeholder = '![⏳ 正在上传图片...]()';
-  const before = editorText.value.slice(0, start);
-  const after = editorText.value.slice(end);
-  editorText.value = before + '\n' + placeholder + '\n' + after;
-  emit('update:modelValue', editorText.value);
-
-  try {
-    const url = await uploadToOSS(imageFile, {});
-    editorText.value = editorText.value.replace(placeholder, `![图片](${url})`);
-    emit('update:modelValue', editorText.value);
-  } catch (err) {
-    editorText.value = editorText.value.replace('\n' + placeholder + '\n', '');
-    emit('update:modelValue', editorText.value);
+  const files = dataTransfer.files;
+  if (files && files.length > 0) {
+    for (const file of files) {
+      if (file.type.startsWith('image/')) {
+        e.preventDefault();
+        await processImageInsertion(file);
+        return;
+      }
+    }
   }
 }
 
@@ -1094,6 +1173,12 @@ function initCodeMirror() {
         click: () => {
           emit('focusActive', 'editor');
           emit('editor-click');
+        },
+        paste: (e) => {
+          handleEditorPaste(e);
+        },
+        drop: (e) => {
+          handleEditorDrop(e);
         }
       }),
       keymap.of([
@@ -1190,7 +1275,7 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
         </div>
       </div>
 
-      <div class="editor-input-area" :style="{ fontSize: editorFontSize }">
+      <div class="editor-input-area" :style="{ fontSize: editorFontSize }" @drop="handleEditorDrop" @dragover.prevent>
         <div v-show="isSyntaxHighlightActive" ref="cmContainerRef" class="codemirror-markdown-editor"></div>
         <textarea
           v-show="!isSyntaxHighlightActive"
@@ -1203,6 +1288,7 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
           @keyup="onTextSelect"
           @contextmenu.prevent="onContextMenu"
           @paste="handleEditorPaste"
+          @drop="handleEditorDrop"
           @focus="emit('editor-click'); emit('focusActive', 'editor')"
           @click="emit('editor-click'); emit('focusActive', 'editor')"
           placeholder="在这里输入 Markdown 内容，或者直接将 .md / .html 文件拖拽进这里..."

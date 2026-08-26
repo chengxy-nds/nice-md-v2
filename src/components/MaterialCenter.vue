@@ -316,8 +316,9 @@ function handleApplyBackground(mat) {
   height: 1.5rem;
   border-radius: 0.375rem;
   color: #ffffff;
-  background: var(--wandor-dark, #0a0a0a);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  background: radial-gradient(140% 120% at 50% 0%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 70%), #2a2a2c;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .mc-title {
@@ -447,7 +448,7 @@ function handleApplyBackground(mat) {
   gap: 0.375rem;
   padding: 0.375rem 0.875rem;
   border-radius: 9999px;
-  border: none;
+  border: 1px solid transparent;
   background: transparent;
   color: #64748b;
   font-size: 0.75rem;
@@ -464,10 +465,11 @@ function handleApplyBackground(mat) {
 }
 
 .mc-tab.is-active {
-  background: var(--wandor-dark, #0a0a0a);
+  background: radial-gradient(140% 120% at 50% 0%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 70%), #2a2a2c;
+  border-color: rgba(255, 255, 255, 0.14);
   color: #ffffff;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(42, 42, 44, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 /* Grid */
@@ -583,18 +585,27 @@ function handleApplyBackground(mat) {
   transform: scale(0.96) !important;
 }
 
-/* Primary Capsule: Dark Wandor CTA */
+/* Primary Capsule: Apple Space Gray / Titanium CTA */
 .mc-overlay-btn.primary {
-  background: var(--wandor-dark, #0a0a0a);
+  background: radial-gradient(140% 120% at 50% 0%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.02) 60%, rgba(0, 0, 0, 0.15) 100%), #2a2a2c;
   color: #ffffff;
-  border: none;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 
+    0 1px 2px rgba(0, 0, 0, 0.1),
+    0 2px 10px rgba(42, 42, 44, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35);
 }
 
 .mc-overlay-btn.primary:hover {
-  background: #1e293b;
+  background: radial-gradient(140% 120% at 50% 0%, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.06) 60%, rgba(0, 0, 0, 0.08) 100%), #333336;
+  border-color: rgba(255, 255, 255, 0.24);
   transform: translateY(-0.0625rem);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.24);
+  box-shadow: 
+    0 2px 6px rgba(0, 0, 0, 0.12),
+    0 4px 14px rgba(42, 42, 44, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.4);
 }
 
 /* Secondary Capsule: Clean Glass/White Pill */

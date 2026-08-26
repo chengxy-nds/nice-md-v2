@@ -225,13 +225,14 @@ function hasPrefixOption(id) {
   width: 1.75rem;
   height: 1.75rem;
   border-radius: 0.4375rem;
-  background: var(--wandor-dark, #0a0a0a);
+  background: radial-gradient(140% 120% at 50% 0%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 70%), #2a2a2c;
+  border: 1px solid rgba(255, 255, 255, 0.14);
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.14);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .popup-title {
@@ -370,9 +371,9 @@ function hasPrefixOption(id) {
 }
 
 .visual-preview-card.is-active {
-  border-color: var(--wandor-dark, #0a0a0a);
+  border-color: #2a2a2c;
   background: #f8fbff;
-  box-shadow: 0 0 0 1px var(--wandor-dark, #0a0a0a), 0 4px 12px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 0 0 1px #2a2a2c, 0 4px 12px rgba(42, 42, 44, 0.08);
 }
 
 .card-meta-bar {

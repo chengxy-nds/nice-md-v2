@@ -233,24 +233,33 @@ const injectedCustomCss = computed(() => {
   if (!css || typeof css !== 'string') return '';
 
   // Strip prefix aliases (#nice, xiaofu, .markdown-body, .wechat-body)
-  const cleaned = css.replace(/(?:#nice|xiaofu|\.markdown-body|\.wechat-body)\s+/g, ' ').trim();
+  const cleaned = css.replace(/(?:#nice|xiaofu|\.markdown-body|\.wechat-body)\s*/g, ' ').trim();
   if (!cleaned) return '';
 
   // Map selectors so they ONLY apply inside preview-body or wechat-body (never leaking to the editor)
   return cleaned.replace(/([^{}]+)\{([^}]+)\}/g, (m, selector, body) => {
-    const selectors = selector.split(',').map(s => {
+    const rawSelectors = selector.split(',');
+    const mapped = rawSelectors.map(s => {
       const tag = s.trim();
-      if (!tag) return '';
+      if (!tag) {
+        return `.preview-body, .wechat-body, .tc-rendered-paper`;
+      }
       if (tag.startsWith('.')) return `.preview-body ${tag}, .wechat-body ${tag}, .tc-rendered-paper ${tag}`;
       if (/^h[1-6]$/i.test(tag)) {
         const h = tag.toLowerCase();
-        return `.preview-body ${h}, .preview-body [data-heading="${h}"]:not([data-material="true"]), .preview-body [data-heading="${h}"]:not([data-material="true"]) *, .wechat-body ${h}, .wechat-body [data-heading="${h}"]:not([data-material="true"]), .wechat-body [data-heading="${h}"]:not([data-material="true"]) *, .phone-screen-scroll ${h}, .phone-screen-scroll [data-heading="${h}"]:not([data-material="true"]) *, .tc-rendered-paper ${h}`;
+        return `.preview-body ${h}, .preview-body [data-heading="${h}"], .preview-body [data-heading="${h}"] *, .wechat-body ${h}, .wechat-body [data-heading="${h}"], .wechat-body [data-heading="${h}"] *, .phone-screen-scroll ${h}, .phone-screen-scroll [data-heading="${h}"], .phone-screen-scroll [data-heading="${h}"] *, .tc-rendered-paper ${h}, .tc-rendered-paper [data-heading="${h}"]`;
       }
       if (tag === 'blockquote') {
-        return `.preview-body blockquote:not([data-material="true"]), .wechat-body blockquote:not([data-material="true"]), .phone-screen-scroll blockquote:not([data-material="true"]), .tc-rendered-paper blockquote:not([data-material="true"])`;
+        return `.preview-body blockquote, .preview-body blockquote *, .wechat-body blockquote, .wechat-body blockquote *, .phone-screen-scroll blockquote, .tc-rendered-paper blockquote`;
       }
       if (tag === 'hr') {
-        return `.preview-body hr:not([data-material="true"]), .wechat-body hr:not([data-material="true"]), .phone-screen-scroll hr:not([data-material="true"]), .tc-rendered-paper hr:not([data-material="true"])`;
+        return `.preview-body hr, .wechat-body hr, .phone-screen-scroll hr, .tc-rendered-paper hr`;
+      }
+      if (tag === 'p') {
+        return `.preview-body p, .wechat-body p, .phone-screen-scroll p, .tc-rendered-paper p`;
+      }
+      if (tag === 'code') {
+        return `.preview-body code, .preview-body span[data-tag="code"], .preview-body .hljs, .wechat-body code, .wechat-body span[data-tag="code"], .wechat-body .hljs`;
       }
       return `.preview-body ${tag}, .preview-body .markdown-body ${tag}, .wechat-body ${tag}, .phone-screen-scroll ${tag}, .tc-rendered-paper ${tag}`;
     }).filter(Boolean);
@@ -266,7 +275,7 @@ const injectedCustomCss = computed(() => {
       .filter(Boolean)
       .join('; ');
 
-    return `${selectors.join(', ')} {\n${importantBody}\n}`;
+    return `${mapped.join(', ')} {\n${importantBody}\n}`;
   });
 });
 

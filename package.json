@@ -15,7 +15,6 @@
     "electron:build:dir": "vite build && electron-builder --win --dir",
     "electron:build:portable": "vite build && electron-builder --win portable"
   },
-  "dependencies": {},
   "devDependencies": {
     "@bytemd/plugin-gfm": "^1.22.0",
     "@bytemd/plugin-highlight": "^1.22.0",
@@ -23,9 +22,11 @@
     "@codemirror/lang-css": "^6.3.1",
     "@codemirror/lang-markdown": "^6.5.2",
     "@lucide/vue": "^1.16.0",
+    "@tailwindcss/vite": "^4.3.3",
     "@types/jsdom": "^30.0.0",
     "@vitejs/plugin-vue": "^6.0.6",
     "canvas-confetti": "^1.9.4",
+    "clsx": "^2.1.1",
     "codemirror": "^6.0.2",
     "concurrently": "^10.0.5",
     "cross-env": "^10.1.0",
@@ -45,6 +46,8 @@
     "mammoth": "^1.12.0",
     "marked": "^18.0.4",
     "mermaid": "^11.15.0",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss": "^4.3.3",
     "vite": "^8.0.12",
     "vue": "^3.5.34",
     "vue-router": "^4.6.4",
