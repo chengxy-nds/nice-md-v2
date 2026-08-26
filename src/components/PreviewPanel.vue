@@ -149,47 +149,49 @@ const injectedCustomCss = computed(() => {
   const cleaned = css.replace(/(?:#(?:easymd|nice)|xiaofu|\.markdown-body|\.wechat-body)\s*/g, ' ').trim();
   if (!cleaned) return '';
 
+  // Universal isolation selector: strictly exclude material blocks and ANY descendants inside them
+  const NOT_MAT = ':not([data-material="true"]):not([data-material="true"] *):not([data-material]):not([data-material] *):not(.material-block):not(.material-block *)';
+
   // Map selectors so they ONLY apply inside preview-body or wechat-body (never leaking to the editor)
-  // Material templates are explicitly excluded (:not([data-material="true"])) so material templates always take precedence
   return cleaned.replace(/([^{}]+)\{([^}]+)\}/g, (m, selector, body) => {
     const rawSelectors = selector.split(',');
     const mapped = rawSelectors.map(s => {
       const tag = s.trim();
-      if (!tag) {
-        return `.preview-body, .wechat-body, .tc-rendered-paper`;
+      if (!tag || tag === 'body' || tag === '#easymd' || tag === '#nice' || tag === '.markdown-body') {
+        return `.preview-body${NOT_MAT}, .wechat-body${NOT_MAT}, .tc-rendered-paper${NOT_MAT}`;
       }
       if (tag.startsWith('.')) {
-        return `.preview-body ${tag}:not([data-material="true"]):not(.material-block), .wechat-body ${tag}:not([data-material="true"]):not(.material-block), .tc-rendered-paper ${tag}:not([data-material="true"]):not(.material-block)`;
+        return `.preview-body ${tag}${NOT_MAT}, .wechat-body ${tag}${NOT_MAT}, .tc-rendered-paper ${tag}${NOT_MAT}`;
       }
       if (/^h[1-6]$/i.test(tag)) {
         const h = tag.toLowerCase();
-        return `.preview-body ${h}:not([data-material="true"]):not(.material-block), .preview-body [data-heading="${h}"]:not([data-material="true"]):not(.material-block), .preview-body [data-heading="${h}"]:not([data-material="true"]):not(.material-block) > .content, .wechat-body ${h}:not([data-material="true"]):not(.material-block), .wechat-body [data-heading="${h}"]:not([data-material="true"]):not(.material-block), .wechat-body [data-heading="${h}"]:not([data-material="true"]):not(.material-block) > .content, .phone-screen-scroll ${h}:not([data-material="true"]):not(.material-block), .phone-screen-scroll [data-heading="${h}"]:not([data-material="true"]):not(.material-block), .tc-rendered-paper ${h}:not([data-material="true"]):not(.material-block), .tc-rendered-paper [data-heading="${h}"]:not([data-material="true"]):not(.material-block)`;
+        return `.preview-body ${h}${NOT_MAT}, .preview-body [data-heading="${h}"]${NOT_MAT}, .preview-body [data-heading="${h}"] > .content${NOT_MAT}, .wechat-body ${h}${NOT_MAT}, .wechat-body [data-heading="${h}"]${NOT_MAT}, .wechat-body [data-heading="${h}"] > .content${NOT_MAT}, .phone-screen-scroll ${h}${NOT_MAT}, .phone-screen-scroll [data-heading="${h}"]${NOT_MAT}, .tc-rendered-paper ${h}${NOT_MAT}, .tc-rendered-paper [data-heading="${h}"]${NOT_MAT}`;
       }
       if (tag === 'blockquote') {
-        return `.preview-body blockquote:not([data-material="true"]):not(.material-block), .wechat-body blockquote:not([data-material="true"]):not(.material-block), .phone-screen-scroll blockquote:not([data-material="true"]):not(.material-block), .tc-rendered-paper blockquote:not([data-material="true"]):not(.material-block)`;
+        return `.preview-body blockquote${NOT_MAT}, .wechat-body blockquote${NOT_MAT}, .phone-screen-scroll blockquote${NOT_MAT}, .tc-rendered-paper blockquote${NOT_MAT}`;
       }
       if (tag === 'hr') {
-        return `.preview-body hr:not([data-material="true"]):not(.material-block), .wechat-body hr:not([data-material="true"]):not(.material-block), .phone-screen-scroll hr:not([data-material="true"]):not(.material-block), .tc-rendered-paper hr:not([data-material="true"]):not(.material-block)`;
+        return `.preview-body hr${NOT_MAT}, .wechat-body hr${NOT_MAT}, .phone-screen-scroll hr${NOT_MAT}, .tc-rendered-paper hr${NOT_MAT}`;
       }
       if (tag === 'p') {
-        return `.preview-body p:not([data-material="true"]):not(.material-block), .wechat-body p:not([data-material="true"]):not(.material-block), .phone-screen-scroll p:not([data-material="true"]):not(.material-block), .tc-rendered-paper p:not([data-material="true"]):not(.material-block)`;
+        return `.preview-body p${NOT_MAT}, .wechat-body p${NOT_MAT}, .phone-screen-scroll p${NOT_MAT}, .tc-rendered-paper p${NOT_MAT}`;
       }
       if (tag === 'code') {
-        return `.preview-body code:not([data-material="true"]):not([data-code-block="true"]):not(.code-snippet__fix), .preview-body span[data-tag="code"]:not([data-material="true"]), .wechat-body code:not([data-material="true"]):not([data-code-block="true"]):not(.code-snippet__fix)`;
+        return `.preview-body code${NOT_MAT}:not([data-code-block="true"]):not(.code-snippet__fix), .preview-body span[data-tag="code"]${NOT_MAT}, .wechat-body code${NOT_MAT}:not([data-code-block="true"]):not(.code-snippet__fix)`;
       }
       if (tag === 'pre') {
-        return `.preview-body pre:not([data-material="true"]):not([data-code-block="true"]), .wechat-body pre:not([data-material="true"]):not([data-code-block="true"])`;
+        return `.preview-body pre${NOT_MAT}:not([data-code-block="true"]), .wechat-body pre${NOT_MAT}:not([data-code-block="true"])`;
       }
       if (tag === 'table' || tag === 'th' || tag === 'td') {
-        return `.preview-body ${tag}:not([data-material="true"]), .wechat-body ${tag}:not([data-material="true"]), .tc-rendered-paper ${tag}:not([data-material="true"])`;
+        return `.preview-body ${tag}${NOT_MAT}, .wechat-body ${tag}${NOT_MAT}, .tc-rendered-paper ${tag}${NOT_MAT}`;
       }
       if (tag === 'ul' || tag === 'ol' || tag === 'li') {
-        return `.preview-body ${tag}:not([data-material="true"]):not(.material-block), .wechat-body ${tag}:not([data-material="true"]):not(.material-block), .tc-rendered-paper ${tag}:not([data-material="true"]):not(.material-block)`;
+        return `.preview-body ${tag}${NOT_MAT}, .wechat-body ${tag}${NOT_MAT}, .tc-rendered-paper ${tag}${NOT_MAT}`;
       }
       if (tag === 'img') {
-        return `.preview-body img:not([data-material="true"]), .wechat-body img:not([data-material="true"]), .tc-rendered-paper img:not([data-material="true"])`;
+        return `.preview-body img${NOT_MAT}, .wechat-body img${NOT_MAT}, .tc-rendered-paper img${NOT_MAT}`;
       }
-      return `.preview-body ${tag}:not([data-material="true"]), .wechat-body ${tag}:not([data-material="true"]), .phone-screen-scroll ${tag}:not([data-material="true"]), .tc-rendered-paper ${tag}:not([data-material="true"])`;
+      return `.preview-body ${tag}${NOT_MAT}, .wechat-body ${tag}${NOT_MAT}, .phone-screen-scroll ${tag}${NOT_MAT}, .tc-rendered-paper ${tag}${NOT_MAT}`;
     }).filter(Boolean);
 
     // Append !important to declarations so custom CSS overrides base inline styles while preserving materials
@@ -1154,7 +1156,7 @@ html.dark .toast-deck-card {
   margin-bottom: 12px;
 }
 
-.wechat-body :deep(h4), .wechat-body :deep([data-heading="h4"]) {
+.wechat-body :deep(h4:not([data-material="true"])), .wechat-body :deep([data-heading="h4"]:not([data-material="true"])) {
   color: var(--ct-h4-color, inherit);
   font-size: var(--ct-h4-size, 15px);
   font-weight: var(--ct-h4-weight, bold);
@@ -1162,7 +1164,7 @@ html.dark .toast-deck-card {
   margin-bottom: 8px;
 }
 
-.wechat-body :deep(h5), .wechat-body :deep([data-heading="h5"]) {
+.wechat-body :deep(h5:not([data-material="true"])), .wechat-body :deep([data-heading="h5"]:not([data-material="true"])) {
   color: var(--ct-h5-color, inherit);
   font-size: var(--ct-h5-size, 14px);
   font-weight: var(--ct-h5-weight, bold);
@@ -1170,7 +1172,7 @@ html.dark .toast-deck-card {
   margin-bottom: 6px;
 }
 
-.wechat-body :deep(h6), .wechat-body :deep([data-heading="h6"]) {
+.wechat-body :deep(h6:not([data-material="true"])), .wechat-body :deep([data-heading="h6"]:not([data-material="true"])) {
   color: var(--ct-h6-color, inherit);
   font-size: var(--ct-h6-size, 13px);
   font-weight: var(--ct-h6-weight, bold);

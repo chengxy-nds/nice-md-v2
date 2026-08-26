@@ -962,21 +962,32 @@ html[data-color-mode="dark"] .preview-body:not(.is-wechat-wrapper) .markdown-bod
   background-image: none !important;
 }
 
-html.dark .markdown-body p,
-html[data-color-mode="dark"] .markdown-body p {
+html.dark .markdown-body p:not([data-material="true"]):not([data-material="true"] *):not(.material-block):not(.material-block *),
+html[data-color-mode="dark"] .markdown-body p:not([data-material="true"]):not([data-material="true"] *):not(.material-block):not(.material-block *) {
   color: var(--text-main) !important;
 }
 
-html.dark .markdown-body li,
-html[data-color-mode="dark"] .markdown-body li {
+html.dark .markdown-body li:not([data-material="true"]):not([data-material="true"] *):not(.material-block):not(.material-block *),
+html[data-color-mode="dark"] .markdown-body li:not([data-material="true"]):not([data-material="true"] *):not(.material-block):not(.material-block *) {
   color: var(--text-main) !important;
 }
 
-html.dark .markdown-body blockquote,
-html[data-color-mode="dark"] .markdown-body blockquote {
-  border-left-color: var(--accent-color);
-  background: var(--bg-card);
-  color: var(--text-muted);
+html.dark .markdown-body blockquote:not([data-material="true"]):not([data-material="true"] *):not(.material-block):not(.material-block *),
+html[data-color-mode="dark"] .markdown-body blockquote:not([data-material="true"]):not([data-material="true"] *):not(.material-block):not(.material-block *) {
+}
+
+/* ── Material Templates Absolute Immunity & Layout Protection ── */
+[data-material="true"],
+.material-block,
+[data-material="true"] *,
+.material-block * {
+  box-sizing: border-box;
+}
+
+[data-material="true"] p,
+.material-block p {
+  padding: 0 !important;
+  margin: 0 !important;
 }
 
 /* ── Global Dark Tooltip (Universal App-wide Style) ── */

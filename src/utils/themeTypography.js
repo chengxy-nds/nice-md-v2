@@ -129,7 +129,7 @@ export function buildThemeTypoCss(theme) {
   // Emit the same selector for both web surfaces. If the selector is a
   // comma list (e.g. "strong, b"), expand each into a fully-scoped selector.
   const sel = (s) => {
-    const scoped = (base) => s.split(',').map(part => `[data-theme="${id}"] ${base} ${part.trim()}`).join(', ');
+    const scoped = (base) => s.split(',').map(part => `[data-theme="${id}"] ${base} ${part.trim()}:not([data-material="true"]):not([data-material="true"] *):not(.material-block):not(.material-block *)`).join(', ');
     return `${scoped(`.markdown-body`)},\n${scoped(`.tc-rendered-paper`)}`;
   };
 
