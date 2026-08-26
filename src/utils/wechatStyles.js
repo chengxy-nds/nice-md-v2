@@ -1469,29 +1469,29 @@ function applyCustomCssRules(root, customCss) {
     const declarations = match[2].trim();
     if (!declarations) continue;
 
-    // Convert selector aliases like "#nice code", "xiaofu code", ".markdown-body code"
+    // Convert selector aliases like "#easymd h1", "#nice code", "xiaofu code", ".markdown-body code"
     let cleanSelector = rawSelector
-      .replace(/(?:#nice|xiaofu|\.markdown-body|\.wechat-body)\s*/g, '')
+      .replace(/(?:#(?:easymd|nice)|xiaofu|\.markdown-body|\.wechat-body)\s*/g, '')
       .trim();
 
     if (!cleanSelector) {
-      cleanSelector = ':scope, [id="nice"], .markdown-body, .wechat-body';
+      cleanSelector = ':scope, [id="easymd"], [id="nice"], .markdown-body, .wechat-body';
     }
 
-    // Expand selectors so custom CSS applies cleanly to tags and converted sections
+    // Expand selectors so custom CSS applies cleanly to tags while strictly preserving material templates
     if (/^h[1-6]$/i.test(cleanSelector)) {
       const h = cleanSelector.toLowerCase();
-      cleanSelector = `${h}, [data-heading="${h}"], [data-heading="${h}"] *`;
+      cleanSelector = `${h}:not([data-material="true"]), [data-heading="${h}"]:not([data-material="true"])`;
     } else if (cleanSelector === 'blockquote') {
-      cleanSelector = 'blockquote:not([data-material="true"]), blockquote:not([data-material="true"]) *';
+      cleanSelector = 'blockquote:not([data-material="true"])';
     } else if (cleanSelector === 'hr') {
       cleanSelector = 'hr:not([data-material="true"])';
     } else if (cleanSelector === 'p') {
       cleanSelector = 'p:not([data-material="true"])';
     } else if (cleanSelector === 'code') {
-      cleanSelector = 'code:not([data-material="true"]), span[data-tag="code"], .hljs';
+      cleanSelector = 'code:not([data-material="true"]):not([data-code-block="true"]):not(.code-snippet__fix), span[data-tag="code"]:not([data-material="true"])';
     } else if (cleanSelector === 'strong' || cleanSelector === 'em' || cleanSelector === 'del' || cleanSelector === 'u' || cleanSelector === 'mark') {
-      cleanSelector = `${cleanSelector}, span[data-tag="${cleanSelector}"]`;
+      cleanSelector = `${cleanSelector}:not([data-material="true"]), span[data-tag="${cleanSelector}"]:not([data-material="true"])`;
     }
 
     try {

@@ -279,11 +279,11 @@ function generateCssFromStyles(styles) {
     return '';
   };
 
-  // Body
+  // Body (Global container #easymd)
   if (S.body) {
     const bgTexture = S.body.backgroundTexture || S.body.materialTemplateId;
     const meta = (bgTexture && bgTexture !== 'none') ? { material: bgTexture } : {};
-    css += addRule('#nice, xiaofu, .markdown-body', {
+    css += addRule('#easymd', {
       color: cleanColor(S.body.color, '#2b2b2b'),
       backgroundColor: S.body.backgroundColor,
       fontSize: S.body.fontSize,
@@ -304,7 +304,7 @@ function generateCssFromStyles(styles) {
         if (S[h].materialPrefix) meta.prefix = S[h].materialPrefix;
       }
       const hColor = cleanColor(S[h].color, '#2775b6');
-      css += addRule(`#nice ${h}, xiaofu ${h}, .markdown-body ${h}`, {
+      css += addRule(h, {
         color: (hColor === '#ffffff' && !S[h].backgroundColor) ? '#2775b6' : hColor,
         fontSize: S[h].fontSize,
         fontWeight: S[h].fontWeight,
@@ -321,7 +321,7 @@ function generateCssFromStyles(styles) {
 
   // Paragraph
   if (S.p) {
-    css += addRule('#nice p, xiaofu p, .markdown-body p', {
+    css += addRule('p', {
       color: S.p.color,
       fontSize: S.p.fontSize,
       lineHeight: S.p.lineHeight
@@ -332,7 +332,7 @@ function generateCssFromStyles(styles) {
   if (S.blockquote) {
     const matId = S.blockquote.materialTemplateId || 'none';
     const meta = matId && matId !== 'none' ? { material: matId } : {};
-    css += addRule('#nice blockquote, xiaofu blockquote, .markdown-body blockquote', {
+    css += addRule('blockquote', {
       borderLeft: S.blockquote.borderLeftColor ? `4px solid ${S.blockquote.borderLeftColor}` : undefined,
       backgroundColor: S.blockquote.backgroundColor,
       color: S.blockquote.textColor
@@ -343,7 +343,7 @@ function generateCssFromStyles(styles) {
   if (S.hr) {
     const matId = S.hr.materialTemplateId || 'none';
     const meta = matId && matId !== 'none' ? { material: matId } : {};
-    css += addRule('#nice hr, xiaofu hr, .markdown-body hr', {
+    css += addRule('hr', {
       borderTop: '1px solid ' + (S.hr.borderColor || '#eaeef2'),
       margin: '24px 0'
     }, meta);
@@ -353,30 +353,30 @@ function generateCssFromStyles(styles) {
   if (S.ul || S.ol || S.li) {
     const listMatId = S.li?.materialTemplateId || S.ul?.materialTemplateId || S.ol?.materialTemplateId || 'none';
     const meta = listMatId && listMatId !== 'none' ? { material: listMatId } : {};
-    if (S.ul) css += addRule('#nice ul, xiaofu ul, .markdown-body ul', { listStyleType: S.ul.listStyleType || 'disc', paddingLeft: '18px' }, meta);
-    if (S.ol) css += addRule('#nice ol, xiaofu ol, .markdown-body ol', { listStyleType: S.ol.listStyleType || 'decimal', paddingLeft: '18px' });
-    if (S.li) css += addRule('#nice li, xiaofu li, .markdown-body li', { color: S.li.color, fontSize: S.li.fontSize, lineHeight: S.li.lineHeight });
+    if (S.ul) css += addRule('ul', { listStyleType: S.ul.listStyleType || 'disc', paddingLeft: '18px' }, meta);
+    if (S.ol) css += addRule('ol', { listStyleType: S.ol.listStyleType || 'decimal', paddingLeft: '18px' });
+    if (S.li) css += addRule('li', { color: S.li.color, fontSize: S.li.fontSize, lineHeight: S.li.lineHeight });
   }
 
   // Inline styling
-  if (S.strong) css += addRule('#nice strong, xiaofu strong, .markdown-body strong', { color: S.strong.color, fontWeight: S.strong.fontWeight });
-  if (S.em) css += addRule('#nice em, xiaofu em, .markdown-body em', { color: S.em.color, fontStyle: S.em.fontStyle || 'italic' });
-  if (S.del) css += addRule('#nice del, xiaofu del, .markdown-body del', { color: S.del.color, textDecoration: S.del.textDecoration || 'line-through' });
-  if (S.u) css += addRule('#nice u, xiaofu u, .markdown-body u', { color: S.u.color, textDecoration: 'underline' });
-  if (S.mark) css += addRule('#nice mark, xiaofu mark, .markdown-body mark', { backgroundColor: S.mark.backgroundColor, color: S.mark.color, padding: '2px 5px', borderRadius: '3px' });
-  if (S.kbd) css += addRule('#nice kbd, xiaofu kbd, .markdown-body kbd', { backgroundColor: S.kbd.backgroundColor, color: S.kbd.color, border: '1px solid ' + (S.kbd.borderColor || '#d1d5da'), padding: '2px 5px', borderRadius: '3px', fontSize: '12px' });
-  if (S.sub) css += addRule('#nice sub, xiaofu sub, .markdown-body sub', { fontSize: S.sub.fontSize || '11px', verticalAlign: 'sub' });
-  if (S.sup) css += addRule('#nice sup, xiaofu sup, .markdown-body sup', { fontSize: S.sup.fontSize || '11px', verticalAlign: 'super' });
+  if (S.strong) css += addRule('strong', { color: S.strong.color, fontWeight: S.strong.fontWeight });
+  if (S.em) css += addRule('em', { color: S.em.color, fontStyle: S.em.fontStyle || 'italic' });
+  if (S.del) css += addRule('del', { color: S.del.color, textDecoration: S.del.textDecoration || 'line-through' });
+  if (S.u) css += addRule('u', { color: S.u.color, textDecoration: 'underline' });
+  if (S.mark) css += addRule('mark', { backgroundColor: S.mark.backgroundColor, color: S.mark.color, padding: '2px 5px', borderRadius: '3px' });
+  if (S.kbd) css += addRule('kbd', { backgroundColor: S.kbd.backgroundColor, color: S.kbd.color, border: '1px solid ' + (S.kbd.borderColor || '#d1d5da'), padding: '2px 5px', borderRadius: '3px', fontSize: '12px' });
+  if (S.sub) css += addRule('sub', { fontSize: S.sub.fontSize || '11px', verticalAlign: 'sub' });
+  if (S.sup) css += addRule('sup', { fontSize: S.sup.fontSize || '11px', verticalAlign: 'super' });
 
   // Code blocks & Inline code
   if (S.code || S.pre) {
-    css += addRule('#nice pre, xiaofu pre, .markdown-body pre', {
+    css += addRule('pre', {
       fontSize: S.code?.fontSize || S.pre?.fontSize || '13px',
       lineHeight: S.code?.lineHeight || S.pre?.lineHeight || '1.6',
       letterSpacing: S.code?.letterSpacing || S.pre?.letterSpacing || '0px',
       fontFamily: S.code?.fontFamily || S.pre?.fontFamily || '"SF Mono", Consolas, Monaco, monospace'
     });
-    css += addRule('#nice :not(pre) > code, xiaofu :not(pre) > code, .markdown-body :not(pre) > code', {
+    css += addRule('code', {
       color: S.code?.color || '#bb2243',
       backgroundColor: S.code?.backgroundColor || 'rgba(27, 31, 35, 0.05)',
       fontSize: S.code?.fontSize || '13px',
@@ -387,14 +387,14 @@ function generateCssFromStyles(styles) {
   }
 
   // Table
-  if (S.table) css += addRule('#nice table, xiaofu table, .markdown-body table', { borderColor: S.table.borderColor, width: '100%' });
-  if (S.th) css += addRule('#nice th, xiaofu th, .markdown-body th', { backgroundColor: S.th.backgroundColor, color: S.th.color, fontWeight: S.th.fontWeight });
-  if (S.td) css += addRule('#nice td, xiaofu td, .markdown-body td', { borderColor: S.td.borderColor, color: S.td.color });
+  if (S.table) css += addRule('table', { borderColor: S.table.borderColor, width: '100%' });
+  if (S.th) css += addRule('th', { backgroundColor: S.th.backgroundColor, color: S.th.color, fontWeight: S.th.fontWeight });
+  if (S.td) css += addRule('td', { borderColor: S.td.borderColor, color: S.td.color });
 
   // Links & Images
-  if (S.a) css += addRule('#nice a, xiaofu a, .markdown-body a', { color: S.a.color, textDecoration: S.a.textDecoration || 'none' });
+  if (S.a) css += addRule('a', { color: S.a.color, textDecoration: S.a.textDecoration || 'none' });
   if (S.img) {
-    css += addRule('#nice img, xiaofu img, .markdown-body img', {
+    css += addRule('img', {
       borderRadius: S.img.borderRadius,
       display: S.img.display || 'block',
       margin: S.img.margin || '0 auto',
@@ -451,7 +451,7 @@ function handleCssTextChange(val) {
 
   // 3. Helper to extract CSS rule block and properties
   const extractBlock = (tagPattern) => {
-    const reg = new RegExp(`(?:#nice|xiaofu|\\.markdown-body)?\\s*${tagPattern}[^{]*?\\{([^}]+)\\}`, 'i');
+    const reg = new RegExp(`(?:^|\\n|,)\\s*(?:#(?:easymd|nice)|xiaofu|\\.markdown-body)?\\s*${tagPattern}[^{]*?\\{([^}]+)\\}`, 'i');
     const m = val.match(reg);
     return m ? m[1] : '';
   };
@@ -508,8 +508,8 @@ function handleCssTextChange(val) {
     }
   });
 
-  // Body block parsing
-  const bodyBlock = extractBlock('(?:#nice|xiaofu|\\.markdown-body)?');
+  // Body block parsing (#easymd, #nice, body)
+  const bodyBlock = extractBlock('(?:#(?:easymd|nice)|body|\\.markdown-body)?');
   if (bodyBlock) {
     if (!localStyles.value.body) localStyles.value.body = {};
     const color = getPropFromBlock(bodyBlock, 'color');
@@ -632,18 +632,57 @@ function initCodeMirror() {
   });
 }
 
-function insertSnippet(snippet) {
-  if (cmView) {
-    const mainSel = cmView.state.selection.main;
-    const textToInsert = `\n${snippet}\n`;
+// ── CSS Source Mode Anchors Navigation ──
+const activeCssAnchor = ref('');
+
+const cssAnchors = [
+  { key: 'root', label: '#easymd', sub: '全局正文', regex: /(?:^|\n)\s*#(?:easymd|nice)\s*\{/i, template: '#easymd {\n  font-size: 16px;\n  color: #3f3f3f;\n}' },
+  { key: 'h1', label: 'H1', sub: '一级标题', regex: /(?:^|\n|,)\s*(?:#(?:easymd|nice)\s+|xiaofu\s+|\.markdown-body\s+)?h1\b/i, template: 'h1 {\n  font-size: 24px;\n  font-weight: bold;\n  color: #2775b6;\n}' },
+  { key: 'h2', label: 'H2', sub: '二级标题', regex: /(?:^|\n|,)\s*(?:#(?:easymd|nice)\s+|xiaofu\s+|\.markdown-body\s+)?h2\b/i, template: 'h2 {\n  font-size: 20px;\n  font-weight: bold;\n  color: #2775b6;\n}' },
+  { key: 'h3', label: 'H3', sub: '三级标题', regex: /(?:^|\n|,)\s*(?:#(?:easymd|nice)\s+|xiaofu\s+|\.markdown-body\s+)?h3\b/i, template: 'h3 {\n  font-size: 17px;\n  font-weight: bold;\n  color: #2775b6;\n}' },
+  { key: 'h4', label: 'H4', sub: '四级标题', regex: /(?:^|\n|,)\s*(?:#(?:easymd|nice)\s+|xiaofu\s+|\.markdown-body\s+)?h4\b/i, template: 'h4 {\n  font-size: 15px;\n  font-weight: bold;\n  color: #2b2b2b;\n}' },
+  { key: 'p', label: 'P', sub: '正文段落', regex: /(?:^|\n|,)\s*(?:#(?:easymd|nice)\s+|xiaofu\s+|\.markdown-body\s+)?p\b/i, template: 'p {\n  font-size: 15px;\n  line-height: 1.8;\n  color: #3f3f3f;\n}' },
+  { key: 'blockquote', label: 'Quote', sub: '引用块', regex: /(?:^|\n|,)\s*(?:#(?:easymd|nice)\s+|xiaofu\s+|\.markdown-body\s+)?blockquote\b/i, template: 'blockquote {\n  border-left: 4px solid #2775b6;\n  background-color: #f8f9fa;\n  padding: 10px 14px;\n}' },
+  { key: 'code', label: 'Code', sub: '代码块', regex: /(?:^|\n|,)\s*(?:#(?:easymd|nice)\s+|xiaofu\s+|\.markdown-body\s+)?(?:pre|code)\b/i, template: 'pre {\n  background-color: #282c34;\n  color: #abb2bf;\n  border-radius: 8px;\n}' },
+  { key: 'inlineCode', label: '`Code`', sub: '行内代码', regex: /(?:^|\n|,)\s*(?:#(?:easymd|nice)\s+|xiaofu\s+|\.markdown-body\s+)?code\s*\{/i, template: 'code {\n  background-color: rgba(27, 31, 35, 0.05);\n  color: #d14;\n  padding: 2px 4px;\n}' },
+  { key: 'table', label: 'Table', sub: '数据表格', regex: /(?:^|\n|,)\s*(?:#(?:easymd|nice)\s+|xiaofu\s+|\.markdown-body\s+)?table\b/i, template: 'table {\n  width: 100%;\n  border-collapse: collapse;\n}' },
+  { key: 'img', label: 'Img', sub: '文章配图', regex: /(?:^|\n|,)\s*(?:#(?:easymd|nice)\s+|xiaofu\s+|\.markdown-body\s+)?img\b/i, template: 'img {\n  border-radius: 8px;\n  max-width: 100%;\n}' },
+  { key: 'list', label: 'List', sub: '有序无序', regex: /(?:^|\n|,)\s*(?:#(?:easymd|nice)\s+|xiaofu\s+|\.markdown-body\s+)?(?:ul|ol|li)\b/i, template: 'ul, ol {\n  padding-left: 20px;\n}' },
+  { key: 'hr', label: 'HR', sub: '分割线', regex: /(?:^|\n|,)\s*(?:#(?:easymd|nice)\s+|xiaofu\s+|\.markdown-body\s+)?hr\b/i, template: 'hr {\n  border: none;\n  border-top: 1px solid #e1e4e8;\n  margin: 24px 0;\n}' },
+  { key: 'strong', label: 'Bold', sub: '文本加粗', regex: /(?:^|\n|,)\s*(?:#(?:easymd|nice)\s+|xiaofu\s+|\.markdown-body\s+)?strong\b/i, template: 'strong {\n  font-weight: bold;\n  color: #2775b6;\n}' },
+  { key: 'mark', label: 'Mark', sub: '高亮标记', regex: /(?:^|\n|,)\s*(?:#(?:easymd|nice)\s+|xiaofu\s+|\.markdown-body\s+)?mark\b/i, template: 'mark {\n  background-color: #fff566;\n  color: #000;\n}' },
+  { key: 'a', label: 'Link', sub: '超链接', regex: /(?:^|\n|,)\s*(?:#(?:easymd|nice)\s+|xiaofu\s+|\.markdown-body\s+)?a\b/i, template: 'a {\n  color: #2775b6;\n  text-decoration: none;\n}' }
+];
+
+function scrollToCssAnchor(anchor) {
+  activeCssAnchor.value = anchor.key;
+  if (!cmView) return;
+
+  const docText = cmView.state.doc.toString();
+  const match = docText.match(anchor.regex);
+
+  if (match && typeof match.index === 'number') {
+    const from = match.index;
+    const line = cmView.state.doc.lineAt(from);
+    
+    // Position cursor at target line and scroll into view
     cmView.dispatch({
-      changes: { from: mainSel.from, to: mainSel.to, insert: textToInsert },
-      selection: { anchor: mainSel.from + textToInsert.length }
+      selection: { anchor: from, head: from + match[0].length },
+      effects: EditorView.scrollIntoView(line.from, { y: 'center' }),
+      scrollIntoView: true
     });
     cmView.focus();
   } else {
-    rawCssText.value += `\n\n${snippet}`;
-    handleCssTextChange(rawCssText.value);
+    // If not found, append starter rule and focus
+    const textToInsert = `\n\n${anchor.template}\n`;
+    const docLength = cmView.state.doc.length;
+    cmView.dispatch({
+      changes: { from: docLength, to: docLength, insert: textToInsert },
+      selection: { anchor: docLength + textToInsert.length - 2 },
+      effects: EditorView.scrollIntoView(docLength, { y: 'center' }),
+      scrollIntoView: true
+    });
+    cmView.focus();
   }
 }
 
@@ -1439,16 +1478,27 @@ const cssLineCount = computed(() => {
 
     <!-- Mode 2: CSS Source Code Editor (源码编辑) -->
     <div v-show="activeTab === 'code'" class="css-source-container">
-      <div class="css-toolbar">
-        <span class="css-hint">支持 CSS 规则与属性智能联想提示 (#nice, xiaofu)</span>
-        <div class="quick-snippets">
-          <button class="snippet-btn" @click="insertSnippet('#nice h1, xiaofu h1 { color: #2775b6; font-size: 28px; }')">+ H1 标题</button>
-          <button class="snippet-btn" @click="insertSnippet('#nice img, xiaofu img { border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.15); }')">+ 图片卡片</button>
-          <button class="snippet-btn" @click="insertSnippet('#nice mark, xiaofu mark { background-color: #fff566; color: #000; }')">+ 高亮 mark</button>
-          <button class="snippet-btn" @click="insertSnippet('#nice blockquote, xiaofu blockquote { border-left: 4px solid #2775b6; }')">+ 引用块</button>
-        </div>
+      <div class="css-source-body">
+        <div class="codemirror-editor-wrapper" ref="codemirrorContainerRef"></div>
+
+        <!-- Right Side Quick Anchor Navigation Rail -->
+        <aside class="css-anchors-rail">
+          <div class="anchors-rail-header">快速锚点</div>
+          <div class="anchors-list">
+            <button
+              v-for="anchor in cssAnchors"
+              :key="anchor.key"
+              class="anchor-item-btn"
+              :class="{ active: activeCssAnchor === anchor.key }"
+              :title="`${anchor.label} (${anchor.sub})`"
+              @click="scrollToCssAnchor(anchor)"
+            >
+              <span class="anchor-label">{{ anchor.label }}</span>
+              <span class="anchor-sub">{{ anchor.sub }}</span>
+            </button>
+          </div>
+        </aside>
       </div>
-      <div class="codemirror-editor-wrapper" ref="codemirrorContainerRef"></div>
     </div>
 
     <!-- Footer -->
@@ -1849,53 +1899,118 @@ const cssLineCount = computed(() => {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #fdfdfd;
+  background: var(--bg-editor, #ffffff);
 }
 
-.css-toolbar {
-  padding: 8px 12px;
-  background: #f8f9fa;
-  border-bottom: 1px solid #e1e4e8;
+.css-source-body {
+  flex: 1;
+  min-height: 0;
   display: flex;
-  flex-direction: column;
-  gap: 6px;
-  flex-shrink: 0;
-}
-
-.css-hint {
-  font-size: 11px;
-  color: #656d76;
-  font-weight: 500;
-}
-
-.quick-snippets {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-}
-
-.snippet-btn {
-  background: #ffffff;
-  border: 1px solid #d0d7de;
-  color: #24292e;
-  font-size: 11px;
-  padding: 3px 8px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.snippet-btn:hover {
-  background: #f3f4f6;
-  color: var(--accent-color, #2775b6);
-  border-color: var(--accent-color, #2775b6);
+  flex-direction: row;
+  overflow: hidden;
+  position: relative;
 }
 
 .codemirror-editor-wrapper {
   flex: 1;
-  min-height: 0;
+  min-width: 0;
+  height: 100%;
   overflow: hidden;
   position: relative;
+}
+
+.codemirror-editor-wrapper :deep(.cm-editor) {
+  height: 100%;
+}
+
+.css-anchors-rail {
+  width: 74px;
+  flex-shrink: 0;
+  height: 100%;
+  background: var(--bg-sidebar, #f7f8fa);
+  border-left: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  user-select: none;
+  z-index: 2;
+}
+
+.anchors-rail-header {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--text-muted, #8c8c8c);
+  letter-spacing: 0.04em;
+  padding: 8px 4px 6px;
+  text-align: center;
+  border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+  background: rgba(0, 0, 0, 0.02);
+}
+
+.anchors-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 4px 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.anchors-list::-webkit-scrollbar {
+  width: 3px;
+}
+
+.anchors-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 3px;
+}
+
+.anchor-item-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 2px;
+  border-radius: 6px;
+  background: transparent;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-decoration: none;
+  line-height: 1.15;
+}
+
+.anchor-item-btn:hover {
+  background: rgba(39, 117, 182, 0.08);
+  border-color: rgba(39, 117, 182, 0.2);
+}
+
+.anchor-item-btn.active {
+  background: var(--accent-color, #2775b6);
+  border-color: var(--accent-color, #2775b6);
+}
+
+.anchor-label {
+  font-size: 11px;
+  font-weight: 700;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  color: var(--text-main, #262626);
+}
+
+.anchor-item-btn.active .anchor-label {
+  color: #ffffff;
+}
+
+.anchor-sub {
+  font-size: 9px;
+  color: var(--text-muted, #8c8c8c);
+  margin-top: 1px;
+  transform: scale(0.9);
+  white-space: nowrap;
+}
+
+.anchor-item-btn.active .anchor-sub {
+  color: rgba(255, 255, 255, 0.85);
 }
 
 .codemirror-editor-wrapper :deep(.cm-editor) {

@@ -232,11 +232,12 @@ const injectedCustomCss = computed(() => {
   const css = activeCustomStyles.value?.customCss || '';
   if (!css || typeof css !== 'string') return '';
 
-  // Strip prefix aliases (#nice, xiaofu, .markdown-body, .wechat-body)
-  const cleaned = css.replace(/(?:#nice|xiaofu|\.markdown-body|\.wechat-body)\s*/g, ' ').trim();
+  // Strip prefix aliases (#easymd, #nice, xiaofu, .markdown-body, .wechat-body)
+  const cleaned = css.replace(/(?:#(?:easymd|nice)|xiaofu|\.markdown-body|\.wechat-body)\s*/g, ' ').trim();
   if (!cleaned) return '';
 
   // Map selectors so they ONLY apply inside preview-body or wechat-body (never leaking to the editor)
+  // Material templates are explicitly excluded (:not([data-material="true"])) so material templates always take precedence
   return cleaned.replace(/([^{}]+)\{([^}]+)\}/g, (m, selector, body) => {
     const rawSelectors = selector.split(',');
     const mapped = rawSelectors.map(s => {
@@ -244,27 +245,41 @@ const injectedCustomCss = computed(() => {
       if (!tag) {
         return `.preview-body, .wechat-body, .tc-rendered-paper`;
       }
-      if (tag.startsWith('.')) return `.preview-body ${tag}, .wechat-body ${tag}, .tc-rendered-paper ${tag}`;
+      if (tag.startsWith('.')) {
+        return `.preview-body ${tag}:not([data-material="true"]):not(.material-block), .wechat-body ${tag}:not([data-material="true"]):not(.material-block), .tc-rendered-paper ${tag}:not([data-material="true"]):not(.material-block)`;
+      }
       if (/^h[1-6]$/i.test(tag)) {
         const h = tag.toLowerCase();
-        return `.preview-body ${h}, .preview-body [data-heading="${h}"], .preview-body [data-heading="${h}"] *, .wechat-body ${h}, .wechat-body [data-heading="${h}"], .wechat-body [data-heading="${h}"] *, .phone-screen-scroll ${h}, .phone-screen-scroll [data-heading="${h}"], .phone-screen-scroll [data-heading="${h}"] *, .tc-rendered-paper ${h}, .tc-rendered-paper [data-heading="${h}"]`;
+        return `.preview-body ${h}:not([data-material="true"]):not(.material-block), .preview-body [data-heading="${h}"]:not([data-material="true"]):not(.material-block), .preview-body [data-heading="${h}"]:not([data-material="true"]):not(.material-block) > .content, .wechat-body ${h}:not([data-material="true"]):not(.material-block), .wechat-body [data-heading="${h}"]:not([data-material="true"]):not(.material-block), .wechat-body [data-heading="${h}"]:not([data-material="true"]):not(.material-block) > .content, .phone-screen-scroll ${h}:not([data-material="true"]):not(.material-block), .phone-screen-scroll [data-heading="${h}"]:not([data-material="true"]):not(.material-block), .tc-rendered-paper ${h}:not([data-material="true"]):not(.material-block), .tc-rendered-paper [data-heading="${h}"]:not([data-material="true"]):not(.material-block)`;
       }
       if (tag === 'blockquote') {
-        return `.preview-body blockquote, .preview-body blockquote *, .wechat-body blockquote, .wechat-body blockquote *, .phone-screen-scroll blockquote, .tc-rendered-paper blockquote`;
+        return `.preview-body blockquote:not([data-material="true"]):not(.material-block), .wechat-body blockquote:not([data-material="true"]):not(.material-block), .phone-screen-scroll blockquote:not([data-material="true"]):not(.material-block), .tc-rendered-paper blockquote:not([data-material="true"]):not(.material-block)`;
       }
       if (tag === 'hr') {
-        return `.preview-body hr, .wechat-body hr, .phone-screen-scroll hr, .tc-rendered-paper hr`;
+        return `.preview-body hr:not([data-material="true"]):not(.material-block), .wechat-body hr:not([data-material="true"]):not(.material-block), .phone-screen-scroll hr:not([data-material="true"]):not(.material-block), .tc-rendered-paper hr:not([data-material="true"]):not(.material-block)`;
       }
       if (tag === 'p') {
-        return `.preview-body p, .wechat-body p, .phone-screen-scroll p, .tc-rendered-paper p`;
+        return `.preview-body p:not([data-material="true"]):not(.material-block), .wechat-body p:not([data-material="true"]):not(.material-block), .phone-screen-scroll p:not([data-material="true"]):not(.material-block), .tc-rendered-paper p:not([data-material="true"]):not(.material-block)`;
       }
       if (tag === 'code') {
-        return `.preview-body code, .preview-body span[data-tag="code"], .preview-body .hljs, .wechat-body code, .wechat-body span[data-tag="code"], .wechat-body .hljs`;
+        return `.preview-body code:not([data-material="true"]):not([data-code-block="true"]):not(.code-snippet__fix), .preview-body span[data-tag="code"]:not([data-material="true"]), .wechat-body code:not([data-material="true"]):not([data-code-block="true"]):not(.code-snippet__fix)`;
       }
-      return `.preview-body ${tag}, .preview-body .markdown-body ${tag}, .wechat-body ${tag}, .phone-screen-scroll ${tag}, .tc-rendered-paper ${tag}`;
+      if (tag === 'pre') {
+        return `.preview-body pre:not([data-material="true"]):not([data-code-block="true"]), .wechat-body pre:not([data-material="true"]):not([data-code-block="true"])`;
+      }
+      if (tag === 'table' || tag === 'th' || tag === 'td') {
+        return `.preview-body ${tag}:not([data-material="true"]), .wechat-body ${tag}:not([data-material="true"]), .tc-rendered-paper ${tag}:not([data-material="true"])`;
+      }
+      if (tag === 'ul' || tag === 'ol' || tag === 'li') {
+        return `.preview-body ${tag}:not([data-material="true"]):not(.material-block), .wechat-body ${tag}:not([data-material="true"]):not(.material-block), .tc-rendered-paper ${tag}:not([data-material="true"]):not(.material-block)`;
+      }
+      if (tag === 'img') {
+        return `.preview-body img:not([data-material="true"]), .wechat-body img:not([data-material="true"]), .tc-rendered-paper img:not([data-material="true"])`;
+      }
+      return `.preview-body ${tag}:not([data-material="true"]), .wechat-body ${tag}:not([data-material="true"]), .phone-screen-scroll ${tag}:not([data-material="true"]), .tc-rendered-paper ${tag}:not([data-material="true"])`;
     }).filter(Boolean);
 
-    // Append !important to declarations so custom CSS overrides inline styles on rendered elements
+    // Append !important to declarations so custom CSS overrides base inline styles while preserving materials
     const importantBody = body.split(';')
       .map(line => {
         const trimmed = line.trim();
