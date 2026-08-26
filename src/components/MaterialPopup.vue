@@ -59,11 +59,12 @@ const searchQuery = ref('');
 
 const categories = [
   { id: 'all', label: '全部模版' },
-  { id: '135hot', label: '135 爆款', match: (t) => t.tag?.includes('135') || t.name?.includes('135') || t.tags?.some(x => x.includes('135')) },
-  { id: 'fresh', label: '清新活力', match: (t) => t.styleCategory === 'fresh' || t.tag?.includes('清新') || t.tag?.includes('薄荷') || t.tag?.includes('夏风') },
-  { id: 'business', label: '商务科技', match: (t) => t.styleCategory === 'business' || t.styleCategory === 'tech' || t.tag?.includes('科技') || t.tag?.includes('商务') },
-  { id: 'guofeng', label: '国风古韵', match: (t) => t.styleCategory === 'guofeng' || t.tag?.includes('国风') },
-  { id: 'minimal', label: '极简莫兰迪', match: (t) => t.styleCategory === 'minimal' || t.tag?.includes('极简') || t.tag?.includes('莫兰迪') || t.id === 'none' }
+  { id: '135hot', label: '135 爆款', match: (t) => t.styleCategory === '135hot' || t.tag?.includes('135') || t.name?.includes('135') || t.tags?.some(x => x?.includes('135')) },
+  { id: 'fresh', label: '清新活力', match: (t) => t.styleCategory === 'fresh' || t.tag?.includes('清新') || t.tag?.includes('薄荷') || t.tag?.includes('夏风') || t.tag?.includes('手账') || t.tag?.includes('便签') },
+  { id: 'business', label: '商务科技', match: (t) => t.styleCategory === 'business' || t.tag?.includes('商务') || t.tag?.includes('双色') || t.tag?.includes('时间轴') || t.tag?.includes('Notion') },
+  { id: 'guofeng', label: '国风古韵', match: (t) => t.styleCategory === 'guofeng' || t.tag?.includes('国风') || t.tag?.includes('水墨') || t.tag?.includes('古风') || t.tag?.includes('宣纸') },
+  { id: 'minimal', label: '极简大刊', match: (t) => t.styleCategory === 'minimal' || t.tag?.includes('极简') || t.tag?.includes('莫兰迪') || t.tag?.includes('大刊') || t.tag?.includes('杂志') || t.id === 'none' },
+  { id: 'tech', label: '极客代码', match: (t) => t.styleCategory === 'tech' || t.tag?.includes('极客') || t.tag?.includes('代码') || t.tag?.includes('赛博') || t.tag?.includes('终端') }
 ];
 
 const filteredList = computed(() => {
@@ -90,7 +91,7 @@ function handlePrefixChange(e) {
 }
 
 function hasPrefixOption(id) {
-  return ['h-135-part01-leaf', 'h-135-part02-peach', 'h-135-part03-purple', 'h-135-morandi-block'].includes(id);
+  return ['h-135-part01-leaf', 'h-135-part02-peach', 'h-135-part03-purple', 'h-135-morandi-block', 'h-pill-duotone'].includes(id);
 }
 </script>
 

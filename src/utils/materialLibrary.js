@@ -24,6 +24,38 @@ export const materialCategories = [
   { id: 'footer_widgets', name: '文末三连' }
 ];
 
+export const styleCategories = [
+  { id: 'all', name: '全部风格', icon: '✨' },
+  { id: '135hot', name: '135 爆款', icon: '🔥' },
+  { id: 'fresh', name: '清新活力', icon: '🌿' },
+  { id: 'business', name: '商务科技', icon: '💼' },
+  { id: 'guofeng', name: '国风古韵', icon: '🏮' },
+  { id: 'minimal', name: '极简大刊', icon: '📐' },
+  { id: 'tech', name: '极客代码', icon: '⚡' }
+];
+
+export const styleCategoryMap = {
+  '135hot': { name: '135 爆款', color: '#ea580c', bg: '#fff7ed', border: '#ffedd5' },
+  'fresh': { name: '清新活力', color: '#16a34a', bg: '#f0fdf4', border: '#dcfce7' },
+  'business': { name: '商务科技', color: '#2563eb', bg: '#eff6ff', border: '#dbeafe' },
+  'guofeng': { name: '国风古韵', color: '#b91c1c', bg: '#fef2f2', border: '#fee2e2' },
+  'minimal': { name: '极简大刊', color: '#475569', bg: '#f8fafc', border: '#e2e8f0' },
+  'tech': { name: '极客代码', color: '#0284c7', bg: '#f0f9ff', border: '#e0f2fe' }
+};
+
+export const categoryNameMap = {
+  'backgrounds': '背景底纹',
+  'headings': '标题/序号',
+  'quotes': '金句/引用',
+  'callouts': '提示/卡片',
+  'lists': '步骤/列表',
+  'tech_cards': '代码/极客',
+  'tables': '表格/对比',
+  'dividers': '分割线',
+  'header_widgets': '顶部导读',
+  'footer_widgets': '文末三连'
+};
+
 export const materials = [
   // ── 背景底纹精选素材 (纯底纹展示) ──
   {
@@ -1254,6 +1286,118 @@ export const headingTemplates = [
   </section>
 </section>`;
     }
+  },
+  {
+    id: 'h-oriental-seal',
+    name: '国风朱砂·双印章雅宋标题',
+    description: '古典朱砂印章 + 雅宋衬线字体 + 双红线收口 + ❖ 吉祥符',
+    tag: '国风水墨',
+    styleCategory: 'guofeng',
+    hasAutoNumber: true,
+    hasCustomPrefix: false,
+    previewHtml: `<div style="display:inline-flex;align-items:center;gap:6px;border-bottom:2px solid #b91c1c;padding-bottom:2px;"><span style="background:#b91c1c;color:#fff;font-size:10px;padding:1px 5px;border-radius:2px;font-family:serif;">壹·章</span><span style="font-size:13px;font-weight:800;color:#1c1917;font-family:serif;">水墨流转·文气自华</span><span style="color:#b91c1c;font-size:11px;">❖</span></div>`,
+    render: (title, index) => {
+      const numMap = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖', '拾'];
+      const numLabel = numMap[index] || String(index);
+      return `<section style="margin: 28px 0 18px; clear: both; text-align: left;" data-material="true">
+  <section style="display: inline-flex; align-items: center; gap: 10px; border-bottom: 2px solid #b91c1c; padding-bottom: 6px; position: relative;">
+    <section style="background: #b91c1c; color: #ffffff; font-family: 'Songti SC', 'SimSun', serif; font-size: 13px; font-weight: 700; padding: 3px 8px; border-radius: 2px; box-shadow: 2px 2px 0px rgba(185, 28, 28, 0.25); letter-spacing: 2px;">
+      ${numLabel}·章
+    </section>
+    <span style="font-family: 'Songti SC', 'Source Han Serif SC', serif; font-size: 19px; font-weight: 800; color: #1c1917; letter-spacing: 2px;">
+      ${title}
+    </span>
+    <span style="color: #b91c1c; font-size: 16px; margin-left: 2px;">❖</span>
+  </section>
+</section>`;
+    }
+  },
+  {
+    id: 'h-cyber-terminal',
+    name: '极客赛博·终端发光命令标题',
+    description: '深黑终端底色 + 霓虹亮青光标 + 命令行提示符 ❯_ [SEC_01]',
+    tag: '赛博极客',
+    styleCategory: 'tech',
+    hasAutoNumber: true,
+    hasCustomPrefix: false,
+    previewHtml: `<div style="background:#0f172a;padding:4px 10px;border-radius:6px;border:1px solid rgba(56,189,248,0.4);display:inline-flex;align-items:center;gap:6px;"><span style="color:#38bdf8;font-family:monospace;font-size:10px;font-weight:700;">❯_ [SEC_01]</span><span style="color:#f8fafc;font-size:12px;font-weight:700;">高并发链路与架构基建</span></div>`,
+    render: (title, index) => {
+      const indexPadded = String(index).padStart(2, '0');
+      return `<section style="margin: 28px 0 18px; clear: both;" data-material="true">
+  <section style="display: inline-flex; align-items: center; background: #0f172a; padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.4); box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);">
+    <span style="color: #38bdf8; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; font-weight: 700; margin-right: 8px;">❯_ [SEC_${indexPadded}]</span>
+    <span style="color: #f8fafc; font-family: 'Inter', -apple-system, sans-serif; font-size: 16px; font-weight: 700; letter-spacing: 0.5px;">${title}</span>
+    <span style="display: inline-block; width: 8px; height: 14px; background: #38bdf8; margin-left: 8px; opacity: 0.85;"></span>
+  </section>
+</section>`;
+    }
+  },
+  {
+    id: 'h-editorial-roman',
+    name: '大刊社论·半透罗马序号大标题',
+    description: '底置超大浅灰罗马序号 + 精致无衬线加粗主标 + 极简纯黑下划线',
+    tag: '杂志社论',
+    styleCategory: 'minimal',
+    hasAutoNumber: true,
+    hasCustomPrefix: false,
+    previewHtml: `<div style="position:relative;padding:4px 0;"><div style="font-size:24px;font-weight:900;color:rgba(0,0,0,0.08);line-height:1;margin-bottom:-10px;font-family:serif;">01.</div><div style="border-bottom:2px solid #0a0a0a;display:inline-block;padding-bottom:2px;font-size:13px;font-weight:800;color:#0a0a0a;">范式转移与核心增长飞轮</div></div>`,
+    render: (title, index) => {
+      const indexPadded = String(index).padStart(2, '0');
+      return `<section style="margin: 32px 0 20px; clear: both; position: relative;" data-material="true">
+  <div style="font-family: 'Times New Roman', serif; font-size: 46px; font-weight: 900; color: rgba(0, 0, 0, 0.07); line-height: 1; margin-bottom: -18px; user-select: none;">
+    ${indexPadded}.
+  </div>
+  <div style="display: inline-block; border-bottom: 2.5px solid #0a0a0a; padding-bottom: 5px;">
+    <h3 style="margin: 0; font-family: 'Outfit', 'PingFang SC', sans-serif; font-size: 20px; font-weight: 800; color: #0a0a0a; letter-spacing: -0.02em;">
+      ${title}
+    </h3>
+  </div>
+</section>`;
+    }
+  },
+  {
+    id: 'h-handdrawn-pin',
+    name: '手账手绘·立体图钉便签标题',
+    description: '倾斜手写黄色标签 + 3D 红色图钉 + 荧光马克笔底色',
+    tag: '手账便签',
+    styleCategory: 'fresh',
+    hasAutoNumber: false,
+    hasCustomPrefix: false,
+    previewHtml: `<div style="background:#fef08a;padding:4px 8px;border-radius:4px;display:inline-flex;align-items:center;gap:4px;border-left:3px solid #eab308;box-shadow:1px 2px 4px rgba(0,0,0,0.08);"><span>📌</span><span style="font-size:12px;font-weight:bold;color:#713f12;">今日灵感清单与实操笔记</span></div>`,
+    render: (title) => {
+      return `<section style="margin: 28px 0 18px; clear: both; text-align: left;" data-material="true">
+  <section style="display: inline-block; position: relative; background: #fef08a; padding: 7px 18px 7px 14px; border-radius: 4px; transform: rotate(-1.5deg); box-shadow: 2px 3px 6px rgba(0,0,0,0.08); border-left: 4px solid #eab308;">
+    <span style="position: absolute; top: -10px; left: 10px; font-size: 16px;">📌</span>
+    <span style="font-family: 'PingFang SC', sans-serif; font-size: 16px; font-weight: 800; color: #713f12; margin-left: 14px; letter-spacing: 0.5px;">
+      ${title}
+    </span>
+  </section>
+</section>`;
+    }
+  },
+  {
+    id: 'h-pill-duotone',
+    name: '现代双色·渐变胶囊药丸标题',
+    description: '深蓝主序号胶囊 + 天蓝浅底扩展条 + 纯白反差对亮点',
+    tag: '现代双色',
+    styleCategory: 'business',
+    hasAutoNumber: true,
+    hasCustomPrefix: true,
+    previewHtml: `<div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:9999px;padding:2px 8px 2px 2px;display:inline-flex;align-items:center;gap:6px;"><span style="background:linear-gradient(135deg,#2563eb,#1d4ed8);color:#fff;font-size:9px;font-weight:bold;padding:2px 6px;border-radius:9999px;">STEP 01</span><span style="font-size:12px;font-weight:bold;color:#1e3a8a;">系统环境初始化</span></div>`,
+    render: (title, index, options = {}) => {
+      const prefix = options.prefix || 'STEP';
+      const indexPadded = String(index).padStart(2, '0');
+      return `<section style="margin: 28px 0 18px; clear: both;" data-material="true">
+  <section style="display: inline-flex; align-items: center; background: #eff6ff; border-radius: 9999px; padding: 3px 16px 3px 4px; border: 1px solid #bfdbfe;">
+    <span style="background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 9999px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);">
+      ${prefix} ${indexPadded}
+    </span>
+    <span style="font-size: 15px; font-weight: 700; color: #1e3a8a; margin-left: 10px; letter-spacing: 0.2px;">
+      ${title}
+    </span>
+  </section>
+</section>`;
+    }
   }
 ];
 
@@ -1329,6 +1473,70 @@ export const quoteTemplates = [
 </blockquote>`
   },
   {
+    id: 'q-terminal-log',
+    name: '极客 Mac 终端·命令输出引用框',
+    description: 'macOS 红黄绿三色原生按钮 + 暗色磨砂背景 + 极客哲学金句',
+    tag: '极客终端',
+    styleCategory: 'tech',
+    previewHtml: `<div style="background:#0f172a;border-radius:6px;padding:6px;color:#f8fafc;font-size:11px;font-family:monospace;"><div style="color:#ef4444;font-size:8px;">● ● ● bash</div><div style="color:#38bdf8;margin-top:2px;">$ cat core_philosophy.txt</div></div>`,
+    render: (content) => `<section style="margin: 24px 0; background: #0f172a; border-radius: 10px; overflow: hidden; border: 1px solid #1e293b; box-shadow: 0 8px 24px rgba(0,0,0,0.15);" data-material="true">
+  <div style="display: flex; align-items: center; padding: 10px 14px; background: #1e293b; border-bottom: 1px solid #334155;">
+    <div style="display: flex; gap: 6px;">
+      <span style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block;"></span>
+      <span style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span>
+      <span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
+    </div>
+    <span style="margin: 0 auto; color: #94a3b8; font-size: 11px; font-family: monospace;">bash — 80x24</span>
+  </div>
+  <div style="padding: 16px 20px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13.5px; line-height: 1.7; color: #e2e8f0;">
+    <p style="color: #38bdf8; margin: 0 0 6px 0;">$ cat core_philosophy.txt</p>
+    <p style="margin: 0; color: #f1f5f9; font-style: italic;">“${content}”</p>
+  </div>
+</section>`
+  },
+  {
+    id: 'q-ancient-scroll',
+    name: '古风典籍·宣纸朱砂双线古卷引用',
+    description: '宣纸米黄底色 + 典雅回纹边框 + 朱砂红篆刻印章 + 典雅竖排风韵',
+    tag: '古风宣纸',
+    styleCategory: 'guofeng',
+    previewHtml: `<div style="background:#fefcf6;border:2px solid #854d0e;padding:6px;font-size:11px;color:#78350f;font-family:serif;">📜 宣纸古卷金句引用...</div>`,
+    render: (content) => `<section style="margin: 28px 0; background: #fdfbf7; border: 2px solid #92400e; border-radius: 4px; padding: 22px 26px; box-shadow: inset 0 0 16px rgba(146, 64, 14, 0.05); position: relative;" data-material="true">
+  <div style="position: absolute; top: -12px; right: 24px; background: #991b1b; color: #ffffff; font-size: 11px; font-family: 'Songti SC', serif; padding: 2px 8px; border-radius: 2px; letter-spacing: 2px;">典籍·录</div>
+  <blockquote style="margin: 0; font-family: 'Songti SC', 'Source Han Serif SC', serif; font-size: 15px; line-height: 1.9; color: #451a03; letter-spacing: 1px;">
+    ${content}
+  </blockquote>
+</section>`
+  },
+  {
+    id: 'q-magazine-bigquote',
+    name: '大刊双引号·巨型流光大字符金句',
+    description: '底置超大淡青渐变双引号 + 高级极简无界留白 + 优雅黑体排印',
+    tag: '大刊金句',
+    styleCategory: 'minimal',
+    previewHtml: `<div style="background:#f8fafc;border-left:3px solid #0f172a;padding:6px;font-size:11px;color:#334155;"><span style="font-size:16px;font-family:Georgia;color:#0ea5e9;">“</span> 时代车轮滚滚向前...</div>`,
+    render: (content) => `<blockquote style="margin: 28px 0; position: relative; padding: 24px 28px; background: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; overflow: hidden;" data-material="true">
+  <span style="position: absolute; top: -16px; left: 12px; font-family: 'Times New Roman', serif; font-size: 80px; font-weight: 900; color: rgba(14, 165, 233, 0.12); line-height: 1; user-select: none;">“</span>
+  <p style="margin: 0; position: relative; z-index: 1; font-family: 'PingFang SC', sans-serif; font-size: 15px; font-weight: 600; line-height: 1.85; color: #1e293b; letter-spacing: 0.3px;">
+    ${content}
+  </p>
+</blockquote>`
+  },
+  {
+    id: 'q-highlighter-marker',
+    name: '手绘荧光·胶带纸荧光笔涂抹金句',
+    description: '顶部磨砂半透撕裂胶带 + 荧光马克笔高亮涂抹划线',
+    tag: '荧光涂抹',
+    styleCategory: 'fresh',
+    previewHtml: `<div style="background:#fffbeb;border:1px dashed #fde68a;padding:6px;font-size:11px;color:#78350f;">🏷️ 胶带贴纸 · 划重点笔记</div>`,
+    render: (content) => `<section style="margin: 32px 0 24px; position: relative; background: #fffbeb; border: 1px dashed #fde68a; border-radius: 8px; padding: 22px 20px 18px;" data-material="true">
+  <div style="position: absolute; top: -10px; left: 50%; transform: translateX(-50%); width: 70px; height: 18px; background: rgba(254, 240, 138, 0.75); border-left: 2px dashed rgba(0,0,0,0.15); border-right: 2px dashed rgba(0,0,0,0.15); box-shadow: 0 2px 4px rgba(0,0,0,0.04);"></div>
+  <p style="margin: 0; font-size: 14.5px; line-height: 1.8; color: #78350f;">
+    ${content}
+  </p>
+</section>`
+  },
+  {
     id: 'c-135-orange-fire',
     name: '135 橙色热度关注框',
     description: '橙色高光底色 + 🔥 热度图标',
@@ -1337,6 +1545,64 @@ export const quoteTemplates = [
     previewHtml: `<div style="padding: 8px 12px; background: #fff7ed; border-left: 4px solid #f97316; font-size: 12px; color: #c2410c;">🔥 核心干货要点...</div>`,
     render: (content) => `<section style="margin: 20px 0; padding: 16px 20px; background: #fff7ed; border: 1px solid #ffedd5; border-left: 5px solid #f97316; border-radius: 8px; color: #c2410c; font-size: 14px; line-height: 1.75;" data-material="true">
   <strong style="display: block; margin-bottom: 6px; font-size: 15px; color: #ea580c;">🔥 核心干货：</strong>${content}
+</section>`
+  },
+  {
+    id: 'c-notion-info',
+    name: 'Notion 极简彩卡·天蓝信息提示盒',
+    description: '极简柔和天蓝浅底 + ℹ️ 极简小图标',
+    tag: 'Notion彩卡',
+    styleCategory: 'business',
+    previewHtml: `<div style="background:#f0f9ff;border-left:3px solid #0284c7;padding:6px;font-size:11px;color:#0369a1;">ℹ️ 架构演进路线图...</div>`,
+    render: (content) => `<section style="margin: 22px 0; padding: 16px 20px; background: #f0f9ff; border: 1px solid #e0f2fe; border-left: 4px solid #0284c7; border-radius: 0 10px 10px 0; color: #0369a1; font-size: 14px; line-height: 1.75;" data-material="true">
+  <strong style="display: block; margin-bottom: 4px; font-size: 14.5px; color: #0284c7;">ℹ️ 核心要点：</strong>${content}
+</section>`
+  },
+  {
+    id: 'c-notion-tip',
+    name: 'Notion 极简彩卡·薄荷绿技巧小贴士',
+    description: '薄荷浅绿底色 + 💡 贴士图标',
+    tag: 'Notion彩卡',
+    styleCategory: 'fresh',
+    previewHtml: `<div style="background:#f0fdf4;border-left:3px solid #16a34a;padding:6px;font-size:11px;color:#15803d;">💡 提效实用小贴士...</div>`,
+    render: (content) => `<section style="margin: 22px 0; padding: 16px 20px; background: #f0fdf4; border: 1px solid #dcfce7; border-left: 4px solid #16a34a; border-radius: 0 10px 10px 0; color: #15803d; font-size: 14px; line-height: 1.75;" data-material="true">
+  <strong style="display: block; margin-bottom: 4px; font-size: 14.5px; color: #16a34a;">💡 实用贴士：</strong>${content}
+</section>`
+  },
+  {
+    id: 'c-notion-warning',
+    name: 'Notion 极简彩卡·暖橙警示避坑指南',
+    description: '暖橙浅底 + ⚡ 避坑小图标',
+    tag: 'Notion彩卡',
+    styleCategory: '135hot',
+    previewHtml: `<div style="background:#fff7ed;border-left:3px solid #ea580c;padding:6px;font-size:11px;color:#c2410c;">⚡ 避坑踩雷提示...</div>`,
+    render: (content) => `<section style="margin: 22px 0; padding: 16px 20px; background: #fff7ed; border: 1px solid #ffedd5; border-left: 4px solid #ea580c; border-radius: 0 10px 10px 0; color: #c2410c; font-size: 14px; line-height: 1.75;" data-material="true">
+  <strong style="display: block; margin-bottom: 4px; font-size: 14.5px; color: #ea580c;">⚡ 避坑指南：</strong>${content}
+</section>`
+  },
+  {
+    id: 'c-notion-danger',
+    name: 'Notion 极简彩卡·绯红高危禁止操作箱',
+    description: '绯红浅底 + 🚫 高危禁止图标',
+    tag: 'Notion彩卡',
+    styleCategory: 'minimal',
+    previewHtml: `<div style="background:#fef2f2;border-left:3px solid #dc2626;padding:6px;font-size:11px;color:#991b1b;">🚫 高危禁止操作...</div>`,
+    render: (content) => `<section style="margin: 22px 0; padding: 16px 20px; background: #fef2f2; border: 1px solid #fee2e2; border-left: 4px solid #dc2626; border-radius: 0 10px 10px 0; color: #991b1b; font-size: 14px; line-height: 1.75;" data-material="true">
+  <strong style="display: block; margin-bottom: 4px; font-size: 14.5px; color: #dc2626;">🚫 高危禁忌：</strong>${content}
+</section>`
+  },
+  {
+    id: 'c-folded-memo',
+    name: '3D 立体·右上折角便签贴',
+    description: '模拟拟真便签右上真实 45° 三角折角 + 拟真纸张投影',
+    tag: '立体便签',
+    styleCategory: 'fresh',
+    previewHtml: `<div style="background:#fefce8;border:1px solid #fef08a;border-radius:6px;padding:6px;font-size:11px;color:#854d0e;">📌 备忘录便签...</div>`,
+    render: (content) => `<section style="margin: 24px 0; position: relative; background: #fefce8; border: 1px solid #fef08a; border-radius: 4px 18px 4px 4px; padding: 20px 22px; box-shadow: 2px 4px 12px rgba(0,0,0,0.06); overflow: hidden;" data-material="true">
+  <div style="position: absolute; top: 0; right: 0; width: 0; height: 0; border-style: solid; border-width: 0 18px 18px 0; border-color: transparent #eab308 transparent transparent; box-shadow: -2px 2px 4px rgba(0,0,0,0.1);"></div>
+  <p style="margin: 0; font-size: 14px; line-height: 1.8; color: #854d0e;">
+    📌 <strong>备忘录：</strong>${content}
+  </p>
 </section>`
   },
   {
@@ -1400,6 +1666,18 @@ export const dividerTemplates = [
 </section>`
   },
   {
+    id: 'd-scissors-coupon',
+    name: '虚线剪刀·优惠券裁切打孔分割线',
+    description: '左右打孔圆弧 + 粗虚线 + 旋转剪刀图标',
+    tag: '虚线剪刀',
+    styleCategory: '135hot',
+    previewHtml: `<div style="display: flex; align-items: center; gap: 6px; color: #94a3b8; font-size: 12px;">✂️ ------------------</div>`,
+    render: () => `<section style="margin: 28px 0; display: flex; align-items: center; gap: 8px; color: #94a3b8; clear: both;" data-material="true">
+  <span style="font-size: 16px; transform: rotate(-90deg);">✂️</span>
+  <div style="flex: 1; border-top: 1.5px dashed #cbd5e1; height: 0;"></div>
+</section>`
+  },
+  {
     id: 'd-135-double-wave',
     name: '135 暖黄浪漫浪花分割线',
     description: '优雅手绘双重浪花线条',
@@ -1410,6 +1688,19 @@ export const dividerTemplates = [
   <svg width="200" height="12" viewBox="0 0 200 12" fill="none" style="display: inline-block; margin: 0 auto; max-width: 100%;">
     <path d="M0 6 Q 15 0, 30 6 T 60 6 T 90 6 T 120 6 T 150 6 T 180 6 T 200 6" stroke="#f59e0b" stroke-width="2" stroke-linecap="round"/>
   </svg>
+</section>`
+  },
+  {
+    id: 'd-sparkle-diamond',
+    name: '星芒闪耀·双侧流光居中微光分割线',
+    description: '两端淡出渐变线条 + 居中璀璨 ✦ 菱形星芒',
+    tag: '星芒分割',
+    styleCategory: 'minimal',
+    previewHtml: `<div style="text-align: center; color: #64748b; font-size: 12px;">─── ✦ ───</div>`,
+    render: () => `<section style="margin: 32px 0; display: flex; align-items: center; justify-content: center; gap: 12px; clear: both;" data-material="true">
+  <div style="flex: 1; height: 1px; background: linear-gradient(90deg, transparent, #cbd5e1);"></div>
+  <span style="color: #64748b; font-size: 14px;">✦</span>
+  <div style="flex: 1; height: 1px; background: linear-gradient(90deg, #cbd5e1, transparent);"></div>
 </section>`
   },
   {
@@ -1461,6 +1752,31 @@ export const listTemplates = [
   </section>
 </li>`;
     }
+  },
+  {
+    id: 'l-timeline-milestone',
+    name: '彩色时间轴·大事记里程碑流程',
+    description: '纵向连接轴线 + 渐变圆形节点 + 阴影卡片列表',
+    tag: '时间轴',
+    styleCategory: 'business',
+    hasAutoNumber: true,
+    previewHtml: `<div style="border-left:2px solid #3b82f6;padding-left:8px;font-size:12px;color:#1e40af;">● 节点一：方案评审<br/>● 节点二：开发上线</div>`,
+    render: (itemHtml, index) => `<li style="list-style: none; margin-bottom: 12px; padding-left: 20px; border-left: 2px solid #3b82f6; position: relative;" data-material="true">
+  <span style="position: absolute; left: -7px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: #2563eb; border: 2px solid #ffffff; box-shadow: 0 0 0 2px #3b82f6;"></span>
+  <div style="font-size: 14.5px; color: #1e293b; line-height: 1.7;">${itemHtml}</div>
+</li>`
+  },
+  {
+    id: 'l-task-checklist',
+    name: '极简方格·任务清单待办 Checklist',
+    description: '柔和浅绿勾选小方盒 + 划掉完成效果',
+    tag: '任务清单',
+    styleCategory: 'fresh',
+    previewHtml: `<div style="font-size:12px;color:#15803d;">☑️ 核心指标已对齐<br/>☑️ 生产环境已部署</div>`,
+    render: (itemHtml) => `<li style="list-style: none; margin-bottom: 8px; display: flex; align-items: flex-start; gap: 8px;" data-material="true">
+  <span style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 3px; background: #16a34a; color: #ffffff; font-size: 11px; font-weight: bold; margin-top: 3px; flex-shrink: 0;">✓</span>
+  <span style="font-size: 14.5px; color: #334155; line-height: 1.7;">${itemHtml}</span>
+</li>`
   },
   {
     id: 'list-leaf-bullet',
@@ -1527,6 +1843,25 @@ export const headerWidgetTemplates = [
   </div>
   <p style="font-size: 13.5px; line-height: 1.7; color: #14532d; margin: 0; word-break: break-word;">
     💡 <strong>导读摘要：</strong> ${summary}
+  </p>
+</section>`;
+    }
+  },
+  {
+    id: 'hw-tldr-summary',
+    name: '观点精粹·TL;DR 30秒核心要点速览',
+    description: '高亮总结卡片，帮助读者30秒抓住全文核心精髓',
+    tag: 'TL;DR导读',
+    styleCategory: 'business',
+    previewHtml: `<div style="background:#f8fafc;border-left:3px solid #3b82f6;padding:6px;font-size:11px;color:#1e3a8a;">⚡ <strong>TL;DR · 30秒核心要点</strong></div>`,
+    render: (options = {}) => {
+      const summary = options.summary || '采用 AST 抽象语法树与专属 CSS 隔离渲染引擎，全网矩阵同步发布效率提升 10 倍以上。';
+      return `<section style="margin: 0 0 24px 0; padding: 18px 20px; background: #f8fafc; border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.02);" data-material="true">
+  <div style="font-size: 14px; font-weight: 800; color: #1e3a8a; display: flex; align-items: center; gap: 6px; margin-bottom: 8px;">
+    <span>⚡</span> <span>TL;DR · 30秒核心要点</span>
+  </div>
+  <p style="margin: 0; font-size: 13.5px; color: #334155; line-height: 1.75;">
+    ${summary}
   </p>
 </section>`;
     }
@@ -1601,6 +1936,24 @@ export const footerWidgetTemplates = [
   </div>
 </section>`;
     }
+  },
+  {
+    id: 'fw-social-matrix',
+    name: '全网矩阵·微信/掘金/知乎多平台一键关注',
+    description: '极具品质的多社交平台彩色徽标阵列与订阅引导',
+    tag: '社交矩阵',
+    styleCategory: 'business',
+    previewHtml: `<div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:6px;padding:6px;font-size:11px;text-align:center;color:#0f172a;">🚀 关注全网技术专栏</div>`,
+    render: () => `<section style="margin: 32px 0 16px; padding: 22px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 4px 18px rgba(0,0,0,0.04); text-align: center;" data-material="true">
+  <div style="font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">🚀 与 100,000+ 创作者共同成长</div>
+  <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">欢迎在各大技术社区关注我的专栏，获取每周独家干货更新</p>
+  <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 8px;">
+    <span style="background: #f0fdf4; color: #166534; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid #bbf7d0;">💚 微信公众号</span>
+    <span style="background: #eff6ff; color: #1e40af; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid #bfdbfe;">💙 知乎专栏</span>
+    <span style="background: #fff7ed; color: #c2410c; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid #fed7aa;">🧡 稀土掘金</span>
+    <span style="background: #f8fafc; color: #0f172a; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid #cbd5e1;">🖤 GitHub 开源</span>
+  </div>
+</section>`
   },
   {
     id: 'f-author-cta',

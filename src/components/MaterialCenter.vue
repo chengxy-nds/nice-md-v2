@@ -18,9 +18,18 @@ import {
   LayoutGrid,
   Palette,
   Code,
-  Table
+  Table,
+  Filter,
+  Tag,
+  RotateCcw
 } from 'lucide-vue-next';
-import { materialCategories, materials } from '../utils/materialLibrary';
+import {
+  materialCategories,
+  styleCategories,
+  styleCategoryMap,
+  categoryNameMap,
+  materials
+} from '../utils/materialLibrary';
 import { soundEngine } from '../utils/synthAudio';
 import confetti from 'canvas-confetti';
 
@@ -28,6 +37,7 @@ const emit = defineEmits(['back-to-editor', 'insert-material', 'apply-background
 
 const searchQuery = ref('');
 const activeCategory = ref('all');
+const activeStyle = ref('all');
 const copiedId = ref(null);
 
 const categoryIcons = {
@@ -47,14 +57,36 @@ const categoryIcons = {
 const filteredMaterials = computed(() => {
   return materials.filter(m => {
     const matchesCat = activeCategory.value === 'all' || m.category === activeCategory.value;
+    const matchesStyle = activeStyle.value === 'all' || m.styleCategory === activeStyle.value;
     const q = searchQuery.value.trim().toLowerCase();
     const matchesQuery = !q ||
-      m.title.toLowerCase().includes(q) ||
-      m.description.toLowerCase().includes(q) ||
-      m.tags.some(t => t.toLowerCase().includes(q));
-    return matchesCat && matchesQuery;
+      (m.title && m.title.toLowerCase().includes(q)) ||
+      (m.tag && m.tag.toLowerCase().includes(q)) ||
+      (m.description && m.description.toLowerCase().includes(q)) ||
+      (m.tags && m.tags.some(t => t.toLowerCase().includes(q)));
+    return matchesCat && matchesStyle && matchesQuery;
   });
 });
+
+const isFiltered = computed(() => {
+  return activeCategory.value !== 'all' || activeStyle.value !== 'all' || !!searchQuery.value.trim();
+});
+
+function resetFilters() {
+  activeCategory.value = 'all';
+  activeStyle.value = 'all';
+  searchQuery.value = '';
+  soundEngine.playClick();
+}
+
+function getStyleBadge(styleKey) {
+  return styleCategoryMap[styleKey] || {
+    name: '精选风格',
+    color: '#475569',
+    bg: '#f8fafc',
+    border: '#e2e8f0'
+  };
+}
 
 async function handleCopy(mat) {
   try {
@@ -118,7 +150,7 @@ function handleApplyBackground(mat) {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="搜索背景底纹、标题、引用、提示框等素材..."
+          placeholder="搜索素材名称、标签（如：135爆款、手账、古风、极客...）"
         />
         <button v-if="searchQuery" class="mc-clear-btn" @click="searchQuery = ''">
           <X size="13" />
@@ -128,19 +160,71 @@ function handleApplyBackground(mat) {
 
     <!-- Content Workspace -->
     <main class="mc-content">
-      <!-- Category Tabs -->
-      <nav class="mc-tabs">
-        <button
-          v-for="cat in materialCategories"
-          :key="cat.id"
-          class="mc-tab"
-          :class="{ 'is-active': activeCategory === cat.id }"
-          @click="activeCategory = cat.id; soundEngine.playClick();"
-        >
-          <component :is="categoryIcons[cat.id] || Boxes" size="13" />
-          <span>{{ cat.name }}</span>
-        </button>
-      </nav>
+      <!-- Filter Control Section -->
+      <div class="mc-filter-panel">
+        <!-- Element Type Filter Row -->
+        <div class="mc-filter-row">
+          <span class="mc-filter-label">
+            <Boxes size="12" />
+            <span>素材类型</span>
+          </span>
+          <nav class="mc-tabs">
+            <button
+              v-for="cat in materialCategories"
+              :key="cat.id"
+              class="mc-tab"
+              :class="{ 'is-active': activeCategory === cat.id }"
+              @click="activeCategory = cat.id; soundEngine.playClick();"
+            >
+              <component :is="categoryIcons[cat.id] || Boxes" size="12" />
+              <span>{{ cat.name }}</span>
+            </button>
+          </nav>
+        </div>
+
+        <!-- Style Filter Row -->
+        <div class="mc-filter-row">
+          <span class="mc-filter-label">
+            <Palette size="12" />
+            <span>视觉风格</span>
+          </span>
+          <nav class="mc-tabs style-tabs">
+            <button
+              v-for="st in styleCategories"
+              :key="st.id"
+              class="mc-tab style-tab"
+              :class="{ 'is-active': activeStyle === st.id }"
+              @click="activeStyle = st.id; soundEngine.playClick();"
+            >
+              <span class="mc-tab-emoji">{{ st.icon }}</span>
+              <span>{{ st.name }}</span>
+            </button>
+          </nav>
+        </div>
+
+        <!-- Active Filter Indicator Bar -->
+        <div v-if="isFiltered" class="mc-active-filters">
+          <span class="mc-filter-summary">
+            <span>当前筛选：</span>
+            <span v-if="activeCategory !== 'all'" class="mc-filter-chip">
+              类型: {{ materialCategories.find(c => c.id === activeCategory)?.name }}
+              <X size="10" @click="activeCategory = 'all'" />
+            </span>
+            <span v-if="activeStyle !== 'all'" class="mc-filter-chip">
+              风格: {{ styleCategories.find(s => s.id === activeStyle)?.name }}
+              <X size="10" @click="activeStyle = 'all'" />
+            </span>
+            <span v-if="searchQuery.trim()" class="mc-filter-chip">
+              搜索: "{{ searchQuery }}"
+              <X size="10" @click="searchQuery = ''" />
+            </span>
+          </span>
+          <button class="mc-reset-btn" @click="resetFilters">
+            <RotateCcw size="11" />
+            <span>重置筛选</span>
+          </button>
+        </div>
+      </div>
 
       <!-- Materials Grid -->
       <div class="mc-grid">
@@ -149,13 +233,75 @@ function handleApplyBackground(mat) {
           :key="mat.id"
           class="mc-card"
         >
+          <!-- Card Header Bar with Badges -->
+          <div class="mc-card-header">
+            <div class="mc-card-badges">
+              <!-- Style Badge -->
+              <span
+                class="mc-badge-style"
+                :style="{
+                  color: getStyleBadge(mat.styleCategory).color,
+                  backgroundColor: getStyleBadge(mat.styleCategory).bg,
+                  borderColor: getStyleBadge(mat.styleCategory).border
+                }"
+              >
+                {{ getStyleBadge(mat.styleCategory).name }}
+              </span>
+
+              <!-- Category Badge -->
+              <span class="mc-badge-category">
+                {{ categoryNameMap[mat.category] || mat.category }}
+              </span>
+
+              <!-- Specific Tag Badge -->
+              <span
+                v-if="mat.tag"
+                class="mc-badge-tag"
+                @click.stop="searchQuery = mat.tag"
+                title="点击按此标签快速筛选"
+              >
+                🏷️ {{ mat.tag }}
+              </span>
+            </div>
+
+            <!-- Material Short ID / Copy icon -->
+            <span class="mc-card-quick-id">#{{ mat.id }}</span>
+          </div>
+
           <!-- Pure Material Live Render Area -->
           <div class="mc-card-preview">
             <div class="mc-render-paper" v-html="mat.html"></div>
           </div>
 
+          <!-- Card Metadata Footer -->
+          <div class="mc-card-footer">
+            <div class="mc-card-title-row">
+              <h4 class="mc-card-title" :title="mat.title">{{ mat.title }}</h4>
+            </div>
+            <p v-if="mat.description" class="mc-card-desc" :title="mat.description">
+              {{ mat.description }}
+            </p>
+            <div v-if="mat.tags && mat.tags.length" class="mc-card-tags">
+              <span
+                v-for="t in mat.tags"
+                :key="t"
+                class="mc-tag-pill"
+                @click.stop="searchQuery = t"
+                title="点击按此标签检索"
+              >
+                #{{ t }}
+              </span>
+            </div>
+          </div>
+
           <!-- Elegant Frosted Glass Hover Overlay -->
           <div class="mc-card-overlay">
+            <div class="mc-overlay-info">
+              <div class="mc-overlay-title">{{ mat.title }}</div>
+              <div class="mc-overlay-cat">
+                {{ categoryNameMap[mat.category] }} · {{ getStyleBadge(mat.styleCategory).name }}
+              </div>
+            </div>
             <div class="mc-overlay-actions" @click.stop>
               <!-- Category is backgrounds -->
               <template v-if="mat.category === 'backgrounds'">
@@ -204,7 +350,11 @@ function handleApplyBackground(mat) {
 
         <div v-if="filteredMaterials.length === 0" class="mc-empty">
           <Boxes size="36" class="mc-empty-icon" />
-          <p>暂无找到匹配的排版素材，换个关键字试试看</p>
+          <p>暂无找到匹配的排版素材</p>
+          <button class="mc-empty-reset-btn" @click="resetFilters">
+            <RotateCcw size="13" />
+            <span>清空筛选条件</span>
+          </button>
         </div>
       </div>
     </main>
@@ -408,7 +558,7 @@ function handleApplyBackground(mat) {
   z-index: 1;
   flex: 1;
   overflow-y: auto;
-  padding: 0.875rem 1.25rem 2.5rem 1.25rem;
+  padding: 1rem 1.25rem 2.5rem 1.25rem;
 }
 
 .mc-content::-webkit-scrollbar {
@@ -420,22 +570,51 @@ function handleApplyBackground(mat) {
   border-radius: 0.25rem;
 }
 
+/* Filter Control Panel */
+.mc-filter-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  margin-bottom: 1.25rem;
+  padding: 0.875rem 1rem;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid #e2e8f0;
+  border-radius: 0.875rem;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+}
+
+.mc-filter-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  overflow-x: auto;
+}
+
+.mc-filter-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3125rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #475569;
+  min-width: 4.5rem;
+  flex-shrink: 0;
+  user-select: none;
+}
+
 /* Category Tabs (精致胶囊切换栏) */
 .mc-tabs {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  margin-bottom: 1rem;
-  padding: 0.25rem;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid #e2e8f0;
+  padding: 0.1875rem;
+  background: #f1f5f9;
   border-radius: 9999px;
   width: fit-content;
   max-width: 100%;
   overflow-x: auto;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .mc-tabs::-webkit-scrollbar {
@@ -445,8 +624,8 @@ function handleApplyBackground(mat) {
 .mc-tab {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.875rem;
+  gap: 0.3125rem;
+  padding: 0.3125rem 0.75rem;
   border-radius: 9999px;
   border: 1px solid transparent;
   background: transparent;
@@ -461,7 +640,7 @@ function handleApplyBackground(mat) {
 
 .mc-tab:hover {
   color: #0f172a;
-  background: rgba(241, 245, 249, 0.7);
+  background: rgba(255, 255, 255, 0.8);
 }
 
 .mc-tab.is-active {
@@ -469,14 +648,82 @@ function handleApplyBackground(mat) {
   border-color: rgba(255, 255, 255, 0.14);
   color: #ffffff;
   font-weight: 600;
-  box-shadow: 0 2px 8px rgba(42, 42, 44, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  box-shadow: 0 2px 6px rgba(42, 42, 44, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.mc-tab-emoji {
+  font-size: 0.8125rem;
+  line-height: 1;
+}
+
+/* Active Filter Summary Bar */
+.mc-active-filters {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.5rem;
+  border-top: 1px dashed #e2e8f0;
+  font-size: 0.75rem;
+}
+
+.mc-filter-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  color: #64748b;
+  font-size: 0.6875rem;
+}
+
+.mc-filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #eff6ff;
+  color: #1e40af;
+  border: 1px solid #bfdbfe;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-weight: 600;
+}
+
+.mc-filter-chip svg {
+  cursor: pointer;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.mc-filter-chip svg:hover {
+  opacity: 1;
+  color: #ef4444;
+}
+
+.mc-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: transparent;
+  border: 1px solid #cbd5e1;
+  color: #64748b;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 0.375rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mc-reset-btn:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fca5a5;
 }
 
 /* Grid */
 .mc-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  gap: 1rem;
 }
 
 /* Card (12px 统一圆角，纯白卡片，平滑悬浮阴影) */
@@ -488,7 +735,7 @@ function handleApplyBackground(mat) {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 140px;
+  min-height: 160px;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
@@ -498,6 +745,66 @@ function handleApplyBackground(mat) {
   border-color: #cbd5e1;
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.02);
   transform: translateY(-0.125rem);
+}
+
+/* Card Header with Badges */
+.mc-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0.75rem;
+  background: #f8fafc;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.mc-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.3125rem;
+  flex-wrap: wrap;
+}
+
+.mc-badge-style {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  padding: 0.0625rem 0.4375rem;
+  border-radius: 0.25rem;
+  border: 1px solid;
+  letter-spacing: 0.02em;
+}
+
+.mc-badge-category {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.0625rem 0.4375rem;
+  border-radius: 0.25rem;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #e2e8f0;
+}
+
+.mc-badge-tag {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.0625rem 0.4375rem;
+  border-radius: 0.25rem;
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #cbd5e1;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mc-badge-tag:hover {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #93c5fd;
+}
+
+.mc-card-quick-id {
+  font-size: 0.625rem;
+  font-family: monospace;
+  color: #94a3b8;
 }
 
 /* Pure Material Preview Area */
@@ -526,14 +833,70 @@ function handleApplyBackground(mat) {
   transform: scale(0.985);
 }
 
+/* Card Metadata Footer */
+.mc-card-footer {
+  padding: 0.625rem 0.75rem;
+  background: #ffffff;
+  border-top: 1px solid #f1f5f9;
+}
+
+.mc-card-title-row {
+  margin-bottom: 0.1875rem;
+}
+
+.mc-card-title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mc-card-desc {
+  margin: 0 0 0.375rem 0;
+  font-size: 0.6875rem;
+  color: #64748b;
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mc-card-tags {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+.mc-tag-pill {
+  font-size: 0.625rem;
+  color: #64748b;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 0 0.3125rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mc-tag-pill:hover {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #bfdbfe;
+}
+
 /* Ultra-Refined Frosted Hover Overlay */
 .mc-card-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.82);
+  background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(12px) saturate(180%);
   -webkit-backdrop-filter: blur(12px) saturate(180%);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 1rem;
@@ -547,6 +910,30 @@ function handleApplyBackground(mat) {
 .mc-card:hover .mc-card-overlay {
   opacity: 1;
   pointer-events: auto;
+}
+
+.mc-overlay-info {
+  text-align: center;
+  margin-bottom: 0.75rem;
+  transform: translateY(0.25rem);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mc-card:hover .mc-overlay-info {
+  transform: translateY(0);
+}
+
+.mc-overlay-title {
+  font-size: 0.875rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin-bottom: 0.125rem;
+}
+
+.mc-overlay-cat {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #64748b;
 }
 
 .mc-overlay-actions {
@@ -640,6 +1027,27 @@ function handleApplyBackground(mat) {
   opacity: 0.4;
 }
 
+.mc-empty-reset-btn {
+  margin-top: 0.75rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  padding: 0.375rem 0.875rem;
+  border-radius: 9999px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e293b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mc-empty-reset-btn:hover {
+  background: #f1f5f9;
+  border-color: #94a3b8;
+}
+
 /* ── Dark Mode (深色模式全面适配) ── */
 :global(html.dark) .mc-root,
 :global(html[data-color-mode="dark"]) .mc-root {
@@ -651,6 +1059,17 @@ function handleApplyBackground(mat) {
 :global(html[data-color-mode="dark"]) .mc-header {
   background: var(--bg-card, #1e1e1e);
   border-bottom-color: var(--border-color, #2d2d2d);
+}
+
+:global(html.dark) .mc-filter-panel,
+:global(html[data-color-mode="dark"]) .mc-filter-panel {
+  background: var(--bg-card, #252526);
+  border-color: var(--border-color, #2d2d2d);
+}
+
+:global(html.dark) .mc-filter-label,
+:global(html[data-color-mode="dark"]) .mc-filter-label {
+  color: #94a3b8;
 }
 
 :global(html.dark) .mc-title-badge,
@@ -686,7 +1105,7 @@ function handleApplyBackground(mat) {
 
 :global(html.dark) .mc-tabs,
 :global(html[data-color-mode="dark"]) .mc-tabs {
-  background: var(--bg-card, #252526);
+  background: var(--bg-toolbar, #1e1e1e);
   border-color: var(--border-color, #2d2d2d);
 }
 
@@ -713,6 +1132,44 @@ function handleApplyBackground(mat) {
   border-color: var(--border-color, #2d2d2d);
 }
 
+:global(html.dark) .mc-card-header,
+:global(html[data-color-mode="dark"]) .mc-card-header {
+  background: #252526;
+  border-bottom-color: #2d2d2d;
+}
+
+:global(html.dark) .mc-card-footer,
+:global(html[data-color-mode="dark"]) .mc-card-footer {
+  background: #1e1e1e;
+  border-top-color: #2d2d2d;
+}
+
+:global(html.dark) .mc-card-title,
+:global(html[data-color-mode="dark"]) .mc-card-title {
+  color: #f1f5f9;
+}
+
+:global(html.dark) .mc-badge-category,
+:global(html[data-color-mode="dark"]) .mc-badge-category {
+  background: #2d2d2d;
+  color: #94a3b8;
+  border-color: #37373d;
+}
+
+:global(html.dark) .mc-badge-tag,
+:global(html[data-color-mode="dark"]) .mc-badge-tag {
+  background: #2d2d2d;
+  color: #e2e8f0;
+  border-color: #37373d;
+}
+
+:global(html.dark) .mc-tag-pill,
+:global(html[data-color-mode="dark"]) .mc-tag-pill {
+  background: #252526;
+  color: #94a3b8;
+  border-color: #2d2d2d;
+}
+
 :global(html.dark) .mc-card-preview,
 :global(html[data-color-mode="dark"]) .mc-card-preview {
   background: var(--bg-card, #1e1e1e);
@@ -720,7 +1177,12 @@ function handleApplyBackground(mat) {
 
 :global(html.dark) .mc-card-overlay,
 :global(html[data-color-mode="dark"]) .mc-card-overlay {
-  background: rgba(18, 18, 22, 0.78);
+  background: rgba(18, 18, 22, 0.88);
+}
+
+:global(html.dark) .mc-overlay-title,
+:global(html[data-color-mode="dark"]) .mc-overlay-title {
+  color: #ffffff;
 }
 
 :global(html.dark) .mc-overlay-btn.primary,
