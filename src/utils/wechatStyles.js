@@ -1470,12 +1470,14 @@ function applyCustomCssRules(root, customCss) {
     if (!declarations) continue;
 
     // Convert selector aliases like "#easymd h1", "#nice code", "xiaofu code", ".markdown-body code"
+    // Also strip all comments from selector
     let cleanSelector = rawSelector
+      .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/(?:#(?:easymd|nice)|xiaofu|\.markdown-body|\.wechat-body)\s*/g, '')
       .trim();
 
     if (!cleanSelector) {
-      cleanSelector = ':scope, [id="easymd"], [id="nice"], .markdown-body, .wechat-body';
+      cleanSelector = ':scope';
     }
 
     // Expand selectors so custom CSS applies cleanly to tags while strictly preserving material templates
@@ -1495,7 +1497,9 @@ function applyCustomCssRules(root, customCss) {
     }
 
     try {
-      const matchedEls = cleanSelector.startsWith(':scope')
+      const matchedEls = cleanSelector === ':scope'
+        ? [root]
+        : cleanSelector.startsWith(':scope')
         ? [root, ...root.querySelectorAll(cleanSelector.replace(/^:scope,?\s*/, ''))]
         : Array.from(root.querySelectorAll(cleanSelector));
 

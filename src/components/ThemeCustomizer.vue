@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { Palette, X, Save, Sliders, Code2, RotateCcw, Check, Sparkles, Hash, FileType } from 'lucide-vue-next';
-import { getThemeDefaultStyles } from '../utils/themePresets';
+import { getThemeDefaultStyles, getThemeSavedStyles, isBuiltInTheme } from '../utils/themePresets';
 import { allMaterialTemplatesMap, getMaterialTemplatesForKey, backgroundTemplates } from '../utils/materialLibrary';
 import { codeThemes } from '../utils/codeThemes';
 import { EditorView, basicSetup } from 'codemirror';
@@ -16,7 +16,9 @@ const props = defineProps({
   open: { type: Boolean, default: false }
 });
 
-const emit = defineEmits(['update:modelValue', 'update:codeThemeId', 'update:open', 'save-custom-styles', 'save-theme', 'close']);
+const emit = defineEmits(['update:modelValue', 'update:codeThemeId', 'update:open', 'save-custom-styles', 'save-theme', 'save-custom-theme', 'close']);
+
+const isCustomTheme = computed(() => !isBuiltInTheme(props.themeId));
 
 // Tab Mode: 'form' (可视化配置) | 'code' (源码编辑)
 const activeTab = ref('form');
@@ -208,9 +210,63 @@ function resetCategory(category) {
 }
 
 function resetAll() {
-  localStyles.value = {};
-  rawCssText.value = generateCssFromStyles(getThemeDefaultStyles(props.themeId));
-  emitUpdate();
+  handleResetToThemeDefault();
+}
+
+const resetToastVisible = ref(false);
+const resetToastMsg = ref('已恢复默认');
+
+function handleResetToThemeDefault() {
+  if (isCustomTheme.value) {
+    // User custom theme -> Restore to last saved state
+    const saved = getThemeSavedStyles(props.themeId);
+    localStyles.value = JSON.parse(JSON.stringify(saved || {}));
+    rawCssText.value = localStyles.value.customCss || generateCssFromStyles(localStyles.value);
+    if (!localStyles.value.customCss) localStyles.value.customCss = rawCssText.value;
+    if (cmView) {
+      cmView.dispatch({
+        changes: { from: 0, to: cmView.state.doc.length, insert: rawCssText.value }
+      });
+    }
+    emitUpdate();
+    resetToastMsg.value = '已恢复至保存状态';
+    resetToastVisible.value = true;
+    setTimeout(() => {
+      resetToastVisible.value = false;
+    }, 2000);
+  } else {
+    // Built-in theme -> Reset to official preset pure styles
+    localStyles.value = {};
+    const defaults = getThemeDefaultStyles(props.themeId);
+    rawCssText.value = generateCssFromStyles(defaults);
+    if (!localStyles.value) localStyles.value = {};
+    localStyles.value.customCss = rawCssText.value;
+    if (cmView) {
+      cmView.dispatch({
+        changes: { from: 0, to: cmView.state.doc.length, insert: rawCssText.value }
+      });
+    }
+    emitUpdate();
+    resetToastMsg.value = '已恢复系统默认';
+    resetToastVisible.value = true;
+    setTimeout(() => {
+      resetToastVisible.value = false;
+    }, 2000);
+  }
+}
+
+function handleSaveCustomTheme() {
+  const payload = JSON.parse(JSON.stringify(localStyles.value));
+  payload.customCss = rawCssText.value;
+  emit('save-custom-theme', {
+    themeId: props.themeId,
+    styles: payload,
+    css: rawCssText.value
+  });
+  saveToastVisible.value = true;
+  setTimeout(() => {
+    saveToastVisible.value = false;
+  }, 1800);
 }
 
 function handleSave() {
@@ -227,6 +283,114 @@ function emitUpdate() {
   const payload = JSON.parse(JSON.stringify(localStyles.value));
   payload.customCss = rawCssText.value;
   emit('update:modelValue', payload);
+}
+
+// Safely merges visual form changes into existing raw CSS, preserving user's custom CSS rules & unsupported properties
+function mergeIncrementalCss(existingCss, styles) {
+  if (!existingCss || typeof existingCss !== 'string' || !existingCss.trim()) {
+    return generateCssFromStyles(styles);
+  }
+
+  let updatedCss = existingCss;
+  const S = styles || {};
+
+  const updateRuleBlock = (tagPattern, newProps, meta = {}) => {
+    const reg = new RegExp(`((?:^|\\n|,)\\s*(?:#(?:easymd|nice)|xiaofu|\\.markdown-body)?\\s*${tagPattern}[^{]*?\\{)([^}]+)(\\})`, 'i');
+    const match = updatedCss.match(reg);
+    if (match) {
+      const prefix = match[1];
+      let body = match[2];
+      const suffix = match[3];
+
+      if (meta.material !== undefined) {
+        body = body.replace(/\/\*\s*@material:[^*]+\*\/\s*\n?/gi, '');
+        if (meta.material && meta.material !== 'none') {
+          body = `\n  /* @material: ${meta.material} */` + body;
+        }
+      }
+      if (meta.prefix !== undefined) {
+        body = body.replace(/\/\*\s*@prefix:[^*]+\*\/\s*\n?/gi, '');
+        if (meta.prefix) {
+          body = `\n  /* @prefix: ${meta.prefix} */` + body;
+        }
+      }
+
+      for (const [k, v] of Object.entries(newProps)) {
+        if (v !== undefined && v !== null && v !== '') {
+          const cssProp = k.replace(/([A-Z])/g, '-$1').toLowerCase();
+          const propReg = new RegExp(`(^|;\\s*|\\n\\s*)${cssProp}\\s*:[^;\\n]+;?`, 'i');
+          if (propReg.test(body)) {
+            body = body.replace(propReg, `$1${cssProp}: ${v};`);
+          } else {
+            body += `\n  ${cssProp}: ${v};`;
+          }
+        }
+      }
+
+      updatedCss = updatedCss.replace(match[0], `${prefix}${body}${suffix}`);
+    }
+  };
+
+  if (S.body) {
+    updateRuleBlock('(?:#(?:easymd|nice)|body)', {
+      color: S.body.color,
+      backgroundColor: S.body.backgroundColor,
+      fontSize: S.body.fontSize,
+      lineHeight: S.body.lineHeight,
+      letterSpacing: S.body.letterSpacing,
+      fontFamily: S.body.fontFamily
+    }, {
+      material: S.body.backgroundTexture || S.body.materialTemplateId
+    });
+  }
+
+  ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].forEach(h => {
+    if (S[h]) {
+      updateRuleBlock(h, {
+        color: S[h].color,
+        fontSize: S[h].fontSize,
+        fontWeight: S[h].fontWeight,
+        backgroundColor: S[h].backgroundColor,
+        padding: S[h].padding,
+        borderRadius: S[h].borderRadius,
+        borderLeft: S[h].borderLeft,
+        paddingLeft: S[h].paddingLeft,
+        textAlign: S[h].textAlign,
+        display: S[h].display
+      }, {
+        material: S[h].materialTemplateId,
+        prefix: S[h].materialPrefix
+      });
+    }
+  });
+
+  if (S.p) {
+    updateRuleBlock('p', {
+      color: S.p.color,
+      fontSize: S.p.fontSize,
+      lineHeight: S.p.lineHeight
+    });
+  }
+
+  if (S.blockquote) {
+    updateRuleBlock('blockquote', {
+      borderLeft: S.blockquote.borderLeftColor ? `4px solid ${S.blockquote.borderLeftColor}` : undefined,
+      backgroundColor: S.blockquote.backgroundColor,
+      color: S.blockquote.textColor
+    }, {
+      material: S.blockquote.materialTemplateId
+    });
+  }
+
+  if (S.hr) {
+    updateRuleBlock('hr', {
+      borderTop: S.hr.borderColor ? `1px solid ${S.hr.borderColor}` : undefined
+    }, {
+      material: S.hr.materialTemplateId
+    });
+  }
+
+  return updatedCss;
 }
 
 // Convert all Markdown syntax element styles and material directives into standard CSS
@@ -408,12 +572,23 @@ function generateCssFromStyles(styles) {
 }
 
 function syncFormToCssText(forceRegenerate = false) {
-  if (activeTab.value === 'form' || forceRegenerate || !localStyles.value?.customCss) {
+  if (forceRegenerate || !localStyles.value?.customCss) {
     rawCssText.value = generateCssFromStyles(effectiveStyles.value);
-    if (!localStyles.value) localStyles.value = {};
-    localStyles.value.customCss = rawCssText.value;
+  } else if (activeTab.value === 'form') {
+    rawCssText.value = mergeIncrementalCss(localStyles.value.customCss, effectiveStyles.value);
   } else {
     rawCssText.value = localStyles.value.customCss;
+  }
+  if (!localStyles.value) localStyles.value = {};
+  localStyles.value.customCss = rawCssText.value;
+
+  if (cmView && !isUpdatingFromCodeMirror) {
+    const curDoc = cmView.state.doc.toString();
+    if (curDoc !== rawCssText.value) {
+      cmView.dispatch({
+        changes: { from: 0, to: curDoc.length, insert: rawCssText.value }
+      });
+    }
   }
 }
 
@@ -610,12 +785,16 @@ function initCodeMirror() {
     }
   }, { dark: false });
 
+  let debounceTimer = null;
   const updateListener = EditorView.updateListener.of((update) => {
     if (update.docChanged) {
-      isUpdatingFromCodeMirror = true;
-      const text = update.state.doc.toString();
-      handleCssTextChange(text);
-      isUpdatingFromCodeMirror = false;
+      if (debounceTimer) clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        isUpdatingFromCodeMirror = true;
+        const text = update.state.doc.toString();
+        handleCssTextChange(text);
+        isUpdatingFromCodeMirror = false;
+      }, 80);
     }
   });
 
@@ -782,9 +961,20 @@ const cssLineCount = computed(() => {
         <Palette size="16" class="icon-palette" />
         <span class="header-title">主题编辑</span>
       </div>
-      <button class="close-btn" @click="close" title="关闭">
-        <X size="15" />
-      </button>
+      <div class="customizer-header-right">
+        <button
+          class="header-reset-btn"
+          @click="handleResetToThemeDefault"
+          :title="isCustomTheme ? '恢复为上次保存时的样式状态' : '清空自定义覆盖，恢复为当前预设主题初始样式'"
+        >
+          <RotateCcw size="12" />
+          <span>{{ isCustomTheme ? '恢复未保存' : '恢复默认' }}</span>
+          <span v-if="resetToastVisible" class="reset-toast-tip">{{ resetToastMsg }}</span>
+        </button>
+        <button class="close-btn" @click="close" title="关闭">
+          <X size="15" />
+        </button>
+      </div>
     </div>
 
     <!-- Mode Switcher Tabs -->
@@ -1484,6 +1674,10 @@ const cssLineCount = computed(() => {
         <!-- Right Side Quick Anchor Navigation Rail -->
         <aside class="css-anchors-rail">
           <div class="anchors-rail-header">快速锚点</div>
+          <button class="rail-insert-material-btn" @click="openMaterialModal(activeCssAnchor || 'h1')" title="打开素材模版库快速选用">
+            <Sparkles size="11" />
+            <span>素材库</span>
+          </button>
           <div class="anchors-list">
             <button
               v-for="anchor in cssAnchors"
@@ -1503,18 +1697,36 @@ const cssLineCount = computed(() => {
 
     <!-- Footer -->
     <div class="customizer-footer">
-      <button class="reset-all-btn" @click="resetAll" title="还原为当前主题默认设置">
+      <button
+        class="reset-all-btn"
+        @click="resetAll"
+        :title="isCustomTheme ? '恢复为上次保存时的样式状态' : '还原为当前预设主题默认纯净设置'"
+      >
         <RotateCcw size="13" />
-        <span>还原</span>
+        <span>{{ isCustomTheme ? '恢复未保存' : '恢复默认' }}</span>
       </button>
-      <button class="save-styles-btn" @click="handleSave" title="保存当前样式改动到文档">
-        <Save size="13" />
-        <span>保存</span>
-        <span v-if="saveToastVisible" class="save-toast-tip">已保存</span>
-      </button>
-      <button class="save-theme-btn" @click="emit('save-theme', localStyles)" title="另存为新的预设主题">
+
+      <!-- If built-in system theme: ONLY allow "另存为主题" -->
+      <button
+        v-if="!isCustomTheme"
+        class="save-theme-btn"
+        @click="emit('save-theme', localStyles)"
+        title="将当前自定义样式另存为新的主题预设"
+      >
         <Palette size="13" />
         <span>另存为主题</span>
+      </button>
+
+      <!-- If user's custom theme: ONLY allow "保存主题" -->
+      <button
+        v-else
+        class="save-styles-btn is-save-theme"
+        @click="handleSaveCustomTheme"
+        title="保存改动到当前自定义主题"
+      >
+        <Save size="13" />
+        <span>保存主题</span>
+        <span v-if="saveToastVisible" class="save-toast-tip">已保存</span>
       </button>
     </div>
   </aside>
@@ -1595,8 +1807,53 @@ const cssLineCount = computed(() => {
   color: var(--accent-color);
 }
 
-.header-title {
-  letter-spacing: -0.2px;
+.customizer-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.header-reset-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.375rem;
+  border: 1px solid var(--border-color);
+  background: var(--bg-card, #ffffff);
+  color: var(--text-muted);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.header-reset-btn:hover {
+  background: var(--border-color);
+  color: var(--text-main);
+  border-color: var(--text-muted);
+}
+
+.reset-toast-tip {
+  position: absolute;
+  top: -1.75rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #10b981;
+  color: #ffffff;
+  font-size: 0.625rem;
+  font-weight: 700;
+  padding: 0.125rem 0.375rem;
+  border-radius: 0.25rem;
+  white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(16, 185, 129, 0.3);
+  animation: toastFade 0.2s ease;
+}
+
+@keyframes toastFade {
+  from { opacity: 0; transform: translate(-50%, 4px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
 }
 
 .close-btn {
@@ -1945,6 +2202,30 @@ const cssLineCount = computed(() => {
   text-align: center;
   border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
   background: rgba(0, 0, 0, 0.02);
+}
+
+.rail-insert-material-btn {
+  margin: 6px 5px 4px;
+  padding: 4px 6px;
+  border-radius: 5px;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+  border: 1px solid #f59e0b;
+  color: #92400e;
+  font-size: 10px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgba(245, 158, 11, 0.15);
+  transition: all 0.15s ease;
+}
+
+.rail-insert-material-btn:hover {
+  background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.25);
 }
 
 .anchors-list {
@@ -2706,5 +2987,19 @@ const cssLineCount = computed(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+:deep(.dark) .rail-insert-material-btn,
+.rail-insert-material-btn:where(.dark *) {
+  background: #382504;
+  border-color: #b45309;
+  color: #fbbf24;
+}
+
+:deep(.dark) .header-reset-btn,
+.header-reset-btn:where(.dark *) {
+  background: #262626;
+  border-color: #404040;
+  color: #a3a3a3;
 }
 </style>

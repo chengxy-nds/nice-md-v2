@@ -16,7 +16,7 @@ import { soundEngine } from '../utils/synthAudio';
 import ArticlePreview from './ArticlePreview.vue';
 import ThemeCustomizer from './ThemeCustomizer.vue';
 
-const emit = defineEmits(['apply-theme', 'back-to-editor', 'save-theme']);
+const emit = defineEmits(['apply-theme', 'back-to-editor', 'save-theme', 'save-custom-theme']);
 
 const searchQuery = ref('');
 const selectedTheme = ref(null);
@@ -254,6 +254,7 @@ async function handleElementClick(sectionName) {
               @update:modelValue="handleLiveStyleUpdate"
               @save-custom-styles="handleSaveCustomStyles"
               @save-theme="v => emit('save-theme', v)"
+              @save-custom-theme="v => emit('save-custom-theme', v)"
               @close="showThemePanel = false"
             />
           </div>

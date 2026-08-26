@@ -65,6 +65,7 @@ const emit = defineEmits([
   'open-launchpad',
   'update:customStyles',
   'save-theme',
+  'save-custom-theme',
   'update:themePanelVisible'
 ]);
 
@@ -145,8 +146,11 @@ const injectedCustomCss = computed(() => {
   const css = activeCustomStyles.value?.customCss || '';
   if (!css || typeof css !== 'string') return '';
 
-  // Strip prefix aliases (#easymd, #nice, xiaofu, .markdown-body, .wechat-body)
-  const cleaned = css.replace(/(?:#(?:easymd|nice)|xiaofu|\.markdown-body|\.wechat-body)\s*/g, ' ').trim();
+  // 1. Strip all CSS comments first so comments never pollute or corrupt selectors
+  const noComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  // 2. Strip prefix aliases (#easymd, #nice, xiaofu, .markdown-body, .wechat-body)
+  const cleaned = noComments.replace(/(?:#(?:easymd|nice)|xiaofu|\.markdown-body|\.wechat-body)\s*/g, ' ').trim();
   if (!cleaned) return '';
 
   // Universal isolation selector: strictly exclude material blocks and ANY descendants inside them
@@ -157,7 +161,7 @@ const injectedCustomCss = computed(() => {
     const rawSelectors = selector.split(',');
     const mapped = rawSelectors.map(s => {
       const tag = s.trim();
-      if (!tag || tag === 'body' || tag === '#easymd' || tag === '#nice' || tag === '.markdown-body') {
+      if (!tag || tag === 'body' || tag === '#easymd' || tag === '#nice' || tag === '.markdown-body' || tag === ':scope') {
         return `.preview-body${NOT_MAT}, .wechat-body${NOT_MAT}, .tc-rendered-paper${NOT_MAT}`;
       }
       if (tag.startsWith('.')) {
@@ -396,6 +400,7 @@ const handleCopyMarkdownText = async () => {
         @update:codeThemeId="val => emit('update:codeThemeId', val)"
         @save-custom-styles="handleSaveCustomStyles"
         @save-theme="v => emit('save-theme', v)"
+        @save-custom-theme="v => emit('save-custom-theme', v)"
         @close="$emit('update:themePanelVisible', false)"
       />
     </div>

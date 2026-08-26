@@ -1,6 +1,6 @@
 <script setup>
-import { computed } from 'vue';
-import { Sparkles, X, Check, ExternalLink } from 'lucide-vue-next';
+import { ref, computed } from 'vue';
+import { Sparkles, X, Check, ExternalLink, Globe, Layers, Search } from 'lucide-vue-next';
 import { getMaterialTemplatesForKey } from '../utils/materialLibrary';
 
 const props = defineProps({
@@ -53,6 +53,34 @@ const templateList = computed(() => {
   return getMaterialTemplatesForKey(props.elementKey);
 });
 
+// Category filter
+const activeCategory = ref('all');
+const searchQuery = ref('');
+
+const categories = [
+  { id: 'all', label: '全部模版' },
+  { id: '135hot', label: '135 爆款', match: (t) => t.tag?.includes('135') || t.name?.includes('135') || t.tags?.some(x => x.includes('135')) },
+  { id: 'fresh', label: '清新活力', match: (t) => t.styleCategory === 'fresh' || t.tag?.includes('清新') || t.tag?.includes('薄荷') || t.tag?.includes('夏风') },
+  { id: 'business', label: '商务科技', match: (t) => t.styleCategory === 'business' || t.styleCategory === 'tech' || t.tag?.includes('科技') || t.tag?.includes('商务') },
+  { id: 'guofeng', label: '国风古韵', match: (t) => t.styleCategory === 'guofeng' || t.tag?.includes('国风') },
+  { id: 'minimal', label: '极简莫兰迪', match: (t) => t.styleCategory === 'minimal' || t.tag?.includes('极简') || t.tag?.includes('莫兰迪') || t.id === 'none' }
+];
+
+const filteredList = computed(() => {
+  let list = templateList.value || [];
+  if (activeCategory.value !== 'all') {
+    const cat = categories.find(c => c.id === activeCategory.value);
+    if (cat?.match) {
+      list = list.filter(t => t.id === 'none' || cat.match(t));
+    }
+  }
+  if (searchQuery.value.trim()) {
+    const q = searchQuery.value.toLowerCase().trim();
+    list = list.filter(t => (t.name || '').toLowerCase().includes(q) || (t.tag || '').toLowerCase().includes(q) || (t.description || '').toLowerCase().includes(q));
+  }
+  return list;
+});
+
 function handleSelect(templateId) {
   emit('select', { key: props.elementKey, templateId });
 }
@@ -81,15 +109,21 @@ function hasPrefixOption(id) {
               <Sparkles size="14" />
             </div>
             <div>
-              <div class="popup-title">选择 {{ titleText }} 视觉样式</div>
-              <div class="popup-subtitle">点击即刻替换全篇排版，实时同步微信公众号规范</div>
+              <div class="popup-title-row">
+                <span class="popup-title">选择 {{ titleText }} 视觉样式</span>
+                <span class="global-scope-pill" title="选定后将统一自动应用至全篇所有此标签元素">
+                  <Globe size="11" />
+                  <span>全局统一应用</span>
+                </span>
+              </div>
+              <div class="popup-subtitle">点击即刻替换全篇排版，实时同步微信公众号渲染规范</div>
             </div>
           </div>
 
           <div class="header-right-tools">
             <!-- Inline prefix config if applicable -->
             <div v-if="hasPrefixOption(props.currentMaterialId)" class="inline-prefix-box">
-              <span class="prefix-label">标牌文本:</span>
+              <span class="prefix-label">标牌前缀:</span>
               <input
                 type="text"
                 :value="props.currentPrefix || (props.elementKey === 'h1' ? 'PART' : 'SECTION')"
@@ -100,20 +134,45 @@ function hasPrefixOption(id) {
             </div>
 
             <button class="open-detail-btn" @click="emit('open-customizer', props.elementKey)" title="在侧边栏打开详细参数调节">
-              <span>自定义微调</span>
+              <span>详细微调</span>
               <ExternalLink size="12" />
             </button>
 
-            <button class="modal-close-btn" @click="emit('close')" title="关闭">
+            <button class="modal-close-btn" @click="emit('close')" title="关闭 (Esc)">
               <X size="15" />
             </button>
+          </div>
+        </div>
+
+        <!-- Category & Search Bar -->
+        <div class="popup-filter-bar">
+          <div class="filter-tabs">
+            <button
+              v-for="cat in categories"
+              :key="cat.id"
+              class="filter-tab-btn"
+              :class="{ 'is-active': activeCategory === cat.id }"
+              @click="activeCategory = cat.id"
+            >
+              {{ cat.label }}
+            </button>
+          </div>
+
+          <div class="search-input-wrap">
+            <Search size="13" class="search-icon" />
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="搜索模版..."
+              class="search-input"
+            />
           </div>
         </div>
 
         <!-- Pure Visual Grid (No descriptions, clean layout) -->
         <div class="popup-grid-container">
           <div
-            v-for="item in templateList"
+            v-for="item in filteredList"
             :key="item.id"
             class="visual-preview-card"
             :class="{ 'is-active': (props.currentMaterialId || 'none') === item.id }"
@@ -126,7 +185,7 @@ function hasPrefixOption(id) {
                 <Check size="12" />
                 <span>已选用</span>
               </span>
-              <span v-else class="card-tag">{{ item.tag }}</span>
+              <span v-else class="card-tag">{{ item.tag || '推荐' }}</span>
             </div>
 
             <!-- Visual Preview Window -->
@@ -235,6 +294,12 @@ function hasPrefixOption(id) {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
+.popup-title-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .popup-title {
   font-size: 0.9375rem;
   font-weight: 700;
@@ -243,10 +308,105 @@ function hasPrefixOption(id) {
   letter-spacing: -0.0125rem;
 }
 
+.global-scope-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.625rem;
+  font-weight: 700;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 0.125rem 0.4375rem;
+  border-radius: 9999px;
+  line-height: 1;
+}
+
 .popup-subtitle {
   font-size: 0.6875rem;
   color: var(--text-muted, #64748b);
-  margin-top: 0.125rem;
+  margin-top: 0.1875rem;
+}
+
+/* Category Filter Bar */
+.popup-filter-bar {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 1.25rem;
+  background: #f8fafc;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.filter-tabs {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.filter-tab-btn {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 0.25rem 0.625rem;
+  border-radius: 9999px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  color: #475569;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.filter-tab-btn:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.filter-tab-btn.is-active {
+  background: #1e293b;
+  color: #ffffff;
+  border-color: #1e293b;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+}
+
+.search-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 140px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.5rem;
+  color: #94a3b8;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  height: 1.625rem;
+  padding-left: 1.625rem;
+  padding-right: 0.5rem;
+  font-size: 0.6875rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 9999px;
+  background: #ffffff;
+  color: #0f172a;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.search-input:focus {
+  border-color: #3b82f6;
+  width: 160px;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
 }
 
 .header-right-tools {

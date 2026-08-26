@@ -257,6 +257,29 @@ export const themes = [
   }
 ];
 
+export const builtInThemeIds = new Set([
+  'classic-indigo',
+  'mountain-warm',
+  'mountain-forest',
+  'mountain-tea',
+  'mountain-red',
+  'github-clean',
+  'vue-emerald',
+  'nordic-ice'
+]);
+
+export function isBuiltInTheme(themeId) {
+  return builtInThemeIds.has(themeId);
+}
+
+export function getThemeSavedStyles(themeId = 'classic-indigo') {
+  const theme = themes.find(t => t.id === themeId) || themes[0];
+  if (!isBuiltInTheme(themeId) && theme?.customStyles) {
+    return JSON.parse(JSON.stringify(theme.customStyles));
+  }
+  return getThemeDefaultStyles(themeId);
+}
+
 export function applyTheme(themeId) {
   const root = document.documentElement;
   root.setAttribute('data-article-theme', themeId);

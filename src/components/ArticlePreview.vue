@@ -148,6 +148,7 @@ function handlePopupSelect({ key, templateId }) {
   newStyles[key].materialTemplateId = templateId;
   emit('update:customStyles', newStyles);
   materialPopupVisible.value = false;
+  clearActivePreviewTarget();
 }
 
 function handlePopupPrefixUpdate({ key, prefix }) {
@@ -159,6 +160,7 @@ function handlePopupPrefixUpdate({ key, prefix }) {
 
 function handlePopupOpenCustomizer(key) {
   materialPopupVisible.value = false;
+  clearActivePreviewTarget();
   emit('open-customizer', key);
 }
 
@@ -232,8 +234,11 @@ const injectedCustomCss = computed(() => {
   const css = activeCustomStyles.value?.customCss || '';
   if (!css || typeof css !== 'string') return '';
 
-  // Strip prefix aliases (#easymd, #nice, xiaofu, .markdown-body, .wechat-body)
-  const cleaned = css.replace(/(?:#(?:easymd|nice)|xiaofu|\.markdown-body|\.wechat-body)\s*/g, ' ').trim();
+  // 1. Strip all CSS comments first so comments never pollute or corrupt selectors
+  const noComments = css.replace(/\/\*[\s\S]*?\*\//g, '');
+
+  // 2. Strip prefix aliases (#easymd, #nice, xiaofu, .markdown-body, .wechat-body)
+  const cleaned = noComments.replace(/(?:#(?:easymd|nice)|xiaofu|\.markdown-body|\.wechat-body)\s*/g, ' ').trim();
   if (!cleaned) return '';
 
   // Universal isolation selector: strictly exclude material blocks and ANY descendants inside them
@@ -244,7 +249,7 @@ const injectedCustomCss = computed(() => {
     const rawSelectors = selector.split(',');
     const mapped = rawSelectors.map(s => {
       const tag = s.trim();
-      if (!tag || tag === 'body' || tag === '#easymd' || tag === '#nice' || tag === '.markdown-body') {
+      if (!tag || tag === 'body' || tag === '#easymd' || tag === '#nice' || tag === '.markdown-body' || tag === ':scope') {
         return `.preview-body${NOT_MAT}, .wechat-body${NOT_MAT}, .tc-rendered-paper${NOT_MAT}`;
       }
       if (tag.startsWith('.')) {
@@ -461,11 +466,18 @@ watch(() => props.scrollPercentage, (percentage) => {
   }
 });
 
+function clearActivePreviewTarget() {
+  const activeEls = document.querySelectorAll('.preview-active-target');
+  activeEls.forEach(el => el.classList.remove('preview-active-target'));
+}
+
 function handlePreviewElementClick(e) {
   const target = e.target;
   if (!target || !target.closest) return;
   // Only trigger for clicks inside rendered content
   if (!target.closest('.preview-body') && !target.closest('.wechat-phone-frame') && !target.closest('.tc-rendered-paper')) return;
+
+  clearActivePreviewTarget();
 
   // 1. Check pre / code block / hljs first
   if (target.closest('pre, code, .hljs')) {
@@ -490,7 +502,9 @@ function handlePreviewElementClick(e) {
 
   for (const [tag, section, extraSelector] of inlinePriorityTags) {
     const sel = `${tag}, ${extraSelector}`;
-    if (target.closest(sel)) {
+    const matchedEl = target.closest(sel);
+    if (matchedEl) {
+      matchedEl.classList.add('preview-active-target');
       emit('element-click', section);
       return;
     }
@@ -513,7 +527,9 @@ function handlePreviewElementClick(e) {
 
   for (const [tag, section, extraSelector] of blockTags) {
     const sel = `${tag}, ${extraSelector}`;
-    if (target.closest(sel)) {
+    const matchedEl = target.closest(sel);
+    if (matchedEl) {
+      matchedEl.classList.add('preview-active-target');
       if (materialSupportedTags.includes(section)) {
         currentPopupKey.value = section;
         currentPopupPos.value = { x: e.clientX, y: e.clientY };
@@ -529,6 +545,7 @@ function handlePreviewElementClick(e) {
   if (target.closest('font, [color], [data-tag="font"], span')) {
     const parentHeading = target.closest('[data-heading], h1, h2, h3, h4, h5, h6');
     if (parentHeading) {
+      parentHeading.classList.add('preview-active-target');
       const headingTag = parentHeading.getAttribute('data-heading') || parentHeading.tagName.toLowerCase();
       if (materialSupportedTags.includes(headingTag)) {
         currentPopupKey.value = headingTag;
@@ -539,18 +556,27 @@ function handlePreviewElementClick(e) {
       }
       return;
     }
-    const parentBlock = target.closest('li') ? 'li' : (target.closest('blockquote') ? 'blockquote' : (target.closest('p') ? 'p' : 'body'));
-    if (materialSupportedTags.includes(parentBlock)) {
-      currentPopupKey.value = parentBlock;
-      currentPopupPos.value = { x: e.clientX, y: e.clientY };
-      materialPopupVisible.value = true;
-    } else {
-      emit('element-click', parentBlock);
+    const parentBlock = target.closest('li') ? target.closest('li') : (target.closest('blockquote') ? target.closest('blockquote') : (target.closest('p') ? target.closest('p') : null));
+    if (parentBlock) {
+      parentBlock.classList.add('preview-active-target');
+      const blockKey = parentBlock.tagName.toLowerCase();
+      if (materialSupportedTags.includes(blockKey)) {
+        currentPopupKey.value = blockKey;
+        currentPopupPos.value = { x: e.clientX, y: e.clientY };
+        materialPopupVisible.value = true;
+      } else {
+        emit('element-click', blockKey);
+      }
+      return;
     }
-    return;
   }
 
   emit('element-click', 'body');
+}
+
+function handlePopupClose() {
+  materialPopupVisible.value = false;
+  clearActivePreviewTarget();
 }
 </script>
 
@@ -638,7 +664,7 @@ function handlePreviewElementClick(e) {
       @select="handlePopupSelect"
       @update-prefix="handlePopupPrefixUpdate"
       @open-customizer="handlePopupOpenCustomizer"
-      @close="materialPopupVisible = false"
+      @close="handlePopupClose"
     />
   </div>
 </template>

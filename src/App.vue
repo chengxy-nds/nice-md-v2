@@ -310,37 +310,66 @@ function closeExportMenu() {
   showExportMenu.value = false;
 }
 function handleSaveTheme(styles) {
-  const name = prompt('请输入主题名称：');
-  if (!name) return;
+  const name = prompt('请输入新主题名称：');
+  if (!name || !name.trim()) return;
   const id = 'custom-' + Date.now().toString(36);
-  // Build CSS vars from the custom styles
-  const vars = {};
-  if (styles.body?.color) vars['--text-main'] = styles.body.color;
-  if (styles.body?.backgroundColor) vars['--bg-preview'] = styles.body.backgroundColor;
-  if (styles.body?.backgroundColor) vars['--bg-editor'] = styles.body.backgroundColor;
-  if (styles.code?.backgroundColor) vars['--code-bg'] = styles.code.backgroundColor;
-  if (styles.code?.color) vars['--code-text'] = styles.code.color;
-  themePresets.push({
-    id, name,
+  const cleanStyles = JSON.parse(JSON.stringify(styles || {}));
+
+  const newTheme = {
+    id,
+    name: name.trim(),
     icon: 'Palette',
     dark: false,
+    builtIn: false,
+    isCustom: true,
+    description: '用户自定义主题',
+    tag: '我的主题',
+    customStyles: cleanStyles,
     styles: {
-      '--bg-app': styles.body?.backgroundColor || '#fcfcfc',
-      '--bg-editor': styles.body?.backgroundColor || '#ffffff',
-      '--bg-preview': styles.body?.backgroundColor || '#fdfdfd',
-      '--text-main': styles.body?.color || '#2b2b2b',
+      '--bg-app': cleanStyles.body?.backgroundColor || '#fcfcfc',
+      '--bg-editor': cleanStyles.body?.backgroundColor || '#ffffff',
+      '--bg-preview': cleanStyles.body?.backgroundColor || '#fdfdfd',
+      '--text-main': cleanStyles.body?.color || '#2b2b2b',
       '--text-muted': '#595959',
       '--border-color': '#e1e4e8',
-      '--accent-color': '#2775b6',
+      '--accent-color': cleanStyles.h1?.color || '#2775b6',
       '--accent-hover': '#1e5d93',
-      '--accent-bg': 'rgba(39, 117, 182, 0.05)',
-      '--code-bg': styles.code?.backgroundColor || 'rgba(27,31,35,0.05)',
-      '--code-text': styles.code?.color || '#bb2243',
+      '--accent-bg': cleanStyles.blockquote?.backgroundColor || 'rgba(39, 117, 182, 0.05)',
+      '--code-bg': cleanStyles.code?.backgroundColor || 'rgba(27,31,35,0.05)',
+      '--code-text': cleanStyles.code?.color || '#bb2243',
       '--shadow-sm': '0 2px 8px rgba(0,0,0,0.02)',
       '--shadow-md': '0 8px 24px rgba(0,0,0,0.04)'
     }
-  });
-  localStorage.setItem('nicemd_custom_themes', JSON.stringify(themePresets));
+  };
+  themePresets.push(newTheme);
+  const customOnly = themePresets.filter(t => t.isCustom || !t.builtIn || t.id.startsWith('custom-'));
+  localStorage.setItem('nicemd_custom_themes', JSON.stringify(customOnly));
+  currentTheme.value = id;
+  applyTheme(id);
+  customStyles.value = cleanStyles;
+  soundEngine.playChime();
+}
+
+function handleSaveCustomTheme({ themeId, styles, css }) {
+  const theme = themePresets.find(t => t.id === themeId);
+  if (!theme) return;
+  const cleanStyles = JSON.parse(JSON.stringify(styles || {}));
+  cleanStyles.customCss = css;
+  theme.customStyles = cleanStyles;
+  if (!theme.styles) theme.styles = {};
+  if (cleanStyles.body?.backgroundColor) {
+    theme.styles['--bg-preview'] = cleanStyles.body.backgroundColor;
+    theme.styles['--bg-editor'] = cleanStyles.body.backgroundColor;
+  }
+  if (cleanStyles.body?.color) {
+    theme.styles['--text-main'] = cleanStyles.body.color;
+  }
+  if (cleanStyles.h1?.color) {
+    theme.styles['--accent-color'] = cleanStyles.h1.color;
+  }
+  const customOnly = themePresets.filter(t => t.isCustom || !t.builtIn || t.id.startsWith('custom-'));
+  localStorage.setItem('nicemd_custom_themes', JSON.stringify(customOnly));
+  customStyles.value = cleanStyles;
   soundEngine.playChime();
 }
 
@@ -1355,6 +1384,8 @@ watch(customStyles, () => {
           <TemplateCenter
             v-if="currentView === 'templates'"
             @apply-theme="handleApplyTheme"
+            @save-theme="handleSaveTheme"
+            @save-custom-theme="handleSaveCustomTheme"
             @back-to-editor="currentView = 'editor'"
           />
 
@@ -1523,6 +1554,7 @@ watch(customStyles, () => {
                 :themePanelVisible="showThemePanel"
                 @update:customStyles="customStyles = $event"
                 @save-theme="handleSaveTheme"
+                @save-custom-theme="handleSaveCustomTheme"
                 @update:themePanelVisible="showThemePanel = $event"
                 :codeThemeId="currentCodeTheme"
                 @update:codeThemeId="handleCodeThemeChangeFromPreview"

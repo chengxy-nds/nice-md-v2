@@ -990,6 +990,26 @@ html[data-color-mode="dark"] .markdown-body blockquote:not([data-material="true"
   margin: 0 !important;
 }
 
+/* ── Preview Active Target Focus Ring ── */
+.preview-active-target {
+  position: relative !important;
+  outline: 2px solid #3b82f6 !important;
+  outline-offset: 4px !important;
+  border-radius: 6px !important;
+  box-shadow: 0 0 0 6px rgba(59, 130, 246, 0.18), 0 8px 24px rgba(59, 130, 246, 0.25) !important;
+  transition: outline 0.2s ease, box-shadow 0.2s ease !important;
+  animation: previewTargetPulse 2s infinite ease-in-out !important;
+}
+
+@keyframes previewTargetPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.2), 0 4px 16px rgba(59, 130, 246, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 8px rgba(59, 130, 246, 0.35), 0 8px 28px rgba(59, 130, 246, 0.35);
+  }
+}
+
 /* ── Global Dark Tooltip (Universal App-wide Style) ── */
 .nice-global-tooltip {
   position: fixed;
