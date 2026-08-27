@@ -1,0 +1,1064 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Awwwards Directory 配色系统 Demo 演示 | Nice-MD</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      /* Awwwards Directory Official Design Tokens */
+      --bg-primary: #F8F8F8;
+      --bg-secondary: #222222;
+      --bg-card: #FFFFFF;
+      --bg-capsule-container: #EDEDED;
+      --bg-capsule-item: #F8F8F8;
+      --bg-capsule-item-hover: #FFFFFF;
+      
+      --color-primary: #222222;
+      --color-muted: #7A7A7A;
+      --color-subtle: #A7A7A7;
+      --color-border: #EDEDED;
+      --color-border-dark: #DCDCDC;
+      
+      /* Primary Button Tokens (Awwwards Charcoal Pill) */
+      --button-bg: #222222;
+      --button-hover: #383838;
+      --button-active: #141414;
+      --button-color: #FFFFFF;
+      --button-border: rgba(255, 255, 255, 0.16);
+      --button-radius: 72px;
+      
+      /* Awwwards Signature Color Spectrum (10% Micro-Accents) */
+      --color-orange: #FA5D29;
+      --color-orange-subtle: #FFECE5;
+      --color-orange-hover: #E44F1D;
+      
+      --color-mint: #AAEEC4;
+      --color-mint-subtle: #E8FAF0;
+      --color-mint-text: #1B7844;
+      
+      --color-purple: #502BD8;
+      --color-purple-subtle: #EFEBFB;
+      --color-purple-hover: #401FB5;
+      
+      --color-yellow: #FFF083;
+      --color-yellow-subtle: #FFFBE2;
+      --color-yellow-text: #856E00;
+      
+      --color-blue: #49B3FC;
+      --color-blue-subtle: #E8F5FE;
+      
+      --color-teal: #3EA094;
+      
+      /* Typography */
+      --font-main: 'Inter Tight', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', Consolas, monospace;
+      --font-display: 'Outfit', sans-serif;
+      
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
+      --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.03);
+      --shadow-hover: 0 12px 32px rgba(0, 0, 0, 0.07);
+      --shadow-popover: 0 16px 40px rgba(0, 0, 0, 0.08);
+      
+      --transition-smooth: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    html.dark {
+      --bg-primary: #121212;
+      --bg-secondary: #0A0A0A;
+      --bg-card: #1C1C1E;
+      --bg-capsule-container: #252528;
+      --bg-capsule-item: #1C1C1E;
+      --bg-capsule-item-hover: #2C2C30;
+      
+      --color-primary: #EEEEEE;
+      --color-muted: #A0A0A5;
+      --color-subtle: #68686E;
+      --color-border: #2C2C30;
+      --color-border-dark: #3A3A40;
+      
+      --button-bg: #FFFFFF;
+      --button-hover: #E5E5E5;
+      --button-active: #CCCCCC;
+      --button-color: #121212;
+      --button-border: rgba(0, 0, 0, 0.12);
+      
+      --color-orange-subtle: rgba(250, 93, 41, 0.15);
+      --color-mint-subtle: rgba(170, 238, 196, 0.15);
+      --color-mint-text: #AAEEC4;
+      --color-purple-subtle: rgba(80, 43, 216, 0.2);
+      --color-yellow-subtle: rgba(255, 240, 131, 0.15);
+      --color-yellow-text: #FFF083;
+      --color-blue-subtle: rgba(73, 179, 252, 0.15);
+      
+      --shadow-card: 0 4px 20px rgba(0, 0, 0, 0.25);
+      --shadow-hover: 0 12px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-main);
+      background-color: var(--bg-primary);
+      color: var(--color-primary);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* ── Header Capsule Navigation (Awwwards Directory Bar) ── */
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: var(--bg-primary);
+      border-bottom: 1px solid var(--color-border);
+      padding: 12px 24px;
+      backdrop-filter: blur(12px);
+      transition: var(--transition-smooth);
+    }
+
+    .header-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--color-primary);
+    }
+
+    .brand-logo-badge {
+      width: 32px;
+      height: 32px;
+      background: var(--color-primary);
+      color: var(--bg-primary);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 16px;
+      font-family: var(--font-display);
+    }
+
+    .brand-name {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .brand-tag {
+      font-size: 10.5px;
+      font-weight: 600;
+      background: var(--color-orange);
+      color: #fff;
+      padding: 2px 7px;
+      border-radius: 9999px;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+    }
+
+    /* Awwwards Style Filter Capsule Bar */
+    .filter-capsule-container {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--bg-capsule-container);
+      padding: 5px;
+      border-radius: 72px;
+      border: 1px solid var(--color-border);
+    }
+
+    .capsule-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      background: var(--bg-capsule-item);
+      color: var(--color-primary);
+      border: none;
+      border-radius: 72px;
+      font-family: var(--font-main);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      white-space: nowrap;
+      user-select: none;
+    }
+
+    .capsule-pill:hover {
+      background: var(--bg-capsule-item-hover);
+      color: var(--color-primary);
+      transform: translateY(-1px);
+    }
+
+    .capsule-pill.is-active {
+      background: var(--color-primary);
+      color: var(--bg-primary);
+      font-weight: 600;
+    }
+
+    .capsule-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 5px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--color-orange);
+      color: #FFFFFF;
+    }
+
+    .capsule-pill.is-active .capsule-count {
+      background: var(--bg-primary);
+      color: var(--color-primary);
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-awwwards-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 20px;
+      background: var(--button-bg);
+      color: var(--button-color);
+      border: 1px solid var(--button-border);
+      border-radius: var(--button-radius);
+      font-family: var(--font-main);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      user-select: none;
+    }
+
+    .btn-awwwards-primary:hover {
+      background: var(--button-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+    }
+
+    .btn-icon-toggle {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      border: 1px solid var(--color-border);
+      background: var(--bg-card);
+      color: var(--color-primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .btn-icon-toggle:hover {
+      background: var(--bg-capsule-container);
+    }
+
+    /* ── Subheader Notice Banner ── */
+    .top-banner {
+      background: var(--bg-card);
+      border-bottom: 1px solid var(--color-border);
+      padding: 10px 24px;
+      font-size: 13px;
+    }
+
+    .top-banner-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .banner-left {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      color: var(--color-muted);
+    }
+
+    .accent-dot-pulse {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--color-orange);
+      position: relative;
+    }
+
+    .accent-dot-pulse::after {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      border: 1.5px solid var(--color-orange);
+      opacity: 0.6;
+      animation: pulseAnim 1.8s infinite cubic-bezier(0.25, 1, 0.5, 1);
+    }
+
+    @keyframes pulseAnim {
+      0% { transform: scale(0.8); opacity: 0.8; }
+      100% { transform: scale(2.2); opacity: 0; }
+    }
+
+    /* ── Tab Views Switcher ── */
+    .view-switcher-bar {
+      max-width: 1440px;
+      margin: 20px auto 0;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+
+    .view-tabs {
+      display: flex;
+      gap: 6px;
+      background: var(--bg-capsule-container);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--color-border);
+    }
+
+    .view-tab-btn {
+      padding: 6px 16px;
+      border: none;
+      background: transparent;
+      color: var(--color-muted);
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .view-tab-btn.is-active {
+      background: var(--bg-card);
+      color: var(--color-primary);
+      font-weight: 600;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ── Main Container ── */
+    .main-layout {
+      max-width: 1440px;
+      margin: 20px auto 40px;
+      padding: 0 24px;
+      flex: 1;
+      width: 100%;
+    }
+
+    /* Tab 1: Studio Markdown Interface */
+    .editor-studio-grid {
+      display: grid;
+      grid-template-columns: 280px 1fr 340px;
+      gap: 18px;
+      height: calc(100vh - 230px);
+      min-height: 600px;
+    }
+
+    .studio-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: var(--shadow-card);
+      transition: var(--transition-smooth);
+    }
+
+    .panel-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--color-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-capsule-item);
+    }
+
+    .panel-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-primary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .doc-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .doc-item {
+      padding: 10px 12px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: var(--transition-smooth);
+      border: 1px solid transparent;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .doc-item:hover {
+      background: var(--bg-capsule-item);
+      border-color: var(--color-border);
+    }
+
+    .doc-item.is-active {
+      background: var(--color-orange-subtle);
+      border-color: rgba(250, 93, 41, 0.3);
+    }
+
+    .doc-item-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .doc-item-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .doc-badge-pill {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 9999px;
+      text-transform: uppercase;
+    }
+
+    .badge-mint { background: var(--color-mint); color: var(--color-mint-text); }
+    .badge-purple { background: var(--color-purple); color: #fff; }
+    .badge-yellow { background: var(--color-yellow); color: var(--color-yellow-text); }
+    .badge-orange { background: var(--color-orange); color: #fff; }
+
+    .doc-item-meta {
+      font-size: 11px;
+      color: var(--color-muted);
+    }
+
+    /* Editor Area */
+    .editor-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      gap: 12px;
+      background: var(--bg-card);
+    }
+
+    .editor-toolbar-floating {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-capsule-container);
+      padding: 4px 8px;
+      border-radius: 72px;
+      border: 1px solid var(--color-border);
+      width: fit-content;
+    }
+
+    .tool-btn {
+      padding: 4px 8px;
+      font-size: 12px;
+      font-weight: 600;
+      border: none;
+      background: transparent;
+      color: var(--color-primary);
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .tool-btn:hover {
+      background: var(--bg-card);
+    }
+
+    .markdown-textarea {
+      flex: 1;
+      width: 100%;
+      border: none;
+      background: transparent;
+      font-family: var(--font-mono);
+      font-size: 13.5px;
+      line-height: 1.7;
+      color: var(--color-primary);
+      outline: none;
+      resize: none;
+    }
+
+    /* Preview Panel */
+    .preview-body {
+      flex: 1;
+      padding: 20px;
+      overflow-y: auto;
+      background: var(--bg-card);
+      font-size: 14px;
+      line-height: 1.8;
+    }
+
+    .preview-body h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      color: var(--color-primary);
+      letter-spacing: -0.02em;
+    }
+
+    .preview-body h2 {
+      font-size: 17px;
+      font-weight: 600;
+      margin: 18px 0 8px;
+      color: var(--color-primary);
+    }
+
+    .preview-body p {
+      margin-bottom: 12px;
+      color: var(--color-muted);
+    }
+
+    .preview-quote {
+      border-left: 3px solid var(--color-orange);
+      padding-left: 14px;
+      margin: 14px 0;
+      font-style: italic;
+      color: var(--color-primary);
+      background: var(--color-orange-subtle);
+      padding-top: 8px;
+      padding-bottom: 8px;
+      border-radius: 0 8px 8px 0;
+    }
+
+    .preview-code-block {
+      background: var(--bg-capsule-container);
+      border: 1px solid var(--color-border);
+      border-radius: 8px;
+      padding: 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      margin: 12px 0;
+      color: var(--color-primary);
+      overflow-x: auto;
+    }
+
+    /* ── Tab 2: Palette Cards & Gallery ── */
+    .palette-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin-bottom: 30px;
+    }
+
+    .color-card {
+      background: var(--bg-card);
+      border: 1px solid var(--color-border);
+      border-radius: 14px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: var(--shadow-card);
+      cursor: pointer;
+      transition: var(--transition-smooth);
+    }
+
+    .color-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-hover);
+      border-color: var(--color-border-dark);
+    }
+
+    .color-preview-box {
+      height: 70px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 13px;
+      border: 1px solid rgba(0, 0, 0, 0.05);
+    }
+
+    .color-info-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .color-name {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--color-primary);
+    }
+
+    .color-hex {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--color-muted);
+      background: var(--bg-capsule-container);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .color-usage {
+      font-size: 11.5px;
+      color: var(--color-muted);
+      line-height: 1.4;
+    }
+
+    /* ── Toast Notification ── */
+    .toast-msg {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--color-primary);
+      color: var(--bg-primary);
+      padding: 10px 18px;
+      border-radius: 72px;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: var(--shadow-popover);
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 9999;
+      pointer-events: none;
+    }
+
+    .toast-msg.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .editor-studio-grid {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+      .filter-capsule-container {
+        overflow-x: auto;
+        max-width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Site Header with Awwwards Capsule Filter Bar -->
+  <header class="site-header">
+    <div class="header-inner">
+      <a href="#" class="brand-group">
+        <div class="brand-logo-badge">W</div>
+        <div class="brand-name">
+          Awwwards × Wandor
+          <span class="brand-tag">Directory 2026</span>
+        </div>
+      </a>
+
+      <!-- Awwwards Style Filter Capsule Bar -->
+      <nav class="filter-capsule-container">
+        <button class="capsule-pill is-active" onclick="switchCategory(this, '全部文档')">
+          全部文档 <span class="capsule-count">12</span>
+        </button>
+        <button class="capsule-pill" onclick="switchCategory(this, '前沿设计')">
+          🔥 前沿设计 <span class="capsule-count" style="background:#FA5D29">4</span>
+        </button>
+        <button class="capsule-pill" onclick="switchCategory(this, '灵感库')">
+          🌿 灵感库 <span class="capsule-count" style="background:#1B7844">3</span>
+        </button>
+        <button class="capsule-pill" onclick="switchCategory(this, '开发笔记')">
+          💜 开发笔记 <span class="capsule-count" style="background:#502BD8">5</span>
+        </button>
+      </nav>
+
+      <!-- Primary Action Buttons -->
+      <div class="header-actions">
+        <button class="btn-icon-toggle" id="themeToggleBtn" title="切换明亮/暗黑模式" onclick="toggleTheme()">
+          🌓
+        </button>
+        <button class="btn-awwwards-primary" onclick="showToast('已触发 Awwwards 风格一键发布！')">
+          <span>+</span> 新建文档
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Notice Sub-banner -->
+  <div class="top-banner">
+    <div class="top-banner-inner">
+      <div class="banner-left">
+        <span class="accent-dot-pulse"></span>
+        <span>Awwwards 官方色彩体系（#F8F8F8 底色 + #222222 炭黑 + #FA5D29 焰橙点缀）实时渲染</span>
+      </div>
+      <div style="font-size:12px; color:var(--color-muted);">
+        当前运行地址: <code style="font-family:var(--font-mono); background:var(--bg-capsule-container); padding:2px 6px; border-radius:4px;">http://localhost:3000/test</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Switcher -->
+  <div class="view-switcher-bar">
+    <div class="view-tabs">
+      <button class="view-tab-btn is-active" onclick="switchView('studio', this)">💻 编辑器实机预览</button>
+      <button class="view-tab-btn" onclick="switchView('palette', this)">🎨 Awwwards 色彩规范速查</button>
+    </div>
+    <div style="font-size:12px; color:var(--color-muted)">
+      点击色块可直接复制 Hex 色值
+    </div>
+  </div>
+
+  <!-- Main Content Layout -->
+  <main class="main-layout">
+
+    <!-- View 1: Studio Markdown Interface -->
+    <div id="studioView" class="editor-studio-grid">
+      
+      <!-- Column 1: Directory Documents List -->
+      <section class="studio-panel">
+        <div class="panel-header">
+          <div class="panel-title">📂 我的文档 (Directory)</div>
+          <span style="font-size:11px; color:var(--color-muted)">共 4 篇</span>
+        </div>
+        <div class="doc-list">
+          <div class="doc-item is-active" onclick="selectDoc(this, 'awwwards-spec')">
+            <div class="doc-item-header">
+              <span class="doc-item-title">Awwwards 配色设计规范</span>
+              <span class="doc-badge-pill badge-orange">HOT</span>
+            </div>
+            <div class="doc-item-meta">今日 11:15 · 1,420 字</div>
+          </div>
+
+          <div class="doc-item" onclick="selectDoc(this, 'minimal-gallery')">
+            <div class="doc-item-header">
+              <span class="doc-item-title">极简画廊排版指南</span>
+              <span class="doc-badge-pill badge-mint">INSPIRE</span>
+            </div>
+            <div class="doc-item-meta">昨天 18:30 · 890 字</div>
+          </div>
+
+          <div class="doc-item" onclick="selectDoc(this, 'typography')">
+            <div class="doc-item-header">
+              <span class="doc-item-title">Inter Tight 字体排印指南</span>
+              <span class="doc-badge-pill badge-purple">PRO</span>
+            </div>
+            <div class="doc-item-meta">8月25日 · 2,100 字</div>
+          </div>
+
+          <div class="doc-item" onclick="selectDoc(this, 'tokens')">
+            <div class="doc-item-header">
+              <span class="doc-item-title">Design Tokens 架构设计</span>
+              <span class="doc-badge-pill badge-yellow">DOC</span>
+            </div>
+            <div class="doc-item-meta">8月22日 · 650 字</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Column 2: Markdown Editor Area -->
+      <section class="studio-panel">
+        <div class="panel-header">
+          <div class="panel-title">✍️ 编辑器 (Markdown Editor)</div>
+          <div class="editor-toolbar-floating">
+            <button class="tool-btn" onclick="insertFormat('**', '**')">B</button>
+            <button class="tool-btn" onclick="insertFormat('*', '*')">I</button>
+            <button class="tool-btn" onclick="insertFormat('> ', '')">Quote</button>
+            <button class="tool-btn" onclick="insertFormat('`', '`')">Code</button>
+            <button class="tool-btn" onclick="insertFormat('### ', '')">H3</button>
+          </div>
+        </div>
+        <div class="editor-body">
+          <textarea id="markdownInput" class="markdown-textarea" oninput="updatePreview()" spellcheck="false"># Awwwards Directory 视觉风格解析
+
+Awwwards 采用的是极具辨识度的 **「国际数码画廊风」**：
+- 页面底色采用 `#F8F8F8`（柔和纸质感微灰）
+- 卡片与白纸使用 `#FFFFFF` 悬浮层
+- 主按钮与主要文字统一采用 `#222222` 高级炭黑
+- 10% 微点缀色：`#FA5D29`（焰橙）与 `#AAEEC4`（薄荷绿）
+
+> 这是一段引用文案，采用 Awwwards 经典的左侧橙色标记条与轻盈背景！
+
+### 核心 Design Tokens
+```css
+:root {
+  --bg-primary: #F8F8F8;
+  --button-bg: #222222;
+  --color-orange: #FA5D29;
+  --color-mint: #AAEEC4;
+}
+```
+
+体验非常清爽、现代且高级！</textarea>
+        </div>
+      </section>
+
+      <!-- Column 3: Live Preview Panel -->
+      <section class="studio-panel">
+        <div class="panel-header">
+          <div class="panel-title">👁️ 实时排版预览 (Live Preview)</div>
+          <button class="btn-awwwards-primary" style="padding:4px 12px; font-size:11.5px;" onclick="copyMarkdownContent()">复制内容</button>
+        </div>
+        <div id="previewContainer" class="preview-body">
+          <!-- Dynamic Content rendered by updatePreview() -->
+        </div>
+      </section>
+
+    </div>
+
+    <!-- View 2: Palette Specs Grid -->
+    <div id="paletteView" style="display:none;">
+      <h2 style="font-size:18px; font-weight:700; margin-bottom:16px;">🎨 Awwwards 核心色谱与 Design Tokens 规范</h2>
+      
+      <div class="palette-grid">
+        
+        <!-- Card 1: Primary Background -->
+        <div class="color-card" onclick="copyColor('#F8F8F8', '全局底色')">
+          <div class="color-preview-box" style="background:#F8F8F8; color:#222; border:1px solid #EDEDED;">
+            #F8F8F8
+          </div>
+          <div class="color-info-row">
+            <span class="color-name">页面底色 (--bg-primary)</span>
+            <span class="color-hex">#F8F8F8</span>
+          </div>
+          <p class="color-usage">柔和、高级的微灰纸质底色，替代刺眼纯白与泛黄厚重感。</p>
+        </div>
+
+        <!-- Card 2: Primary Button & Text -->
+        <div class="color-card" onclick="copyColor('#222222', '主要文字与主按钮')">
+          <div class="color-preview-box" style="background:#222222; color:#FFFFFF;">
+            #222222
+          </div>
+          <div class="color-info-row">
+            <span class="color-name">主文字/主按钮 (--color-primary)</span>
+            <span class="color-hex">#222222</span>
+          </div>
+          <p class="color-usage">高级炭黑，比纯黑更有质感，用于标题、正文及胶囊主按钮。</p>
+        </div>
+
+        <!-- Card 3: Card Surface -->
+        <div class="color-card" onclick="copyColor('#FFFFFF', '卡片高亮背景')">
+          <div class="color-preview-box" style="background:#FFFFFF; color:#222; border:1px solid #EDEDED;">
+            #FFFFFF
+          </div>
+          <div class="color-info-row">
+            <span class="color-name">卡片背景 (--bg-card)</span>
+            <span class="color-hex">#FFFFFF</span>
+          </div>
+          <p class="color-usage">纯白卡片在 #F8F8F8 底色上自然浮现，构筑清晰的层次感。</p>
+        </div>
+
+        <!-- Card 4: Border Gray -->
+        <div class="color-card" onclick="copyColor('#EDEDED', '细边框与搜索栏')">
+          <div class="color-preview-box" style="background:#EDEDED; color:#222;">
+            #EDEDED
+          </div>
+          <div class="color-info-row">
+            <span class="color-name">容器/边框 (--border-gray)</span>
+            <span class="color-hex">#EDEDED</span>
+          </div>
+          <p class="color-usage">极浅极细的分割线（0.5px~1px）与胶囊筛选器背景。</p>
+        </div>
+
+        <!-- Card 5: Flame Orange -->
+        <div class="color-card" onclick="copyColor('#FA5D29', 'Awwwards 焰橙')">
+          <div class="color-preview-box" style="background:#FA5D29; color:#FFFFFF;">
+            #FA5D29
+          </div>
+          <div class="color-info-row">
+            <span class="color-name">标志焰橙 (--color-orange)</span>
+            <span class="color-hex">#FA5D29</span>
+          </div>
+          <p class="color-usage">Awwwards 标志性高冲击力点缀色，用于 Badge 计数与焦点。</p>
+        </div>
+
+        <!-- Card 6: Mint Green -->
+        <div class="color-card" onclick="copyColor('#AAEEC4', '薄荷绿')">
+          <div class="color-preview-box" style="background:#AAEEC4; color:#1B7844;">
+            #AAEEC4
+          </div>
+          <div class="color-info-row">
+            <span class="color-name">灵感薄荷绿 (--color-mint)</span>
+            <span class="color-hex">#AAEEC4</span>
+          </div>
+          <p class="color-usage">清爽通透的灵感色，用于成功标签、高亮徽章与辅助指示。</p>
+        </div>
+
+        <!-- Card 7: Royal Purple -->
+        <div class="color-card" onclick="copyColor('#502BD8', '大奖紫')">
+          <div class="color-preview-box" style="background:#502BD8; color:#FFFFFF;">
+            #502BD8
+          </div>
+          <div class="color-info-row">
+            <span class="color-name">大奖紫 (--color-awards)</span>
+            <span class="color-hex">#502BD8</span>
+          </div>
+          <p class="color-usage">年度大奖、权威认证与重要功能徽章的专属皇家紫。</p>
+        </div>
+
+        <!-- Card 8: Lemon Yellow -->
+        <div class="color-card" onclick="copyColor('#FFF083', '柠檬黄')">
+          <div class="color-preview-box" style="background:#FFF083; color:#856E00;">
+            #FFF083
+          </div>
+          <div class="color-info-row">
+            <span class="color-name">学院柠檬黄 (--color-learn)</span>
+            <span class="color-hex">#FFF083</span>
+          </div>
+          <p class="color-usage">醒目亲和的柠檬黄，用于课程、学习以及警示小标签。</p>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Toast Notification Pop -->
+  <div id="toast" class="toast-msg">已复制到剪贴板！</div>
+
+  <script>
+    function updatePreview() {
+      const text = document.getElementById('markdownInput').value;
+      const preview = document.getElementById('previewContainer');
+      
+      // Simple Markdown Parsing for Demo
+      let html = text
+        .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+        .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+        .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+        .replace(/^\> (.*$)/gim, '<div class="preview-quote">$1</div>')
+        .replace(/\*\*(.*)\*\*/gim, '<strong>$1</strong>')
+        .replace(/\*(.*)\*/gim, '<em>$1</em>')
+        .replace(/```css([\s\S]*?)```/gim, '<pre class="preview-code-block"><code>$1</code></pre>')
+        .replace(/```([\s\S]*?)```/gim, '<pre class="preview-code-block"><code>$1</code></pre>')
+        .replace(/`([^`]+)`/gim, '<code style="background:var(--bg-capsule-container); padding:2px 5px; border-radius:4px; font-family:var(--font-mono); font-size:12px;">$1</code>')
+        .replace(/\n$/gim, '<br />');
+
+      // Paragraph wrapping
+      const paragraphs = html.split('\n\n');
+      html = paragraphs.map(p => {
+        if (p.startsWith('<h') || p.startsWith('<div') || p.startsWith('<pre')) {
+          return p;
+        }
+        return `<p>${p}</p>`;
+      }).join('');
+
+      preview.innerHTML = html;
+    }
+
+    function toggleTheme() {
+      document.documentElement.classList.toggle('dark');
+      const isDark = document.documentElement.classList.contains('dark');
+      showToast(isDark ? '已切换至暗黑模式 (Dark Mode)' : '已切换至明亮模式 (Light Mode)');
+    }
+
+    function switchView(viewName, btn) {
+      document.querySelectorAll('.view-tab-btn').forEach(b => b.classList.remove('is-active'));
+      btn.classList.add('is-active');
+
+      if (viewName === 'studio') {
+        document.getElementById('studioView').style.display = 'grid';
+        document.getElementById('paletteView').style.display = 'none';
+      } else {
+        document.getElementById('studioView').style.display = 'none';
+        document.getElementById('paletteView').style.display = 'block';
+      }
+    }
+
+    function switchCategory(pill, name) {
+      document.querySelectorAll('.capsule-pill').forEach(p => p.classList.remove('is-active'));
+      pill.classList.add('is-active');
+      showToast(`已切换至分类: ${name}`);
+    }
+
+    function selectDoc(item, docId) {
+      document.querySelectorAll('.doc-item').forEach(i => i.classList.remove('is-active'));
+      item.classList.add('is-active');
+      showToast('已载入文档: ' + item.querySelector('.doc-item-title').textContent);
+    }
+
+    function insertFormat(before, after) {
+      const textarea = document.getElementById('markdownInput');
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const selected = textarea.value.substring(start, end);
+      const replacement = before + selected + after;
+      textarea.value = textarea.value.substring(0, start) + replacement + textarea.value.substring(end);
+      textarea.focus();
+      updatePreview();
+    }
+
+    function copyColor(hex, label) {
+      navigator.clipboard.writeText(hex).then(() => {
+        showToast(`已复制 ${label} 色值: ${hex}`);
+      });
+    }
+
+    function copyMarkdownContent() {
+      const text = document.getElementById('markdownInput').value;
+      navigator.clipboard.writeText(text).then(() => {
+        showToast('已复制 Markdown 内容到剪切板！');
+      });
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2200);
+    }
+
+    // Initialize Preview on load
+    updatePreview();
+  </script>
+</body>
+</html>

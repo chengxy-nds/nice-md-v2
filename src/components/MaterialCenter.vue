@@ -150,7 +150,7 @@ function handleApplyBackground(mat) {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="搜索素材名称、标签（如：135爆款、手账、古风、极客...）"
+          placeholder="搜索素材名称、标签（如：热门、手账、古风、极客...）"
         />
         <button v-if="searchQuery" class="mc-clear-btn" @click="searchQuery = ''">
           <X size="13" />
@@ -196,7 +196,6 @@ function handleApplyBackground(mat) {
               :class="{ 'is-active': activeStyle === st.id }"
               @click="activeStyle = st.id; soundEngine.playClick();"
             >
-              <span class="mc-tab-emoji">{{ st.icon }}</span>
               <span>{{ st.name }}</span>
             </button>
           </nav>
@@ -241,8 +240,7 @@ function handleApplyBackground(mat) {
                 class="mc-badge-style"
                 :style="{
                   color: getStyleBadge(mat.styleCategory).color,
-                  backgroundColor: getStyleBadge(mat.styleCategory).bg,
-                  borderColor: getStyleBadge(mat.styleCategory).border
+                  backgroundColor: getStyleBadge(mat.styleCategory).bg
                 }"
               >
                 {{ getStyleBadge(mat.styleCategory).name }}
@@ -260,7 +258,7 @@ function handleApplyBackground(mat) {
                 @click.stop="searchQuery = mat.tag"
                 title="点击按此标签快速筛选"
               >
-                🏷️ {{ mat.tag }}
+                {{ mat.tag }}
               </span>
             </div>
 
@@ -273,25 +271,9 @@ function handleApplyBackground(mat) {
             <div class="mc-render-paper" v-html="mat.html"></div>
           </div>
 
-          <!-- Card Metadata Footer -->
+          <!-- Card Metadata Footer (Minimalist & Clean) -->
           <div class="mc-card-footer">
-            <div class="mc-card-title-row">
-              <h4 class="mc-card-title" :title="mat.title">{{ mat.title }}</h4>
-            </div>
-            <p v-if="mat.description" class="mc-card-desc" :title="mat.description">
-              {{ mat.description }}
-            </p>
-            <div v-if="mat.tags && mat.tags.length" class="mc-card-tags">
-              <span
-                v-for="t in mat.tags"
-                :key="t"
-                class="mc-tag-pill"
-                @click.stop="searchQuery = t"
-                title="点击按此标签检索"
-              >
-                #{{ t }}
-              </span>
-            </div>
+            <h4 class="mc-card-title" :title="mat.title">{{ mat.title }}</h4>
           </div>
 
           <!-- Elegant Frosted Glass Hover Overlay -->
@@ -368,52 +350,29 @@ function handleApplyBackground(mat) {
   flex-direction: column;
   height: 100%;
   width: 100%;
-  background: #f4f5f7;
-  color: var(--text-main, #1e293b);
-  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Segoe UI', Roboto, sans-serif);
+  background: var(--bg-app, #F8F8F8);
+  color: var(--text-main, #222222);
+  font-family: var(--font-sans, 'Inter Tight', -apple-system, BlinkMacSystemFont, sans-serif);
   overflow: hidden;
 }
 
 /* Ambient subtle space light */
 .mc-glow {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(3.75rem);
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
-.mc-glow-a {
-  width: 22rem;
-  height: 22rem;
-  top: -6rem;
-  right: 15%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(243, 244, 246, 0) 70%);
-}
-
-.mc-glow-b {
-  width: 24rem;
-  height: 24rem;
-  bottom: -6rem;
-  left: 10%;
-  background: radial-gradient(circle, rgba(226, 232, 240, 0.55) 0%, rgba(243, 244, 246, 0) 70%);
-}
-
-/* Header (高度 52px，比例紧凑精致) */
+/* Header (高度 48px，扁平紧凑) */
 .mc-header {
   position: relative;
   z-index: 2;
   height: 3.25rem;
   padding: 0 1.25rem;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--bg-card, #FFFFFF);
+  border-bottom: 1px solid var(--border-color, #EDEDED);
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02);
 }
 
 .mc-header-left {
@@ -428,28 +387,26 @@ function handleApplyBackground(mat) {
   gap: 0.375rem;
   height: 2rem;
   padding: 0 0.75rem;
-  border-radius: 9999px;
-  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #EDEDED);
   background: var(--bg-card, #ffffff);
-  color: var(--text-main, #1e293b);
+  color: var(--text-main, #222222);
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: all 0.15s ease;
   user-select: none;
 }
 
 .mc-back-btn:hover {
-  background: #f1f5f9;
+  background: #F4F4F5;
   color: #000000;
-  transform: translateX(-0.0625rem);
 }
 
 .mc-divider {
-  width: 0.0625rem;
+  width: 1px;
   height: 1.125rem;
-  background: var(--border-color, #e2e8f0);
+  background: var(--border-color, #EDEDED);
 }
 
 .mc-title-group {
@@ -464,19 +421,18 @@ function handleApplyBackground(mat) {
   justify-content: center;
   width: 1.5rem;
   height: 1.5rem;
-  border-radius: 0.375rem;
+  border-radius: 4px;
   color: #ffffff;
-  background: radial-gradient(140% 120% at 50% 0%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 70%), #2a2a2c;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  background: #3d3939;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .mc-title {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
-  color: var(--text-main, #1e293b);
+  color: var(--text-main, #222222);
   margin: 0;
-  letter-spacing: -0.0125rem;
+  letter-spacing: -0.01em;
   line-height: 1.2;
 }
 
@@ -486,8 +442,7 @@ function handleApplyBackground(mat) {
   color: #16a34a;
   background: #edfdf2;
   padding: 0.0625rem 0.4375rem;
-  border-radius: 9999px;
-  box-shadow: 0 1px 2px rgba(22, 163, 74, 0.06);
+  border-radius: 4px;
 }
 
 .mc-search-box {
@@ -510,24 +465,22 @@ function handleApplyBackground(mat) {
   width: 100%;
   height: 100%;
   padding: 0 1.875rem 0 2rem;
-  border-radius: 9999px;
-  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #EDEDED);
   background: var(--bg-card, #ffffff);
-  color: var(--text-main, #1e293b);
+  color: var(--text-main, #222222);
   font-size: 0.75rem;
   font-weight: 500;
   outline: none;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .mc-search-box input::placeholder {
-  color: #94a3b8;
+  color: #A1A1AA;
 }
 
 .mc-search-box input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  border-color: #3d3939;
   background: #ffffff;
 }
 
@@ -537,9 +490,9 @@ function handleApplyBackground(mat) {
   width: 1.125rem;
   height: 1.125rem;
   border-radius: 50%;
-  background: #f1f5f9;
+  background: #F4F4F5;
   border: none;
-  color: var(--text-muted, #64748b);
+  color: var(--text-muted, #71717A);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -548,8 +501,8 @@ function handleApplyBackground(mat) {
 }
 
 .mc-clear-btn:hover {
-  background: #e2e8f0;
-  color: #0f172a;
+  background: #E4E4E7;
+  color: #09090B;
 }
 
 /* Content Area */
@@ -570,19 +523,16 @@ function handleApplyBackground(mat) {
   border-radius: 0.25rem;
 }
 
-/* Filter Control Panel */
+/* Filter Control Panel (扁平化无厚重感) */
 .mc-filter-panel {
   display: flex;
   flex-direction: column;
   gap: 0.625rem;
   margin-bottom: 1.25rem;
-  padding: 0.875rem 1rem;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid #e2e8f0;
-  border-radius: 0.875rem;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.02);
+  padding: 0.75rem 1rem;
+  background: var(--bg-card, #FFFFFF);
+  border: 1px solid var(--border-color, #EDEDED);
+  border-radius: 6px;
 }
 
 .mc-filter-row {
@@ -598,20 +548,20 @@ function handleApplyBackground(mat) {
   gap: 0.3125rem;
   font-size: 0.75rem;
   font-weight: 700;
-  color: #475569;
+  color: #52525B;
   min-width: 4.5rem;
   flex-shrink: 0;
   user-select: none;
 }
 
-/* Category Tabs (精致胶囊切换栏) */
+/* Category Tabs (扁平微圆角切换标签) */
 .mc-tabs {
   display: flex;
   align-items: center;
   gap: 0.25rem;
   padding: 0.1875rem;
-  background: #f1f5f9;
-  border-radius: 9999px;
+  background: #F4F4F5;
+  border-radius: 6px;
   width: fit-content;
   max-width: 100%;
   overflow-x: auto;
@@ -625,30 +575,28 @@ function handleApplyBackground(mat) {
   display: inline-flex;
   align-items: center;
   gap: 0.3125rem;
-  padding: 0.3125rem 0.75rem;
-  border-radius: 9999px;
-  border: 1px solid transparent;
+  padding: 0.3125rem 0.625rem;
+  border-radius: 4px;
+  border: none;
   background: transparent;
-  color: #64748b;
+  color: #71717A;
   font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.15s ease;
   white-space: nowrap;
   user-select: none;
 }
 
 .mc-tab:hover {
-  color: #0f172a;
-  background: rgba(255, 255, 255, 0.8);
+  color: #18181B;
+  background: #E4E4E7;
 }
 
 .mc-tab.is-active {
-  background: radial-gradient(140% 120% at 50% 0%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 70%), #2a2a2c;
-  border-color: rgba(255, 255, 255, 0.14);
+  background: var(--btn-primary-bg, #3d3939);
   color: #ffffff;
   font-weight: 600;
-  box-shadow: 0 2px 6px rgba(42, 42, 44, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .mc-tab-emoji {
@@ -662,7 +610,7 @@ function handleApplyBackground(mat) {
   align-items: center;
   justify-content: space-between;
   padding-top: 0.5rem;
-  border-top: 1px dashed #e2e8f0;
+  border-top: 1px dashed #EDEDED;
   font-size: 0.75rem;
 }
 
@@ -671,7 +619,7 @@ function handleApplyBackground(mat) {
   align-items: center;
   flex-wrap: wrap;
   gap: 0.375rem;
-  color: #64748b;
+  color: #71717A;
   font-size: 0.6875rem;
 }
 
@@ -679,17 +627,17 @@ function handleApplyBackground(mat) {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  background: #eff6ff;
-  color: #1e40af;
-  border: 1px solid #bfdbfe;
-  padding: 0.125rem 0.5rem;
-  border-radius: 9999px;
-  font-weight: 600;
+  background: #F4F4F5;
+  color: #18181B;
+  border: 1px solid #E4E4E7;
+  padding: 0.125rem 0.4375rem;
+  border-radius: 4px;
+  font-weight: 500;
 }
 
 .mc-filter-chip svg {
   cursor: pointer;
-  opacity: 0.7;
+  opacity: 0.6;
   transition: opacity 0.15s;
 }
 
@@ -703,48 +651,46 @@ function handleApplyBackground(mat) {
   align-items: center;
   gap: 0.25rem;
   background: transparent;
-  border: 1px solid #cbd5e1;
-  color: #64748b;
+  border: 1px solid #E4E4E7;
+  color: #71717A;
   font-size: 0.6875rem;
   font-weight: 600;
   padding: 0.1875rem 0.5rem;
-  border-radius: 0.375rem;
+  border-radius: 4px;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .mc-reset-btn:hover {
-  background: #fee2e2;
-  color: #b91c1c;
-  border-color: #fca5a5;
+  background: #FEE2E2;
+  color: #B91C1C;
+  border-color: #FCA5A5;
 }
 
 /* Grid */
 .mc-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
   gap: 1rem;
 }
 
-/* Card (12px 统一圆角，纯白卡片，平滑悬浮阴影) */
+/* Card (6px 扁平克制圆角，1px 精准细边框) */
 .mc-card {
   position: relative;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
+  border: 1px solid var(--border-color, #EDEDED);
+  border-radius: 6px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 160px;
+  min-height: 155px;
   cursor: pointer;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: border-color 0.18s ease, transform 0.18s ease;
 }
 
 .mc-card:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06), 0 2px 6px rgba(0, 0, 0, 0.02);
-  transform: translateY(-0.125rem);
+  border-color: #3d3939;
+  transform: translateY(-1px);
 }
 
 /* Card Header with Badges */
@@ -752,9 +698,9 @@ function handleApplyBackground(mat) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 0.75rem;
-  background: #f8fafc;
-  border-bottom: 1px solid #f1f5f9;
+  padding: 0.4375rem 0.625rem;
+  background: #FAFAFA;
+  border-bottom: 1px solid #EDEDED;
 }
 
 .mc-card-badges {
@@ -766,52 +712,51 @@ function handleApplyBackground(mat) {
 
 .mc-badge-style {
   font-size: 0.6875rem;
-  font-weight: 700;
-  padding: 0.0625rem 0.4375rem;
-  border-radius: 0.25rem;
-  border: 1px solid;
-  letter-spacing: 0.02em;
+  font-weight: 600;
+  padding: 0.125rem 0.4375rem;
+  border-radius: 3px;
+  border: none;
+  letter-spacing: 0.01em;
 }
 
 .mc-badge-category {
   font-size: 0.6875rem;
-  font-weight: 600;
-  padding: 0.0625rem 0.4375rem;
-  border-radius: 0.25rem;
-  background: #f1f5f9;
-  color: #475569;
-  border: 1px solid #e2e8f0;
+  font-weight: 500;
+  padding: 0.125rem 0.4375rem;
+  border-radius: 3px;
+  background: #F4F4F5;
+  color: #52525B;
+  border: none;
 }
 
 .mc-badge-tag {
   font-size: 0.6875rem;
-  font-weight: 600;
-  padding: 0.0625rem 0.4375rem;
-  border-radius: 0.25rem;
-  background: #ffffff;
-  color: #0f172a;
-  border: 1px solid #cbd5e1;
+  font-weight: 500;
+  padding: 0.125rem 0.4375rem;
+  border-radius: 3px;
+  background: #F4F4F5;
+  color: #27272A;
+  border: none;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .mc-badge-tag:hover {
-  background: #eff6ff;
-  color: #2563eb;
-  border-color: #93c5fd;
+  background: #E4E4E7;
+  color: #09090B;
 }
 
 .mc-card-quick-id {
   font-size: 0.625rem;
   font-family: monospace;
-  color: #94a3b8;
+  color: #A1A1AA;
 }
 
 /* Pure Material Preview Area */
 .mc-card-preview {
   flex: 1;
   width: 100%;
-  padding: 1.25rem 1rem;
+  padding: 1rem 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -822,42 +767,36 @@ function handleApplyBackground(mat) {
 .mc-render-paper {
   width: 100%;
   background: transparent;
-  border-radius: 0.5rem;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  transition: transform 0.25s ease;
-}
-
-.mc-card:hover .mc-render-paper {
-  transform: scale(0.985);
 }
 
 /* Card Metadata Footer */
 .mc-card-footer {
-  padding: 0.625rem 0.75rem;
+  padding: 0.5rem 0.625rem;
   background: #ffffff;
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid #EDEDED;
 }
 
 .mc-card-title-row {
-  margin-bottom: 0.1875rem;
+  margin-bottom: 0.125rem;
 }
 
 .mc-card-title {
   margin: 0;
   font-size: 0.8125rem;
-  font-weight: 700;
-  color: #0f172a;
+  font-weight: 600;
+  color: #18181B;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .mc-card-desc {
-  margin: 0 0 0.375rem 0;
+  margin: 0 0 0.3125rem 0;
   font-size: 0.6875rem;
-  color: #64748b;
+  color: #71717A;
   line-height: 1.35;
   white-space: nowrap;
   overflow: hidden;
@@ -873,28 +812,28 @@ function handleApplyBackground(mat) {
 
 .mc-tag-pill {
   font-size: 0.625rem;
-  color: #64748b;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  padding: 0 0.3125rem;
-  border-radius: 0.25rem;
+  color: #71717A;
+  background: #F4F4F5;
+  border: 1px solid #E4E4E7;
+  padding: 0 0.25rem;
+  border-radius: 3px;
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .mc-tag-pill:hover {
-  background: #eff6ff;
-  color: #2563eb;
-  border-color: #bfdbfe;
+  background: #EFF6FF;
+  color: #2563EB;
+  border-color: #BFDBFE;
 }
 
-/* Ultra-Refined Frosted Hover Overlay */
+/* Sleek Dark Frosted Hover Overlay */
 .mc-card-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(12px) saturate(180%);
-  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  background: rgba(24, 24, 27, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -902,8 +841,8 @@ function handleApplyBackground(mat) {
   padding: 1rem;
   opacity: 0;
   pointer-events: none;
-  border-radius: 0.75rem;
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 6px;
+  transition: opacity 0.18s ease;
   z-index: 10;
 }
 
@@ -915,100 +854,69 @@ function handleApplyBackground(mat) {
 .mc-overlay-info {
   text-align: center;
   margin-bottom: 0.75rem;
-  transform: translateY(0.25rem);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.mc-card:hover .mc-overlay-info {
-  transform: translateY(0);
 }
 
 .mc-overlay-title {
   font-size: 0.875rem;
-  font-weight: 800;
-  color: #0f172a;
+  font-weight: 700;
+  color: #FFFFFF;
   margin-bottom: 0.125rem;
 }
 
 .mc-overlay-cat {
   font-size: 0.6875rem;
-  font-weight: 600;
-  color: #64748b;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.65);
 }
 
 .mc-overlay-actions {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  transform: translateY(0.25rem) scale(0.96);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.mc-card:hover .mc-overlay-actions {
-  transform: translateY(0) scale(1);
-}
-
-/* Tactile Floating Capsule Buttons */
+/* Flat Overlay Buttons */
 .mc-overlay-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.3125rem;
-  height: 1.875rem;
+  height: 2rem;
   padding: 0 0.875rem;
-  border-radius: 9999px;
+  border-radius: 6px;
+  font-family: inherit;
   font-size: 0.75rem;
   font-weight: 600;
-  letter-spacing: -0.01em;
   cursor: pointer;
-  border: none;
   outline: none;
   white-space: nowrap;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.15s ease;
   user-select: none;
 }
 
-.mc-overlay-btn:active {
-  transform: scale(0.96) !important;
-}
-
-/* Primary Capsule: Apple Space Gray / Titanium CTA */
+/* Primary Button on Dark Overlay */
 .mc-overlay-btn.primary {
-  background: radial-gradient(140% 120% at 50% 0%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.02) 60%, rgba(0, 0, 0, 0.15) 100%), #2a2a2c;
-  color: #ffffff;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  box-shadow: 
-    0 1px 2px rgba(0, 0, 0, 0.1),
-    0 2px 10px rgba(42, 42, 44, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+  background: #FFFFFF;
+  color: #18181B;
+  border: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .mc-overlay-btn.primary:hover {
-  background: radial-gradient(140% 120% at 50% 0%, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.06) 60%, rgba(0, 0, 0, 0.08) 100%), #333336;
-  border-color: rgba(255, 255, 255, 0.24);
-  transform: translateY(-0.0625rem);
-  box-shadow: 
-    0 2px 6px rgba(0, 0, 0, 0.12),
-    0 4px 14px rgba(42, 42, 44, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.4);
+  background: #F4F4F5;
+  color: #000000;
 }
 
-/* Secondary Capsule: Clean Glass/White Pill */
+/* Secondary Button on Dark Overlay */
 .mc-overlay-btn.secondary {
-  background: #ffffff;
-  color: #1e293b;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  background: rgba(255, 255, 255, 0.15);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(4px);
 }
 
 .mc-overlay-btn.secondary:hover {
-  background: #f8fafc;
-  color: #000000;
-  border-color: #cbd5e1;
-  transform: translateY(-0.0625rem);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  background: rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
 }
 
 .mc-empty {
@@ -1018,7 +926,7 @@ function handleApplyBackground(mat) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--text-muted, #94a3b8);
+  color: var(--text-muted, #71717A);
   font-size: 0.8125rem;
 }
 
@@ -1033,10 +941,10 @@ function handleApplyBackground(mat) {
   align-items: center;
   gap: 0.375rem;
   padding: 0.375rem 0.875rem;
-  border-radius: 9999px;
-  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  border: 1px solid #EDEDED;
   background: #ffffff;
-  color: #1e293b;
+  color: #18181B;
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
@@ -1044,8 +952,7 @@ function handleApplyBackground(mat) {
 }
 
 .mc-empty-reset-btn:hover {
-  background: #f1f5f9;
-  border-color: #94a3b8;
+  background: #F4F4F5;
 }
 
 /* ── Dark Mode (深色模式全面适配) ── */

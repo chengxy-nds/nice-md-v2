@@ -6,7 +6,7 @@ import {
   Menu, Sparkles, Search, Image, HelpCircle, Link, Upload, Trash2,
   Link2, Link2Off, Eye, EyeOff, Download, Undo2, Redo2, Palette, Code2,
   ChevronDown, FileCode, FileText, Globe, Wand2, LayoutGrid, Send, Settings, Check, X,
-  Pencil
+  Pencil, History
 } from '@lucide/vue';
 import { applyTheme, getThemeDefaultStyles, getThemeSavedStyles, themes as themePresets } from './utils/themePresets';
 import { codeThemes } from './utils/codeThemes';
@@ -19,6 +19,7 @@ import SettingsModal from './components/SettingsModal.vue';
 import ConfirmDialog from './components/ConfirmDialog.vue';
 import Sidebar from './components/Sidebar.vue';
 import IconBar from './components/IconBar.vue';
+import DocHistoryModal from './components/DocHistoryModal.vue';
 import { compileToWeChatHtml, cleanEmptyListItems } from './utils/wechatStyles';
 import { marked } from 'marked';
 import confetti from 'canvas-confetti';
@@ -27,6 +28,7 @@ import TemplateCenter from './components/TemplateCenter.vue';
 import MaterialCenter from './components/MaterialCenter.vue';
 import HomeLandingView from './components/HomeLandingView.vue';
 import BrandLogo from './components/BrandLogo.vue';
+import { createSnapshot } from './utils/docHistory';
 import {
   loadDocuments, saveDocuments,
   loadGroups, saveGroups,
@@ -91,6 +93,84 @@ const customStyles = computed({
       doc.customStyles = val;
       doc.updatedAt = Date.now();
       saveDocuments(documents.value);
+    }
+  }
+});
+
+// ── Document History State & Handlers ──
+const historyModalVisible = ref(false);
+const historyTargetDoc = ref(null);
+
+const historyCurrentContent = computed(() => {
+  if (historyTargetDoc.value?.id === activeDocument.value?.id) {
+    return markdownContent.value;
+  }
+  return historyTargetDoc.value?.content || '';
+});
+
+const historyCurrentCustomStyles = computed(() => {
+  if (historyTargetDoc.value?.id === activeDocument.value?.id) {
+    return customStyles.value;
+  }
+  return historyTargetDoc.value?.customStyles || {};
+});
+
+function openDocHistory(doc = null) {
+  const target = doc || activeDocument.value;
+  if (!target) return;
+  // If target is currently active document, save current state to snapshot first
+  if (target.id === activeDocument.value?.id && markdownContent.value) {
+    target.content = markdownContent.value;
+    createSnapshot(target.id, target.title, markdownContent.value, customStyles.value, 'auto');
+  }
+  historyTargetDoc.value = target;
+  historyModalVisible.value = true;
+  soundEngine.playClick();
+}
+
+function handleRestoreVersion({ docId, content, customStyles: restoredStyles }) {
+  soundEngine.playChime();
+  const doc = documents.value.find(d => d.id === docId);
+  if (doc) {
+    doc.content = content;
+    if (restoredStyles) {
+      doc.customStyles = JSON.parse(JSON.stringify(restoredStyles));
+    }
+    doc.updatedAt = Date.now();
+  }
+  if (activeDocument.value?.id === docId) {
+    markdownContent.value = content;
+    if (restoredStyles) {
+      customStyles.value = JSON.parse(JSON.stringify(restoredStyles));
+    }
+  }
+  saveDocuments(documents.value);
+}
+
+// Auto-snapshot on typing pause (10s debounce)
+let autoSnapshotTimer = null;
+watch(markdownContent, (newContent) => {
+  if (!activeDocument.value || !newContent) return;
+  clearTimeout(autoSnapshotTimer);
+  autoSnapshotTimer = setTimeout(() => {
+    if (activeDocument.value && newContent) {
+      createSnapshot(
+        activeDocument.value.id,
+        activeDocument.value.title,
+        newContent,
+        customStyles.value,
+        'auto'
+      );
+    }
+  }, 10000);
+});
+
+// Take snapshot before switching doc
+watch(activeDocId, (newId, oldId) => {
+  if (oldId) {
+    const prevDoc = documents.value.find(d => d.id === oldId);
+    if (prevDoc && prevDoc.content) {
+      createSnapshot(prevDoc.id, prevDoc.title, prevDoc.content, prevDoc.customStyles, 'auto');
     }
   }
 });
@@ -1257,7 +1337,6 @@ watch(customStyles, () => {
           <div class="wandor-brand-box" @click="currentView = 'home'" title="返回官方首页">
             <BrandLogo :size="32" />
             <span class="wandor-wordmark">easymd</span>
-            <span class="wandor-pro-badge">PRO</span>
           </div>
           <button class="btn-menu-toggle" @click="toggleMobileSidebar" title="文档列表">
             <Menu size="18" />
@@ -1381,6 +1460,7 @@ watch(customStyles, () => {
             @create-doc="(groupId) => { handleCreateDoc(groupId); currentView = 'editor'; }"
             @open-templates="currentView = 'templates'"
             @open-materials="currentView = 'materials'"
+            @open-doc-history="openDocHistory"
             @rename-doc="handleRenameDoc"
             @delete-doc="handleDeleteDoc"
             @create-group="handleCreateGroup"
@@ -1474,6 +1554,7 @@ watch(customStyles, () => {
               </div>
               <button @click="editorPanelRef?.handleUndo()" class="btn-icon" title="撤销"><Undo2 size="15" /></button>
               <button @click="editorPanelRef?.handleRedo()" class="btn-icon" title="重做"><Redo2 size="15" /></button>
+              <button @click="openDocHistory(activeDocument)" class="btn-icon" title="历史版本与内容比对"><History size="15" /></button>
 
               <span class="toolbar-sep"></span>
               <button @click="toggleSyncScroll" class="btn-icon" :class="{ 'is-active': syncScrollEnabled }" title="同步滚动"><Link2 v-if="syncScrollEnabled" size="15" /><Link2Off v-else size="15" /></button>
@@ -1598,6 +1679,16 @@ watch(customStyles, () => {
       @close="isSettingsOpen = false"
     />
 
+    <!-- Document Version History & Diff Modal -->
+    <DocHistoryModal
+      :visible="historyModalVisible"
+      :doc="historyTargetDoc"
+      :currentContent="historyCurrentContent"
+      :currentCustomStyles="historyCurrentCustomStyles"
+      @close="historyModalVisible = false"
+      @restore-version="handleRestoreVersion"
+    />
+
     <!-- Global Confirm Dialog -->
     <ConfirmDialog />
 
@@ -1693,7 +1784,7 @@ html.dark .app-container.is-standalone-home {
 }
 
 .app-header {
-  height: 3.875rem;
+  height: 4.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1765,33 +1856,16 @@ html.dark .logo-dark {
 }
 
 .wandor-wordmark {
-  font-family: 'Special Elite', serif;
-  font-size: 1.5rem;
+  font-family: 'Inter Tight', 'Outfit', sans-serif;
+  font-size: 1.35rem;
   font-weight: 700;
-  color: var(--wandor-dark, #0a0a0a);
-  letter-spacing: -0.04em;
+  color: var(--text-main, #222222);
+  letter-spacing: -0.03em;
   line-height: 1;
 }
 
 html.dark .wandor-wordmark {
   color: #ffffff;
-}
-
-.wandor-pro-badge {
-  font-size: 9.5px;
-  font-weight: 700;
-  background: var(--wandor-dark, #0a0a0a);
-  color: #ffffff;
-  padding: 1.5px 5.5px;
-  border-radius: 9999px;
-  line-height: 1;
-  letter-spacing: 0.04em;
-  margin-left: 2px;
-}
-
-html.dark .wandor-pro-badge {
-  background: #ffffff;
-  color: #0a0a0a;
 }
 
 /* Center Floating Capsule Toolbar */
@@ -1886,34 +1960,40 @@ html.dark .wandor-pro-badge {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 16px;
-  border: none;
-  border-radius: 9999px;
-  background: var(--wandor-dark, #0a0a0a);
-  color: #ffffff;
+  padding: 7px 18px;
+  border: 1px solid var(--btn-primary-border);
+  border-radius: var(--btn-primary-radius, 9999px);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  font-family: inherit;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--btn-primary-shadow);
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
   white-space: nowrap;
 }
 
 .btn-header-publish:hover {
+  background: var(--btn-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
-  filter: brightness(1.1);
+  box-shadow: var(--btn-primary-hover-shadow);
 }
 
 .btn-header-publish:active {
+  background: var(--btn-primary-active);
   transform: translateY(0);
 }
 
 html.dark .btn-header-publish {
-  background: #ffffff;
-  color: #0a0a0a;
-  box-shadow: 0 4px 12px rgba(255, 255, 255, 0.08);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border-color: var(--btn-primary-border);
+}
+
+html.dark .btn-header-publish:hover {
+  background: var(--btn-primary-hover);
 }
 
 .publish-send-icon {

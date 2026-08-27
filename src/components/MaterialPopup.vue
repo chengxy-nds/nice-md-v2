@@ -1,7 +1,7 @@
 <script setup>
 import { ref, computed } from 'vue';
-import { Sparkles, X, Check, ExternalLink, Globe, Layers, Search } from 'lucide-vue-next';
-import { getMaterialTemplatesForKey } from '../utils/materialLibrary';
+import { Sparkles, X, Check, ExternalLink, Globe, Search } from 'lucide-vue-next';
+import { getMaterialTemplatesForKey, styleCategoryMap } from '../utils/materialLibrary';
 
 const props = defineProps({
   visible: {
@@ -53,15 +53,19 @@ const templateList = computed(() => {
   return getMaterialTemplatesForKey(props.elementKey);
 });
 
+function getStyleBadge(cat) {
+  return styleCategoryMap[cat] || { name: '通用素材', color: '#52525B', bg: '#F4F4F5' };
+}
+
 // Category filter
 const activeCategory = ref('all');
 const searchQuery = ref('');
 
 const categories = [
   { id: 'all', label: '全部模版' },
-  { id: '135hot', label: '135 爆款', match: (t) => t.styleCategory === '135hot' || t.tag?.includes('135') || t.name?.includes('135') || t.tags?.some(x => x?.includes('135')) },
+  { id: '135hot', label: '热门精选', match: (t) => t.styleCategory === '135hot' || t.styleCategory === '热门hot' || t.tag?.includes('热门') || t.tag?.includes('精选') || t.tag?.includes('爆款') },
   { id: 'fresh', label: '清新活力', match: (t) => t.styleCategory === 'fresh' || t.tag?.includes('清新') || t.tag?.includes('薄荷') || t.tag?.includes('夏风') || t.tag?.includes('手账') || t.tag?.includes('便签') },
-  { id: 'business', label: '商务科技', match: (t) => t.styleCategory === 'business' || t.tag?.includes('商务') || t.tag?.includes('双色') || t.tag?.includes('时间轴') || t.tag?.includes('Notion') },
+  { id: 'business', label: '商务科技', match: (t) => t.styleCategory === 'business' || t.tag?.includes('商务') || t.tag?.includes('双色') || t.tag?.includes('时间轴') || t.tag?.includes('彩卡') },
   { id: 'guofeng', label: '国风古韵', match: (t) => t.styleCategory === 'guofeng' || t.tag?.includes('国风') || t.tag?.includes('水墨') || t.tag?.includes('古风') || t.tag?.includes('宣纸') },
   { id: 'minimal', label: '极简大刊', match: (t) => t.styleCategory === 'minimal' || t.tag?.includes('极简') || t.tag?.includes('莫兰迪') || t.tag?.includes('大刊') || t.tag?.includes('杂志') || t.id === 'none' },
   { id: 'tech', label: '极客代码', match: (t) => t.styleCategory === 'tech' || t.tag?.includes('极客') || t.tag?.includes('代码') || t.tag?.includes('赛博') || t.tag?.includes('终端') }
@@ -99,10 +103,6 @@ function hasPrefixOption(id) {
   <Teleport to="body">
     <div v-if="visible" class="material-popup-mask" @click.self="emit('close')">
       <div class="material-popup-modal">
-        <!-- Ambient subtle space light -->
-        <div class="popup-glow popup-glow-a"></div>
-        <div class="popup-glow popup-glow-b"></div>
-
         <!-- Header -->
         <div class="popup-header">
           <div class="header-title-group">
@@ -111,13 +111,12 @@ function hasPrefixOption(id) {
             </div>
             <div>
               <div class="popup-title-row">
-                <span class="popup-title">选择 {{ titleText }} 视觉样式</span>
+                <span class="popup-title">选择 {{ titleText }} 素材模版</span>
                 <span class="global-scope-pill" title="选定后将统一自动应用至全篇所有此标签元素">
                   <Globe size="11" />
                   <span>全局统一应用</span>
                 </span>
               </div>
-              <div class="popup-subtitle">点击即刻替换全篇排版，实时同步微信公众号渲染规范</div>
             </div>
           </div>
 
@@ -134,18 +133,26 @@ function hasPrefixOption(id) {
               />
             </div>
 
-            <button class="open-detail-btn" @click="emit('open-customizer', props.elementKey)" title="在侧边栏打开详细参数调节">
-              <span>详细微调</span>
-              <ExternalLink size="12" />
-            </button>
+            <div class="search-input-wrap">
+              <Search size="13" class="search-icon" />
+              <input
+                v-model="searchQuery"
+                type="text"
+                placeholder="搜索模版名称..."
+                class="search-input"
+              />
+              <button v-if="searchQuery" class="clear-search-btn" @click="searchQuery = ''">
+                <X size="11" />
+              </button>
+            </div>
 
             <button class="modal-close-btn" @click="emit('close')" title="关闭 (Esc)">
-              <X size="15" />
+              <X size="14" />
             </button>
           </div>
         </div>
 
-        <!-- Category & Search Bar -->
+        <!-- Category Filter Bar (Flat Tabs) -->
         <div class="popup-filter-bar">
           <div class="filter-tabs">
             <button
@@ -158,39 +165,74 @@ function hasPrefixOption(id) {
               {{ cat.label }}
             </button>
           </div>
-
-          <div class="search-input-wrap">
-            <Search size="13" class="search-icon" />
-            <input
-              v-model="searchQuery"
-              type="text"
-              placeholder="搜索模版..."
-              class="search-input"
-            />
-          </div>
         </div>
 
-        <!-- Pure Visual Grid (No descriptions, clean layout) -->
+        <!-- Materials Grid (Identical cards to Material Center) -->
         <div class="popup-grid-container">
           <div
             v-for="item in filteredList"
             :key="item.id"
-            class="visual-preview-card"
-            :class="{ 'is-active': (props.currentMaterialId || 'none') === item.id }"
+            class="mc-card"
+            :class="{ 'is-selected-card': (props.currentMaterialId || 'none') === item.id }"
             @click="handleSelect(item.id)"
           >
-            <!-- Card Header -->
-            <div class="card-meta-bar">
-              <span class="card-title">{{ item.name }}</span>
-              <span v-if="(props.currentMaterialId || 'none') === item.id" class="active-badge">
-                <Check size="12" />
+            <!-- Card Header Bar with Badges -->
+            <div class="mc-card-header">
+              <div class="mc-card-badges">
+                <!-- Style Badge -->
+                <span
+                  v-if="item.styleCategory"
+                  class="mc-badge-style"
+                  :style="{
+                    color: getStyleBadge(item.styleCategory).color,
+                    backgroundColor: getStyleBadge(item.styleCategory).bg
+                  }"
+                >
+                  {{ getStyleBadge(item.styleCategory).name }}
+                </span>
+
+                <!-- Category/Tag Badge -->
+                <span class="mc-badge-category">
+                  {{ item.tag || (item.id === 'none' ? '默认' : '精选') }}
+                </span>
+              </div>
+
+              <!-- Selected indicator or ID -->
+              <span v-if="(props.currentMaterialId || 'none') === item.id" class="mc-selected-pill">
+                <Check size="11" />
                 <span>已选用</span>
               </span>
-              <span v-else class="card-tag">{{ item.tag || '推荐' }}</span>
+              <span v-else class="mc-card-quick-id">#{{ item.id }}</span>
             </div>
 
-            <!-- Visual Preview Window -->
-            <div class="card-canvas" v-html="item.previewHtml"></div>
+            <!-- Material Live Render Area -->
+            <div class="mc-card-preview">
+              <div class="mc-render-paper" v-html="item.previewHtml"></div>
+            </div>
+
+            <!-- Card Metadata Footer -->
+            <div class="mc-card-footer">
+              <h4 class="mc-card-title" :title="item.name">{{ item.name }}</h4>
+            </div>
+
+            <!-- Sleek Dark Frosted Glass Hover Overlay (same as MaterialCenter.vue) -->
+            <div class="mc-card-overlay">
+              <div class="mc-overlay-info">
+                <div class="mc-overlay-title">{{ item.name }}</div>
+                <div class="mc-overlay-cat">
+                  {{ getStyleBadge(item.styleCategory).name }} · {{ item.tag || '素材模版' }}
+                </div>
+              </div>
+              <div class="mc-overlay-actions">
+                <button
+                  class="mc-overlay-btn primary"
+                  @click.stop="handleSelect(item.id)"
+                >
+                  <Check v-if="(props.currentMaterialId || 'none') === item.id" size="12" />
+                  <span>{{ (props.currentMaterialId || 'none') === item.id ? '当前已选用' : '选用此模版' }}</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -204,60 +246,35 @@ function hasPrefixOption(id) {
   inset: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   z-index: 999999;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 1.25rem;
-  animation: modalFadeIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: modalFadeIn 0.15s ease-out;
 }
 
 @keyframes modalFadeIn {
-  from { opacity: 0; transform: scale(0.97); }
+  from { opacity: 0; transform: scale(0.98); }
   to { opacity: 1; transform: scale(1); }
 }
 
 .material-popup-modal {
   position: relative;
-  width: 820px;
-  max-width: 94vw;
-  max-height: 84vh;
-  background: #f4f5f7;
-  border-radius: 1rem;
-  box-shadow: 
-    0 1.5rem 3.5rem -0.75rem rgba(0, 0, 0, 0.25),
-    0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+  width: 880px;
+  max-width: 95vw;
+  max-height: 85vh;
+  background: var(--bg-app, #F8F8F8);
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #EDEDED);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12);
   display: flex;
   flex-direction: column;
   overflow: hidden;
-}
-
-/* Ambient glow blobs */
-.popup-glow {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(3.5rem);
-  pointer-events: none;
-  z-index: 0;
-}
-
-.popup-glow-a {
-  width: 16rem;
-  height: 16rem;
-  top: -4rem;
-  right: 10%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(243, 244, 246, 0) 70%);
-}
-
-.popup-glow-b {
-  width: 18rem;
-  height: 18rem;
-  bottom: -4rem;
-  left: 10%;
-  background: radial-gradient(circle, rgba(226, 232, 240, 0.55) 0%, rgba(243, 244, 246, 0) 70%);
+  font-family: var(--font-sans, 'Inter Tight', -apple-system, BlinkMacSystemFont, sans-serif);
 }
 
 .popup-header {
@@ -266,11 +283,10 @@ function hasPrefixOption(id) {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.875rem 1.25rem;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  padding: 0 1.25rem;
+  height: 3.25rem;
+  border-bottom: 1px solid var(--border-color, #EDEDED);
+  background: #ffffff;
   gap: 0.75rem;
   flex-shrink: 0;
 }
@@ -282,17 +298,15 @@ function hasPrefixOption(id) {
 }
 
 .header-icon {
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 0.4375rem;
-  background: radial-gradient(140% 120% at 50% 0%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 70%), #2a2a2c;
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: 4px;
+  background: #3d3939;
   color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .popup-title-row {
@@ -302,11 +316,11 @@ function hasPrefixOption(id) {
 }
 
 .popup-title {
-  font-size: 0.9375rem;
+  font-size: 0.95rem;
   font-weight: 700;
-  color: var(--text-main, #0f172a);
+  color: var(--text-main, #18181B);
   line-height: 1.2;
-  letter-spacing: -0.0125rem;
+  letter-spacing: -0.01em;
 }
 
 .global-scope-pill {
@@ -314,100 +328,60 @@ function hasPrefixOption(id) {
   align-items: center;
   gap: 0.25rem;
   font-size: 0.625rem;
-  font-weight: 700;
-  color: #2563eb;
-  background: #eff6ff;
-  border: 1px solid #bfdbfe;
-  padding: 0.125rem 0.4375rem;
-  border-radius: 9999px;
+  font-weight: 600;
+  color: #16a34a;
+  background: #edfdf2;
+  padding: 0.0625rem 0.4375rem;
+  border-radius: 3px;
   line-height: 1;
 }
 
-.popup-subtitle {
-  font-size: 0.6875rem;
-  color: var(--text-muted, #64748b);
-  margin-top: 0.1875rem;
-}
-
-/* Category Filter Bar */
+/* Category Filter Bar (Flat Tabs) */
 .popup-filter-bar {
   position: relative;
   z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 1.25rem;
-  background: #f8fafc;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 0.5rem 1rem;
+  background: #ffffff;
+  border-bottom: 1px solid var(--border-color, #EDEDED);
   gap: 0.75rem;
-  flex-wrap: wrap;
 }
 
 .filter-tabs {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.25rem;
+  padding: 0.1875rem;
+  background: #F4F4F5;
+  border-radius: 6px;
   overflow-x: auto;
-  padding-bottom: 2px;
 }
 
 .filter-tab-btn {
-  font-size: 0.6875rem;
-  font-weight: 600;
+  font-size: 0.75rem;
+  font-weight: 500;
   padding: 0.25rem 0.625rem;
-  border-radius: 9999px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-  color: #475569;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  color: #71717A;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.15s ease;
+  user-select: none;
 }
 
 .filter-tab-btn:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  color: #18181B;
+  background: #E4E4E7;
 }
 
 .filter-tab-btn.is-active {
-  background: #1e293b;
+  background: var(--btn-primary-bg, #3d3939);
   color: #ffffff;
-  border-color: #1e293b;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
-}
-
-.search-input-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-  width: 140px;
-}
-
-.search-icon {
-  position: absolute;
-  left: 0.5rem;
-  color: #94a3b8;
-  pointer-events: none;
-}
-
-.search-input {
-  width: 100%;
-  height: 1.625rem;
-  padding-left: 1.625rem;
-  padding-right: 0.5rem;
-  font-size: 0.6875rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 9999px;
-  background: #ffffff;
-  color: #0f172a;
-  outline: none;
-  transition: all 0.15s ease;
-}
-
-.search-input:focus {
-  border-color: #3b82f6;
-  width: 160px;
-  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
+  font-weight: 600;
 }
 
 .header-right-tools {
@@ -416,91 +390,112 @@ function hasPrefixOption(id) {
   gap: 0.5rem;
 }
 
+.search-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 150px;
+}
+
+.search-icon {
+  position: absolute;
+  left: 0.5rem;
+  color: #A1A1AA;
+  pointer-events: none;
+}
+
+.search-input {
+  width: 100%;
+  height: 2rem;
+  padding-left: 1.75rem;
+  padding-right: 1.5rem;
+  font-size: 0.75rem;
+  border: 1px solid var(--border-color, #EDEDED);
+  border-radius: 6px;
+  background: #ffffff;
+  color: #18181B;
+  outline: none;
+  transition: all 0.15s ease;
+}
+
+.search-input:focus {
+  border-color: #3d3939;
+  width: 175px;
+}
+
+.clear-search-btn {
+  position: absolute;
+  right: 0.375rem;
+  width: 1rem;
+  height: 1rem;
+  border-radius: 50%;
+  background: #F4F4F5;
+  border: none;
+  color: #71717A;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .inline-prefix-box {
   display: flex;
   align-items: center;
   gap: 0.375rem;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  padding: 0.25rem 0.5rem;
-  border-radius: 9999px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  background: #F4F4F5;
+  padding: 0.1875rem 0.5rem;
+  border-radius: 6px;
 }
 
 .prefix-label {
   font-size: 0.6875rem;
   font-weight: 600;
-  color: #475569;
+  color: #52525B;
 }
 
 .prefix-input {
-  width: 4rem;
+  width: 3.5rem;
   height: 1.375rem;
   padding: 0 0.375rem;
   font-size: 0.6875rem;
   font-weight: 700;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.25rem;
-  color: #1e293b;
+  border: 1px solid #D4D4D8;
+  border-radius: 4px;
+  color: #18181B;
   outline: none;
-}
-
-.prefix-input:focus {
-  border-color: #3b82f6;
-}
-
-.open-detail-btn {
-  font-size: 0.75rem;
-  font-weight: 600;
-  color: #1e293b;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  padding: 0.375rem 0.75rem;
-  border-radius: 9999px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3125rem;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-}
-
-.open-detail-btn:hover {
-  background: #f1f5f9;
-  color: #000000;
 }
 
 .modal-close-btn {
-  width: 1.875rem;
-  height: 1.875rem;
-  border-radius: 50%;
-  border: 1px solid var(--border-color, #e2e8f0);
-  background: var(--bg-card, #ffffff);
-  color: var(--text-muted, #64748b);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #EDEDED);
+  background: #ffffff;
+  color: #71717A;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: all 0.15s ease;
 }
 
 .modal-close-btn:hover {
-  background: #f1f5f9;
-  color: #000000;
-  transform: scale(1.06);
+  background: #F4F4F5;
+  color: #09090B;
 }
 
+/* Materials Grid Container */
 .popup-grid-container {
   position: relative;
   z-index: 1;
   flex: 1;
   overflow-y: auto;
-  padding: 1rem 1.25rem;
+  padding: 0.875rem 1rem;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 0.75rem;
-  background: #f4f5f7;
+  background: var(--bg-app, #F8F8F8);
 }
 
 .popup-grid-container::-webkit-scrollbar {
@@ -512,83 +507,201 @@ function hasPrefixOption(id) {
   border-radius: 0.25rem;
 }
 
-.visual-preview-card {
+/* ── Material Card (Exact same structure as MaterialCenter.vue) ── */
+.mc-card {
+  position: relative;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
-  padding: 0.75rem;
+  border: 1px solid var(--border-color, #EDEDED);
+  border-radius: 6px;
+  overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 150px;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  transition: border-color 0.15s ease, transform 0.15s ease;
 }
 
-.visual-preview-card:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.05);
-  transform: translateY(-0.0625rem);
+.mc-card:hover {
+  border-color: #3d3939;
+  transform: translateY(-1px);
 }
 
-.visual-preview-card.is-active {
-  border-color: #2a2a2c;
-  background: #f8fbff;
-  box-shadow: 0 0 0 1px #2a2a2c, 0 4px 12px rgba(42, 42, 44, 0.08);
+.mc-card.is-selected-card {
+  border-color: #3d3939;
+  box-shadow: 0 0 0 1px #3d3939;
 }
 
-.card-meta-bar {
+.mc-card-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 0.5rem;
+  padding: 0.4375rem 0.625rem;
+  background: #FAFAFA;
+  border-bottom: 1px solid #EDEDED;
 }
 
-.card-title {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--text-main, #0f172a);
+.mc-card-badges {
+  display: flex;
+  align-items: center;
+  gap: 0.3125rem;
+  flex-wrap: wrap;
 }
 
-.card-tag {
-  font-size: 0.625rem;
+.mc-badge-style {
+  font-size: 0.6875rem;
   font-weight: 600;
-  color: #64748b;
-  background: #f1f5f9;
-  padding: 0.0625rem 0.375rem;
-  border-radius: 0.25rem;
+  padding: 0.125rem 0.4375rem;
+  border-radius: 3px;
+  border: none;
+  letter-spacing: 0.01em;
 }
 
-.active-badge {
+.mc-badge-category {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  padding: 0.125rem 0.4375rem;
+  border-radius: 3px;
+  background: #F4F4F5;
+  color: #52525B;
+  border: none;
+}
+
+.mc-card-quick-id {
   font-size: 0.625rem;
-  font-weight: 700;
-  color: #16a34a;
-  background: #edfdf2;
-  padding: 0.0625rem 0.4375rem;
-  border-radius: 9999px;
+  font-family: monospace;
+  color: #A1A1AA;
+}
+
+.mc-selected-pill {
   display: inline-flex;
   align-items: center;
   gap: 0.1875rem;
+  font-size: 0.625rem;
+  font-weight: 600;
+  color: #16a34a;
+  background: #edfdf2;
+  padding: 0.0625rem 0.375rem;
+  border-radius: 3px;
 }
 
-.card-canvas {
-  min-height: 3.75rem;
-  background: #ffffff;
-  border: 1px solid #f1f5f9;
-  border-radius: 0.5rem;
-  padding: 0.75rem;
+/* Material Preview Area */
+.mc-card-preview {
+  flex: 1;
+  width: 100%;
+  padding: 0.875rem 0.75rem;
   display: flex;
   align-items: center;
   justify-content: center;
+  box-sizing: border-box;
+  background: #ffffff;
+}
+
+.mc-render-paper {
+  width: 100%;
+  background: transparent;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* Card Metadata Footer */
+.mc-card-footer {
+  padding: 0.4375rem 0.625rem;
+  background: #ffffff;
+  border-top: 1px solid #F4F4F5;
+}
+
+.mc-card-title {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #18181B;
+  white-space: nowrap;
   overflow: hidden;
-  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.02);
+  text-overflow: ellipsis;
+}
+
+/* Sleek Dark Frosted Hover Overlay */
+.mc-card-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(24, 24, 27, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  opacity: 0;
+  pointer-events: none;
+  border-radius: 6px;
+  transition: opacity 0.18s ease;
+  z-index: 10;
+}
+
+.mc-card:hover .mc-card-overlay {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.mc-overlay-info {
+  text-align: center;
+  margin-bottom: 0.625rem;
+}
+
+.mc-overlay-title {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 0.125rem;
+}
+
+.mc-overlay-cat {
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.mc-overlay-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mc-overlay-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3125rem;
+  height: 2rem;
+  padding: 0 0.875rem;
+  border-radius: 6px;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.mc-overlay-btn.primary {
+  background: #FFFFFF;
+  color: #18181B;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.mc-overlay-btn.primary:hover {
+  background: #F4F4F5;
+  color: #000000;
 }
 
 /* ── Dark Mode ── */
 :global(html.dark) .material-popup-modal,
 :global(html[data-color-mode="dark"]) .material-popup-modal {
   background: var(--bg-card, #1e1e1e);
-  box-shadow: 0 1.5rem 3.5rem -0.75rem rgba(0, 0, 0, 0.6);
 }
 
 :global(html.dark) .popup-header,
@@ -597,62 +710,21 @@ function hasPrefixOption(id) {
   border-bottom-color: var(--border-color, #2d2d2d);
 }
 
-:global(html.dark) .header-icon,
-:global(html[data-color-mode="dark"]) .header-icon {
-  background: #ffffff;
-  color: #0a0a0a;
+:global(html.dark) .popup-filter-bar,
+:global(html[data-color-mode="dark"]) .popup-filter-bar {
+  background: var(--bg-card, #1e1e1e);
+  border-bottom-color: var(--border-color, #2d2d2d);
 }
 
-:global(html.dark) .popup-title,
-:global(html[data-color-mode="dark"]) .popup-title {
-  color: var(--text-main, #cccccc);
-}
-
-:global(html.dark) .open-detail-btn,
-:global(html[data-color-mode="dark"]) .open-detail-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.15);
-  color: #e2e8f0;
-}
-
-:global(html.dark) .modal-close-btn,
-:global(html[data-color-mode="dark"]) .modal-close-btn {
-  background: var(--bg-toolbar, #2d2d2d);
-  border-color: var(--border-color, #37373d);
-  color: var(--text-muted, #969696);
-}
-
-:global(html.dark) .modal-close-btn:hover,
-:global(html[data-color-mode="dark"]) .modal-close-btn:hover {
-  background: var(--bg-capsule-btn-hover, #37373d);
-  color: #ffffff;
-}
-
-:global(html.dark) .popup-grid-container,
-:global(html[data-color-mode="dark"]) .popup-grid-container {
-  background: var(--bg-app, #18181c);
-}
-
-:global(html.dark) .visual-preview-card,
-:global(html[data-color-mode="dark"]) .visual-preview-card {
+:global(html.dark) .mc-card,
+:global(html[data-color-mode="dark"]) .mc-card {
   background: var(--bg-card, #252526);
   border-color: var(--border-color, #2d2d2d);
 }
 
-:global(html.dark) .visual-preview-card.is-active,
-:global(html[data-color-mode="dark"]) .visual-preview-card.is-active {
-  border-color: #ffffff;
-  box-shadow: 0 0 0 1px #ffffff, 0 4px 12px rgba(0, 0, 0, 0.4);
-}
-
-:global(html.dark) .card-title,
-:global(html[data-color-mode="dark"]) .card-title {
-  color: var(--text-main, #cccccc);
-}
-
-:global(html.dark) .card-canvas,
-:global(html[data-color-mode="dark"]) .card-canvas {
-  background: var(--bg-card, #1e1e1e);
-  border-color: var(--border-color, #2d2d2d);
+:global(html.dark) .mc-card-header,
+:global(html[data-color-mode="dark"]) .mc-card-header {
+  background: #18181b;
+  border-bottom-color: #27272a;
 }
 </style>

@@ -270,8 +270,6 @@ async function handleElementClick(sectionName) {
 </template>
 
 <style scoped>
-/* ── 面向 C 端的高质感主题画廊 / 模版中心 ── */
-
 .tc-root {
   position: relative;
   display: flex;
@@ -279,51 +277,28 @@ async function handleElementClick(sectionName) {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  background: #f4f5f7;
-  color: var(--text-main, #1e293b);
-  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'PingFang SC', 'Segoe UI', Roboto, sans-serif);
+  background: var(--bg-app, #F8F8F8);
+  color: var(--text-main, #222222);
+  font-family: var(--font-sans, 'Inter Tight', -apple-system, BlinkMacSystemFont, sans-serif);
 }
 
 /* Ambient subtle space light */
 .tc-glow {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(3.75rem);
-  pointer-events: none;
-  z-index: 0;
+  display: none;
 }
 
-.tc-glow-a {
-  width: 22rem;
-  height: 22rem;
-  top: -6rem;
-  right: 15%;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.8) 0%, rgba(243, 244, 246, 0) 70%);
-}
-
-.tc-glow-b {
-  width: 24rem;
-  height: 24rem;
-  bottom: -6rem;
-  left: 10%;
-  background: radial-gradient(circle, rgba(226, 232, 240, 0.55) 0%, rgba(243, 244, 246, 0) 70%);
-}
-
-/* ── Header (高度 52px，比例紧凑精致) ── */
+/* ── Header (高度 48px，扁平紧凑) ── */
 .tc-header {
   position: relative;
   z-index: 2;
   height: 3.25rem;
   padding: 0 1.25rem;
-  background: rgba(255, 255, 255, 0.88);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  background: var(--bg-card, #FFFFFF);
+  border-bottom: 1px solid var(--border-color, #EDEDED);
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-shrink: 0;
-  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.02);
 }
 
 .tc-header-left {
@@ -338,28 +313,26 @@ async function handleElementClick(sectionName) {
   gap: 0.375rem;
   height: 2rem;
   padding: 0 0.75rem;
-  border-radius: 9999px;
-  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #EDEDED);
   background: var(--bg-card, #ffffff);
-  color: var(--text-main, #1e293b);
+  color: var(--text-main, #222222);
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: all 0.15s ease;
   user-select: none;
 }
 
 .tc-back-btn:hover {
-  background: #f1f5f9;
+  background: #F4F4F5;
   color: #000000;
-  transform: translateX(-0.0625rem);
 }
 
 .tc-divider {
-  width: 0.0625rem;
+  width: 1px;
   height: 1.125rem;
-  background: var(--border-color, #e2e8f0);
+  background: var(--border-color, #EDEDED);
 }
 
 .tc-title-group {
@@ -374,25 +347,24 @@ async function handleElementClick(sectionName) {
   justify-content: center;
   width: 1.5rem;
   height: 1.5rem;
-  border-radius: 0.375rem;
+  border-radius: 4px;
   color: #ffffff;
-  background: radial-gradient(140% 120% at 50% 0%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 70%), #2a2a2c;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  background: #3d3939;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .tc-title-badge-sm {
   width: 1.5rem;
   height: 1.5rem;
-  border-radius: 0.375rem;
+  border-radius: 4px;
 }
 
 .tc-title {
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 700;
   margin: 0;
-  color: var(--text-main, #1e293b);
-  letter-spacing: -0.0125rem;
+  color: var(--text-main, #222222);
+  letter-spacing: -0.01em;
   line-height: 1.2;
 }
 
@@ -402,8 +374,7 @@ async function handleElementClick(sectionName) {
   color: #16a34a;
   background: #edfdf2;
   padding: 0.0625rem 0.4375rem;
-  border-radius: 9999px;
-  box-shadow: 0 1px 2px rgba(22, 163, 74, 0.06);
+  border-radius: 4px;
 }
 
 .tc-search-box {
@@ -426,24 +397,22 @@ async function handleElementClick(sectionName) {
   width: 100%;
   height: 100%;
   padding: 0 1.875rem 0 2rem;
-  border-radius: 9999px;
-  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #EDEDED);
   background: var(--bg-card, #ffffff);
-  color: var(--text-main, #1e293b);
+  color: var(--text-main, #222222);
   font-size: 0.75rem;
   font-weight: 500;
   outline: none;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .tc-search-box input::placeholder {
-  color: #94a3b8;
+  color: #A1A1AA;
 }
 
 .tc-search-box input:focus {
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  border-color: #3d3939;
   background: #ffffff;
 }
 
@@ -453,9 +422,9 @@ async function handleElementClick(sectionName) {
   width: 1.125rem;
   height: 1.125rem;
   border-radius: 50%;
-  background: #f1f5f9;
+  background: #F4F4F5;
   border: none;
-  color: var(--text-muted, #64748b);
+  color: var(--text-muted, #71717A);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -464,11 +433,11 @@ async function handleElementClick(sectionName) {
 }
 
 .tc-clear-btn:hover {
-  background: #e2e8f0;
-  color: #0f172a;
+  background: #E4E4E7;
+  color: #09090B;
 }
 
-/* ── Workspace / Two-pane (紧凑贴合的专业工坊布局) ── */
+/* ── Workspace / Two-pane (扁平克制布局) ── */
 .tc-content {
   position: relative;
   z-index: 1;
@@ -488,10 +457,9 @@ async function handleElementClick(sectionName) {
   flex-direction: column;
   gap: 0.25rem;
   padding: 0.5rem;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.75rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #EDEDED);
+  border-radius: 6px;
 }
 
 .tc-sidebar::-webkit-scrollbar {
@@ -503,39 +471,37 @@ async function handleElementClick(sectionName) {
   border-radius: 0.25rem;
 }
 
-/* ── List item (左侧列表项紧凑度与精细圆角) ── */
+/* ── List item (左侧列表项 4px 微圆角与扁平选中态) ── */
 .tc-list-item {
   position: relative;
   display: flex;
   align-items: center;
   gap: 0.625rem;
   padding: 0.5rem 0.625rem;
-  border-radius: 0.5rem;
+  border-radius: 4px;
   cursor: pointer;
   background: transparent;
   border: 1px solid transparent;
-  transition: all 0.18s ease;
+  transition: all 0.15s ease;
   user-select: none;
 }
 
 .tc-list-item:hover {
-  background: #f8fafc;
-  border-color: #e2e8f0;
+  background: #F4F4F5;
 }
 
 .tc-list-item.is-active {
-  background: #f0f7ff;
-  border-color: #bfdbfe;
-  box-shadow: 0 1px 4px rgba(59, 130, 246, 0.08);
+  background: #F4F4F5;
+  border-color: #E4E4E7;
 }
 
 /* Theme color dot */
 .tc-list-dot {
-  width: 1.125rem;
-  height: 1.125rem;
+  width: 1rem;
+  height: 1rem;
   border-radius: 50%;
   flex-shrink: 0;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12), inset 0 0 0 1px rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 /* List info */
@@ -555,9 +521,9 @@ async function handleElementClick(sectionName) {
 
 .tc-list-name {
   font-size: 0.8125rem;
-  font-weight: 700;
-  color: #0f172a;
-  letter-spacing: -0.0125rem;
+  font-weight: 600;
+  color: #18181B;
+  letter-spacing: -0.01em;
   line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
@@ -566,11 +532,11 @@ async function handleElementClick(sectionName) {
 
 .tc-tag {
   font-size: 0.625rem;
-  font-weight: 600;
+  font-weight: 500;
   padding: 0.0625rem 0.375rem;
-  border-radius: 0.25rem;
-  color: #64748b;
-  background: #f1f5f9;
+  border-radius: 3px;
+  color: #71717A;
+  background: #F4F4F5;
   white-space: nowrap;
   flex-shrink: 0;
 }
@@ -582,7 +548,7 @@ async function handleElementClick(sectionName) {
 
 .tc-list-desc {
   font-size: 0.6875rem;
-  color: #94a3b8;
+  color: #71717A;
   line-height: 1.35;
   margin: 0;
   white-space: nowrap;
@@ -592,20 +558,19 @@ async function handleElementClick(sectionName) {
 }
 
 .tc-list-check {
-  color: #2a2a2c;
+  color: #3d3939;
   flex-shrink: 0;
 }
 
-/* ── Right preview pane (统一 12px 圆角与纯白卡片) ── */
+/* ── Right preview pane (6px 扁平圆角与 1px 细边框) ── */
 .tc-preview-pane {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  border-radius: 0.75rem;
+  border-radius: 6px;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  border: 1px solid var(--border-color, #EDEDED);
   overflow: hidden;
 }
 
@@ -616,7 +581,7 @@ async function handleElementClick(sectionName) {
   justify-content: space-between;
   gap: 0.75rem;
   padding: 0 1rem;
-  border-bottom: 1px solid #f1f5f9;
+  border-bottom: 1px solid #EDEDED;
   background: #ffffff;
   flex-shrink: 0;
   z-index: 2;
@@ -631,9 +596,9 @@ async function handleElementClick(sectionName) {
 
 .tc-preview-name {
   font-size: 0.875rem;
-  font-weight: 700;
-  color: var(--text-main, #0f172a);
-  letter-spacing: -0.0125rem;
+  font-weight: 600;
+  color: var(--text-main, #18181B);
+  letter-spacing: -0.01em;
 }
 
 .tc-header-actions {
@@ -646,56 +611,51 @@ async function handleElementClick(sectionName) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.875rem;
-  height: 1.875rem;
-  border-radius: 0.375rem;
-  border: 1px solid var(--border-color, #e2e8f0);
+  width: 2rem;
+  height: 2rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #EDEDED);
   background: var(--bg-card, #ffffff);
-  color: var(--text-muted, #64748b);
+  color: var(--text-muted, #71717A);
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: all 0.15s ease;
 }
 
 .tc-btn-icon:hover {
-  background: #f1f5f9;
+  background: #F4F4F5;
   color: #000000;
 }
 
 .tc-btn-icon.is-active {
-  background: radial-gradient(140% 120% at 50% 0%, rgba(255, 255, 255, 0.16) 0%, rgba(255, 255, 255, 0.02) 70%), #2a2a2c;
+  background: #3d3939;
   color: #ffffff;
-  border-color: rgba(255, 255, 255, 0.14);
-  box-shadow: 0 2px 6px rgba(42, 42, 44, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  border-color: #3d3939;
 }
 
 .tc-btn-secondary {
   display: inline-flex;
   align-items: center;
   gap: 0.3125rem;
-  height: 1.875rem;
+  height: 2rem;
   padding: 0 0.6875rem;
-  border-radius: 9999px;
-  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #EDEDED);
   background: var(--bg-card, #ffffff);
-  color: var(--text-main, #1e293b);
+  color: var(--text-main, #18181B);
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  transition: all 0.15s ease;
   user-select: none;
 }
 
 .tc-btn-secondary:hover {
-  background: #f1f5f9;
-  color: #000000;
+  background: #F4F4F5;
 }
 
 .tc-btn-secondary.is-active {
-  background: #f1f5f9;
-  color: #000000;
-  border-color: #cbd5e1;
+  background: #F4F4F5;
+  border-color: #CBD5E1;
 }
 
 .tc-btn-primary.tc-apply-btn {
@@ -703,37 +663,21 @@ async function handleElementClick(sectionName) {
   align-items: center;
   justify-content: center;
   gap: 0.3125rem;
-  height: 1.875rem;
+  height: 2rem;
   padding: 0 0.875rem;
-  border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  background: radial-gradient(140% 120% at 50% 0%, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.02) 60%, rgba(0, 0, 0, 0.15) 100%), #2a2a2c;
-  color: #ffffff;
+  border-radius: 6px;
+  border: 1px solid var(--btn-primary-border);
+  background: var(--btn-primary-bg, #3d3939);
+  color: var(--btn-primary-text, #ffffff);
   font-size: 0.75rem;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 
-    0 1px 2px rgba(0, 0, 0, 0.1),
-    0 2px 10px rgba(42, 42, 44, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.22),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.35);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.15s ease;
   user-select: none;
 }
 
 .tc-btn-primary.tc-apply-btn:hover {
-  background: radial-gradient(140% 120% at 50% 0%, rgba(255, 255, 255, 0.26) 0%, rgba(255, 255, 255, 0.06) 60%, rgba(0, 0, 0, 0.08) 100%), #333336;
-  border-color: rgba(255, 255, 255, 0.24);
-  transform: translateY(-0.0625rem);
-  box-shadow: 
-    0 2px 6px rgba(0, 0, 0, 0.12),
-    0 4px 14px rgba(42, 42, 44, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.3),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.4);
-}
-
-.tc-btn-primary.tc-apply-btn:active {
-  transform: translateY(0) scale(0.98);
+  background: var(--btn-primary-hover, #2b2727);
 }
 
 .tc-preview-body-container {
@@ -758,11 +702,10 @@ async function handleElementClick(sectionName) {
 .tc-drawer-wrap {
   width: 20.5rem;
   flex-shrink: 0;
-  border-left: 1px solid #e2e8f0;
+  border-left: 1px solid #EDEDED;
   background: var(--bg-card, #ffffff);
   height: 100%;
   overflow: hidden;
-  box-shadow: -2px 0 10px rgba(0, 0, 0, 0.03);
 }
 
 .tc-empty {
@@ -771,7 +714,7 @@ async function handleElementClick(sectionName) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--text-muted, #94a3b8);
+  color: var(--text-muted, #71717A);
   font-size: 0.8125rem;
 }
 

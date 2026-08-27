@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter+Tight:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
 :root {
   font-size: 15px;
@@ -42,59 +42,64 @@
 
 :root,
 html[data-color-mode="light"] {
-  /* Surface / Container Tokens (Wandor Warm Palette) */
-  --bg-app: #FDFBF7;
+  /* Clean Surface / Container Tokens (Awwwards #F8F8F8 Base) */
+  --bg-app: #F8F8F8;
   --bg-card: #FFFFFF;
-  --bg-header: #FFFFFF;
-  --bg-sidebar: #FFFFFF;
-  --bg-toolbar: #FFFFFF;
+  --bg-header: #F8F8F8;
+  --bg-sidebar: #F8F8F8;
+  --bg-toolbar: #F8F8F8;
   --bg-editor: #FFFFFF;
   --bg-preview: #FFFFFF;
   --bg-popover: #FFFFFF;
-  --bg-capsule: #FFFFFF;
-  --bg-capsule-btn-hover: #F6F4F0;
+  --bg-capsule: #EDEDED;
+  --bg-capsule-btn-hover: #FFFFFF;
 
   /* Typography Tokens */
-  --text-main: #2D3139;
-  /* Rich Dark Gray */
-  --text-muted: #626A7A;
-  /* Muted Slate Gray */
-  --text-subtle: #8F97A3;
+  --text-main: #222222;
+  --text-muted: #7A7A7A;
+  --text-subtle: #A7A7A7;
 
   /* Border & Divider Tokens */
-  --border-color: rgba(0, 0, 0, 0.06);
-  --border-strong: rgba(0, 0, 0, 0.12);
+  --border-color: #EDEDED;
+  --border-strong: #DCDCDC;
 
   /* Elevation / Shadow Tokens */
-  --shadow-header: 0 2px 10px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.03);
+  --shadow-header: 0 2px 10px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
   --shadow-sidebar-left: 2px 0 10px rgba(0, 0, 0, 0.03);
   --shadow-sidebar-right: -2px 0 10px rgba(0, 0, 0, 0.03);
   --shadow-toolbar: 0 1px 3px rgba(0, 0, 0, 0.02);
   --shadow-popover: 0 4px 16px rgba(0, 0, 0, 0.08);
-  --shadow-capsule: 0 2px 10px rgba(0, 0, 0, 0.04);
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.1);
+  --shadow-capsule: 0 2px 10px rgba(0, 0, 0, 0.03);
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.08);
+
+  /* ── 统一核心主按钮设计变量 (Unified Primary Button Tokens: #3d3939) ── */
+  --btn-primary-bg: #3d3939;
+  --btn-primary-hover: #2b2727;
+  --btn-primary-active: #1d1a1a;
+  --btn-primary-text: #ffffff;
+  --btn-primary-border: rgba(255, 255, 255, 0.15);
+  --btn-primary-shadow: 0 1px 2px rgba(61, 57, 57, 0.15), 0 4px 14px rgba(61, 57, 57, 0.2);
+  --btn-primary-hover-shadow: 0 6px 20px rgba(61, 57, 57, 0.32);
+  --btn-primary-radius: 9999px;
 
   /* Accent Tokens */
-  --accent-color: #5B6C8F;
-  /* Low-saturation Gray-Blue */
-  --accent-hover: #455270;
-  --accent-bg: #F2F2EE;
-  --accent-coral: #FF7A59;
-  /* Soft Coral Orange */
-  --accent-sage: #A8C7A0;
-  /* Muted Sage Green */
+  --accent-color: #3d3939;
+  --accent-hover: #2b2727;
+  --accent-bg: rgba(61, 57, 57, 0.08);
+  --accent-coral: #FA5D29;
+  --accent-sage: #AAEEC4;
   --code-bg: #F4F4F0;
-  --code-text: #FF7A59;
+  --code-text: #FA5D29;
 
-  --font-sans: 'Geist', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-heading: 'Outfit', 'Geist', sans-serif;
-  --font-display: 'Special Elite', 'Georgia', serif;
+  --font-sans: 'Inter Tight', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-heading: 'Inter Tight', 'Outfit', sans-serif;
+  --font-display: 'Inter Tight', 'Special Elite', 'Georgia', serif;
   --font-mono: 'JetBrains Mono', Consolas, Courier, monospace;
 
   /* Wandor & Apple Dark Titanium Glass Design Tokens */
-  --wandor-dark: #2a2a2c;
+  --wandor-dark: #09090b;
   --wandor-text: #1a1a1a;
   --wandor-muted: #767676;
   --wandor-prompt: #905831;
@@ -170,13 +175,75 @@ body.dark {
   --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.4) !important;
   --shadow-lg: 0 12px 36px rgba(0, 0, 0, 0.5) !important;
 
+  /* Dark Mode Primary Button Tokens */
+  --btn-primary-bg: #3d3939 !important;
+  --btn-primary-hover: #504b4b !important;
+  --btn-primary-active: #2b2727 !important;
+  --btn-primary-text: #ffffff !important;
+  --btn-primary-border: rgba(255, 255, 255, 0.18) !important;
+  --btn-primary-shadow: 0 2px 10px rgba(0, 0, 0, 0.35) !important;
+  --btn-primary-hover-shadow: 0 4px 16px rgba(61, 57, 57, 0.4) !important;
+
   /* Accents & Highlights */
-  --accent-color: #3794ff !important;
-  --accent-hover: #1b82e6 !important;
-  --accent-bg: rgba(55, 148, 255, 0.12) !important;
+  --accent-color: #3d3939 !important;
+  --accent-hover: #504b4b !important;
+  --accent-bg: rgba(61, 57, 57, 0.15) !important;
   --accent-coral: #ce9178 !important;
   --code-bg: #2d2d30 !important;
   --code-text: #ce9178 !important;
+}
+
+/* ── 全局主按钮通用类 (Global Unified Primary Button Utilities) ── */
+.btn-primary,
+.btn-slate-primary,
+button.is-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 7px 18px;
+  border-radius: var(--btn-primary-radius, 9999px);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border: 1px solid var(--btn-primary-border);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  box-shadow: var(--btn-primary-shadow);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  white-space: nowrap;
+}
+
+.btn-primary:hover,
+.btn-slate-primary:hover,
+button.is-primary:hover {
+  background: var(--btn-primary-hover);
+  box-shadow: var(--btn-primary-hover-shadow);
+  transform: translateY(-1px);
+}
+
+.btn-primary:active,
+.btn-slate-primary:active,
+button.is-primary:active {
+  background: var(--btn-primary-active);
+  transform: translateY(0);
+}
+
+html.dark .btn-primary,
+html.dark .btn-slate-primary,
+html.dark button.is-primary {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border-color: var(--btn-primary-border);
+}
+
+html.dark .btn-primary:hover,
+html.dark .btn-slate-primary:hover,
+html.dark button.is-primary:hover {
+  background: var(--btn-primary-hover);
 }
 
 * {

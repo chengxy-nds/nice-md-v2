@@ -3,6 +3,7 @@ import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import { Palette, X, Save, Sliders, Code2, RotateCcw, Check, Sparkles, Hash, FileType } from 'lucide-vue-next';
 import { getThemeDefaultStyles, getThemeSavedStyles, isBuiltInTheme } from '../utils/themePresets';
 import { allMaterialTemplatesMap, getMaterialTemplatesForKey, backgroundTemplates } from '../utils/materialLibrary';
+import MaterialPopup from './MaterialPopup.vue';
 import { codeThemes } from '../utils/codeThemes';
 import { EditorView, basicSetup } from 'codemirror';
 import { css } from '@codemirror/lang-css';
@@ -1759,41 +1760,14 @@ const cssLineCount = computed(() => {
     </div>
   </aside>
 
-  <!-- Material Template Picker Modal -->
-  <Teleport to="body">
-    <div v-if="materialModalOpen" class="heading-modal-overlay" @click.self="materialModalOpen = false">
-      <div class="heading-modal-content">
-        <div class="heading-modal-header">
-          <div class="modal-title-box">
-            <Sparkles class="w-5 h-5 text-amber-500" />
-            <h3>选择 {{ getMaterialTypeLabel(currentModalKey) }} 素材模版</h3>
-          </div>
-          <button class="modal-close-icon" @click="materialModalOpen = false">
-            <X class="w-5 h-5" />
-          </button>
-        </div>
-
-        <div class="heading-materials-grid">
-          <div
-            v-for="item in getMaterialTemplatesForKey(currentModalKey)"
-            :key="item.id"
-            class="heading-material-card"
-            :class="{ 'is-selected': (currentModalKey === 'header_widget' ? (localStyles?.globalWidgets?.headerWidgetId || 'none') : (currentModalKey === 'footer_widget' ? (localStyles?.globalWidgets?.footerWidgetId || 'none') : (getStyle(currentModalKey).materialTemplateId || 'none'))) === item.id }"
-            @click="selectMaterialTemplate(item.id)"
-          >
-            <div class="card-top">
-              <span class="card-name">{{ item.name }}</span>
-              <span v-if="(currentModalKey === 'header_widget' ? (localStyles?.globalWidgets?.headerWidgetId || 'none') : (currentModalKey === 'footer_widget' ? (localStyles?.globalWidgets?.footerWidgetId || 'none') : (getStyle(currentModalKey).materialTemplateId || 'none'))) === item.id" class="tag-badge is-active">
-                <Check class="w-3 h-3 inline mr-0.5" /> 已选用
-              </span>
-              <span v-else class="tag-badge" :class="{ 'is-none': item.id === 'none' }">{{ item.tag }}</span>
-            </div>
-            <div class="card-preview-area" v-html="item.previewHtml"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </Teleport>
+  <!-- Material Template Picker Modal (Unified with Material Center) -->
+  <MaterialPopup
+    :visible="materialModalOpen"
+    :element-key="currentModalKey"
+    :current-material-id="currentModalKey === 'header_widget' ? (localStyles?.globalWidgets?.headerWidgetId || 'none') : (currentModalKey === 'footer_widget' ? (localStyles?.globalWidgets?.footerWidgetId || 'none') : (currentModalKey === 'body' ? (localStyles?.body?.materialTemplateId || localStyles?.body?.backgroundTexture || 'none') : (localStyles?.[currentModalKey]?.materialTemplateId || 'none')))"
+    @select="({ templateId }) => selectMaterialTemplate(templateId)"
+    @close="materialModalOpen = false"
+  />
 </template>
 
 <style scoped>
@@ -2603,128 +2577,6 @@ const cssLineCount = computed(() => {
   background: #ffffff;
   color: #0f172a;
   width: 100px;
-}
-
-/* Modal Overlay & Card Grid */
-.heading-modal-subtext {
-  padding: 0.625rem 1.25rem;
-  background: rgba(255, 255, 255, 0.4);
-  border-bottom: 1px solid var(--border-color);
-  font-size: 0.78rem;
-  color: var(--wandor-muted, #767676);
-  line-height: 1.5;
-  font-family: var(--font-sans);
-}
-
-.heading-materials-grid {
-  padding: 1.125rem 1.25rem;
-  overflow-y: auto;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-  gap: 0.875rem;
-}
-
-.heading-material-card {
-  border: 1.5px solid var(--border-color, #e2e8f0);
-  border-radius: 0.5rem;
-  padding: 0.75rem;
-  background: var(--bg-editor, #ffffff);
-  display: flex;
-  flex-direction: column;
-  gap: 0.625rem;
-  cursor: pointer;
-  transition: all 0.18s ease;
-}
-
-.heading-material-card:hover {
-  border-color: #2563eb;
-  box-shadow: 0 4px 12px rgba(37,99,235,0.12);
-  transform: translateY(-1px);
-}
-
-.heading-material-card.is-selected {
-  border-color: #f59e0b;
-  background: #fffdf5;
-  box-shadow: 0 0 0 2px rgba(245,158,11,0.25);
-}
-
-.card-top {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.tag-badge {
-  background: #eff6ff;
-  color: #2563eb;
-  font-size: 0.625rem;
-  font-weight: 800;
-  padding: 0.0625rem 0.375rem;
-  border-radius: 0.25rem;
-  white-space: nowrap;
-}
-
-.tag-badge.is-none {
-  background: #f1f5f9;
-  color: #64748b;
-}
-
-.card-name {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  color: var(--text-main, #0f172a);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.card-preview-area {
-  padding: 0.5rem 0.625rem;
-  background: var(--bg-app, #f8fafc);
-  border-radius: 0.375rem;
-  min-height: 3.25rem;
-  display: flex;
-  align-items: center;
-  border: 1px solid var(--border-color, #e2e8f0);
-}
-
-.card-bottom {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-top: auto;
-}
-
-.card-desc {
-  font-size: 0.6875rem;
-  color: var(--text-muted, #64748b);
-  line-height: 1.35;
-  margin: 0;
-}
-
-.apply-btn {
-  width: 100%;
-  padding: 0.375rem;
-  border-radius: 0.375rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  border: 1px solid var(--border-color, #cbd5e1);
-  background: var(--bg-app, #f8fafc);
-  color: var(--text-main, #334155);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.heading-material-card:hover .apply-btn {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: #ffffff;
-}
-
-.apply-btn.active {
-  background: #f59e0b !important;
-  border-color: #f59e0b !important;
-  color: #ffffff !important;
 }
 
 /* Global Widgets Card & Feature Guide Styles */

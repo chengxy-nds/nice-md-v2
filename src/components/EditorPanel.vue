@@ -48,7 +48,6 @@ import {
 } from '@codemirror/view';
 import { EditorState } from '@codemirror/state';
 import {
-  foldGutter,
   indentOnInput,
   syntaxHighlighting,
   defaultHighlightStyle,
@@ -490,13 +489,18 @@ const findMatchCount = ref(0);
 const findCurrentIndex = ref(0);
 
 const findMatches = computed(() => {
-  if (!findText.value || !textareaRef.value) return [];
-  const text = textareaRef.value.value;
+  if (!findText.value) return [];
+  const text = cmView ? cmView.state.doc.toString() : (textareaRef.value?.value || editorText.value || '');
   const search = findText.value;
   if (!search) return [];
   const flags = findCaseSensitive.value ? 'g' : 'gi';
   const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re = new RegExp(escaped, flags);
+  let re;
+  try {
+    re = new RegExp(escaped, flags);
+  } catch {
+    return [];
+  }
   const matches = [];
   let m;
   while ((m = re.exec(text)) !== null) {
@@ -512,9 +516,12 @@ function updateFindStats() {
     findCurrentIndex.value = 0;
     return;
   }
-  const ta = textareaRef.value;
-  if (!ta) return;
-  const pos = ta.selectionStart;
+  let pos = 0;
+  if (cmView) {
+    pos = cmView.state.selection.main.from;
+  } else if (textareaRef.value) {
+    pos = textareaRef.value.selectionStart || 0;
+  }
   let idx = findMatches.value.findIndex(m => m.start >= pos);
   if (idx === -1) idx = 0;
   findCurrentIndex.value = idx + 1;
@@ -533,64 +540,126 @@ function openFindReplace() {
 }
 
 function doFind(forward = true) {
-  const ta = textareaRef.value;
-  if (!ta || !findText.value) return;
+  if (!findText.value) return;
   const matches = findMatches.value;
-  if (matches.length === 0) return;
-  const pos = ta.selectionStart;
+  if (matches.length === 0) {
+    findMatchCount.value = 0;
+    findCurrentIndex.value = 0;
+    return;
+  }
+
+  let currentPos = -1;
+  if (cmView) {
+    currentPos = cmView.state.selection.main.from;
+  } else if (textareaRef.value) {
+    currentPos = textareaRef.value.selectionStart || 0;
+  }
+
   let idx;
   if (forward) {
-    idx = matches.findIndex(m => m.start > pos);
+    idx = matches.findIndex(m => m.start > currentPos);
     if (idx === -1) idx = 0; // wrap around
   } else {
     const reversed = [...matches].reverse();
-    idx = reversed.findIndex(m => m.start < pos);
+    idx = reversed.findIndex(m => m.start < currentPos);
     if (idx === -1) idx = 0; // wrap around
     const target = reversed[idx];
     idx = matches.indexOf(target);
   }
+
   const m = matches[idx];
-  ta.setSelectionRange(m.start, m.end);
   findCurrentIndex.value = idx + 1;
-  ta.focus();
-  // Scroll selection into view
-  const lineIdx = ta.value.substring(0, m.start).split('\n').length - 1;
-  const lineH = 24; // matches line-height
-  const targetScroll = lineIdx * lineH - ta.clientHeight / 2;
-  ta.scrollTop = Math.max(0, targetScroll);
+  findMatchCount.value = matches.length;
+
+  if (cmView) {
+    cmView.dispatch({
+      selection: { anchor: m.start, head: m.end },
+      scrollIntoView: true
+    });
+    setTimeout(() => {
+      if (!cmView) return;
+      const coords = cmView.coordsAtPos(m.start);
+      const scrollEl = cmView.scrollDOM || cmContainerRef.value?.querySelector('.cm-scroller');
+      if (coords && scrollEl) {
+        const scrollRect = scrollEl.getBoundingClientRect();
+        if (coords.top < scrollRect.top || coords.bottom > scrollRect.bottom) {
+          const delta = coords.top - scrollRect.top - (scrollRect.height / 3);
+          scrollEl.scrollTop += delta;
+        }
+      }
+    }, 20);
+    cmView.focus();
+  } else if (textareaRef.value) {
+    const ta = textareaRef.value;
+    ta.setSelectionRange(m.start, m.end);
+    ta.focus();
+    const lineIdx = ta.value.substring(0, m.start).split('\n').length - 1;
+    const lineH = 24;
+    const targetScroll = lineIdx * lineH - ta.clientHeight / 2;
+    ta.scrollTop = Math.max(0, targetScroll);
+  }
 }
 
 function doFindPrev() { doFind(false); }
 function doFindNext() { doFind(true); }
 
 function doReplace() {
-  const ta = textareaRef.value;
-  if (!ta || !findText.value) return;
-  const start = ta.selectionStart;
-  const sel = ta.value.substring(start, ta.selectionEnd);
-  const flags = findCaseSensitive.value ? '' : 'i';
-  const escaped = findText.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  if (new RegExp('^' + escaped + '$', flags).test(sel)) {
-    document.execCommand('insertText', false, replaceText.value);
-    editorText.value = ta.value;
-    emit('update:modelValue', ta.value);
-    nextTick(() => updateFindStats());
+  if (!findText.value) return;
+  if (cmView) {
+    const sel = cmView.state.selection.main;
+    const currentSelectedText = cmView.state.doc.sliceString(sel.from, sel.to);
+    const flags = findCaseSensitive.value ? '' : 'i';
+    const escaped = findText.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (new RegExp('^' + escaped + '$', flags).test(currentSelectedText)) {
+      cmView.dispatch({
+        changes: { from: sel.from, to: sel.to, insert: replaceText.value },
+        selection: { anchor: sel.from, head: sel.from + replaceText.value.length },
+        scrollIntoView: true
+      });
+      editorText.value = cmView.state.doc.toString();
+      emit('update:modelValue', editorText.value);
+    }
+  } else if (textareaRef.value) {
+    const ta = textareaRef.value;
+    const start = ta.selectionStart;
+    const sel = ta.value.substring(start, ta.selectionEnd);
+    const flags = findCaseSensitive.value ? '' : 'i';
+    const escaped = findText.value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    if (new RegExp('^' + escaped + '$', flags).test(sel)) {
+      document.execCommand('insertText', false, replaceText.value);
+      editorText.value = ta.value;
+      emit('update:modelValue', ta.value);
+    }
   }
-  doFindNext();
+  nextTick(() => {
+    updateFindStats();
+    doFindNext();
+  });
 }
 
 function doReplaceAll() {
-  const ta = textareaRef.value;
-  if (!ta || !findText.value) return;
-  const before = ta.value;
+  if (!findText.value) return;
   const search = findText.value;
   const escaped = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const flags = findCaseSensitive.value ? 'g' : 'gi';
-  const count = (before.match(new RegExp(escaped, flags)) || []).length;
-  ta.value = before.replace(new RegExp(escaped, flags), replaceText.value);
-  editorText.value = ta.value;
-  emit('update:modelValue', ta.value);
-  updateFindStats();
+
+  if (cmView) {
+    const docStr = cmView.state.doc.toString();
+    const newDocStr = docStr.replace(new RegExp(escaped, flags), replaceText.value);
+    cmView.dispatch({
+      changes: { from: 0, to: docStr.length, insert: newDocStr }
+    });
+    editorText.value = newDocStr;
+    emit('update:modelValue', newDocStr);
+    updateFindStats();
+  } else if (textareaRef.value) {
+    const ta = textareaRef.value;
+    const before = ta.value;
+    ta.value = before.replace(new RegExp(escaped, flags), replaceText.value);
+    editorText.value = ta.value;
+    emit('update:modelValue', ta.value);
+    updateFindStats();
+  }
 }
 
 function closeFindReplace() {
@@ -609,6 +678,14 @@ function onFindKeydown(e) {
     else doFindNext();
   }
 }
+
+function onFindInput() {
+  updateFindStats();
+  if (findText.value) {
+    doFind(true);
+  }
+}
+
 const findInputRef = ref(null);
 
 // Watch findText changes to update stats
@@ -1129,6 +1206,27 @@ function initCodeMirror() {
     },
     ".cm-url": {
       opacity: "0.6"
+    },
+    /* Warm Yellow-Orange Search & Selection Match Highlighting */
+    ".cm-selectionMatch": {
+      backgroundColor: "rgba(245, 158, 11, 0.35) !important",
+      borderRadius: "2px",
+      outline: "1px solid rgba(245, 158, 11, 0.6)"
+    },
+    ".cm-searchMatch": {
+      backgroundColor: "rgba(251, 191, 36, 0.45) !important",
+      borderRadius: "2px",
+      outline: "1px solid rgba(245, 158, 11, 0.55)"
+    },
+    ".cm-searchMatch.cm-searchMatch-selected": {
+      backgroundColor: "#f59e0b !important",
+      color: "#1c1917 !important",
+      fontWeight: "700",
+      borderRadius: "2px",
+      outline: "2px solid #d97706"
+    },
+    "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground": {
+      backgroundColor: "rgba(245, 158, 11, 0.3) !important"
     }
   });
 
@@ -1149,7 +1247,6 @@ function initCodeMirror() {
       highlightActiveLineGutter(),
       highlightSpecialChars(),
       history(),
-      foldGutter(),
       drawSelection(),
       dropCursor(),
       EditorState.allowMultipleSelections.of(true),
@@ -1407,7 +1504,7 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
               placeholder="查找..."
               class="find-input"
               @keydown="onFindKeydown"
-              @input="updateFindStats"
+              @input="onFindInput"
             />
             <span v-if="findText" class="find-count">{{ findCurrentIndex }}/{{ findMatchCount }}</span>
           </div>
@@ -1850,33 +1947,48 @@ textarea::placeholder {
 }
 
 .btn-submit-url {
-  background: var(--accent-coral);
-  color: #ffffff;
-  border: none;
-  padding: 10px;
-  border-radius: 6px;
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border: 1px solid var(--btn-primary-border);
+  padding: 8px 14px;
+  border-radius: var(--btn-primary-radius, 9999px);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: var(--shadow-sm);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  font-family: 'Outfit', sans-serif;
+  box-shadow: var(--btn-primary-shadow);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
 }
 
 .btn-submit-url:hover:not(:disabled) {
+  background: var(--btn-primary-hover);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-md);
-  opacity: 0.95;
+  box-shadow: var(--btn-primary-hover-shadow);
 }
 
 .btn-submit-url:active:not(:disabled) {
-  transform: translateY(1px);
+  background: var(--btn-primary-active);
+  transform: translateY(0);
 }
 
 .btn-submit-url:disabled {
   opacity: 0.5;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+html.dark .btn-submit-url {
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border-color: var(--btn-primary-border);
+}
+
+html.dark .btn-submit-url:hover:not(:disabled) {
+  background: var(--btn-primary-hover);
+}
+
+html.dark .btn-submit-url:hover:not(:disabled) {
+  background: var(--btn-primary-hover, #f4f4f5);
 }
 
 /* Floating format bar on selection */
@@ -2088,5 +2200,30 @@ textarea::placeholder {
   background: var(--accent-bg);
   color: var(--accent-color);
   font-weight: 600;
+}
+
+/* CodeMirror Search & Selection Match Warm Yellow-Orange Highlighting */
+:deep(.cm-selectionMatch) {
+  background-color: rgba(245, 158, 11, 0.35) !important;
+  border-radius: 2px;
+  outline: 1px solid rgba(245, 158, 11, 0.6) !important;
+}
+
+:deep(.cm-searchMatch) {
+  background-color: rgba(251, 191, 36, 0.45) !important;
+  border-radius: 2px;
+  outline: 1px solid rgba(245, 158, 11, 0.55) !important;
+}
+
+:deep(.cm-searchMatch.cm-searchMatch-selected) {
+  background-color: #f59e0b !important;
+  color: #1c1917 !important;
+  font-weight: 700 !important;
+  border-radius: 2px;
+  outline: 2px solid #d97706 !important;
+}
+
+:deep(.cm-selectionBackground) {
+  background-color: rgba(245, 158, 11, 0.3) !important;
 }
 </style>

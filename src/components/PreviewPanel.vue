@@ -1098,6 +1098,10 @@ html.dark .toast-deck-card {
 .phone-article-header {
   padding: 20px 20px 10px 20px;
   background: #ffffff;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .phone-title {
@@ -1106,6 +1110,13 @@ html.dark .toast-deck-card {
   line-height: 1.4;
   margin-bottom: 10px;
   color: #000;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+  word-wrap: break-word;
+  white-space: normal;
 }
 
 .phone-meta {

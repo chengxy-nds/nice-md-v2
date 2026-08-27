@@ -102,11 +102,11 @@ export const themes = [
   },
   {
     id: '135-morandi',
-    name: '135 · 莫兰迪',
+    name: '莫兰迪 · 雅致',
     icon: 'Sparkles',
     dark: false,
-    description: '135编辑器低饱和度雅致色彩，高级内敛，适合情感、生活美学与文艺短文。',
-    tag: '135热选 · 莫兰迪',
+    description: '低饱和度雅致色彩，高级内敛，适合情感、生活美学与文艺短文。',
+    tag: '精选 · 莫兰迪',
     styles: {
       '--bg-app': '#f8f8f6',
       '--bg-editor': '#ffffff',
@@ -133,11 +133,11 @@ export const themes = [
   },
   {
     id: '135-guofeng',
-    name: '135 · 国风古韵',
+    name: '国风古韵 · 朱砂',
     icon: 'Compass',
     dark: false,
-    description: '135编辑器国风朱红与水墨古韵，浓郁文人气息，适合诗词古风与文旅故事。',
-    tag: '135热选 · 国风',
+    description: '国风朱红与水墨古韵，浓郁文人气息，适合诗词古风与文旅故事。',
+    tag: '精选 · 国风',
     styles: {
       '--bg-app': '#fcf8f2',
       '--bg-editor': '#ffffff',

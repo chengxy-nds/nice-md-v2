@@ -28,7 +28,7 @@ const emit = defineEmits([
   'select-doc', 'create-doc', 'rename-doc', 'delete-doc',
   'create-group', 'rename-group', 'delete-group',
   'move-doc', 'reorder-docs', 'reorder-groups', 'toggle-collapse',
-  'open-templates', 'open-materials'
+  'open-templates', 'open-materials', 'open-doc-history'
 ]);
 
 // ── Search & Filter State ──
@@ -248,10 +248,10 @@ function onGroupDragStart(e, groupId) {
 <template>
   <aside class="sidebar-container select-none">
     <!-- Wandor Style Primary Action: Black Pill New Document Button -->
-    <button class="btn-create-doc-primary" @click="handleCreateDoc(null)" title="新建文档">
+    <!-- <button class="btn-create-doc-primary" @click="handleCreateDoc(null)" title="新建文档">
       <Plus size="15" stroke-width="2.5" />
       <span>新建文档</span>
-    </button>
+    </button> -->
 
     <!-- Section Header: 我的文档 -->
     <div class="section-title-row">
@@ -329,6 +329,7 @@ function onGroupDragStart(e, groupId) {
             @rename="payload => $emit('rename-doc', payload)"
             @delete="id => $emit('delete-doc', id)"
             @move-doc="handleDocMove"
+            @history="doc => $emit('open-doc-history', doc)"
           />
           <div v-if="filteredUngroupedDocs.length === 0" class="empty-group-drop-hint">
             <span>暂无文档，可拖拽至此</span>
@@ -415,6 +416,7 @@ function onGroupDragStart(e, groupId) {
             @rename="payload => $emit('rename-doc', payload)"
             @delete="id => $emit('delete-doc', id)"
             @move-doc="handleDocMove"
+            @history="doc => $emit('open-doc-history', doc)"
           />
           <div v-if="docsInGroup(group.id).length === 0" class="empty-group-drop-hint">
             <span>暂无文档，可拖拽至此</span>
@@ -449,13 +451,13 @@ function onGroupDragStart(e, groupId) {
 
 <style scoped>
 .sidebar-container {
-  width: 16rem;
+  width: 18rem;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--bg-sidebar, #ffffff);
-  border-right: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+  background: var(--bg-sidebar, #F8F8F8);
+  border-right: 1px solid var(--border-color, #EDEDED);
   box-shadow: var(--shadow-sidebar-left);
   padding: 16px 14px;
   overflow: hidden;
@@ -470,15 +472,16 @@ function onGroupDragStart(e, groupId) {
   gap: 6px;
   width: 100%;
   height: 38px;
-  border: none;
-  border-radius: 9999px;
-  background: var(--wandor-dark, #0a0a0a);
-  color: #ffffff;
+  border: 1px solid var(--btn-primary-border);
+  border-radius: var(--btn-primary-radius, 9999px);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  font-family: inherit;
   font-size: 13px;
   font-weight: 600;
   letter-spacing: 0.02em;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  box-shadow: var(--btn-primary-shadow);
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   margin-bottom: 12px;
   user-select: none;
@@ -486,19 +489,24 @@ function onGroupDragStart(e, groupId) {
 }
 
 .btn-create-doc-primary:hover {
+  background: var(--btn-primary-hover);
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
-  filter: brightness(1.1);
+  box-shadow: var(--btn-primary-hover-shadow);
 }
 
 .btn-create-doc-primary:active {
+  background: var(--btn-primary-active);
   transform: translateY(0);
 }
 
 html.dark .btn-create-doc-primary {
-  background: #ffffff;
-  color: #0a0a0a;
-  box-shadow: 0 4px 14px rgba(255, 255, 255, 0.08);
+  background: var(--btn-primary-bg);
+  color: var(--btn-primary-text);
+  border-color: var(--btn-primary-border);
+}
+
+html.dark .btn-create-doc-primary:hover {
+  background: var(--btn-primary-hover);
 }
 
 /* ── 1. Action Buttons ── */

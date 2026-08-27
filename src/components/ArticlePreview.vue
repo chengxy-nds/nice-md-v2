@@ -1032,6 +1032,10 @@ function handlePopupClose() {
   border-radius: 0 !important;
   box-shadow: none !important;
   flex-shrink: 0;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
 }
 
 .wechat-body {
@@ -1098,6 +1102,13 @@ function handlePopupClose() {
   border-radius: 0 !important;
   box-shadow: none !important;
   text-align: left !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  word-break: break-all !important;
+  overflow-wrap: anywhere !important;
+  word-wrap: break-word !important;
+  white-space: normal !important;
 }
 
 .phone-meta {

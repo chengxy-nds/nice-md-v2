@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, nextTick, watch } from 'vue';
-import { FileText, Pencil, Trash2, GripVertical } from '@lucide/vue';
+import { FileText, Pencil, Trash2, GripVertical, History } from 'lucide-vue-next';
 import { showConfirm } from '../utils/confirmDialog';
 
 const props = defineProps({
@@ -8,7 +8,7 @@ const props = defineProps({
   isActive: { type: Boolean, default: false }
 });
 
-const emit = defineEmits(['select', 'rename', 'delete', 'move-doc']);
+const emit = defineEmits(['select', 'rename', 'delete', 'move-doc', 'history']);
 
 const isRenaming = ref(false);
 const renameValue = ref('');
@@ -176,6 +176,9 @@ function onDrop(e) {
 
     <!-- hover actions -->
     <div class="doc-actions" v-show="!isRenaming">
+      <button class="action-btn" @click.stop="$emit('history', doc)" title="历史版本与比对">
+        <History size="11" />
+      </button>
       <button class="action-btn" @click.stop="startRename" title="重命名">
         <Pencil size="11" />
       </button>
@@ -190,7 +193,6 @@ function onDrop(e) {
 .doc-item {
   display: flex;
   align-items: flex-start;
-  gap: 8px;
   min-height: 52px;
   padding: 8px 10px;
   border-radius: 8px;
@@ -284,6 +286,11 @@ html.dark .doc-item.is-active:hover {
   gap: 4px;
   min-width: 0;
   height: 18px;
+  transition: padding-right 0.15s ease;
+}
+
+.doc-item:hover .doc-title-row {
+  padding-right: 76px;
 }
 
 .doc-title {
@@ -308,6 +315,11 @@ html.dark .doc-item.is-active:hover {
   flex-shrink: 0;
   line-height: 1;
   margin-left: 2px;
+  transition: opacity 0.15s ease;
+}
+
+.doc-item:hover .active-point-indicator {
+  opacity: 0;
 }
 
 .doc-time-row {
@@ -343,28 +355,32 @@ html.dark .doc-item.is-active:hover {
 
 .doc-actions {
   display: flex;
-  gap: 3px;
+  align-items: center;
+  gap: 2px;
   opacity: 0;
+  pointer-events: none;
   transition: opacity 0.15s ease;
   position: absolute;
-  right: 8px;
+  right: 6px;
   top: 50%;
   transform: translateY(-50%);
   background: transparent;
   padding: 0;
+  z-index: 3;
 }
 
 .doc-item:hover .doc-actions {
   opacity: 1;
+  pointer-events: auto;
 }
 
 .action-btn {
   background: transparent;
   border: none;
   color: var(--text-muted, #78716c);
-  width: 24px;
-  height: 24px;
-  border-radius: 6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -377,8 +393,18 @@ html.dark .doc-item.is-active:hover {
   color: var(--text-main, #1c1917);
 }
 
+.action-btn.btn-trash:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
 html.dark .action-btn:hover {
   background: rgba(255, 255, 255, 0.12);
   color: #ffffff;
+}
+
+html.dark .action-btn.btn-trash:hover {
+  background: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
 }
 </style>
