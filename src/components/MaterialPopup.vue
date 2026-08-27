@@ -527,8 +527,8 @@ function hasPrefixOption(id) {
 }
 
 .mc-card.is-selected-card {
-  border-color: #3d3939;
-  box-shadow: 0 0 0 1px #3d3939;
+  border-color: #ff5e36;
+  box-shadow: 0 0 0 1px #ff5e36, 0 4px 14px rgba(255, 94, 54, 0.28);
 }
 
 .mc-card-header {
@@ -578,10 +578,11 @@ function hasPrefixOption(id) {
   gap: 0.1875rem;
   font-size: 0.625rem;
   font-weight: 600;
-  color: #16a34a;
-  background: #edfdf2;
+  color: #ffffff;
+  background: #ff5e36;
   padding: 0.0625rem 0.375rem;
   border-radius: 3px;
+  box-shadow: 0 2px 6px rgba(255, 94, 54, 0.25);
 }
 
 /* Material Preview Area */

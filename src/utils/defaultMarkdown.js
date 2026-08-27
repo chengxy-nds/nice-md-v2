@@ -171,7 +171,8 @@ sequenceDiagram
 * 微信内部文章链接（分发时保留超链接）：https://mp.weixin.qq.com/s/sample
 
 ### 2. 图片排版与阴影样式
-![EasyMD 效果展示图](/images/demo-banner.png)
+![EasyMD 效果展示图](https://firebook.oss-cn-beijing.aliyuncs.com/2026/08/841876a55a964959.png)
+
 
 ---
 

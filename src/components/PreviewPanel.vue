@@ -408,21 +408,20 @@ const handleCopyMarkdownText = async () => {
     <!-- Right Area: Icon Slider / Sidebar (56px wide, matching left sidebar) -->
     <aside class="preview-right-bar" :class="{ 'is-standalone': !previewVisible }">
       <div class="bar-top">
-        <!-- 1. Mode Switcher: Web / Mobile -->
+        <!-- 1. Mode Switcher: Web / Mobile (默认电脑模式并保持选中背景) -->
         <button
-          class="bar-action-btn"
-          :class="{ 'is-active': isWeChatMode }"
+          class="bar-action-btn is-active"
           @click="isWeChatMode = !isWeChatMode"
-          :title="isWeChatMode ? '当前为手机模拟，点击切换为网页标准预览' : '当前为网页预览，点击切换为手机模拟预览'"
+          :title="isWeChatMode ? '当前为手机模拟，点击切换为网页标准预览' : '当前为电脑网页预览，点击切换为手机模拟预览'"
         >
           <Smartphone v-if="isWeChatMode" size="20" stroke-width="1.6" />
           <Monitor v-else size="20" stroke-width="1.6" />
         </button>
 
-        <!-- 2. Preview toggle -->
+        <!-- 2. Preview toggle (默认展示预览时保持选中状态) -->
         <button
           class="bar-action-btn"
-          :class="{ 'is-active': !previewVisible }"
+          :class="{ 'is-active': previewVisible }"
           @click="$emit('togglePreview')"
           :title="previewVisible ? '隐藏预览区（仅编辑）' : '恢复双栏布局'"
         >
@@ -628,15 +627,15 @@ html.dark .bar-action-btn:hover {
 }
 
 .bar-action-btn.is-active {
-  color: var(--accent-color, #4f46e5);
-  background: rgba(99, 102, 241, 0.08);
+  color: var(--wandor-dark, #0a0a0a);
+  background: rgba(0, 0, 0, 0.07);
   border-radius: 8px;
   box-shadow: none;
 }
 
 html.dark .bar-action-btn.is-active {
-  color: var(--accent-color, #818cf8);
-  background: rgba(99, 102, 241, 0.16);
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.14);
   box-shadow: none;
 }
 

@@ -1097,7 +1097,7 @@ const cssLineCount = computed(() => {
               @click="openMaterialModal(el.key)"
               :title="`选择${getMaterialTypeLabel(el.key)}素材模版`"
             >
-              <Sparkles class="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+              <Sparkles size="12" class="btn-sparkle-icon" />
               <span>素材替换</span>
             </button>
             <button
@@ -1116,8 +1116,8 @@ const cssLineCount = computed(() => {
         >
           <div class="active-material-header">
             <div class="active-material-title">
-              <Sparkles class="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
-              <span class="banner-tag">素材模版已生效:</span>
+              <span class="active-dot"></span>
+              <span class="banner-tag">已应用素材:</span>
               <span class="banner-name">{{ getMaterialTemplateName(getStyle(el.key).materialTemplateId) }}</span>
             </div>
             <button
@@ -1125,8 +1125,8 @@ const cssLineCount = computed(() => {
               @click="updateStyle(el.key, 'materialTemplateId', 'none')"
               title="清除素材，恢复默认 CSS 样式"
             >
-              <X class="w-3.5 h-3.5" />
-              <span>清除素材</span>
+              <X size="11" />
+              <span>清除</span>
             </button>
           </div>
           <div v-if="hasPrefixOption(getStyle(el.key).materialTemplateId)" class="material-prefix-row">
@@ -1940,10 +1940,10 @@ const cssLineCount = computed(() => {
 
 .style-section {
   padding: 0.75rem 0.875rem;
-  background: var(--bg-editor);
-  border: 1px solid var(--border-color);
-  border-radius: 0.625rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  background: var(--bg-editor, #ffffff);
+  border: 1px solid var(--border-color, #EDEDED);
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
   transition: all 0.2s ease;
 }
 
@@ -1975,10 +1975,10 @@ const cssLineCount = computed(() => {
   gap: 0.5rem;
   font-size: 0.8125rem;
   font-weight: 700;
-  color: var(--text-main);
+  color: var(--text-main, #18181B);
   margin-bottom: 0.625rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px dashed var(--border-color);
+  border-bottom: 1px solid var(--border-color, #EDEDED);
 }
 
 .section-icon {
@@ -1986,29 +1986,35 @@ const cssLineCount = computed(() => {
   font-family: 'SF Mono', 'Fira Code', monospace;
   font-weight: 700;
   padding: 0.125rem 0.375rem;
-  border-radius: 0.25rem;
-  background: var(--accent-bg);
-  color: var(--accent-color);
+  border-radius: 3px;
+  background: #F4F4F5;
+  color: #18181B;
   text-align: center;
   min-width: 1.25rem;
 }
 
-.reset-btn {
+.header-action-group {
   margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.reset-btn {
   background: transparent;
   border: none;
-  color: var(--text-muted);
+  color: var(--text-muted, #71717A);
   font-size: 0.6875rem;
   cursor: pointer;
   padding: 0.125rem 0.375rem;
-  border-radius: 0.25rem;
-  font-weight: 600;
+  border-radius: 3px;
+  font-weight: 500;
   transition: all 0.15s ease;
 }
 
 .reset-btn:hover {
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  background: #F4F4F5;
+  color: #18181B;
 }
 
 .style-controls {
@@ -2480,32 +2486,45 @@ const cssLineCount = computed(() => {
 }
 
 .replace-material-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 8px;
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.35);
+  height: 22px;
+  padding: 0 8px;
+  background: linear-gradient(135deg, #fb7fa6 0%, #ff784e 100%);
+  border: none;
   border-radius: 4px;
-  color: #d97706;
+  color: #ffffff;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.18s ease;
+  user-select: none;
+  box-shadow: 0 2px 6px rgba(251, 127, 166, 0.28);
 }
 
 .replace-material-btn:hover {
-  background: rgba(245, 158, 11, 0.22);
-  border-color: #f59e0b;
-  color: #b45309;
+  opacity: 0.92;
+  transform: translateY(-0.5px);
+  box-shadow: 0 4px 10px rgba(255, 120, 78, 0.38);
+  color: #ffffff;
+}
+
+.replace-material-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 3px rgba(251, 127, 166, 0.3);
+}
+
+.replace-material-btn .btn-sparkle-icon {
+  color: #ffffff;
 }
 
 .active-material-banner {
-  margin: 8px 0 12px;
-  padding: 8px 10px;
-  background: #fffbeb;
-  border: 1px dashed #fcd34d;
-  border-radius: 6px;
+  margin: 6px 0 10px;
+  padding: 6px 10px;
+  background: #FAFAFA;
+  border: 1px solid #EDEDED;
+  border-radius: 4px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -2513,8 +2532,8 @@ const cssLineCount = computed(() => {
 
 :deep(.dark) .active-material-banner,
 .active-material-banner:where(.dark *) {
-  background: #271e05;
-  border-color: #78350f;
+  background: #252526;
+  border-color: #333333;
 }
 
 .active-material-header {
@@ -2527,38 +2546,74 @@ const cssLineCount = computed(() => {
 .active-material-title {
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   font-size: 11.5px;
+  min-width: 0;
+}
+
+.active-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #16a34a;
+  flex-shrink: 0;
 }
 
 .banner-tag {
-  color: #92400e;
-  font-weight: 700;
+  color: #71717A;
+  font-weight: 500;
+  font-size: 11px;
+  white-space: nowrap;
 }
 
 .banner-name {
-  color: #d97706;
-  font-weight: 800;
+  color: #18181B;
+  font-weight: 600;
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+:deep(.dark) .banner-name,
+.banner-name:where(.dark *) {
+  color: #EDEDED;
 }
 
 .clear-material-btn {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 3px;
   padding: 2px 6px;
-  background: #ffffff;
-  border: 1px solid #fcd34d;
-  border-radius: 4px;
-  color: #b45309;
-  font-size: 10.5px;
-  font-weight: 600;
+  background: #FFFFFF;
+  border: 1px solid #EDEDED;
+  border-radius: 3px;
+  color: #71717A;
+  font-size: 11px;
+  font-weight: 500;
   cursor: pointer;
+  flex-shrink: 0;
   transition: all 0.15s ease;
 }
 
 .clear-material-btn:hover {
-  background: #fef3c7;
-  color: #78350f;
+  background: #FEE2E2;
+  border-color: #FECACA;
+  color: #DC2626;
+}
+
+:deep(.dark) .clear-material-btn,
+.clear-material-btn:where(.dark *) {
+  background: #1e1e1e;
+  border-color: #333333;
+  color: #a1a1aa;
+}
+
+:deep(.dark) .clear-material-btn:hover,
+.clear-material-btn:hover:where(.dark *) {
+  background: #450a0a;
+  border-color: #7f1d1d;
+  color: #f87171;
 }
 
 .material-prefix-row {
@@ -2566,46 +2621,74 @@ const cssLineCount = computed(() => {
   align-items: center;
   gap: 6px;
   font-size: 11px;
-  color: #78350f;
+  color: #71717A;
+  padding-top: 4px;
+  border-top: 1px solid #EDEDED;
+}
+
+:deep(.dark) .material-prefix-row,
+.material-prefix-row:where(.dark *) {
+  border-color: #333333;
+}
+
+.prefix-label {
+  font-size: 11px;
+  color: #71717A;
+  font-weight: 500;
 }
 
 .prefix-input-field {
-  padding: 2px 6px;
-  border: 1px solid #fcd34d;
-  border-radius: 4px;
+  height: 22px;
+  padding: 0 6px;
+  border: 1px solid #EDEDED;
+  border-radius: 3px;
   font-size: 11px;
-  background: #ffffff;
-  color: #0f172a;
-  width: 100px;
+  font-weight: 600;
+  background: #FFFFFF;
+  color: #18181B;
+  width: 80px;
+  outline: none;
+}
+
+:deep(.dark) .prefix-input-field,
+.prefix-input-field:where(.dark *) {
+  background: #1e1e1e;
+  border-color: #333333;
+  color: #EDEDED;
+}
+
+.prefix-input-field:focus {
+  border-color: #3d3939;
 }
 
 /* Global Widgets Card & Feature Guide Styles */
 .global-widgets-card {
-  background: #f0fdf4 !important;
-  border: 1px solid #bbf7d0 !important;
+  background: #FAFAFA !important;
+  border: 1px solid #EDEDED !important;
+  border-radius: 6px !important;
 }
 
 .global-badge {
   font-size: 0.625rem;
-  font-weight: 700;
-  color: #15803d;
-  background: #dcfce7;
+  font-weight: 600;
+  color: #3d3939;
+  background: #F4F4F5;
   padding: 0.125rem 0.375rem;
-  border-radius: 0.25rem;
+  border-radius: 3px;
 }
 
 .global-widget-subtext {
   font-size: 0.72rem;
-  color: #166534;
+  color: #71717A;
   line-height: 1.4;
   margin: 0 0 0.625rem 0;
 }
 
 .widget-row-box {
   background: #ffffff;
-  border: 1px solid #dcfce7;
-  border-radius: 0.5rem;
-  padding: 0.625rem;
+  border: 1px solid #EDEDED;
+  border-radius: 4px;
+  padding: 0.5rem 0.625rem;
   margin-bottom: 0.5rem;
 }
 
@@ -2618,54 +2701,69 @@ const cssLineCount = computed(() => {
 
 .widget-title {
   font-size: 0.75rem;
-  font-weight: 700;
-  color: #0f172a;
+  font-weight: 600;
+  color: #18181B;
   display: flex;
   align-items: center;
   gap: 0.3125rem;
 }
 
 .widget-choose-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
   font-size: 0.6875rem;
-  font-weight: 600;
-  color: #15803d;
-  background: #f0fdf4;
-  border: 1px solid #86efac;
+  font-weight: 500;
+  color: #3d3939;
+  background: #F4F4F5;
+  border: 1px solid #EDEDED;
   padding: 0.1875rem 0.5rem;
-  border-radius: 0.3125rem;
+  border-radius: 3px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .widget-choose-btn:hover {
-  background: #dcfce7;
+  background: #3d3939;
+  border-color: #3d3939;
+  color: #FFFFFF;
 }
 
 .active-widget-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
+  background: #FAFAFA;
+  border: 1px solid #EDEDED;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: 4px;
   margin-top: 6px;
 }
 
 .widget-active-name {
   font-size: 11.5px;
-  font-weight: 700;
-  color: #065f46;
+  font-weight: 600;
+  color: #18181B;
 }
 
 .clear-widget-btn {
-  background: transparent;
-  border: none;
-  color: #059669;
+  background: #FFFFFF;
+  border: 1px solid #EDEDED;
+  border-radius: 3px;
+  color: #71717A;
   cursor: pointer;
-  padding: 2px;
-  display: flex;
+  padding: 2px 6px;
+  display: inline-flex;
   align-items: center;
+  gap: 2px;
+  font-size: 10.5px;
+  transition: all 0.15s ease;
+}
+
+.clear-widget-btn:hover {
+  background: #FEE2E2;
+  border-color: #FECACA;
+  color: #DC2626;
 }
 
 .modal-feature-guide {
