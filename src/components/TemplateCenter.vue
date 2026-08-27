@@ -10,7 +10,7 @@ import {
   Smartphone,
   Monitor
 } from '@lucide/vue';
-import { themes } from '../utils/themePresets';
+import { themes, getThemeSavedStyles } from '../utils/themePresets';
 import { defaultMarkdown } from '../utils/defaultMarkdown';
 import { soundEngine } from '../utils/synthAudio';
 import ArticlePreview from './ArticlePreview.vue';
@@ -85,7 +85,7 @@ watch(filteredThemes, (list) => {
 
 watch(selectedTheme, (newTheme) => {
   if (newTheme) {
-    selectedCustomStyles.value = JSON.parse(JSON.stringify(newTheme.customStyles || {}));
+    selectedCustomStyles.value = getThemeSavedStyles(newTheme.id);
   } else {
     selectedCustomStyles.value = {};
   }

@@ -257,6 +257,24 @@ export const themes = [
   }
 ];
 
+// Load any saved custom themes on initialization
+try {
+  if (typeof localStorage !== 'undefined') {
+    const savedCustomThemes = JSON.parse(localStorage.getItem('nicemd_custom_themes') || '[]');
+    if (Array.isArray(savedCustomThemes)) {
+      const existingIds = new Set(themes.map(t => t.id));
+      savedCustomThemes.forEach(t => {
+        if (t && t.id && !existingIds.has(t.id)) {
+          themes.push(t);
+          existingIds.add(t.id);
+        }
+      });
+    }
+  }
+} catch (e) {
+  console.warn('[NiceMD] Failed to load custom themes from localStorage:', e);
+}
+
 export const builtInThemeIds = new Set([
   'classic-indigo',
   'mountain-warm',
@@ -298,6 +316,9 @@ function parseFontSize(val, fallback) {
 
 export function getThemeDefaultStyles(themeId = 'classic-indigo') {
   const theme = themes.find(t => t.id === themeId) || themes[0];
+  if (!isBuiltInTheme(themeId) && theme?.customStyles) {
+    return JSON.parse(JSON.stringify(theme.customStyles));
+  }
   const styles = theme.styles || {};
   const typo = theme.typography || {};
 

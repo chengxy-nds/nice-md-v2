@@ -256,17 +256,45 @@ function handleResetToThemeDefault() {
 }
 
 function handleSaveCustomTheme() {
-  const payload = JSON.parse(JSON.stringify(localStyles.value));
-  payload.customCss = rawCssText.value;
+  const merged = JSON.parse(JSON.stringify(effectiveStyles.value || {}));
+  const local = JSON.parse(JSON.stringify(localStyles.value || {}));
+  for (const k of Object.keys(local)) {
+    if (typeof local[k] === 'object' && local[k] !== null) {
+      merged[k] = { ...(merged[k] || {}), ...local[k] };
+    } else {
+      merged[k] = local[k];
+    }
+  }
+  merged.customCss = rawCssText.value || local.customCss || '';
+  if (local.globalWidgets) {
+    merged.globalWidgets = local.globalWidgets;
+  }
   emit('save-custom-theme', {
     themeId: props.themeId,
-    styles: payload,
+    styles: merged,
     css: rawCssText.value
   });
   saveToastVisible.value = true;
   setTimeout(() => {
     saveToastVisible.value = false;
   }, 1800);
+}
+
+function handleSaveThemeAs() {
+  const merged = JSON.parse(JSON.stringify(effectiveStyles.value || {}));
+  const local = JSON.parse(JSON.stringify(localStyles.value || {}));
+  for (const k of Object.keys(local)) {
+    if (typeof local[k] === 'object' && local[k] !== null) {
+      merged[k] = { ...(merged[k] || {}), ...local[k] };
+    } else {
+      merged[k] = local[k];
+    }
+  }
+  merged.customCss = rawCssText.value || local.customCss || '';
+  if (local.globalWidgets) {
+    merged.globalWidgets = local.globalWidgets;
+  }
+  emit('save-theme', merged);
 }
 
 function handleSave() {
@@ -1710,7 +1738,7 @@ const cssLineCount = computed(() => {
       <button
         v-if="!isCustomTheme"
         class="save-theme-btn"
-        @click="emit('save-theme', localStyles)"
+        @click="handleSaveThemeAs"
         title="将当前自定义样式另存为新的主题预设"
       >
         <Palette size="13" />

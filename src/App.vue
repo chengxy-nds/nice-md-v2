@@ -8,7 +8,7 @@ import {
   ChevronDown, FileCode, FileText, Globe, Wand2, LayoutGrid, Send, Settings, Check, X,
   Pencil
 } from '@lucide/vue';
-import { applyTheme, getThemeDefaultStyles, themes as themePresets } from './utils/themePresets';
+import { applyTheme, getThemeDefaultStyles, getThemeSavedStyles, themes as themePresets } from './utils/themePresets';
 import { codeThemes } from './utils/codeThemes';
 import { htmlToMarkdown } from './utils/htmlToMarkdown';
 import { soundEngine } from './utils/synthAudio';
@@ -346,7 +346,13 @@ function handleSaveTheme(styles) {
   localStorage.setItem('nicemd_custom_themes', JSON.stringify(customOnly));
   currentTheme.value = id;
   applyTheme(id);
+  localStorage.setItem('nicemd_theme', id);
   customStyles.value = cleanStyles;
+  if (activeDocument.value) {
+    activeDocument.value.customStyles = cleanStyles;
+    activeDocument.value.updatedAt = Date.now();
+    saveDocuments(documents.value);
+  }
   soundEngine.playChime();
 }
 
@@ -370,6 +376,11 @@ function handleSaveCustomTheme({ themeId, styles, css }) {
   const customOnly = themePresets.filter(t => t.isCustom || !t.builtIn || t.id.startsWith('custom-'));
   localStorage.setItem('nicemd_custom_themes', JSON.stringify(customOnly));
   customStyles.value = cleanStyles;
+  if (activeDocument.value) {
+    activeDocument.value.customStyles = cleanStyles;
+    activeDocument.value.updatedAt = Date.now();
+    saveDocuments(documents.value);
+  }
   soundEngine.playChime();
 }
 
@@ -412,8 +423,8 @@ const changeTheme = (themeId) => {
   applyTheme(themeId);
   localStorage.setItem('nicemd_theme', themeId);
 
-  // Update active document's customStyles to match the new theme's default styles so preview updates immediately
-  const newStyles = getThemeDefaultStyles(themeId) || {};
+  // Update active document's customStyles to match the new theme's default/saved styles so preview updates immediately with all material templates
+  const newStyles = getThemeSavedStyles(themeId) || {};
   if (activeDocument.value) {
     activeDocument.value.customStyles = newStyles;
     activeDocument.value.updatedAt = Date.now();
