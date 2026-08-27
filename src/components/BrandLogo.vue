@@ -10,11 +10,39 @@ defineProps({
 <template>
   <div 
     class="easymd-brand-logo-container" 
-    :style="{ width: `${size}px`, height: `${size}px`, '--logo-size': `${size}px` }"
+    :style="{ width: `${size}px`, height: `${size}px` }"
   >
-    <div class="logo-m-badge">
-      <span class="logo-m-letter">M</span>
-    </div>
+    <svg 
+      class="logo-svg" 
+      viewBox="0 0 64 64" 
+      width="100%" 
+      height="100%" 
+      fill="none" 
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <linearGradient id="brandLogoBg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#27272A"/>
+          <stop offset="100%" stop-color="#09090B"/>
+        </linearGradient>
+        <linearGradient id="brandLogoM" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FFFFFF"/>
+          <stop offset="100%" stop-color="#F4F4F5"/>
+        </linearGradient>
+        <linearGradient id="brandLogoDot" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#FF7A59"/>
+          <stop offset="100%" stop-color="#FF5E36"/>
+        </linearGradient>
+      </defs>
+      <rect width="64" height="64" rx="16" fill="url(#brandLogoBg)"/>
+      <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="15.25" stroke="rgba(255, 255, 255, 0.15)" stroke-width="1.5" fill="none"/>
+      <path d="M16 46V18.5L25.5 33.5L32 24.5L38.5 33.5L48 18.5V46" 
+            stroke="url(#brandLogoM)" 
+            stroke-width="4.5" 
+            stroke-linecap="round" 
+            stroke-linejoin="round"/>
+      <circle cx="32" cy="16" r="3" fill="url(#brandLogoDot)"/>
+    </svg>
   </div>
 </template>
 
@@ -26,45 +54,21 @@ defineProps({
   flex-shrink: 0;
   position: relative;
   user-select: none;
+  cursor: pointer;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s ease;
 }
 
-.logo-m-badge {
+.logo-svg {
+  display: block;
   width: 100%;
   height: 100%;
-  background: #18181b;
-  border-radius: 22%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, background-color 0.2s ease;
+  border-radius: 25%;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
 }
 
-.logo-m-letter {
-  font-family: 'Inter Tight', 'Outfit', -apple-system, sans-serif;
-  font-weight: 800;
-  font-size: calc(var(--logo-size, 32px) * 0.58);
-  color: #ffffff;
-  line-height: 1;
-  letter-spacing: -0.04em;
-  transform: translateY(-0.5px);
-}
-
-.easymd-brand-logo-container:hover .logo-m-badge {
+.easymd-brand-logo-container:hover .logo-svg {
   transform: scale(1.06) rotate(-2deg);
-  background: #09090b;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.26);
-}
-
-:global(html.dark) .logo-m-badge {
-  background: #000000;
-  border-color: rgba(255, 255, 255, 0.22);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
-}
-
-:global(html.dark) .easymd-brand-logo-container:hover .logo-m-badge {
-  background: #18181b;
-  border-color: rgba(255, 255, 255, 0.4);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
 }
 </style>

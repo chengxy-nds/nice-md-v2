@@ -234,6 +234,103 @@ export const materials = [
 
   // ── 标题/序号素材 ──
   {
+    id: 'h-135-yellow-marker-num',
+    category: 'headings',
+    tag: '荧光序号',
+    styleCategory: 'fresh',
+    title: '亮黄荧光简单序号标题',
+    description: '居中大号加粗序号 + 倾斜黄色荧光笔划线 + 居中标题',
+    tags: ['简单序号', '大号数字', '荧光黄', '居中标题'],
+    html: `<section style="margin: 28px 0 20px; text-align: center; clear: both; box-sizing: border-box;" data-material="true">
+  <section style="display: inline-block; position: relative; margin-bottom: 6px; line-height: 1;">
+    <svg width="74" height="28" viewBox="0 0 74 28" fill="none" style="position: absolute; left: 50%; top: 50%; margin-left: -37px; margin-top: -14px; z-index: 1; pointer-events: none;">
+      <path d="M 2 16 C 18 8, 48 4, 72 10 C 73.5 11.5, 73 15, 71 18 L 68 23 C 46 17, 18 20, 2 28 C 0.5 27, 0 24, 0.5 21 Z" fill="#ffe600"/>
+    </svg>
+    <section style="position: relative; z-index: 2; font-size: 38px; font-weight: 900; color: #18181b; font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Arial Black', sans-serif; letter-spacing: -1px; line-height: 1; display: inline-block; padding: 0 6px;">
+      01
+    </section>
+  </section>
+  <section style="font-size: 16px; font-weight: 700; color: #18181b; letter-spacing: 0.5px; line-height: 1.5; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; word-break: break-word; text-align: center;">
+    简单序号标题
+  </section>
+</section>`
+  },
+  {
+    id: 'h-135-yellow-sun-wave',
+    category: 'headings',
+    tag: '月影暖黄',
+    styleCategory: 'fresh',
+    title: '月影暖黄双斜线标题',
+    description: '斜向渐变圆形序号 + 居中标题 + 底部两条手绘黄色斜线',
+    tags: ['简单通用', '渐变序号', '双斜线', '暖黄', '居中'],
+    html: `<section style="margin: 24px 0 16px; text-align: center; clear: both; box-sizing: border-box;" data-material="true">
+  <section style="display: inline-block; position: relative; margin-bottom: 6px; line-height: 1;">
+    <section style="display: inline-block; width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(45deg, #ffffff 0%, #fffde7 25%, #fef9c3 60%, #fde047 100%); line-height: 46px; text-align: center; margin: 0 auto; -webkit-box-shadow: 0 4px 12px rgba(253, 224, 71, 0.2); box-shadow: 0 4px 12px rgba(253, 224, 71, 0.2);">
+      <span style="font-size: 28px; font-weight: 900; color: #18181b; font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Arial Black', sans-serif; letter-spacing: -0.5px; line-height: 46px; display: inline-block;">
+        01
+      </span>
+    </section>
+  </section>
+  <section style="display: block; text-align: center;">
+    <span style="font-size: 16px; font-weight: 700; color: #18181b; letter-spacing: 0.5px; line-height: 1.4; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; display: inline-block; word-break: break-word;">
+      简单通用标题
+    </span>
+    <svg width="96" height="12" viewBox="0 0 96 12" fill="none" style="display: block; margin: 1px auto 0; overflow: visible;">
+      <path d="M 6 10 C 18 9, 30 5.5, 42 3" stroke="#facc15" stroke-width="3" stroke-linecap="round"/>
+      <path d="M 48 10 C 62 9, 76 5.5, 90 3" stroke="#facc15" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+  </section>
+</section>`
+  },
+  {
+    id: 'h-135-blueprint-grid',
+    category: 'headings',
+    tag: '蓝图网格',
+    styleCategory: 'tech',
+    title: '蓝图坐标网格标牌',
+    description: '工科蓝图网格底板 + 对角裁切斜线 + 纯白加粗标题',
+    tags: ['蓝图', '网格', '科技', '深蓝', '裁切线', '标牌'],
+    html: `<section style="margin: 28px 0 20px; text-align: center; clear: both; box-sizing: border-box;" data-material="true">
+  <section style="display: inline-block; position: relative; max-width: 100%;">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="position: absolute; left: -10px; top: -10px; z-index: 2; pointer-events: none;">
+      <line x1="2" y1="22" x2="22" y2="2" stroke="#004b97" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <section style="background-color: #004b97; background-image: linear-gradient(rgba(255, 255, 255, 0.22) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.22) 1px, transparent 1px); background-size: 8px 8px; padding: 8px 26px; display: inline-block; position: relative; z-index: 1; box-sizing: border-box; box-shadow: 0 4px 14px rgba(0, 75, 151, 0.25);">
+      <span style="color: #ffffff; font-size: 17px; font-weight: 800; letter-spacing: 1.5px; line-height: 1.4; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; display: inline-block; word-break: break-word;">
+        简单通用标题
+      </span>
+    </section>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="position: absolute; right: -10px; bottom: -10px; z-index: 2; pointer-events: none;">
+      <line x1="2" y1="22" x2="22" y2="2" stroke="#004b97" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+  </section>
+</section>`
+  },
+  {
+    id: 'h-yellow-shadow-cube',
+    category: 'headings',
+    tag: '明黄立体',
+    styleCategory: 'fresh',
+    title: '明黄立体方块双语标题',
+    description: '明黄立体黑边方块序号 + 简约加粗主标题 + 英文副标题',
+    tags: ['简约标题', '立体方块', '明黄', '黑边', '双语', '英文副标'],
+    html: `<section style="margin: 26px 0 18px; text-align: left; clear: both; box-sizing: border-box;" data-material="true">
+  <section style="display: inline-table; vertical-align: middle; max-width: 100%; box-sizing: border-box;">
+    <section style="display: table-row;">
+      <section style="display: table-cell; vertical-align: middle; width: 36px; padding-right: 12px; line-height: 1;">
+        <section style="background: #f4be47; border: 1.5px solid #18181b; -webkit-box-shadow: 3px 3px 0px #2d2d2d; box-shadow: 3px 3px 0px #2d2d2d; width: 30px; height: 30px; line-height: 27px; text-align: center; box-sizing: border-box;">
+          <span style="font-size: 16px; font-weight: 900; color: #18181b; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; display: block; line-height: 27px;">01</span>
+        </section>
+      </section>
+      <section style="display: table-cell; vertical-align: middle; text-align: left;">
+        <span style="font-size: 18px; font-weight: 800; color: #18181b; letter-spacing: 0.5px; line-height: 1.25; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; display: block; word-break: break-word;">简约标题</span>
+        <span style="font-size: 10.5px; font-weight: 800; color: #a1a1aa; letter-spacing: 1.5px; text-transform: uppercase; line-height: 1.2; display: block; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; margin-top: 2px;">SIMPLE TITLE</span>
+      </section>
+    </section>
+  </section>
+</section>`
+  },
+  {
     id: 'h-135-bubble-01',
     category: 'headings',
     tag: '气泡序号',
@@ -697,7 +794,7 @@ export const materials = [
     styleCategory: "guofeng",
     title: "国风朱砂·双印章雅宋标题",
     description: "朱砂方印章章次 + 雅致宋体字标 + 渐变金石横线与祥云暗纹",
-    tags: ["国风","水墨","印章","宋体","文学"],
+    tags: ["国风", "水墨", "印章", "宋体", "文学"],
     html: "<section style=\"margin: 28px 0 18px; clear: both; text-align: left;\" data-material=\"true\">\n  <section style=\"display: inline-flex; align-items: center; gap: 10px; border-bottom: 2px solid #b91c1c; padding-bottom: 6px; position: relative;\">\n    <section style=\"background: #b91c1c; color: #ffffff; font-family: 'Songti SC', 'SimSun', serif; font-size: 13px; font-weight: 700; padding: 3px 8px; border-radius: 2px; box-shadow: 2px 2px 0px rgba(185, 28, 28, 0.25); letter-spacing: 2px;\">\n      壹·章\n    </section>\n    <span style=\"font-family: 'Songti SC', 'Source Han Serif SC', serif; font-size: 19px; font-weight: 800; color: #1c1917; letter-spacing: 2px;\">\n      水墨流转·文气自华\n    </span>\n    <span style=\"color: #b91c1c; font-size: 16px; margin-left: 2px;\">❖</span>\n  </section>\n</section>"
   },
   {
@@ -707,7 +804,7 @@ export const materials = [
     styleCategory: "tech",
     title: "极客赛博·终端发光命令标题",
     description: "深黑终端底色 + 霓虹亮青光标 + 命令行提示符与状态标识",
-    tags: ["极客","终端","代码","赛博","命令行"],
+    tags: ["极客", "终端", "代码", "赛博", "命令行"],
     html: "<section style=\"margin: 28px 0 18px; clear: both;\" data-material=\"true\">\n  <section style=\"display: inline-flex; align-items: center; background: #0f172a; padding: 6px 14px; border-radius: 6px; border: 1px solid rgba(56, 189, 248, 0.4); box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);\">\n    <span style=\"color: #38bdf8; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; font-weight: 700; margin-right: 8px;\">❯_ [SEC_01]</span>\n    <span style=\"color: #f8fafc; font-family: 'Inter', -apple-system, sans-serif; font-size: 16px; font-weight: 700; letter-spacing: 0.5px;\">高并发链路与架构基建</span>\n    <span style=\"display: inline-block; width: 8px; height: 14px; background: #38bdf8; margin-left: 8px; opacity: 0.85;\"></span>\n  </section>\n</section>"
   },
   {
@@ -717,7 +814,7 @@ export const materials = [
     styleCategory: "minimal",
     title: "大刊社论·半透罗马序号大标题",
     description: "底置超大浅灰罗马序号 + 精致无衬线加粗主标 + 极简纯黑下划线",
-    tags: ["杂志","社论","罗马数字","大刊","极简"],
+    tags: ["杂志", "社论", "罗马数字", "大刊", "极简"],
     html: "<section style=\"margin: 32px 0 20px; clear: both; position: relative;\" data-material=\"true\">\n  <div style=\"font-family: 'Times New Roman', serif; font-size: 46px; font-weight: 900; color: rgba(0, 0, 0, 0.07); line-height: 1; margin-bottom: -18px; user-select: none;\">\n    01.\n  </div>\n  <div style=\"display: inline-block; border-bottom: 2.5px solid #0a0a0a; padding-bottom: 5px;\">\n    <h3 style=\"margin: 0; font-family: 'Outfit', 'PingFang SC', sans-serif; font-size: 20px; font-weight: 800; color: #0a0a0a; letter-spacing: -0.02em;\">\n      范式转移与核心增长飞轮\n    </h3>\n  </div>\n</section>"
   },
   {
@@ -727,7 +824,7 @@ export const materials = [
     styleCategory: "fresh",
     title: "手账手绘·立体图钉便签标题",
     description: "倾斜手写黄色标签 + 3D 红色图钉 + 荧光马克笔底色",
-    tags: ["手账","便签","图钉","手绘","活泼"],
+    tags: ["手账", "便签", "图钉", "手绘", "活泼"],
     html: "<section style=\"margin: 28px 0 18px; clear: both; text-align: left;\" data-material=\"true\">\n  <section style=\"display: inline-block; position: relative; background: #fef08a; padding: 7px 18px 7px 14px; border-radius: 4px; transform: rotate(-1.5deg); box-shadow: 2px 3px 6px rgba(0,0,0,0.08); border-left: 4px solid #eab308;\">\n    <span style=\"position: absolute; top: -10px; left: 10px; font-size: 16px;\">📌</span>\n    <span style=\"font-family: 'PingFang SC', sans-serif; font-size: 16px; font-weight: 800; color: #713f12; margin-left: 14px; letter-spacing: 0.5px;\">\n      今日灵感清单与实操笔记\n    </span>\n  </section>\n</section>"
   },
   {
@@ -737,7 +834,7 @@ export const materials = [
     styleCategory: "business",
     title: "现代双色·渐变胶囊药丸标题",
     description: "深蓝主序号胶囊 + 天蓝浅底扩展条 + 纯白反差对亮点",
-    tags: ["双色","胶囊","药丸","现代","清爽"],
+    tags: ["双色", "胶囊", "药丸", "现代", "清爽"],
     html: "<section style=\"margin: 28px 0 18px; clear: both;\" data-material=\"true\">\n  <section style=\"display: inline-flex; align-items: center; background: #eff6ff; border-radius: 9999px; padding: 3px 16px 3px 4px; border: 1px solid #bfdbfe;\">\n    <span style=\"background: linear-gradient(135deg, #2563eb, #1d4ed8); color: #ffffff; font-size: 12px; font-weight: 800; padding: 4px 10px; border-radius: 9999px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.25);\">\n      STEP 01\n    </span>\n    <span style=\"font-size: 15px; font-weight: 700; color: #1e3a8a; margin-left: 10px; letter-spacing: 0.2px;\">\n      系统环境初始化与脚手架搭建\n    </span>\n  </section>\n</section>"
   },
   {
@@ -747,7 +844,7 @@ export const materials = [
     styleCategory: "tech",
     title: "终端命令输出引用框",
     description: "macOS 红黄绿三色原生按钮 + 暗色磨砂背景 + 极客哲学金句",
-    tags: ["极客","终端","macOS","代码","金句"],
+    tags: ["极客", "终端", "macOS", "代码", "金句"],
     html: "<section style=\"margin: 24px 0; background: #0f172a; border-radius: 10px; overflow: hidden; border: 1px solid #1e293b; box-shadow: 0 8px 24px rgba(0,0,0,0.15);\" data-material=\"true\">\n  <div style=\"display: flex; align-items: center; padding: 10px 14px; background: #1e293b; border-bottom: 1px solid #334155;\">\n    <div style=\"display: flex; gap: 6px;\">\n      <span style=\"width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block;\"></span>\n      <span style=\"width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; display: inline-block;\"></span>\n      <span style=\"width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;\"></span>\n    </div>\n    <span style=\"margin: 0 auto; color: #94a3b8; font-size: 11px; font-family: monospace;\">bash — 80x24</span>\n  </div>\n  <div style=\"padding: 16px 20px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13.5px; line-height: 1.7; color: #e2e8f0;\">\n    <p style=\"color: #38bdf8; margin: 0 0 6px 0;\">$ cat core_philosophy.txt</p>\n    <p style=\"margin: 0; color: #f1f5f9; font-style: italic;\">“软件工程的本质不是制造复杂，而是在极度混乱的现实世界中建立清晰的抽象与秩序。”</p>\n    <p style=\"color: #64748b; font-size: 12px; margin: 8px 0 0 0; text-align: right;\">— 《Clean Code 架构思考》</p>\n  </div>\n</section>"
   },
   {
@@ -757,7 +854,7 @@ export const materials = [
     styleCategory: "guofeng",
     title: "古风典籍·宣纸朱砂双线古卷引用",
     description: "宣纸米黄底色 + 典雅回纹边框 + 朱砂红篆刻印章 + 典雅竖排风韵",
-    tags: ["古风","宣纸","水墨","金句","国风"],
+    tags: ["古风", "宣纸", "水墨", "金句", "国风"],
     html: "<section style=\"margin: 24px 0; padding: 22px 24px; background: #faf7f0; border: 2px solid #e7dfd1; border-radius: 8px; position: relative; box-shadow: inset 0 0 12px rgba(217, 201, 179, 0.25);\" data-material=\"true\">\n  <div style=\"border: 1px dashed #c4b5a0; padding: 16px 20px; text-align: center;\">\n    <p style=\"font-family: 'Songti SC', 'Source Han Serif SC', serif; font-size: 15.5px; line-height: 1.85; color: #451a03; margin: 0; letter-spacing: 1.5px; font-weight: 500;\">\n      “博学之，审问之，慎思之，明辨之，笃行之。天下之事，闻之不若见之，见之不若知之，知之不若行之。”\n    </p>\n    <div style=\"margin-top: 12px; font-size: 12px; color: #b91c1c; font-weight: 700; letter-spacing: 2px;\">\n      【 儒林·礼记中庸 】\n    </div>\n  </div>\n</section>"
   },
   {
@@ -767,7 +864,7 @@ export const materials = [
     styleCategory: "minimal",
     title: "大刊双引号·巨型流光大字符金句",
     description: "左上角 72px 浅蓝半透立体大双引号 + 斜体精致社论观点排版",
-    tags: ["大刊","双引号","名言","杂志","高级"],
+    tags: ["大刊", "双引号", "名言", "杂志", "高级"],
     html: "<section style=\"margin: 28px 0; padding: 24px 28px; background: #f8fafc; border-left: 4px solid #0f172a; border-radius: 0 12px 12px 0; position: relative;\" data-material=\"true\">\n  <div style=\"font-family: Georgia, serif; font-size: 72px; color: rgba(15, 23, 42, 0.12); position: absolute; top: -10px; left: 16px; line-height: 1; user-select: none;\">\n    “\n  </div>\n  <p style=\"position: relative; z-index: 1; margin: 0; font-family: 'Georgia', 'Songti SC', serif; font-size: 16px; font-weight: 600; line-height: 1.75; color: #1e293b; font-style: italic;\">\n    真正优秀的设计不是把所有东西堆砌完整，而是直到没有任何一件多余的东西可以再被拿走。\n  </p>\n  <div style=\"margin-top: 10px; text-align: right; font-size: 12.5px; color: #64748b; font-weight: 700;\">\n    — 安托万·德·圣-埃克苏佩里\n  </div>\n</section>"
   },
   {
@@ -777,7 +874,7 @@ export const materials = [
     styleCategory: "fresh",
     title: "手绘荧光·胶带纸荧光笔涂抹金句",
     description: "荧光黄手绘高亮背景 + 倾斜半透胶带纸固定 + 亲和力手写便签感",
-    tags: ["荧光笔","胶带","手绘","便签","金句"],
+    tags: ["荧光笔", "胶带", "手绘", "便签", "金句"],
     html: "<section style=\"margin: 26px 0; padding: 20px 22px; background: #fffdf5; border: 1px solid #fef08a; border-radius: 6px; position: relative; box-shadow: 2px 4px 12px rgba(234, 179, 8, 0.08);\" data-material=\"true\">\n  <div style=\"width: 60px; height: 16px; background: rgba(253, 224, 71, 0.6); position: absolute; top: -8px; left: 50%; transform: translateX(-50%) rotate(-1deg); border-radius: 2px;\"></div>\n  <p style=\"margin: 0; font-size: 15px; line-height: 1.8; color: #713f12; font-weight: 600;\">\n    <span style=\"background: linear-gradient(180deg, transparent 60%, #fef08a 60%); padding: 0 4px;\">\n      保持对未知的好奇，把每一次挑战当成认知的升级。做长期有价值的事，时间会成为最坚固的盟友。\n    </span>\n  </p>\n</section>"
   },
   {
@@ -787,7 +884,7 @@ export const materials = [
     styleCategory: "business",
     title: "极简彩卡·天蓝信息提示盒",
     description: "极简浅蓝底色 + 圆形信息图标 + 柔和灰蓝正文",
-    tags: ["Notion","Info","信息","提示","蓝调"],
+    tags: ["Notion", "Info", "信息", "提示", "蓝调"],
     html: "<section style=\"margin: 20px 0; padding: 14px 18px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 10px; display: flex; align-items: flex-start; gap: 12px;\" data-material=\"true\">\n  <span style=\"font-size: 18px; line-height: 1; flex-shrink: 0; margin-top: 2px;\">ℹ️</span>\n  <div style=\"flex: 1; min-width: 0;\">\n    <div style=\"font-size: 14px; font-weight: 700; color: #1e40af; margin-bottom: 2px;\">核心信息提示 (Note)</div>\n    <div style=\"font-size: 13.5px; color: #1e3a8a; line-height: 1.6;\">\n      系统默认在每周一凌晨 03:00 自动进行冷数据归档与索引重建，期间只读操作不受任何影响。\n    </div>\n  </div>\n</section>"
   },
   {
@@ -797,7 +894,7 @@ export const materials = [
     styleCategory: "fresh",
     title: "极简彩卡·薄荷绿技巧小贴士",
     description: "清爽薄荷绿底色 + 灯泡技巧图标 + 实操效率建议",
-    tags: ["Notion","Tip","技巧","小贴士","绿色"],
+    tags: ["Notion", "Tip", "技巧", "小贴士", "绿色"],
     html: "<section style=\"margin: 20px 0; padding: 14px 18px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; display: flex; align-items: flex-start; gap: 12px;\" data-material=\"true\">\n  <span style=\"font-size: 18px; line-height: 1; flex-shrink: 0; margin-top: 2px;\">💡</span>\n  <div style=\"flex: 1; min-width: 0;\">\n    <div style=\"font-size: 14px; font-weight: 700; color: #166534; margin-bottom: 2px;\">效率提升技巧 (Pro Tip)</div>\n    <div style=\"font-size: 13.5px; color: #14532d; line-height: 1.6;\">\n      使用快捷键 <code style=\"background:#dcfce7;color:#15803d;padding:2px 6px;border-radius:4px;font-family:monospace;font-size:12px;\">Cmd + K</code> 可以快速调出全局多渠道一键发布控制台。\n    </div>\n  </div>\n</section>"
   },
   {
@@ -807,7 +904,7 @@ export const materials = [
     styleCategory: 'business',
     title: "极简彩卡·暖橙警示避坑指南",
     description: "暖橙警示底色 + 叹号三角图标 + 避坑注意要点",
-    tags: ["Notion","Warning","警告","避坑","橙色"],
+    tags: ["Notion", "Warning", "警告", "避坑", "橙色"],
     html: "<section style=\"margin: 20px 0; padding: 14px 18px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; display: flex; align-items: flex-start; gap: 12px;\" data-material=\"true\">\n  <span style=\"font-size: 18px; line-height: 1; flex-shrink: 0; margin-top: 2px;\">⚠️</span>\n  <div style=\"flex: 1; min-width: 0;\">\n    <div style=\"font-size: 14px; font-weight: 700; color: #9a3412; margin-bottom: 2px;\">重点注意要点 (Warning)</div>\n    <div style=\"font-size: 13.5px; color: #7c2d12; line-height: 1.6;\">\n      在修改核心生产环境配置前，务必先在测试环境完整执行压力测试并备份全量数据库快照。\n    </div>\n  </div>\n</section>"
   },
   {
@@ -817,7 +914,7 @@ export const materials = [
     styleCategory: "minimal",
     title: "极简彩卡·绯红高危操作箱",
     description: "绯红警戒底色 + 禁止手势图标 + 高危红线警示",
-    tags: ["Notion","Danger","危险","红线","禁止"],
+    tags: ["Notion", "Danger", "危险", "红线", "禁止"],
     html: "<section style=\"margin: 20px 0; padding: 14px 18px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; display: flex; align-items: flex-start; gap: 12px;\" data-material=\"true\">\n  <span style=\"font-size: 18px; line-height: 1; flex-shrink: 0; margin-top: 2px;\">🛑</span>\n  <div style=\"flex: 1; min-width: 0;\">\n    <div style=\"font-size: 14px; font-weight: 700; color: #991b1b; margin-bottom: 2px;\">高危红线警示 (Danger)</div>\n    <div style=\"font-size: 13.5px; color: #7f1d1d; line-height: 1.6;\">\n      严禁在未经脱敏的代码仓库中硬编码生产 API Key、密码与私钥，违者将触发安全审计封禁。\n    </div>\n  </div>\n</section>"
   },
   {
@@ -827,7 +924,7 @@ export const materials = [
     styleCategory: "fresh",
     title: "立体·右上折角便签贴",
     description: "右上角立体折角阴影 + 浅鹅黄温馨底色 + 纸张微浮动质感",
-    tags: ["便签","折角","3D","手账","卡片"],
+    tags: ["便签", "折角", "3D", "手账", "卡片"],
     html: "<section style=\"margin: 24px 0; padding: 18px 22px; background: #fef9c3; border-radius: 8px 0 8px 8px; border: 1px solid #fde047; position: relative; box-shadow: 3px 5px 15px rgba(0,0,0,0.06);\" data-material=\"true\">\n  <div style=\"position: absolute; top: -1px; right: -1px; width: 0; height: 0; border-style: solid; border-width: 0 20px 20px 0; border-color: transparent #facc15 transparent transparent; box-shadow: -1px 1px 3px rgba(0,0,0,0.12);\"></div>\n  <div style=\"font-size: 14px; font-weight: 700; color: #854d0e; margin-bottom: 4px;\">📝 备忘速记 / Quick Memo</div>\n  <div style=\"font-size: 13.5px; color: #713f12; line-height: 1.65;\">\n    记得在文章结尾附上互动问答与投票组件，可大幅提升粉丝在公众号底部的留言互动率与在看转化。\n  </div>\n</section>"
   },
   {
@@ -837,7 +934,7 @@ export const materials = [
     styleCategory: "business",
     title: "核心指标·大厂成果数据看板卡",
     description: "3 列核心业务指标大数字 + 增长百分比 + 结构化对比",
-    tags: ["数据","看板","指标","KPI","增长"],
+    tags: ["数据", "看板", "指标", "KPI", "增长"],
     html: "<section style=\"margin: 24px 0; padding: 18px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; text-align: center;\" data-material=\"true\">\n  <div style=\"padding: 10px; background: #ffffff; border-radius: 8px; border: 1px solid #f1f5f9; box-shadow: 0 1px 3px rgba(0,0,0,0.02);\">\n    <div style=\"font-size: 11px; color: #64748b; font-weight: 600;\">全网总阅读</div>\n    <div style=\"font-size: 20px; font-weight: 800; color: #2563eb; margin: 4px 0;\">120W+</div>\n    <div style=\"font-size: 10px; color: #16a34a; font-weight: 600;\">↑ 35% 同比增长</div>\n  </div>\n  <div style=\"padding: 10px; background: #ffffff; border-radius: 8px; border: 1px solid #f1f5f9; box-shadow: 0 1px 3px rgba(0,0,0,0.02);\">\n    <div style=\"font-size: 11px; color: #64748b; font-weight: 600;\">分发耗时</div>\n    <div style=\"font-size: 20px; font-weight: 800; color: #0f172a; margin: 4px 0;\">3.2s</div>\n    <div style=\"font-size: 10px; color: #16a34a; font-weight: 600;\">⚡ 效率提升 10x</div>\n  </div>\n  <div style=\"padding: 10px; background: #ffffff; border-radius: 8px; border: 1px solid #f1f5f9; box-shadow: 0 1px 3px rgba(0,0,0,0.02);\">\n    <div style=\"font-size: 11px; color: #64748b; font-weight: 600;\">粉丝留存率</div>\n    <div style=\"font-size: 20px; font-weight: 800; color: #7c3aed; margin: 4px 0;\">94.8%</div>\n    <div style=\"font-size: 10px; color: #16a34a; font-weight: 600;\">★ 行业顶尖</div>\n  </div>\n</section>"
   },
   {
@@ -847,7 +944,7 @@ export const materials = [
     styleCategory: "business",
     title: "彩色时间轴·大事记里程碑流程",
     description: "纵向连线时间轴 + 彩色阶梯节点 + 卡片式事件演进",
-    tags: ["时间轴","里程碑","步骤","发展历程","节点"],
+    tags: ["时间轴", "里程碑", "步骤", "发展历程", "节点"],
     html: "<section style=\"margin: 26px 0; padding: 10px 4px;\" data-material=\"true\">\n  <div style=\"position: relative; padding-left: 24px; border-left: 2px dashed #93c5fd; margin-bottom: 20px;\">\n    <span style=\"position: absolute; left: -8px; top: 0; width: 14px; height: 14px; border-radius: 50%; background: #2563eb; border: 3px solid #ffffff; box-shadow: 0 0 0 2px #93c5fd;\"></span>\n    <div style=\"font-size: 12px; font-weight: 800; color: #2563eb; text-transform: uppercase;\">阶段一 · 需求洞察与立项</div>\n    <div style=\"font-size: 13.5px; color: #334155; line-height: 1.6; margin-top: 4px;\">完成行业竞品深度调研与用户痛点画像建模，确定核心功能矩阵。</div>\n  </div>\n  <div style=\"position: relative; padding-left: 24px; border-left: 2px dashed #93c5fd; margin-bottom: 20px;\">\n    <span style=\"position: absolute; left: -8px; top: 0; width: 14px; height: 14px; border-radius: 50%; background: #0284c7; border: 3px solid #ffffff; box-shadow: 0 0 0 2px #7dd3fc;\"></span>\n    <div style=\"font-size: 12px; font-weight: 800; color: #0284c7; text-transform: uppercase;\">阶段二 · 核心引擎敏捷迭代</div>\n    <div style=\"font-size: 13.5px; color: #334155; line-height: 1.6; margin-top: 4px;\">搭建自研 AST 语法树解析器与微信专用富文本样式渲染引擎。</div>\n  </div>\n  <div style=\"position: relative; padding-left: 24px;\">\n    <span style=\"position: absolute; left: -8px; top: 0; width: 14px; height: 14px; border-radius: 50%; background: #16a34a; border: 3px solid #ffffff; box-shadow: 0 0 0 2px #86efac;\"></span>\n    <div style=\"font-size: 12px; font-weight: 800; color: #16a34a; text-transform: uppercase;\">阶段三 · 全网公测与商业化发布</div>\n    <div style=\"font-size: 13.5px; color: #334155; line-height: 1.6; margin-top: 4px;\">接入微信公众号、知乎、掘金一键多渠道分发网关，服务 10w+ 创作者。</div>\n  </div>\n</section>"
   },
   {
@@ -857,7 +954,7 @@ export const materials = [
     styleCategory: "fresh",
     title: "极简方格·任务待办清单",
     description: "Notion 风格方形复选框 + 已完成与未完成对照清单",
-    tags: ["清单","Checklist","待办","Notion","任务"],
+    tags: ["清单", "Checklist", "待办", "Notion", "任务"],
     html: "<section style=\"margin: 22px 0; padding: 18px 20px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);\" data-material=\"true\">\n  <div style=\"font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 12px;\">📋 发布前自查清单 (Pre-flight Checklist)</div>\n  <div style=\"display: flex; align-items: center; gap: 10px; margin-bottom: 8px;\">\n    <span style=\"width: 18px; height: 18px; background: #10b981; color: #ffffff; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800;\">✓</span>\n    <span style=\"font-size: 13.5px; color: #64748b; text-decoration: line-through;\">检查文章首图与封面比例是否为 2.35:1 官方规范</span>\n  </div>\n  <div style=\"display: flex; align-items: center; gap: 10px; margin-bottom: 8px;\">\n    <span style=\"width: 18px; height: 18px; background: #10b981; color: #ffffff; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800;\">✓</span>\n    <span style=\"font-size: 13.5px; color: #64748b; text-decoration: line-through;\">校对代码块中关键字高亮与中英文空格规范</span>\n  </div>\n  <div style=\"display: flex; align-items: center; gap: 10px;\">\n    <span style=\"width: 18px; height: 18px; border: 2px solid #cbd5e1; border-radius: 4px; display: inline-block;\"></span>\n    <span style=\"font-size: 13.5px; color: #1e293b; font-weight: 600;\">一键同步多平台分发并配置原创声明标签</span>\n  </div>\n</section>"
   },
   {
@@ -867,7 +964,7 @@ export const materials = [
     styleCategory: "minimal",
     title: "红蓝对比·优缺点左右卡",
     description: "左侧翠绿优势清单 vs 右侧珊瑚红劣势清单对比",
-    tags: ["对比","优缺点","Pros","Cons","选型"],
+    tags: ["对比", "优缺点", "Pros", "Cons", "选型"],
     html: "<section style=\"margin: 24px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;\" data-material=\"true\">\n  <div style=\"padding: 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;\">\n    <div style=\"font-size: 13.5px; font-weight: 800; color: #166534; margin-bottom: 8px;\">✅ 核心优势 (Pros)</div>\n    <ul style=\"margin: 0; padding-left: 16px; font-size: 12.5px; color: #14532d; line-height: 1.7;\">\n      <li>毫秒级热重载排版渲染</li>\n      <li>全自动同步至微信公众号</li>\n      <li>支持自定义 CSS 深度定制</li>\n    </ul>\n  </div>\n  <div style=\"padding: 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px;\">\n    <div style=\"font-size: 13.5px; font-weight: 800; color: #991b1b; margin-bottom: 8px;\">⚠️ 潜在局限 (Cons)</div>\n    <ul style=\"margin: 0; padding-left: 16px; font-size: 12.5px; color: #7f1d1d; line-height: 1.7;\">\n      <li>需要一定 Markdown 语法基础</li>\n      <li>部分小众平台授权有效期受限</li>\n    </ul>\n  </div>\n</section>"
   },
   {
@@ -877,7 +974,7 @@ export const materials = [
     styleCategory: "tech",
     title: "系统终端·代码展示窗口",
     description: "macOS 经典红黄绿三色控制圆点 + 深曜石代码框",
-    tags: ["代码","macOS","终端","开发","极客"],
+    tags: ["代码", "macOS", "终端", "开发", "极客"],
     html: "<section style=\"margin: 24px 0; background: #1e1e24; border-radius: 10px; overflow: hidden; border: 1px solid #2d2d38; box-shadow: 0 8px 24px rgba(0,0,0,0.18);\" data-material=\"true\">\n  <div style=\"display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #26262e;\">\n    <div style=\"display: flex; gap: 6px;\">\n      <span style=\"width: 10px; height: 10px; border-radius: 50%; background: #ff5f56; display: inline-block;\"></span>\n      <span style=\"width: 10px; height: 10px; border-radius: 50%; background: #ffbd2e; display: inline-block;\"></span>\n      <span style=\"width: 10px; height: 10px; border-radius: 50%; background: #27c93f; display: inline-block;\"></span>\n    </div>\n    <span style=\"color: #94a3b8; font-size: 11px; font-family: monospace;\">ServerEngine.ts</span>\n    <span style=\"color: #64748b; font-size: 11px; font-family: monospace;\">TypeScript</span>\n  </div>\n  <pre style=\"margin: 0; padding: 16px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; line-height: 1.6; color: #f8fafc; overflow-x: auto; background: transparent;\"><code style=\"color:#f8fafc;\"><span style=\"color:#c678dd;\">export async function</span> <span style=\"color:#61afef;\">publishArticle</span>(doc: <span style=\"color:#e5c07b;\">ArticlePayload</span>) {\n  <span style=\"color:#5c6370;font-style:italic;\">// 一键并行分发至全渠道</span>\n  <span style=\"color:#c678dd;\">const</span> res = <span style=\"color:#c678dd;\">await</span> <span style=\"color:#e5c07b;\">Promise</span>.<span style=\"color:#61afef;\">all</span>([\n    <span style=\"color:#61afef;\">syncToWeChat</span>(doc),\n    <span style=\"color:#61afef;\">syncToZhihu</span>(doc)\n  ]);\n  <span style=\"color:#c678dd;\">return</span> { <span style=\"color:#e06c75;\">success</span>: <span style=\"color:#d19a66;\">true</span>, <span style=\"color:#e06c75;\">data</span>: res };\n}</code></pre>\n</section>"
   },
   {
@@ -887,7 +984,7 @@ export const materials = [
     styleCategory: "tech",
     title: "接口路由与参数规范卡",
     description: "POST 翠绿药丸徽章 + 请求路径 + 参数结构表",
-    tags: ["API","RESTful","接口","后端","架构"],
+    tags: ["API", "RESTful", "接口", "后端", "架构"],
     html: "<section style=\"margin: 22px 0; padding: 16px 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;\" data-material=\"true\">\n  <div style=\"display: flex; align-items: center; gap: 10px; margin-bottom: 10px;\">\n    <span style=\"background: #16a34a; color: #ffffff; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 4px; font-family: monospace;\">POST</span>\n    <code style=\"font-family: 'JetBrains Mono', monospace; font-size: 13px; font-weight: 700; color: #0f172a;\">/api/v2/articles/sync</code>\n  </div>\n  <div style=\"font-size: 12.5px; color: #64748b; margin-bottom: 8px;\">支持传入 Markdown 原文并指定目标分发平台列表与授权令牌。</div>\n  <div style=\"background: #ffffff; padding: 8px 12px; border-radius: 6px; border: 1px solid #e2e8f0; font-family: monospace; font-size: 12px; color: #334155;\">\n    Content-Type: application/json; charset=utf-8\n  </div>\n</section>"
   },
   {
@@ -897,8 +994,53 @@ export const materials = [
     styleCategory: "tech",
     title: "立体按键·键盘快捷键组合展示栏",
     description: "拟物立体质感 KBD 键盘按键 + 功能快捷操作说明",
-    tags: ["快捷键","KBD","键盘","效率","工具"],
+    tags: ["快捷键", "KBD", "键盘", "效率", "工具"],
     html: "<section style=\"margin: 20px 0; padding: 14px 18px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;\" data-material=\"true\">\n  <span style=\"font-size: 13.5px; font-weight: 700; color: #1e293b;\">⚡ 全屏专注排版模式</span>\n  <div style=\"display: flex; align-items: center; gap: 4px;\">\n    <kbd style=\"display: inline-block; padding: 4px 8px; font-family: inherit; font-size: 11px; font-weight: 700; color: #1e293b; background: #ffffff; border: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8; border-radius: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);\">Ctrl</kbd>\n    <span style=\"color: #94a3b8; font-weight: 700;\">+</span>\n    <kbd style=\"display: inline-block; padding: 4px 8px; font-family: inherit; font-size: 11px; font-weight: 700; color: #1e293b; background: #ffffff; border: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8; border-radius: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);\">Shift</kbd>\n    <span style=\"color: #94a3b8; font-weight: 700;\">+</span>\n    <kbd style=\"display: inline-block; padding: 4px 8px; font-family: inherit; font-size: 11px; font-weight: 700; color: #1e293b; background: #ffffff; border: 1px solid #cbd5e1; border-bottom: 2px solid #94a3b8; border-radius: 5px; box-shadow: 0 1px 2px rgba(0,0,0,0.05);\">F</kbd>\n  </div>\n</section>"
+  },
+  {
+    id: "tbl-amber-schedule",
+    category: "tables",
+    tag: "亮黄日程",
+    styleCategory: "fresh",
+    title: "暖杏亮黄日程对照表",
+    description: "亮黄加粗表头 + 暖杏白相间交替行 + 纯黑网格边框",
+    tags: ["表格", "日程", "考试", "对比", "亮黄", "排期"],
+    html: `<section style="margin: 24px 0; overflow-x: auto; clear: both;" data-material="true">
+  <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #18181b; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 14.5px; text-align: center; box-sizing: border-box;">
+    <thead>
+      <tr style="background-color: #f59e0b; color: #18181b;">
+        <th style="border: 1px solid #18181b; padding: 11px 16px; font-weight: 800; letter-spacing: 0.5px; width: 45%;">考试名称</th>
+        <th style="border: 1px solid #18181b; padding: 11px 16px; font-weight: 800; letter-spacing: 0.5px; width: 55%;">考试时间</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="background-color: #ffffff; color: #18181b;">
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800; letter-spacing: 0.5px;">GRE</td>
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800;">1月10日</td>
+      </tr>
+      <tr style="background-color: #f7f4ed; color: #18181b;">
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800; letter-spacing: 0.5px;">雅思（IELTS）</td>
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800;">1月4，11，16，18日</td>
+      </tr>
+      <tr style="background-color: #ffffff; color: #18181b;">
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800; letter-spacing: 0.5px;">GRE</td>
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800;">1月10日</td>
+      </tr>
+      <tr style="background-color: #f7f4ed; color: #18181b;">
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800; letter-spacing: 0.5px;">雅思（IELTS）</td>
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800;">1月4，11，16，18日</td>
+      </tr>
+      <tr style="background-color: #ffffff; color: #18181b;">
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800; letter-spacing: 0.5px;">GRE</td>
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800;">1月10日</td>
+      </tr>
+      <tr style="background-color: #f7f4ed; color: #18181b;">
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800; letter-spacing: 0.5px;">雅思（IELTS）</td>
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800;">1月4，11，16，18日</td>
+      </tr>
+    </tbody>
+  </table>
+</section>`
   },
   {
     id: "tbl-modern-striped",
@@ -907,7 +1049,7 @@ export const materials = [
     styleCategory: "minimal",
     title: "现代无界·斑马交替行数据明细表",
     description: "深曜石表头 + 浅灰交替底色 + 优雅圆角外框",
-    tags: ["表格","斑马纹","数据","对比","现代"],
+    tags: ["表格", "斑马纹", "数据", "对比", "现代"],
     html: "<section style=\"margin: 24px 0; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 10px;\" data-material=\"true\">\n  <table style=\"width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; font-family: sans-serif;\">\n    <thead>\n      <tr style=\"background: #0f172a; color: #ffffff;\">\n        <th style=\"padding: 12px 16px; font-weight: 700;\">功能维度</th>\n        <th style=\"padding: 12px 16px; font-weight: 700;\">传统排版器</th>\n        <th style=\"padding: 12px 16px; font-weight: 700; color: #38bdf8;\">EasyMD 智能引擎</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr style=\"background: #ffffff; border-bottom: 1px solid #f1f5f9;\">\n        <td style=\"padding: 10px 16px; font-weight: 600; color: #334155;\">多平台同步</td>\n        <td style=\"padding: 10px 16px; color: #64748b;\">手动逐个复制粘贴</td>\n        <td style=\"padding: 10px 16px; color: #16a34a; font-weight: 700;\">✓ 1秒一键全网分发</td>\n      </tr>\n      <tr style=\"background: #f8fafc; border-bottom: 1px solid #f1f5f9;\">\n        <td style=\"padding: 10px 16px; font-weight: 600; color: #334155;\">代码高亮</td>\n        <td style=\"padding: 10px 16px; color: #64748b;\">格式错乱/丢失行号</td>\n        <td style=\"padding: 10px 16px; color: #16a34a; font-weight: 700;\">✓ 完美微信原生兼容</td>\n      </tr>\n      <tr style=\"background: #ffffff;\">\n        <td style=\"padding: 10px 16px; font-weight: 600; color: #334155;\">素材生态</td>\n        <td style=\"padding: 10px 16px; color: #64748b;\">千篇一律老旧模版</td>\n        <td style=\"padding: 10px 16px; color: #16a34a; font-weight: 700;\">✓ 50+ 顶级设计组件</td>\n      </tr>\n    </tbody>\n  </table>\n</section>"
   },
   {
@@ -917,7 +1059,7 @@ export const materials = [
     styleCategory: "business",
     title: "版本矩阵·免费与专业版对比",
     description: "结构化方案功能点对勾比对卡片",
-    tags: ["版本对比","功能矩阵","方案","表格"],
+    tags: ["版本对比", "功能矩阵", "方案", "表格"],
     html: "<section style=\"margin: 24px 0; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);\" data-material=\"true\">\n  <table style=\"width: 100%; border-collapse: collapse; text-align: center; font-size: 13px;\">\n    <thead>\n      <tr style=\"background: #f8fafc; border-bottom: 2px solid #e2e8f0;\">\n        <th style=\"padding: 14px; text-align: left; color: #0f172a; font-weight: 700;\">权益特性</th>\n        <th style=\"padding: 14px; color: #64748b; font-weight: 600;\">免费开源版</th>\n        <th style=\"padding: 14px; background: #eff6ff; color: #2563eb; font-weight: 800;\">PRO 专业版 👑</th>\n      </tr>\n    </thead>\n    <tbody>\n      <tr style=\"border-bottom: 1px solid #f1f5f9;\">\n        <td style=\"padding: 10px 14px; text-align: left; color: #334155;\">实时双栏排版与导出</td>\n        <td style=\"padding: 10px 14px; color: #16a34a;\">✓ 无限次</td>\n        <td style=\"padding: 10px 14px; background: #eff6ff; color: #16a34a; font-weight: 700;\">✓ 无限次</td>\n      </tr>\n      <tr style=\"border-bottom: 1px solid #f1f5f9;\">\n        <td style=\"padding: 10px 14px; text-align: left; color: #334155;\">AI 智能润色与结构重构</td>\n        <td style=\"padding: 10px 14px; color: #94a3b8;\">每日 5 次</td>\n        <td style=\"padding: 10px 14px; background: #eff6ff; color: #2563eb; font-weight: 700;\">极速无限调用</td>\n      </tr>\n      <tr>\n        <td style=\"padding: 10px 14px; text-align: left; color: #334155;\">多渠道一键分发平台数</td>\n        <td style=\"padding: 10px 14px; color: #64748b;\">3 个主流渠道</td>\n        <td style=\"padding: 10px 14px; background: #eff6ff; color: #2563eb; font-weight: 700;\">全网 10+ 矩阵</td>\n      </tr>\n    </tbody>\n  </table>\n</section>"
   },
   {
@@ -927,7 +1069,7 @@ export const materials = [
     styleCategory: "minimal",
     title: "星芒闪耀·双侧流光居中微光分割线",
     description: "居中 ✨ 闪光星芒 + 双侧渐变流光细线",
-    tags: ["分割线","星芒","极简","装饰","优雅"],
+    tags: ["分割线", "星芒", "极简", "装饰", "优雅"],
     html: "<section style=\"margin: 28px 0; text-align: center; display: flex; align-items: center; justify-content: center; gap: 14px;\" data-material=\"true\">\n  <div style=\"flex: 1; height: 1px; background: linear-gradient(90deg, transparent, #cbd5e1);\"></div>\n  <span style=\"font-size: 14px; color: #64748b; transform: scale(1.2);\">✦ ✦ ✦</span>\n  <div style=\"flex: 1; height: 1px; background: linear-gradient(90deg, #cbd5e1, transparent);\"></div>\n</section>"
   },
   {
@@ -937,7 +1079,7 @@ export const materials = [
     styleCategory: 'minimal',
     title: "虚线剪刀·优惠券裁切打孔分割线",
     description: "✂️ 经典裁切剪刀 + 细密打孔虚线",
-    tags: ["分割线","剪刀","打孔","虚线","活动"],
+    tags: ["分割线", "剪刀", "打孔", "虚线", "活动"],
     html: "<section style=\"margin: 28px 0; display: flex; align-items: center; gap: 8px; color: #94a3b8;\" data-material=\"true\">\n  <span style=\"font-size: 16px; transform: rotate(-90deg);\">✂️</span>\n  <div style=\"flex: 1; border-top: 1.5px dashed #cbd5e1; height: 0;\"></div>\n</section>"
   },
   {
@@ -947,7 +1089,7 @@ export const materials = [
     styleCategory: "business",
     title: "观点精粹·30秒核心要点速览",
     description: "高亮总结卡片，帮助读者30秒抓住全文核心精髓",
-    tags: ["导读","TLDR","摘要","要点","开头"],
+    tags: ["导读", "TLDR", "摘要", "要点", "开头"],
     html: "<section style=\"margin: 0 0 24px 0; padding: 18px 20px; background: #f8fafc; border-left: 4px solid #3b82f6; border-radius: 0 12px 12px 0; box-shadow: 0 2px 10px rgba(0,0,0,0.02);\" data-material=\"true\">\n  <div style=\"display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;\">\n    <div style=\"font-size: 14px; font-weight: 800; color: #1e3a8a; display: flex; align-items: center; gap: 6px;\">\n      <span>⚡</span> <span>TL;DR · 30秒核心要点</span>\n    </div>\n    <span style=\"font-size: 11px; color: #64748b; background: #e2e8f0; padding: 2px 8px; border-radius: 9999px;\">精读约 5 分钟</span>\n  </div>\n  <ul style=\"margin: 0; padding-left: 18px; font-size: 13px; color: #334155; line-height: 1.75;\">\n    <li><strong>痛点所在：</strong> 传统内容跨平台排版耗时长、格式易崩塌。</li>\n    <li><strong>解决方案：</strong> 采用 AST 抽象语法树与专属 CSS 隔离渲染引擎。</li>\n    <li><strong>落地效果：</strong> 全网矩阵同步发布效率提升 10 倍以上。</li>\n  </ul>\n</section>"
   },
   {
@@ -957,7 +1099,7 @@ export const materials = [
     styleCategory: "business",
     title: "全网矩阵·微信/掘金/知乎多平台一键关注",
     description: "极具品质的多社交平台彩色徽标阵列与订阅引导",
-    tags: ["文末","关注","社交矩阵","微信","知乎","掘金"],
+    tags: ["文末", "关注", "社交矩阵", "微信", "知乎", "掘金"],
     html: "<section style=\"margin: 32px 0 16px; padding: 22px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 4px 18px rgba(0,0,0,0.04); text-align: center;\" data-material=\"true\">\n  <div style=\"font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 6px;\">🚀 与 100,000+ 创作者共同成长</div>\n  <p style=\"font-size: 13px; color: #64748b; margin-bottom: 16px;\">欢迎在各大技术社区关注我的专栏，获取每周独家干货更新</p>\n  <div style=\"display: flex; justify-content: center; flex-wrap: wrap; gap: 8px;\">\n    <span style=\"background: #f0fdf4; color: #166534; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid #bbf7d0;\">💚 微信公众号</span>\n    <span style=\"background: #eff6ff; color: #1e40af; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid #bfdbfe;\">💙 知乎专栏</span>\n    <span style=\"background: #fff7ed; color: #c2410c; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid #fed7aa;\">🧡 稀土掘金</span>\n    <span style=\"background: #f8fafc; color: #0f172a; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid #cbd5e1;\">🖤 GitHub 开源</span>\n  </div>\n</section>"
   }
 ];
@@ -974,6 +1116,119 @@ export const headingTemplates = [
     hasCustomPrefix: false,
     previewHtml: `<div style="font-size: 15px; font-weight: bold; color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 4px;">默认主题标题</div>`,
     render: () => null
+  },
+  {
+    id: 'h-135-yellow-marker-num',
+    name: '亮黄荧光简单序号标题',
+    description: '居中大号加粗序号 + 倾斜黄色荧光笔划线 + 居中标题',
+    tag: '荧光序号',
+    styleCategory: 'fresh',
+    hasAutoNumber: true,
+    hasCustomPrefix: false,
+    previewHtml: `<div style="text-align: center; margin: 4px 0;"><div style="display: inline-block; position: relative; line-height: 1; margin-bottom: 4px;"><svg width="52" height="20" viewBox="0 0 74 28" fill="none" style="position: absolute; left: 50%; top: 50%; margin-left: -26px; margin-top: -10px; z-index: 1; pointer-events: none;"><path d="M 2 16 C 18 8, 48 4, 72 10 C 73.5 11.5, 73 15, 71 18 L 68 23 C 46 17, 18 20, 2 28 C 0.5 27, 0 24, 0.5 21 Z" fill="#ffe600"/></svg><span style="position: relative; z-index: 2; font-size: 26px; font-weight: 900; color: #18181b; font-family: -apple-system, 'Helvetica Neue', 'Arial Black', sans-serif; letter-spacing: -1px; line-height: 1; display: inline-block; padding: 0 2px;">01</span></div><div style="font-size: 14px; font-weight: 700; color: #18181b; letter-spacing: 0.5px;">简单序号标题</div></div>`,
+    render: (title, index) => {
+      const indexPadded = String(index).padStart(2, '0');
+      return `<section style="margin: 28px 0 20px; text-align: center; clear: both; box-sizing: border-box;" data-material="true">
+  <section style="display: inline-block; position: relative; margin-bottom: 6px; line-height: 1;">
+    <svg width="74" height="28" viewBox="0 0 74 28" fill="none" style="position: absolute; left: 50%; top: 50%; margin-left: -37px; margin-top: -14px; z-index: 1; pointer-events: none;">
+      <path d="M 2 16 C 18 8, 48 4, 72 10 C 73.5 11.5, 73 15, 71 18 L 68 23 C 46 17, 18 20, 2 28 C 0.5 27, 0 24, 0.5 21 Z" fill="#ffe600"/>
+    </svg>
+    <section style="position: relative; z-index: 2; font-size: 38px; font-weight: 900; color: #18181b; font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Arial Black', sans-serif; letter-spacing: -1px; line-height: 1; display: inline-block; padding: 0 6px;">
+      ${indexPadded}
+    </section>
+  </section>
+  <section style="font-size: 16px; font-weight: 700; color: #18181b; letter-spacing: 0.5px; line-height: 1.5; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; word-break: break-word; text-align: center;">
+    ${title}
+  </section>
+</section>`;
+    }
+  },
+  {
+    id: 'h-135-yellow-sun-wave',
+    name: '月影暖黄双斜线标题',
+    description: '斜向渐变圆形序号 + 居中标题 + 底部两条手绘黄色斜线',
+    tag: '月影暖黄',
+    styleCategory: 'fresh',
+    hasAutoNumber: true,
+    hasCustomPrefix: false,
+    previewHtml: `<div style="text-align: center; margin: 2px 0;"><div style="display: inline-block; width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(45deg, #ffffff 0%, #fffde7 25%, #fef9c3 60%, #fde047 100%); line-height: 30px; text-align: center; margin-bottom: 2px;"><span style="font-size: 17px; font-weight: 900; color: #18181b; line-height: 30px;">01</span></div><div style="font-size: 13px; font-weight: 700; color: #18181b;">简单通用标题</div><svg width="70" height="9" viewBox="0 0 96 12" fill="none" style="display: block; margin: 1px auto 0; overflow: visible;"><path d="M 6 10 C 18 9, 30 5.5, 42 3" stroke="#facc15" stroke-width="3" stroke-linecap="round"/><path d="M 48 10 C 62 9, 76 5.5, 90 3" stroke="#facc15" stroke-width="3" stroke-linecap="round"/></svg></div>`,
+    render: (title, index) => {
+      const indexPadded = String(index).padStart(2, '0');
+      return `<section style="margin: 24px 0 16px; text-align: center; clear: both; box-sizing: border-box;" data-material="true">
+  <section style="display: inline-block; position: relative; margin-bottom: 6px; line-height: 1;">
+    <section style="display: inline-block; width: 46px; height: 46px; border-radius: 50%; background: linear-gradient(45deg, #ffffff 0%, #fffde7 25%, #fef9c3 60%, #fde047 100%); line-height: 46px; text-align: center; margin: 0 auto; -webkit-box-shadow: 0 4px 12px rgba(253, 224, 71, 0.2); box-shadow: 0 4px 12px rgba(253, 224, 71, 0.2);">
+      <span style="font-size: 28px; font-weight: 900; color: #18181b; font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Arial Black', sans-serif; letter-spacing: -0.5px; line-height: 46px; display: inline-block;">
+        ${indexPadded}
+      </span>
+    </section>
+  </section>
+  <section style="display: block; text-align: center;">
+    <span style="font-size: 16px; font-weight: 700; color: #18181b; letter-spacing: 0.5px; line-height: 1.4; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; display: inline-block; word-break: break-word;">
+      ${title}
+    </span>
+    <svg width="96" height="12" viewBox="0 0 96 12" fill="none" style="display: block; margin: 1px auto 0; overflow: visible;">
+      <path d="M 6 10 C 18 9, 30 5.5, 42 3" stroke="#facc15" stroke-width="3" stroke-linecap="round"/>
+      <path d="M 48 10 C 62 9, 76 5.5, 90 3" stroke="#facc15" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+  </section>
+</section>`;
+    }
+  },
+  {
+    id: 'h-135-blueprint-grid',
+    name: '蓝图坐标网格标牌',
+    description: '工科蓝图网格底板 + 对角裁切斜线 + 纯白加粗标题',
+    tag: '蓝图网格',
+    styleCategory: 'tech',
+    hasAutoNumber: false,
+    hasCustomPrefix: false,
+    previewHtml: `<div style="text-align: center; margin: 4px 0;"><div style="display: inline-block; position: relative;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="position: absolute; left: -7px; top: -7px; z-index: 2; pointer-events: none;"><line x1="2" y1="22" x2="22" y2="2" stroke="#004b97" stroke-width="2.5" stroke-linecap="round"/></svg><div style="background-color: #004b97; background-image: linear-gradient(rgba(255, 255, 255, 0.22) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.22) 1px, transparent 1px); background-size: 6px 6px; padding: 5px 18px; color: #ffffff; font-size: 13.5px; font-weight: 800; letter-spacing: 1px; display: inline-block;">简单通用标题</div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="position: absolute; right: -7px; bottom: -7px; z-index: 2; pointer-events: none;"><line x1="2" y1="22" x2="22" y2="2" stroke="#004b97" stroke-width="2.5" stroke-linecap="round"/></svg></div></div>`,
+    render: (title) => {
+      return `<section style="margin: 28px 0 20px; text-align: center; clear: both; box-sizing: border-box;" data-material="true">
+  <section style="display: inline-block; position: relative; max-width: 100%;">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="position: absolute; left: -10px; top: -10px; z-index: 2; pointer-events: none;">
+      <line x1="2" y1="22" x2="22" y2="2" stroke="#004b97" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+    <section style="background-color: #004b97; background-image: linear-gradient(rgba(255, 255, 255, 0.22) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.22) 1px, transparent 1px); background-size: 8px 8px; padding: 8px 26px; display: inline-block; position: relative; z-index: 1; box-sizing: border-box; box-shadow: 0 4px 14px rgba(0, 75, 151, 0.25);">
+      <span style="color: #ffffff; font-size: 17px; font-weight: 800; letter-spacing: 1.5px; line-height: 1.4; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; display: inline-block; word-break: break-word;">
+        ${title}
+      </span>
+    </section>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="position: absolute; right: -10px; bottom: -10px; z-index: 2; pointer-events: none;">
+      <line x1="2" y1="22" x2="22" y2="2" stroke="#004b97" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+  </section>
+</section>`;
+    }
+  },
+  {
+    id: 'h-yellow-shadow-cube',
+    name: '明黄立体方块双语标题',
+    description: '明黄立体黑边方块序号 + 简约加粗主标题 + 英文副标题',
+    tag: '明黄立体',
+    styleCategory: 'fresh',
+    hasAutoNumber: true,
+    hasCustomPrefix: true,
+    previewHtml: `<div style="display:inline-flex;align-items:center;gap:10px;"><div style="background:#f4be47;border:1.5px solid #18181b;box-shadow:2.5px 2.5px 0px #2d2d2d;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:900;color:#18181b;flex-shrink:0;">01</div><div style="display:flex;flex-direction:column;text-align:left;"><span style="font-size:14px;font-weight:800;color:#18181b;line-height:1.2;">简约标题</span><span style="font-size:9px;font-weight:800;color:#a1a1aa;letter-spacing:1px;line-height:1.2;margin-top:1px;">SIMPLE TITLE</span></div></div>`,
+    render: (title, index, options = {}) => {
+      const subTitle = options.prefix || options.subtitle || 'SIMPLE TITLE';
+      const indexPadded = String(index).padStart(2, '0');
+      return `<section style="margin: 26px 0 18px; text-align: left; clear: both; box-sizing: border-box;" data-material="true">
+  <section style="display: inline-table; vertical-align: middle; max-width: 100%; box-sizing: border-box;">
+    <section style="display: table-row;">
+      <section style="display: table-cell; vertical-align: middle; width: 36px; padding-right: 12px; line-height: 1;">
+        <section style="background: #f4be47; border: 1.5px solid #18181b; -webkit-box-shadow: 3px 3px 0px #2d2d2d; box-shadow: 3px 3px 0px #2d2d2d; width: 30px; height: 30px; line-height: 27px; text-align: center; box-sizing: border-box;">
+          <span style="font-size: 16px; font-weight: 900; color: #18181b; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; display: block; line-height: 27px;">${indexPadded}</span>
+        </section>
+      </section>
+      <section style="display: table-cell; vertical-align: middle; text-align: left;">
+        <span style="font-size: 18px; font-weight: 800; color: #18181b; letter-spacing: 0.5px; line-height: 1.25; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; display: block; word-break: break-word;">${title}</span>
+        <span style="font-size: 10.5px; font-weight: 800; color: #a1a1aa; letter-spacing: 1.5px; text-transform: uppercase; line-height: 1.2; display: block; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; margin-top: 2px;">${subTitle}</span>
+      </section>
+    </section>
+  </section>
+</section>`;
+    }
   },
   {
     id: 'h-135-part01-leaf',
@@ -1821,6 +2076,65 @@ export const listTemplates = [
   }
 ];
 
+// ── 表格模版 ──
+export const tableTemplates = [
+  {
+    id: 'none',
+    name: '默认主题表格',
+    description: '使用当前主题预设的表格样式渲染',
+    tag: '默认',
+    styleCategory: 'all',
+    previewHtml: `<div style="border: 1px solid #cbd5e1; border-radius: 4px; padding: 4px; font-size: 11px; text-align: center;">默认表格样式</div>`,
+    render: () => null
+  },
+  {
+    id: 'tbl-amber-schedule',
+    name: '暖杏亮黄日程对照表',
+    description: '亮黄加粗表头 + 暖杏白相间交替行 + 纯黑网格边框',
+    tag: '亮黄日程',
+    styleCategory: 'fresh',
+    previewHtml: `<table style="width:100%;border-collapse:collapse;border:1px solid #18181b;font-size:10px;text-align:center;"><thead><tr style="background:#f59e0b;color:#18181b;"><th style="border:1px solid #18181b;padding:2px 4px;font-weight:bold;">考试名称</th><th style="border:1px solid #18181b;padding:2px 4px;font-weight:bold;">考试时间</th></tr></thead><tbody><tr style="background:#fff;"><td style="border:1px solid #18181b;padding:2px 4px;font-weight:bold;">GRE</td><td style="border:1px solid #18181b;padding:2px 4px;">1月10日</td></tr><tr style="background:#f7f4ed;"><td style="border:1px solid #18181b;padding:2px 4px;font-weight:bold;">雅思</td><td style="border:1px solid #18181b;padding:2px 4px;">1月4, 11日</td></tr></tbody></table>`,
+    render: () => {
+      return `<section style="margin: 24px 0; overflow-x: auto; clear: both;" data-material="true">
+  <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #18181b; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 14.5px; text-align: center; box-sizing: border-box;">
+    <thead>
+      <tr style="background-color: #f59e0b; color: #18181b;">
+        <th style="border: 1px solid #18181b; padding: 11px 16px; font-weight: 800; letter-spacing: 0.5px; width: 45%;">考试名称</th>
+        <th style="border: 1px solid #18181b; padding: 11px 16px; font-weight: 800; letter-spacing: 0.5px; width: 55%;">考试时间</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr style="background-color: #ffffff; color: #18181b;">
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800; letter-spacing: 0.5px;">GRE</td>
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800;">1月10日</td>
+      </tr>
+      <tr style="background-color: #f7f4ed; color: #18181b;">
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800; letter-spacing: 0.5px;">雅思（IELTS）</td>
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800;">1月4，11，16，18日</td>
+      </tr>
+      <tr style="background-color: #ffffff; color: #18181b;">
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800; letter-spacing: 0.5px;">GRE</td>
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800;">1月10日</td>
+      </tr>
+      <tr style="background-color: #f7f4ed; color: #18181b;">
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800; letter-spacing: 0.5px;">雅思（IELTS）</td>
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800;">1月4，11，16，18日</td>
+      </tr>
+      <tr style="background-color: #ffffff; color: #18181b;">
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800; letter-spacing: 0.5px;">GRE</td>
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800;">1月10日</td>
+      </tr>
+      <tr style="background-color: #f7f4ed; color: #18181b;">
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800; letter-spacing: 0.5px;">雅思（IELTS）</td>
+        <td style="border: 1px solid #18181b; padding: 10px 16px; font-weight: 800;">1月4，11，16，18日</td>
+      </tr>
+    </tbody>
+  </table>
+</section>`;
+    }
+  }
+];
+
 // ── 文章全局头尾挂件模版 ──
 export const headerWidgetTemplates = [
   {
@@ -2119,11 +2433,12 @@ export function getBackgroundPatternStyle(textureId) {
 }
 
 export const allMaterialTemplatesMap = {
-  ...headingTemplatesMap,
+  ...headingTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {}),
   ...quoteTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {}),
   ...calloutTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {}),
   ...dividerTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {}),
   ...listTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {}),
+  ...tableTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {}),
   ...headerWidgetTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {}),
   ...footerWidgetTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {}),
   ...backgroundTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {})
@@ -2147,6 +2462,9 @@ export function getMaterialTemplatesForKey(key) {
   }
   if (['ul', 'ol', 'li'].includes(key)) {
     return listTemplates;
+  }
+  if (['table', 'tables'].includes(key)) {
+    return tableTemplates;
   }
   if (key === 'header_widget') {
     return headerWidgetTemplates;

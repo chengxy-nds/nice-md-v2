@@ -45,6 +45,8 @@ const typeLabels = {
   ul: '无序列表',
   ol: '有序列表',
   li: '列表项',
+  table: '表格 / 数据对照',
+  tables: '表格 / 数据对照',
   header_widget: '文章导读头卡',
   footer_widget: '文末三连/作者名片'
 };
@@ -77,7 +79,8 @@ const displayedList = computed(() => {
 
 function getRenderHtml(item) {
   if (item.id === 'none') {
-    return `<div style="text-align: center; color: #64748b; font-size: 15px; font-weight: 700; border-bottom: 2px solid #2563eb; padding-bottom: 4px; display: inline-block;">默认主题标题样式</div>`;
+    const label = typeLabels[props.elementKey] || '样式';
+    return `<div style="text-align: center; color: #64748b; font-size: 14px; font-weight: 700; border-bottom: 2px solid #2563eb; padding-bottom: 4px; display: inline-block;">默认主题${label}</div>`;
   }
   if (item.html) return item.html;
   if (typeof item.render === 'function') {
@@ -97,7 +100,7 @@ function handlePrefixChange(e) {
 }
 
 function hasPrefixOption(id) {
-  return ['h-135-part01-leaf', 'h-135-part02-peach', 'h-135-part03-purple', 'h-135-morandi-block', 'h-pill-duotone'].includes(id);
+  return ['h-135-part01-leaf', 'h-135-part02-peach', 'h-135-part03-purple', 'h-135-morandi-block', 'h-pill-duotone', 'h-yellow-shadow-cube'].includes(id);
 }
 </script>
 
@@ -194,21 +197,20 @@ function hasPrefixOption(id) {
             :class="{ 'is-selected': (props.currentMaterialId || 'none') === item.id }"
             @click="handleSelect(item.id)"
           >
-            <!-- VIP / Selected Badge on Top Right -->
+            <!-- Selected Badge on Top Right -->
             <span v-if="(props.currentMaterialId || 'none') === item.id" class="row-selected-pill">
               <Check size="10" />
               <span>已选用</span>
             </span>
-            <span v-else class="row-vip-badge">VIP</span>
 
             <!-- High-Fidelity Material Canvas -->
             <div class="stream-material-canvas" v-html="getRenderHtml(item)"></div>
 
-            <!-- Sleek Frosted Glass Action Overlay on Hover -->
-            <div class="stream-hover-overlay">
-              <span class="stream-use-btn">
-                {{ (props.currentMaterialId || 'none') === item.id ? '当前已选用' : '选用此样式' }}
-              </span>
+            <!-- Bottom-Right "应用此样式" Action Button on Hover (Only for non-selected items) -->
+            <div v-if="(props.currentMaterialId || 'none') !== item.id" class="stream-apply-btn-wrap">
+              <button class="stream-apply-btn" type="button" @click.stop="handleSelect(item.id)">
+                应用此样式
+              </button>
             </div>
           </div>
 
@@ -251,7 +253,7 @@ function hasPrefixOption(id) {
   top: 0;
   right: 0;
   bottom: 0;
-  width: 380px;
+  width: 27.5rem;
   max-width: 95vw;
   height: 100vh;
   background: #ffffff;
@@ -536,15 +538,20 @@ function hasPrefixOption(id) {
 
 .stream-material-row {
   position: relative;
+  width: 100%;
+  min-height: 100px;
+  height: auto;
   background: #ffffff;
   border-bottom: 1px solid #F0F0F0;
-  padding: 1.75rem 1.25rem;
+  border-left: 3px solid transparent;
+  padding: 1.25rem 1.25rem;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.15s ease, border-left-color 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
+  overflow: visible;
 }
 
 .stream-material-row:hover {
@@ -553,22 +560,7 @@ function hasPrefixOption(id) {
 
 .stream-material-row.is-selected {
   background: #FFFBF9;
-  border-left: 3px solid #ff5e36;
-}
-
-/* VIP badge */
-.row-vip-badge {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  font-size: 0.625rem;
-  font-weight: 700;
-  color: #D97706;
-  background: #FEF3C7;
-  padding: 0.0625rem 0.375rem;
-  border-radius: 3px;
-  letter-spacing: 0.5px;
-  line-height: 1.2;
+  border-left-color: #ff5e36;
 }
 
 /* Selected Pill */
@@ -591,46 +583,82 @@ function hasPrefixOption(id) {
 
 .stream-material-canvas {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   background: transparent;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
+  overflow: visible;
 }
 
-/* Sleek Hover Overlay */
-.stream-hover-overlay {
+/* Neutralize excessive outer margins in material previews so every item renders uniformly centered */
+.stream-material-canvas :deep(section),
+.stream-material-canvas :deep(div),
+.stream-material-canvas :deep(blockquote),
+.stream-material-canvas :deep(p),
+.stream-material-canvas :deep(hr),
+.stream-material-canvas :deep(ul),
+.stream-material-canvas :deep(ol),
+.stream-material-canvas :deep(table) {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.stream-material-canvas :deep(table) {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Bottom-Right "应用此样式" Action Button on Hover */
+.stream-apply-btn-wrap {
   position: absolute;
-  inset: 0;
-  background: rgba(24, 24, 27, 0.5);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  right: 12px;
+  bottom: 8px;
   opacity: 0;
+  transform: translateY(3px);
+  transition: opacity 0.16s ease, transform 0.16s ease;
   pointer-events: none;
-  transition: opacity 0.15s ease;
   z-index: 10;
 }
 
-.stream-material-row:hover .stream-hover-overlay {
+.stream-material-row:hover .stream-apply-btn-wrap {
   opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
 }
 
-.stream-use-btn {
-  font-size: 0.75rem;
+.stream-apply-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 24px;
+  padding: 0 9px;
+  font-size: 0.6875rem;
   font-weight: 600;
-  color: #18181B;
-  background: #ffffff;
-  padding: 0.375rem 0.875rem;
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  color: #ffffff;
+  background: #18181B;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 4px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
   transition: all 0.15s ease;
+  white-space: nowrap;
+  user-select: none;
+  line-height: 1;
 }
 
-.stream-material-row:hover .stream-use-btn:hover {
-  background: #F4F4F5;
+.stream-apply-btn:hover {
+  background: #ff5e36;
+  border-color: #ff5e36;
+  box-shadow: 0 3px 8px rgba(255, 94, 54, 0.35);
+  transform: scale(1.02);
+}
+
+.stream-material-row.is-selected .stream-apply-btn {
+  background: #ff5e36;
+  border-color: #ff5e36;
 }
 
 .drawer-empty-state {
@@ -718,5 +746,19 @@ function hasPrefixOption(id) {
 :global(html[data-color-mode="dark"]) .stream-material-row.is-selected {
   background: #2b201a;
   border-left-color: #ff5e36;
+}
+
+:global(html.dark) .stream-apply-btn,
+:global(html[data-color-mode="dark"]) .stream-apply-btn {
+  background: #27272a;
+  color: #f4f4f5;
+  border-color: rgba(255, 255, 255, 0.15);
+}
+
+:global(html.dark) .stream-apply-btn:hover,
+:global(html[data-color-mode="dark"]) .stream-apply-btn:hover {
+  background: #ff5e36;
+  border-color: #ff5e36;
+  color: #ffffff;
 }
 </style>

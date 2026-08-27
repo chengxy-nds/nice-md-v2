@@ -36,7 +36,7 @@ const materialModalOpen = ref(false);
 const currentModalKey = ref('h1');
 
 function hasMaterialSupport(key) {
-  return ['body', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'hr', 'ul', 'ol', 'li', 'header_widget', 'footer_widget'].includes(key);
+  return ['body', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'hr', 'ul', 'ol', 'li', 'table', 'tables', 'header_widget', 'footer_widget'].includes(key);
 }
 
 function getMaterialTypeLabel(key) {
@@ -53,6 +53,8 @@ function getMaterialTypeLabel(key) {
     ul: '无序列表 (UL)',
     ol: '有序列表 (OL)',
     li: '列表项 (LI)',
+    table: '表格 / 数据对照',
+    tables: '表格 / 数据对照',
     header_widget: '文章头部导读挂件',
     footer_widget: '文末三连/作者名片'
   };
@@ -94,7 +96,7 @@ function getMaterialTemplateName(id) {
 }
 
 function hasPrefixOption(id) {
-  return ['h-135-part01-leaf', 'h-135-part02-peach', 'h-135-part03-purple', 'h-135-morandi-block'].includes(id);
+  return ['h-135-part01-leaf', 'h-135-part02-peach', 'h-135-part03-purple', 'h-135-morandi-block', 'h-pill-duotone', 'h-yellow-shadow-cube'].includes(id);
 }
 
 // Full list of all 27 Markdown syntax element definitions

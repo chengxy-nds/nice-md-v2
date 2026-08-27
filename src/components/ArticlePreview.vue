@@ -140,7 +140,7 @@ const materialPopupVisible = ref(false);
 const currentPopupKey = ref('h1');
 const currentPopupPos = ref({ x: 0, y: 0 });
 
-const materialSupportedTags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'hr', 'ul', 'ol', 'li'];
+const materialSupportedTags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'hr', 'ul', 'ol', 'li', 'table', 'tables'];
 
 function handlePopupSelect({ key, templateId }) {
   const newStyles = JSON.parse(JSON.stringify(props.customStyles || {}));
