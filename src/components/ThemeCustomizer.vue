@@ -170,7 +170,14 @@ function getStyle(category) {
   return effectiveStyles.value[category] || {};
 }
 
-const knownProps = ['color', 'backgroundColor', 'borderLeftColor', 'borderColor', 'textColor', 'headerBg', 'fontSize', 'fontWeight', 'lineHeight', 'margin', 'borderRadius', 'maxWidth', 'boxShadow', 'border', 'display', 'materialTemplateId', 'materialPrefix', 'codeThemeId', 'macStyle', 'showLang', 'letterSpacing', 'fontFamily'];
+const knownProps = ['color', 'backgroundColor', 'borderLeftColor', 'borderColor', 'textColor', 'headerBg', 'fontSize', 'fontWeight', 'lineHeight', 'margin', 'borderRadius', 'maxWidth', 'boxShadow', 'border', 'display', 'materialTemplateId', 'materialPrefix', 'codeThemeId', 'macStyle', 'showLang', 'letterSpacing', 'fontFamily', 'padding', 'backgroundTexture'];
+
+function clearMaterial(key) {
+  updateStyle(key, 'materialTemplateId', 'none');
+  if (key === 'body') {
+    updateStyle('body', 'backgroundTexture', 'clean');
+  }
+}
 
 function otherProps(category) {
   const style = getStyle(category);
@@ -361,9 +368,10 @@ function mergeIncrementalCss(existingCss, styles) {
   };
 
   if (S.body) {
-    updateRuleBlock('(?:#(?:easymd|nice)|body)', {
+    updateRuleBlock('(?:#(?:easymd|nice)|body|\\.markdown-body)', {
       color: S.body.color,
       backgroundColor: S.body.backgroundColor,
+      padding: S.body.padding,
       fontSize: S.body.fontSize,
       lineHeight: S.body.lineHeight,
       letterSpacing: S.body.letterSpacing,
@@ -713,8 +721,8 @@ function handleCssTextChange(val) {
     }
   });
 
-  // Body block parsing (#easymd, #nice, body)
-  const bodyBlock = extractBlock('(?:#(?:easymd|nice)|body|\\.markdown-body)?');
+  // Body block parsing (#easymd, #nice, body, .markdown-body)
+  const bodyBlock = extractBlock('(?:#(?:easymd|nice)|body|\\.markdown-body)');
   if (bodyBlock) {
     if (!localStyles.value.body) localStyles.value.body = {};
     const color = getPropFromBlock(bodyBlock, 'color');
@@ -727,6 +735,9 @@ function handleCssTextChange(val) {
     if (matId) {
       localStyles.value.body.backgroundTexture = matId;
       localStyles.value.body.materialTemplateId = matId;
+    } else {
+      localStyles.value.body.backgroundTexture = 'clean';
+      localStyles.value.body.materialTemplateId = 'none';
     }
     const fs = getPropFromBlock(bodyBlock, 'font-size');
     if (fs) localStyles.value.body.fontSize = fs;
@@ -1125,7 +1136,7 @@ const cssLineCount = computed(() => {
             </div>
             <button
               class="clear-material-btn"
-              @click="updateStyle(el.key, 'materialTemplateId', 'none')"
+              @click="clearMaterial(el.key)"
               title="清除素材，恢复默认 CSS 样式"
             >
               <X size="11" />
@@ -1270,14 +1281,16 @@ const cssLineCount = computed(() => {
             <div class="body-setting-card">
               <span class="body-setting-title">字体族</span>
               <select
-                :value="getStyle('body').fontFamily || 'sans-serif'"
+                :value="getStyle('body').fontFamily || '-apple-system, BlinkMacSystemFont, \'PingFang SC\', \'Hiragino Sans GB\', \'Microsoft YaHei\', sans-serif'"
                 @change="updateStyle('body', 'fontFamily', $event.target.value)"
                 class="style-select full-width"
               >
+                <option value="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif">山海 · 经典字体 (系统推荐)</option>
                 <option value="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">现代黑体 (Inter)</option>
                 <option value="'PingFang SC', 'Microsoft YaHei', sans-serif">微软雅黑 / 苹方</option>
                 <option value="'Songti SC', 'SimSun', STSong, serif">典雅宋体 (Songti)</option>
                 <option value="'Kaiti SC', 'KaiTi', STKaiti, serif">温润楷体 (KaiTi)</option>
+                <option value="Georgia, 'Times New Roman', serif">优雅衬线 (Georgia)</option>
               </select>
             </div>
 

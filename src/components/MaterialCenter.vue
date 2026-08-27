@@ -150,7 +150,7 @@ function handleApplyBackground(mat) {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="搜索素材名称、标签（如：热门、手账、古风、极客...）"
+          placeholder="搜索素材名称、标签（如：清新、手账、国风、极客...）"
         />
         <button v-if="searchQuery" class="mc-clear-btn" @click="searchQuery = ''">
           <X size="13" />

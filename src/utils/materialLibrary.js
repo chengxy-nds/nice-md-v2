@@ -26,7 +26,6 @@ export const materialCategories = [
 
 export const styleCategories = [
   { id: 'all', name: '全部风格' },
-  { id: '热门hot', name: '热门精选' },
   { id: 'fresh', name: '清新活力' },
   { id: 'business', name: '商务科技' },
   { id: 'guofeng', name: '国风古韵' },
@@ -35,8 +34,6 @@ export const styleCategories = [
 ];
 
 export const styleCategoryMap = {
-  '热门hot': { name: '热门精选', color: '#ea580c', bg: '#fff7ed', border: '#ffedd5' },
-  '135hot': { name: '热门精选', color: '#ea580c', bg: '#fff7ed', border: '#ffedd5' },
   'fresh': { name: '清新活力', color: '#16a34a', bg: '#f0fdf4', border: '#dcfce7' },
   'business': { name: '商务科技', color: '#2563eb', bg: '#eff6ff', border: '#dbeafe' },
   'guofeng': { name: '国风古韵', color: '#b91c1c', bg: '#fef2f2', border: '#fee2e2' },
@@ -143,11 +140,11 @@ export const materials = [
   {
     id: 'h-135-part01-leaf',
     category: 'headings',
-    tag: '热门爆款',
-    styleCategory: '热门hot',
+    tag: '夏风绿叶',
+    styleCategory: 'fresh',
     title: '黄绿夏风标题',
     description: '倾斜 PART.01 标牌 + 弧形手绘箭头 + 绿叶波浪划线标题',
-    tags: ['热门爆款', 'PART.01', '绿叶'],
+    tags: ['夏风', 'PART.01', '绿叶'],
     html: `<section style="margin: 24px 0 16px; padding: 10px 4px; clear: both; text-align: center;" data-material="true">
   <section style="display: inline-block; text-align: left; max-width: 100%; box-sizing: border-box;">
     <section style="margin-bottom: 6px; line-height: 1;">
@@ -177,11 +174,11 @@ export const materials = [
   {
     id: 'h-135-part02-peach',
     category: 'headings',
-    tag: '热门精选',
-    styleCategory: '热门hot',
+    tag: '蜜桃浪漫',
+    styleCategory: 'fresh',
     title: '蜜桃浪漫标题',
     description: '倾斜粉红标牌 + 手绘心形小弧线 + 甜美粉色下划线',
-    tags: ['热门爆款', 'PART.02', '蜜桃粉'],
+    tags: ['蜜桃', 'PART.02', '浪漫'],
     html: `<section style="margin: 24px 0 16px; padding: 10px 4px; clear: both; text-align: center;" data-material="true">
   <section style="display: inline-block; text-align: left; max-width: 100%; box-sizing: border-box;">
     <section style="margin-bottom: 6px; line-height: 1;">
@@ -207,11 +204,11 @@ export const materials = [
   {
     id: 'h-135-part03-purple',
     category: 'headings',
-    tag: '热门精选',
-    styleCategory: '热门hot',
+    tag: '薰衣草紫',
+    styleCategory: 'fresh',
     title: '薰衣草紫标题',
     description: '倾斜紫色标牌 + 优雅星光点缀 + 紫色粗划线',
-    tags: ['热门爆款', 'PART.03', '香草紫'],
+    tags: ['香草紫', 'PART.03', '星空'],
     html: `<section style="margin: 24px 0 16px; padding: 10px 4px; clear: both; text-align: center;" data-material="true">
   <section style="display: inline-block; text-align: left; max-width: 100%; box-sizing: border-box;">
     <section style="margin-bottom: 6px; line-height: 1;">
@@ -239,11 +236,11 @@ export const materials = [
   {
     id: 'h-135-bubble-01',
     category: 'headings',
-    tag: '热门爆款',
-    styleCategory: '热门hot',
+    tag: '气泡序号',
+    styleCategory: 'business',
     title: '双重气泡序号标题',
     description: '实心与淡色双层圆圈序号，搭配加粗标题',
-    tags: ['热门精选', '序号标题', '蓝色'],
+    tags: ['气泡序号', '序号标题', '蓝色'],
     html: `<section style="margin: 24px 0 16px; text-align: center; clear: both;" data-material="true">
   <section style="display: inline-table; vertical-align: middle; text-align: left; max-width: 100%; box-sizing: border-box;">
     <section style="display: table-row;">
@@ -260,11 +257,11 @@ export const materials = [
   {
     id: 'h-135-yellow-3d',
     category: 'headings',
-    tag: '精选推荐',
-    styleCategory: '热门hot',
+    tag: '明黄浮雕',
+    styleCategory: 'fresh',
     title: '经典立体明黄浮雕标题',
     description: '黄色立体沉底图层 + 左倾小方块，高对比强吸睛',
-    tags: ['热门精选', '明黄', '立体风'],
+    tags: ['明黄', '立体风', '浮雕'],
     html: `<section style="margin: 24px 0 16px; text-align: center; clear: both;" data-material="true">
   <section style="display: inline-table; vertical-align: middle; background: #fef08a; padding: 8px 16px 8px 12px; border-radius: 6px; -webkit-box-shadow: 3px 3px 0px #f59e0b; box-shadow: 3px 3px 0px #f59e0b; max-width: 100%; box-sizing: border-box; text-align: left;">
     <section style="display: table-row;">
@@ -281,11 +278,11 @@ export const materials = [
   {
     id: 'h-135-3d-mint-num',
     category: 'headings',
-    tag: '热门精选',
-    styleCategory: '热门hot',
+    tag: '薄荷绿立体',
+    styleCategory: 'fresh',
     title: '薄荷绿立体 02 序号标题',
     description: '薄荷绿圆角方块 + 侧阴影，清新爽朗适合教程结构',
-    tags: ['热门精选', '薄荷绿', '序号'],
+    tags: ['薄荷绿', '序号', '立体'],
     html: `<section style="margin: 24px 0 16px; text-align: center; clear: both;" data-material="true">
   <section style="display: inline-table; vertical-align: middle; text-align: left; max-width: 100%; box-sizing: border-box;">
     <section style="display: table-row;">
@@ -370,8 +367,8 @@ export const materials = [
   {
     id: 'q-135-big-quote',
     category: 'quotes',
-    tag: '热门精选',
-    styleCategory: '热门hot',
+    tag: '双引号金句',
+    styleCategory: 'business',
     title: '经典大型对话双引号框',
     description: '包含优雅的放大双引号与微阴影圆角边框',
     tags: ['经典金句', '双引号', '名言'],
@@ -384,11 +381,11 @@ export const materials = [
   {
     id: 'q-135-speech-bubble',
     category: 'quotes',
-    tag: '热门爆款',
-    styleCategory: '热门hot',
+    tag: '对话气泡',
+    styleCategory: 'fresh',
     title: '极简对话气泡金句框',
-    description: '带底部对话小尖角与蓝色圆点修饰的爆款气泡引用框',
-    tags: ['热门爆款', '气泡框', '对话'],
+    description: '带底部对话小尖角与蓝色圆点修饰的气泡引用框',
+    tags: ['对话气泡', '气泡框', '金句'],
     html: `<div style="margin: 22px 0;" data-material="true">
   <section style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 16px 20px; color: #1e40af; font-size: 14.5px; line-height: 1.8; position: relative; word-break: break-word;">
     <strong style="display: block; margin-bottom: 6px; font-size: 15px; color: #1d4ed8;">💬 深度洞察：</strong>
@@ -437,11 +434,11 @@ export const materials = [
   {
     id: 'c-135-orange-fire',
     category: 'callouts',
-    tag: '热门爆款',
-    styleCategory: '热门hot',
-    title: '爆款橙色热度关注框',
+    tag: '暖橙提示卡',
+    styleCategory: 'business',
+    title: '暖橙热度要点框',
     description: '橙色高光底色 + 🔥 热度图标',
-    tags: ['热门精选', '橙色', '爆款'],
+    tags: ['暖橙', '提示卡片', '干货'],
     html: `<section style="margin: 20px 0; padding: 16px 20px; background: #fff7ed; border: 1px solid #ffedd5; border-left: 5px solid #f97316; border-radius: 8px; color: #c2410c; font-size: 14px; line-height: 1.75; word-break: break-word;" data-material="true">
   <strong style="display: block; margin-bottom: 6px; font-size: 15px; color: #ea580c;">
     🔥 核心热点干货：
@@ -452,8 +449,8 @@ export const materials = [
   {
     id: 'c-135-keypoints-cards',
     category: 'callouts',
-    tag: '热门精选',
-    styleCategory: '热门hot',
+    tag: '要点组合卡',
+    styleCategory: 'business',
     title: '三要点小色块组合卡片',
     description: '包含 3 个带柔和彩色底块的小干货总结，清晰有条理',
     tags: ['要点总结', '彩色色块', '卡片'],
@@ -518,8 +515,8 @@ export const materials = [
   {
     id: 'd-135-scissors',
     category: 'dividers',
-    tag: '热门爆款',
-    styleCategory: '热门hot',
+    tag: '剪刀裁剪线',
+    styleCategory: 'minimal',
     title: '剪刀裁剪虚线分割线',
     description: '趣味剪刀图标 + 虚线切割',
     tags: ['剪刀', '裁剪', '趣味'],
@@ -531,8 +528,8 @@ export const materials = [
   {
     id: 'd-135-double-wave',
     category: 'dividers',
-    tag: '热门精选',
-    styleCategory: '热门hot',
+    tag: '浪漫浪花线',
+    styleCategory: 'fresh',
     title: '暖黄浪漫浪花分割线',
     description: '优雅手绘双重浪花线条，带渐变过渡',
     tags: ['波浪', '暖黄', '优雅'],
@@ -568,7 +565,7 @@ export const materials = [
     id: 'l-135-timeline',
     category: 'lists',
     tag: '里程碑',
-    styleCategory: '热门hot',
+    styleCategory: 'business',
     title: '纵向里程碑时间轴',
     description: '带有连接线与圆点标记的纵向流程卡片',
     tags: ['时间轴', '里程碑', '流程'],
@@ -607,11 +604,11 @@ export const materials = [
   {
     id: 'hdr-135-guide-card',
     category: 'header_widgets',
-    tag: '热门爆款',
-    styleCategory: '热门hot',
+    tag: '绿色导读卡',
+    styleCategory: 'fresh',
     title: '爆款文章导读与作者头卡',
     description: '包含发刊词、阅读时长与关注按钮的精致头部挂件',
-    tags: ['头部导读', '关注头卡', '热门爆款'],
+    tags: ['头部导读', '关注头卡', '精选爆款'],
     html: `<section style="margin: 0 0 24px 0; padding: 18px 20px; background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%); border: 1px solid #bbf7d0; border-radius: 12px; box-sizing: border-box;" data-material="true">
   <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; flex-wrap: wrap; gap: 8px;">
     <div style="display: flex; align-items: center; gap: 8px;">
@@ -647,11 +644,11 @@ export const materials = [
   {
     id: 'f-135-triple-like',
     category: 'footer_widgets',
-    tag: '热门爆款',
-    styleCategory: '热门hot',
+    tag: '互动三连卡',
+    styleCategory: 'fresh',
     title: '爆款文末三连交互卡片',
     description: '包含“点赞 · 在看 · 分享”互动提醒',
-    tags: ['互动三连', '点赞在看', '热门爆款'],
+    tags: ['互动三连', '点赞在看', '精选爆款'],
     html: `<section style="margin: 28px 0 16px; padding: 20px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; text-align: center;" data-material="true">
   <p style="font-size: 14.5px; font-weight: 700; color: #1e293b; margin-bottom: 12px; word-break: break-word;">如果这篇文章对你有启发，欢迎转发分享！</p>
   <div style="text-align: center; color: #475569; font-size: 13px; font-weight: 600; display: flex; justify-content: center; flex-wrap: wrap; gap: 8px;">
@@ -664,11 +661,11 @@ export const materials = [
   {
     id: 'f-135-qrcode-card',
     category: 'footer_widgets',
-    tag: '热门爆款',
-    styleCategory: '热门hot',
+    tag: '二维码关注卡',
+    styleCategory: 'business',
     title: '经典二维码关注引导卡片',
     description: '高转化微信公众号二维码关注框，带有扫码提示手势',
-    tags: ['关注卡片', '二维码', '热门爆款'],
+    tags: ['关注卡片', '二维码', '精选爆款'],
     html: `<section style="margin: 28px 0 16px; padding: 22px; background: #faf5ff; border: 1px dashed #d8b4fe; border-radius: 16px; text-align: center;" data-material="true">
   <div style="font-size: 16px; font-weight: 800; color: #6b21a8; margin-bottom: 4px;">👇 长按识别二维码 · 关注公众号</div>
   <p style="font-size: 13px; color: #7e22ce; margin-bottom: 14px;">每周日晚 20:00 准时推送独家深度复盘</p>
@@ -807,7 +804,7 @@ export const materials = [
     id: "c-notion-warning",
     category: "callouts",
     tag: "极简彩卡",
-    styleCategory: "热门hot",
+    styleCategory: 'business',
     title: "极简彩卡·暖橙警示避坑指南",
     description: "暖橙警示底色 + 叹号三角图标 + 避坑注意要点",
     tags: ["Notion","Warning","警告","避坑","橙色"],
@@ -937,7 +934,7 @@ export const materials = [
     id: "d-scissors-coupon",
     category: "dividers",
     tag: "虚线剪刀",
-    styleCategory: "热门hot",
+    styleCategory: 'minimal',
     title: "虚线剪刀·优惠券裁切打孔分割线",
     description: "✂️ 经典裁切剪刀 + 细密打孔虚线",
     tags: ["分割线","剪刀","打孔","虚线","活动"],
@@ -982,8 +979,8 @@ export const headingTemplates = [
     id: 'h-135-part01-leaf',
     name: '黄绿夏风标牌',
     description: '倾斜 PART.01 标牌 + 弧形手绘箭头 + 绿叶波浪划线标题',
-    tag: '热门爆款',
-    styleCategory: '热门hot',
+    tag: '夏风绿叶',
+    styleCategory: 'fresh',
     hasAutoNumber: true,
     hasCustomPrefix: true,
     previewHtml: `<div style="display:flex;align-items:flex-end;gap:4px;margin-bottom:2px;"><div style="background:#facc15;color:#fff;font-weight:800;font-size:10px;padding:1px 6px;border-radius:3px;transform:rotate(-6deg);">PART.01</div></div><div style="font-size:13px;font-weight:800;color:#2e8b57;">八月拾夏 静待秋风 🌿</div>`,
@@ -1021,8 +1018,8 @@ export const headingTemplates = [
     id: 'h-135-part02-peach',
     name: '蜜桃浪漫标牌',
     description: '倾斜粉红标牌 + 甜美蜜桃与粉色下划线',
-    tag: '热门精选',
-    styleCategory: '热门hot',
+    tag: '蜜桃粉',
+    styleCategory: 'fresh',
     hasAutoNumber: true,
     hasCustomPrefix: true,
     previewHtml: `<div style="display:flex;align-items:flex-end;gap:4px;margin-bottom:2px;"><div style="background:#f43f5e;color:#fff;font-weight:800;font-size:10px;padding:1px 6px;border-radius:3px;transform:rotate(-5deg);">PART.02</div></div><div style="font-size:13px;font-weight:800;color:#be123c;">关于生活中的温柔 🍑</div>`,
@@ -1056,8 +1053,8 @@ export const headingTemplates = [
     id: 'h-135-part03-purple',
     name: '薰衣草紫标牌',
     description: '倾斜紫色标牌 + 优雅星月点缀 + 香草紫下划线',
-    tag: '热门精选',
-    styleCategory: '热门hot',
+    tag: '薰衣草紫',
+    styleCategory: 'fresh',
     hasAutoNumber: true,
     hasCustomPrefix: true,
     previewHtml: `<div style="display:flex;align-items:flex-end;gap:4px;margin-bottom:2px;"><div style="background:#8b5cf6;color:#fff;font-weight:800;font-size:10px;padding:1px 6px;border-radius:3px;transform:rotate(-4deg);">PART.03</div></div><div style="font-size:13px;font-weight:800;color:#5b21b6;">枕着星河入梦 🌙</div>`,
@@ -1091,8 +1088,8 @@ export const headingTemplates = [
     id: 'h-135-bubble-01',
     name: '气泡圆圈序号标题',
     description: '实心蓝色圆圈数字 01, 02 + 悬浮阴影标题',
-    tag: '热门爆款',
-    styleCategory: '热门hot',
+    tag: '气泡序号',
+    styleCategory: 'fresh',
     hasAutoNumber: true,
     hasCustomPrefix: false,
     previewHtml: `<div style="display:flex;align-items:center;gap:6px;"><span style="background:#2563eb;color:#fff;font-size:11px;font-weight:800;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;">01</span><span style="font-size:13px;font-weight:700;color:#1e293b;">战略思维与底层认知</span></div>`,
@@ -1116,8 +1113,8 @@ export const headingTemplates = [
     id: 'h-135-yellow-3d',
     name: '经典立体明黄浮雕',
     description: '黄色立体沉底图层 + 左侧亮黄方块',
-    tag: '热门爆款',
-    styleCategory: '热门hot',
+    tag: '精选推荐',
+    styleCategory: 'fresh',
     hasAutoNumber: false,
     hasCustomPrefix: false,
     previewHtml: `<div style="background:#fef08a;padding:4px 8px;border-radius:4px;box-shadow:2px 2px 0 #f59e0b;font-size:12px;font-weight:800;color:#78350f;">打造高转化率结构</div>`,
@@ -1140,8 +1137,8 @@ export const headingTemplates = [
     id: 'h-135-3d-mint-num',
     name: '薄荷绿立体序号',
     description: '薄荷绿圆角方块 + 侧阴影 01, 02 序号块',
-    tag: '热门精选',
-    styleCategory: '热门hot',
+    tag: '薄荷绿立体',
+    styleCategory: 'fresh',
     hasAutoNumber: true,
     hasCustomPrefix: false,
     previewHtml: `<div style="display:flex;align-items:center;gap:6px;"><div style="background:#10b981;color:#fff;font-size:10px;font-weight:bold;padding:2px 5px;border-radius:4px;box-shadow:2px 2px 0 #047857;">02</div><span style="font-size:12px;font-weight:bold;color:#064e3b;">突破认知瓶颈</span></div>`,
@@ -1422,8 +1419,8 @@ export const quoteTemplates = [
     id: 'q-135-big-quote',
     name: '经典大型对话双引号框',
     description: '包含优雅的放大双引号与微阴影圆角边框',
-    tag: '热门精选',
-    styleCategory: '热门hot',
+    tag: '双引号金句',
+    styleCategory: 'business',
     previewHtml: `<blockquote style="margin: 0; padding: 12px 14px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; color: #334155; font-size: 12px; line-height: 1.6; position: relative;"><span style="font-size: 20px; color: #2563eb; font-family: Georgia, serif; line-height: 1; vertical-align: -4px; margin-right: 2px;">“</span>能力增长并不是斜率不变的直线，而是呈现指数级上升的复利曲线。<span style="font-size: 20px; color: #2563eb; font-family: Georgia, serif; line-height: 1; vertical-align: -4px; margin-left: 2px;">”</span></blockquote>`,
     render: (content) => `<blockquote style="margin: 20px 0; padding: 18px 22px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; color: #334155; font-size: 14.5px; line-height: 1.8; position: relative; word-break: break-word;" data-material="true">
   <span style="font-size: 32px; color: #2563eb; font-family: Georgia, serif; line-height: 1; vertical-align: -8px; margin-right: 4px;">“</span>${content}<span style="font-size: 32px; color: #2563eb; font-family: Georgia, serif; line-height: 1; vertical-align: -8px; margin-left: 4px;">”</span>
@@ -1433,8 +1430,8 @@ export const quoteTemplates = [
     id: 'q-135-speech-bubble',
     name: '极简对话气泡金句框',
     description: '带底部对话小尖角与蓝色圆点修饰的爆款气泡引用框',
-    tag: '热门爆款',
-    styleCategory: '热门hot',
+    tag: '对话气泡',
+    styleCategory: 'fresh',
     previewHtml: `<div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px; padding: 10px 12px; color: #1e40af; font-size: 12px; line-height: 1.6;"><strong style="display: block; margin-bottom: 3px; font-size: 12.5px; color: #1d4ed8;">💬 深度洞察：</strong>把时间浪费在值得的事情上，把精力投注给懂你的人。</div>`,
     render: (content) => `<div style="margin: 22px 0;" data-material="true">
   <section style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 16px 20px; color: #1e40af; font-size: 14.5px; line-height: 1.8; position: relative; word-break: break-word;" data-material="true">
@@ -1553,8 +1550,8 @@ export const calloutTemplates = [
     id: 'c-135-orange-fire',
     name: '爆款橙色热度关注框',
     description: '橙色高光底色 + 🔥 热度图标',
-    tag: '热门爆款',
-    styleCategory: '热门hot',
+    tag: '暖橙提示卡',
+    styleCategory: 'business',
     previewHtml: `<div style="padding: 8px 12px; background: #fff7ed; border-left: 4px solid #f97316; font-size: 12px; color: #c2410c;">🔥 核心干货要点...</div>`,
     render: (content) => `<section style="margin: 20px 0; padding: 16px 20px; background: #fff7ed; border: 1px solid #ffedd5; border-left: 5px solid #f97316; border-radius: 8px; color: #c2410c; font-size: 14px; line-height: 1.75;" data-material="true">
   <strong style="display: block; margin-bottom: 6px; font-size: 15px; color: #ea580c;">🔥 核心干货：</strong>${content}
@@ -1564,8 +1561,8 @@ export const calloutTemplates = [
     id: 'c-135-keypoints-cards',
     name: '三要点小色块组合卡片',
     description: '包含 3 个带柔和彩色底块的小干货总结，清晰有条理',
-    tag: '热门精选',
-    styleCategory: '热门hot',
+    tag: '要点组合卡',
+    styleCategory: 'business',
     previewHtml: `<div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px 10px; font-size: 11px;"><div style="font-weight: 700; margin-bottom: 4px;">🎯 核心避坑指南</div><div style="background: #fef2f2; padding: 4px 6px; border-radius: 3px; color: #991b1b; margin-bottom: 3px;">📍 一忌：盲目微服务</div><div style="background: #ecfdf5; padding: 4px 6px; border-radius: 3px; color: #065f46;">📍 二宜：演进式拆分</div></div>`,
     render: (content) => `<section style="margin: 22px 0; padding: 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;" data-material="true">
   <div style="font-size: 14.5px; font-weight: 800; color: #0f172a; margin-bottom: 12px; word-break: break-word;">🎯 本章核心指南</div>
@@ -1607,7 +1604,7 @@ export const calloutTemplates = [
     name: '极简彩卡·暖橙警示避坑指南',
     description: '暖橙浅底 + ⚠️ 避坑小图标',
     tag: '极简彩卡',
-    styleCategory: '热门hot',
+    styleCategory: 'business',
     previewHtml: `<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:8px 10px;font-size:11.5px;color:#9a3412;"><div style="font-weight:700;margin-bottom:2px;">⚠️ 重点注意要点</div><div style="color:#7c2d12;font-size:11px;">修改核心生产配置前务必在测试环境演练...</div></div>`,
     render: (content) => `<section style="margin: 20px 0; padding: 14px 18px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; display: flex; align-items: flex-start; gap: 12px;" data-material="true">
   <span style="font-size: 18px; line-height: 1; flex-shrink: 0; margin-top: 2px;">⚠️</span>
@@ -1667,8 +1664,8 @@ export const dividerTemplates = [
     id: 'd-135-scissors',
     name: '剪刀裁剪虚线分割线',
     description: '趣味剪刀图标 + 虚线切割',
-    tag: '热门爆款',
-    styleCategory: '热门hot',
+    tag: '剪刀裁剪线',
+    styleCategory: 'minimal',
     previewHtml: `<div style="color: #94a3b8; font-size: 12px;">✂️ ------------------</div>`,
     render: () => `<section data-material="true" style="margin: 26px auto; color: #94a3b8; font-size: 14px; line-height: 1; display: table; width: 100%; box-sizing: border-box;">
   <section style="display: table-row;">
@@ -1682,7 +1679,7 @@ export const dividerTemplates = [
     name: '虚线剪刀·优惠券裁切打孔分割线',
     description: '左右打孔圆弧 + 粗虚线 + 旋转剪刀图标',
     tag: '虚线剪刀',
-    styleCategory: '热门hot',
+    styleCategory: 'minimal',
     previewHtml: `<div style="display: flex; align-items: center; gap: 6px; color: #94a3b8; font-size: 12px;">✂️ ------------------</div>`,
     render: () => `<section style="margin: 28px 0; display: flex; align-items: center; gap: 8px; color: #94a3b8; clear: both;" data-material="true">
   <span style="font-size: 16px; transform: rotate(-90deg);">✂️</span>
@@ -1693,8 +1690,8 @@ export const dividerTemplates = [
     id: 'd-135-double-wave',
     name: '暖黄浪漫浪花分割线',
     description: '优雅手绘双重浪花线条',
-    tag: '热门精选',
-    styleCategory: '热门hot',
+    tag: '浪漫浪花线',
+    styleCategory: 'fresh',
     previewHtml: `<div style="text-align: center; color: #f59e0b; font-size: 12px;">〰〰〰〰〰</div>`,
     render: () => `<section data-material="true" style="text-align: center; margin: 26px auto; width: 100%; display: block; clear: both;">
   <svg width="200" height="12" viewBox="0 0 200 12" fill="none" style="display: inline-block; margin: 0 auto; max-width: 100%;">
@@ -1750,7 +1747,7 @@ export const listTemplates = [
     id: 'list-badge-step',
     name: '彩色徽章数字序号列表',
     description: '将有序列表项转化为圆形彩色数字徽章卡片',
-    tag: '热门推荐',
+    tag: '数字徽章',
     styleCategory: 'business',
     hasAutoNumber: true,
     previewHtml: `<div style="font-size:12px;display:flex;flex-direction:column;gap:3px;"><div style="display:flex;gap:4px;"><span style="background:#2563eb;color:#fff;border-radius:50%;width:14px;height:14px;font-size:9px;display:inline-flex;align-items:center;justify-content:center;">1</span><span>第一步方案</span></div><div style="display:flex;gap:4px;"><span style="background:#2563eb;color:#fff;border-radius:50%;width:14px;height:14px;font-size:9px;display:inline-flex;align-items:center;justify-content:center;">2</span><span>第二步实施</span></div></div>`,
@@ -1839,8 +1836,8 @@ export const headerWidgetTemplates = [
     id: 'hdr-135-guide-card',
     name: '精选绿色文章导读卡',
     description: '包含发刊词、阅读时长标签与精读摘要',
-    tag: '热门爆款',
-    styleCategory: '热门hot',
+    tag: '绿色导读卡',
+    styleCategory: 'fresh',
     previewHtml: `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:6px;padding:6px;font-size:11px;color:#166534;"><strong>独家专栏</strong> · ⏱️ 预计精读 5 分钟</div>`,
     render: (options = {}) => {
       const summary = options.summary || '本文系统梳理了从底层逻辑到实操落地的完整方法论，建议收藏后反复研读与实践。';
@@ -1913,8 +1910,8 @@ export const footerWidgetTemplates = [
     id: 'f-135-triple-like',
     name: '精选文末三连交互卡片',
     description: '包含“👍 点赞 · 👀 在看 · 🚀 分享”互动按钮',
-    tag: '热门爆款',
-    styleCategory: '热门hot',
+    tag: '互动三连卡',
+    styleCategory: 'fresh',
     previewHtml: `<div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:6px;padding:6px;font-size:11px;text-align:center;color:#334155;">👍 点赞 · 👀 在看 · 🚀 分享</div>`,
     render: (options = {}) => {
       const tip = options.tip || '如果这篇文章对你有启发，欢迎转发分享！';
@@ -1932,8 +1929,8 @@ export const footerWidgetTemplates = [
     id: 'f-135-qrcode-card',
     name: '经典二维码关注引导卡片',
     description: '高转化微信公众号二维码关注框，带有扫码提示手势',
-    tag: '热门爆款',
-    styleCategory: '热门hot',
+    tag: '二维码关注卡',
+    styleCategory: 'business',
     previewHtml: `<div style="background:#faf5ff;border:1px dashed #d8b4fe;border-radius:6px;padding:6px;font-size:11px;text-align:center;color:#6b21a8;">👇 长按识别二维码 · 关注公众号</div>`,
     render: (options = {}) => {
       const title = options.title || '👇 长按识别二维码 · 关注公众号';

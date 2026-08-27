@@ -84,8 +84,9 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
 
   // 1. Global Container Styling with selected background pattern & body color
   const bodyPadding = customStyles?.body?.padding || '5px';
+  const bodyFontFamily = customStyles?.body?.fontFamily || '-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
   root.setAttribute('style', cleanCss(`
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-family: ${bodyFontFamily};
     font-size: 16px;
     line-height: 1.5;
     color: ${colors.text};
