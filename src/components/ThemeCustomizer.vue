@@ -689,10 +689,15 @@ function handleCssTextChange(val) {
     const block = extractBlock(tag);
     if (!localStyles.value[tag]) localStyles.value[tag] = {};
     
-    // Material ID: if @material is specified, apply it; if block exists and @material is removed or 'none', clear material
+    // Material ID: if @material is specified, apply it only if it belongs to this tag's category
     const matId = getMetaFromBlock(block, 'material');
-    if (matId) {
-      localStyles.value[tag].materialTemplateId = matId;
+    if (matId && matId !== 'none') {
+      const validTemplates = getMaterialTemplatesForKey(tag);
+      if (validTemplates.some(t => t.id === matId)) {
+        localStyles.value[tag].materialTemplateId = matId;
+      } else {
+        localStyles.value[tag].materialTemplateId = 'none';
+      }
     } else if (block) {
       localStyles.value[tag].materialTemplateId = 'none';
     }

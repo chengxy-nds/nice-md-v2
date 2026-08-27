@@ -331,6 +331,28 @@ export const materials = [
 </section>`
   },
   {
+    id: 'h-dots-apricot-box',
+    category: 'headings',
+    tag: '手账便签',
+    styleCategory: 'fresh',
+    title: '暖杏波点手账便签卡',
+    description: '黑线圆角白卡 + 暖杏三点星标 + 暖杏立体侧影',
+    tags: ['手账便签', '圆角卡片', '暖杏', '波点', '节日祝福', '清新'],
+    html: `<section style="margin: 26px 0 18px; text-align: center; clear: both; box-sizing: border-box;" data-material="true">
+  <section style="display: inline-block; position: relative; background: #ffffff; border: 1.5px solid #18181b; border-radius: 8px; -webkit-box-shadow: 4px 4px 0px #fed7aa; box-shadow: 4px 4px 0px #fed7aa; padding: 10px 28px; max-width: 100%; box-sizing: border-box; text-align: center;">
+    <span style="position: absolute; top: 6px; left: 8px; display: inline-flex; gap: 3px; line-height: 1;">
+      <span style="width: 4.5px; height: 4.5px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span>
+      <span style="width: 4.5px; height: 4.5px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span>
+      <span style="width: 4.5px; height: 4.5px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span>
+    </span>
+    <span style="font-size: 16.5px; font-weight: 800; color: #18181b; letter-spacing: 0.5px; line-height: 1.4; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; display: inline-block; word-break: break-word;">
+      教师节快乐呀
+    </span>
+    <span style="position: absolute; bottom: 6px; right: 8px; width: 4.5px; height: 4.5px; border-radius: 50%; background: #f59e0b; display: inline-block; line-height: 1;"></span>
+  </section>
+</section>`
+  },
+  {
     id: 'h-135-bubble-01',
     category: 'headings',
     tag: '气泡序号',
@@ -815,7 +837,7 @@ export const materials = [
     title: "大刊社论·半透罗马序号大标题",
     description: "底置超大浅灰罗马序号 + 精致无衬线加粗主标 + 极简纯黑下划线",
     tags: ["杂志", "社论", "罗马数字", "大刊", "极简"],
-    html: "<section style=\"margin: 32px 0 20px; clear: both; position: relative;\" data-material=\"true\">\n  <div style=\"font-family: 'Times New Roman', serif; font-size: 46px; font-weight: 900; color: rgba(0, 0, 0, 0.07); line-height: 1; margin-bottom: -18px; user-select: none;\">\n    01.\n  </div>\n  <div style=\"display: inline-block; border-bottom: 2.5px solid #0a0a0a; padding-bottom: 5px;\">\n    <h3 style=\"margin: 0; font-family: 'Outfit', 'PingFang SC', sans-serif; font-size: 20px; font-weight: 800; color: #0a0a0a; letter-spacing: -0.02em;\">\n      范式转移与核心增长飞轮\n    </h3>\n  </div>\n</section>"
+    html: "<section style=\"margin: 30px 0 20px; clear: both; text-align: left;\" data-material=\"true\">\n  <section style=\"display: inline-block; position: relative;\">\n    <section style=\"font-family: 'Times New Roman', Georgia, serif; font-size: 44px; font-weight: 900; color: #e5e7eb; line-height: 1; margin-bottom: -18px; letter-spacing: 1px;\">\n      01.\n    </section>\n    <section style=\"display: inline-block; border-bottom: 2.5px solid #0a0a0a; padding-bottom: 5px;\">\n      <span style=\"font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 19px; font-weight: 800; color: #0a0a0a; letter-spacing: 0.2px; line-height: 1.4; display: inline-block;\">\n        范式转移与核心增长飞轮\n      </span>\n    </section>\n  </section>\n</section>"
   },
   {
     id: "h-handdrawn-pin",
@@ -825,7 +847,7 @@ export const materials = [
     title: "手账手绘·立体图钉便签标题",
     description: "倾斜手写黄色标签 + 3D 红色图钉 + 荧光马克笔底色",
     tags: ["手账", "便签", "图钉", "手绘", "活泼"],
-    html: "<section style=\"margin: 28px 0 18px; clear: both; text-align: left;\" data-material=\"true\">\n  <section style=\"display: inline-block; position: relative; background: #fef08a; padding: 7px 18px 7px 14px; border-radius: 4px; transform: rotate(-1.5deg); box-shadow: 2px 3px 6px rgba(0,0,0,0.08); border-left: 4px solid #eab308;\">\n    <span style=\"position: absolute; top: -10px; left: 10px; font-size: 16px;\">📌</span>\n    <span style=\"font-family: 'PingFang SC', sans-serif; font-size: 16px; font-weight: 800; color: #713f12; margin-left: 14px; letter-spacing: 0.5px;\">\n      今日灵感清单与实操笔记\n    </span>\n  </section>\n</section>"
+    html: "<section style=\"margin: 28px 0 18px; clear: both; text-align: left;\" data-material=\"true\">\n  <section style=\"display: inline-block; background: #fef08a; padding: 7px 18px 7px 14px; border-radius: 4px; box-shadow: 2px 3px 6px rgba(0,0,0,0.08); border-left: 4px solid #eab308;\">\n    <span style=\"font-size: 16px; margin-right: 6px;\">📌</span>\n    <span style=\"font-family: 'PingFang SC', -apple-system, sans-serif; font-size: 16px; font-weight: 800; color: #713f12; letter-spacing: 0.5px;\">\n      今日灵感清单与实操笔记\n    </span>\n  </section>\n</section>"
   },
   {
     id: "h-pill-duotone",
@@ -865,7 +887,7 @@ export const materials = [
     title: "大刊双引号·巨型流光大字符金句",
     description: "左上角 72px 浅蓝半透立体大双引号 + 斜体精致社论观点排版",
     tags: ["大刊", "双引号", "名言", "杂志", "高级"],
-    html: "<section style=\"margin: 28px 0; padding: 24px 28px; background: #f8fafc; border-left: 4px solid #0f172a; border-radius: 0 12px 12px 0; position: relative;\" data-material=\"true\">\n  <div style=\"font-family: Georgia, serif; font-size: 72px; color: rgba(15, 23, 42, 0.12); position: absolute; top: -10px; left: 16px; line-height: 1; user-select: none;\">\n    “\n  </div>\n  <p style=\"position: relative; z-index: 1; margin: 0; font-family: 'Georgia', 'Songti SC', serif; font-size: 16px; font-weight: 600; line-height: 1.75; color: #1e293b; font-style: italic;\">\n    真正优秀的设计不是把所有东西堆砌完整，而是直到没有任何一件多余的东西可以再被拿走。\n  </p>\n  <div style=\"margin-top: 10px; text-align: right; font-size: 12.5px; color: #64748b; font-weight: 700;\">\n    — 安托万·德·圣-埃克苏佩里\n  </div>\n</section>"
+    html: "<section style=\"margin: 28px 0; padding: 24px 28px; background: #f8fafc; border-left: 4px solid #0f172a; border-radius: 0 12px 12px 0; position: relative;\" data-material=\"true\">\n  <section style=\"font-family: Georgia, serif; font-size: 64px; color: #cbd5e1; position: absolute; top: -12px; left: 14px; line-height: 1; opacity: 0.6;\">\n    “\n  </section>\n  <p style=\"position: relative; z-index: 1; margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', serif; font-size: 15.5px; font-weight: 600; line-height: 1.75; color: #1e293b; font-style: italic;\">\n    真正优秀的设计不是把所有东西堆砌完整，而是直到没有任何一件多余的东西可以再被拿走。\n  </p>\n  <div style=\"margin-top: 10px; text-align: right; font-size: 12.5px; color: #64748b; font-weight: 700;\">\n    — 安托万·德·圣-埃克苏佩里\n  </div>\n</section>"
   },
   {
     id: "q-highlighter-marker",
@@ -1226,6 +1248,31 @@ export const headingTemplates = [
         <span style="font-size: 10.5px; font-weight: 800; color: #a1a1aa; letter-spacing: 1.5px; text-transform: uppercase; line-height: 1.2; display: block; font-family: -apple-system, BlinkMacSystemFont, Arial, sans-serif; margin-top: 2px;">${subTitle}</span>
       </section>
     </section>
+  </section>
+</section>`;
+    }
+  },
+  {
+    id: 'h-dots-apricot-box',
+    name: '暖杏波点手账便签卡',
+    description: '黑线圆角白卡 + 暖杏三点星标 + 暖杏立体侧影',
+    tag: '手账便签',
+    styleCategory: 'fresh',
+    hasAutoNumber: false,
+    hasCustomPrefix: false,
+    previewHtml: `<div style="display:inline-block;position:relative;background:#fff;border:1.5px solid #18181b;border-radius:6px;box-shadow:3px 3px 0px #fed7aa;padding:6px 20px;text-align:center;"><span style="position:absolute;top:3px;left:6px;display:flex;gap:2.5px;"><span style="width:3px;height:3px;border-radius:50%;background:#f59e0b;display:inline-block;"></span><span style="width:3px;height:3px;border-radius:50%;background:#f59e0b;display:inline-block;"></span><span style="width:3px;height:3px;border-radius:50%;background:#f59e0b;display:inline-block;"></span></span><span style="font-size:13px;font-weight:800;color:#18181b;">教师节快乐呀</span><span style="position:absolute;bottom:4px;right:6px;width:3.5px;height:3.5px;border-radius:50%;background:#f59e0b;display:inline-block;"></span></div>`,
+    render: (title) => {
+      return `<section style="margin: 26px 0 18px; text-align: center; clear: both; box-sizing: border-box;" data-material="true">
+  <section style="display: inline-block; position: relative; background: #ffffff; border: 1.5px solid #18181b; border-radius: 8px; -webkit-box-shadow: 4px 4px 0px #fed7aa; box-shadow: 4px 4px 0px #fed7aa; padding: 10px 28px; max-width: 100%; box-sizing: border-box; text-align: center;">
+    <span style="position: absolute; top: 6px; left: 8px; display: inline-flex; gap: 3px; line-height: 1;">
+      <span style="width: 4.5px; height: 4.5px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span>
+      <span style="width: 4.5px; height: 4.5px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span>
+      <span style="width: 4.5px; height: 4.5px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span>
+    </span>
+    <span style="font-size: 16.5px; font-weight: 800; color: #18181b; letter-spacing: 0.5px; line-height: 1.4; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; display: inline-block; word-break: break-word;">
+      ${title}
+    </span>
+    <span style="position: absolute; bottom: 6px; right: 8px; width: 4.5px; height: 4.5px; border-radius: 50%; background: #f59e0b; display: inline-block; line-height: 1;"></span>
   </section>
 </section>`;
     }
@@ -1596,15 +1643,17 @@ export const headingTemplates = [
     previewHtml: `<div style="position:relative;padding:4px 0;"><div style="font-size:24px;font-weight:900;color:rgba(0,0,0,0.08);line-height:1;margin-bottom:-10px;font-family:serif;">01.</div><div style="border-bottom:2px solid #0a0a0a;display:inline-block;padding-bottom:2px;font-size:13px;font-weight:800;color:#0a0a0a;">范式转移与核心增长飞轮</div></div>`,
     render: (title, index) => {
       const indexPadded = String(index).padStart(2, '0');
-      return `<section style="margin: 32px 0 20px; clear: both; position: relative;" data-material="true">
-  <div style="font-family: 'Times New Roman', serif; font-size: 46px; font-weight: 900; color: rgba(0, 0, 0, 0.07); line-height: 1; margin-bottom: -18px; user-select: none;">
-    ${indexPadded}.
-  </div>
-  <div style="display: inline-block; border-bottom: 2.5px solid #0a0a0a; padding-bottom: 5px;">
-    <h3 style="margin: 0; font-family: 'Outfit', 'PingFang SC', sans-serif; font-size: 20px; font-weight: 800; color: #0a0a0a; letter-spacing: -0.02em;">
-      ${title}
-    </h3>
-  </div>
+      return `<section style="margin: 30px 0 20px; clear: both; text-align: left;" data-material="true">
+  <section style="display: inline-block; position: relative;">
+    <section style="font-family: 'Times New Roman', Georgia, serif; font-size: 44px; font-weight: 900; color: #e5e7eb; line-height: 1; margin-bottom: -18px; letter-spacing: 1px;">
+      ${indexPadded}.
+    </section>
+    <section style="display: inline-block; border-bottom: 2.5px solid #0a0a0a; padding-bottom: 5px;">
+      <span style="font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 19px; font-weight: 800; color: #0a0a0a; letter-spacing: 0.2px; line-height: 1.4; display: inline-block;">
+        ${title}
+      </span>
+    </section>
+  </section>
 </section>`;
     }
   },
@@ -1619,9 +1668,9 @@ export const headingTemplates = [
     previewHtml: `<div style="background:#fef08a;padding:4px 8px;border-radius:4px;display:inline-flex;align-items:center;gap:4px;border-left:3px solid #eab308;box-shadow:1px 2px 4px rgba(0,0,0,0.08);"><span>📌</span><span style="font-size:12px;font-weight:bold;color:#713f12;">今日灵感清单与实操笔记</span></div>`,
     render: (title) => {
       return `<section style="margin: 28px 0 18px; clear: both; text-align: left;" data-material="true">
-  <section style="display: inline-block; position: relative; background: #fef08a; padding: 7px 18px 7px 14px; border-radius: 4px; transform: rotate(-1.5deg); box-shadow: 2px 3px 6px rgba(0,0,0,0.08); border-left: 4px solid #eab308;">
-    <span style="position: absolute; top: -10px; left: 10px; font-size: 16px;">📌</span>
-    <span style="font-family: 'PingFang SC', sans-serif; font-size: 16px; font-weight: 800; color: #713f12; margin-left: 14px; letter-spacing: 0.5px;">
+  <section style="display: inline-block; background: #fef08a; padding: 7px 18px 7px 14px; border-radius: 4px; box-shadow: 2px 3px 6px rgba(0,0,0,0.08); border-left: 4px solid #eab308;">
+    <span style="font-size: 16px; margin-right: 6px;">📌</span>
+    <span style="font-family: 'PingFang SC', -apple-system, sans-serif; font-size: 16px; font-weight: 800; color: #713f12; letter-spacing: 0.5px;">
       ${title}
     </span>
   </section>
@@ -1654,10 +1703,7 @@ export const headingTemplates = [
   }
 ];
 
-export const headingTemplatesMap = headingTemplates.reduce((acc, cur) => {
-  acc[cur.id] = cur;
-  return acc;
-}, {});
+
 
 // ── 引用金句模版（严格对应素材中心「金句/引用」）──
 export const quoteTemplates = [
@@ -1775,8 +1821,8 @@ export const quoteTemplates = [
     styleCategory: 'minimal',
     previewHtml: `<blockquote style="margin: 0; position: relative; padding: 12px 14px; background: #f8fafc; border-left: 3px solid #0f172a; border-radius: 0 8px 8px 0; overflow: hidden;"><span style="position: absolute; top: -8px; left: 6px; font-family: Georgia, serif; font-size: 40px; font-weight: 900; color: rgba(15, 23, 42, 0.1); line-height: 1; user-select: none;">“</span><p style="margin: 0; position: relative; z-index: 1; font-size: 11.5px; font-weight: 600; line-height: 1.6; color: #1e293b;">真正优秀的设计不是把所有东西堆砌完整，而是直到没有多余的东西可以拿走。</p></blockquote>`,
     render: (content) => `<section style="margin: 28px 0; padding: 24px 28px; background: #f8fafc; border-left: 4px solid #0f172a; border-radius: 0 12px 12px 0; position: relative;" data-material="true">
-  <div style="font-family: Georgia, serif; font-size: 72px; color: rgba(15, 23, 42, 0.12); position: absolute; top: -10px; left: 16px; line-height: 1; user-select: none;">“</div>
-  <p style="position: relative; z-index: 1; margin: 0; font-family: 'Georgia', 'Songti SC', serif; font-size: 16px; font-weight: 600; line-height: 1.75; color: #1e293b; font-style: italic;">
+  <section style="font-family: Georgia, serif; font-size: 64px; color: #cbd5e1; position: absolute; top: -12px; left: 14px; line-height: 1; opacity: 0.6;">“</section>
+  <p style="position: relative; z-index: 1; margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', serif; font-size: 15.5px; font-weight: 600; line-height: 1.75; color: #1e293b; font-style: italic;">
     ${content}
   </p>
 </section>`
@@ -1936,9 +1982,11 @@ export const dividerTemplates = [
     tag: '虚线剪刀',
     styleCategory: 'minimal',
     previewHtml: `<div style="display: flex; align-items: center; gap: 6px; color: #94a3b8; font-size: 12px;">✂️ ------------------</div>`,
-    render: () => `<section style="margin: 28px 0; display: flex; align-items: center; gap: 8px; color: #94a3b8; clear: both;" data-material="true">
-  <span style="font-size: 16px; transform: rotate(-90deg);">✂️</span>
-  <div style="flex: 1; border-top: 1.5px dashed #cbd5e1; height: 0;"></div>
+    render: () => `<section style="margin: 26px auto; width: 100%; display: table; box-sizing: border-box; clear: both;" data-material="true">
+  <section style="display: table-row;">
+    <section style="display: table-cell; vertical-align: middle; width: 24px; padding-right: 8px; font-size: 16px; line-height: 1;">✂️</section>
+    <section style="display: table-cell; vertical-align: middle; border-top: 1.5px dashed #cbd5e1; height: 0; width: 100%;"></section>
+  </section>
 </section>`
   },
   {
@@ -2432,16 +2480,26 @@ export function getBackgroundPatternStyle(textureId) {
   };
 }
 
+export const headingTemplatesMap = headingTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {});
+export const quoteTemplatesMap = quoteTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {});
+export const calloutTemplatesMap = calloutTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {});
+export const dividerTemplatesMap = dividerTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {});
+export const listTemplatesMap = listTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {});
+export const tableTemplatesMap = tableTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {});
+export const headerWidgetTemplatesMap = headerWidgetTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {});
+export const footerWidgetTemplatesMap = footerWidgetTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {});
+export const backgroundTemplatesMap = backgroundTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {});
+
 export const allMaterialTemplatesMap = {
-  ...headingTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {}),
-  ...quoteTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {}),
-  ...calloutTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {}),
-  ...dividerTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {}),
-  ...listTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {}),
-  ...tableTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {}),
-  ...headerWidgetTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {}),
-  ...footerWidgetTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {}),
-  ...backgroundTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {})
+  ...headingTemplatesMap,
+  ...quoteTemplatesMap,
+  ...calloutTemplatesMap,
+  ...dividerTemplatesMap,
+  ...listTemplatesMap,
+  ...tableTemplatesMap,
+  ...headerWidgetTemplatesMap,
+  ...footerWidgetTemplatesMap,
+  ...backgroundTemplatesMap
 };
 
 export function getMaterialTemplatesForKey(key) {

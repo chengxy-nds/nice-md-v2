@@ -35,6 +35,7 @@ import { isStorageEnabled, uploadToOSS } from '../utils/fileStorage';
 import { defaultMarkdown } from '../utils/defaultMarkdown';
 import {
   EditorView,
+  lineNumbers as cmLineNumbers,
   highlightActiveLineGutter,
   highlightSpecialChars,
   drawSelection,
@@ -42,9 +43,7 @@ import {
   rectangularSelection,
   crosshairCursor,
   highlightActiveLine,
-  keymap,
-  gutter,
-  GutterMarker
+  keymap
 } from '@codemirror/view';
 import { EditorState } from '@codemirror/state';
 import {
@@ -419,9 +418,38 @@ function prefixLinesOL(ta) {
 }
 
 // Position the floating bar above (or below) the line containing `pos`.
-function positionFloatBar(pos) {
+function positionFloatBar(pos, clientEvent = null) {
+  if (cmView) {
+    const coords = cmView.coordsAtPos(pos);
+    if (coords) {
+      floatBarAbove.value = coords.top > 120;
+      floatBarPos.value = {
+        top: floatBarAbove.value ? coords.top : coords.bottom,
+        left: Math.max(20, Math.min(window.innerWidth - 380, coords.left))
+      };
+      return;
+    }
+    if (clientEvent && clientEvent.clientY !== undefined) {
+      floatBarAbove.value = clientEvent.clientY > 120;
+      floatBarPos.value = {
+        top: floatBarAbove.value ? clientEvent.clientY : clientEvent.clientY,
+        left: Math.max(20, Math.min(window.innerWidth - 380, clientEvent.clientX))
+      };
+      return;
+    }
+  }
+
   const ta = textareaRef.value;
-  if (!ta) return;
+  if (!ta) {
+    if (clientEvent && clientEvent.clientY !== undefined) {
+      floatBarAbove.value = clientEvent.clientY > 120;
+      floatBarPos.value = {
+        top: floatBarAbove.value ? clientEvent.clientY : clientEvent.clientY,
+        left: Math.max(20, Math.min(window.innerWidth - 380, clientEvent.clientX))
+      };
+    }
+    return;
+  }
   const rect = ta.getBoundingClientRect();
   const taStyle = getComputedStyle(ta);
   const lineH = parseFloat(taStyle.lineHeight) || 24;
@@ -434,34 +462,55 @@ function positionFloatBar(pos) {
   floatBarAbove.value = lineTop > 120;
   floatBarPos.value = {
     top: floatBarAbove.value ? lineTop : lineBottom,
-    left: rect.left + 20
+    left: Math.max(20, Math.min(window.innerWidth - 380, rect.left + 20))
   };
 }
 
 // Show floating bar on text selection
-function onTextSelect() {
+function onTextSelect(e = null) {
+  if (cmView) {
+    const sel = cmView.state.selection.main;
+    if (sel.empty) {
+      showFloatBar.value = false;
+      return;
+    }
+    positionFloatBar(sel.from, e);
+    showFloatBar.value = true;
+    return;
+  }
+
   const ta = textareaRef.value;
   if (!ta) return;
-  const s = ta.selectionStart, e = ta.selectionEnd;
-  if (s === e) { showFloatBar.value = false; return; }
-  positionFloatBar(s);
+  const s = ta.selectionStart, endIdx = ta.selectionEnd;
+  if (s === endIdx) { showFloatBar.value = false; return; }
+  positionFloatBar(s, e);
   showFloatBar.value = true;
 }
 
 // Right-click: suppress the browser context menu and show our toolbar.
-// If there's a selection, keep it (the toolbar formats it); otherwise the
-// caret is already at the mouse position, so just show the toolbar there.
-function onContextMenu() {
-  const ta = textareaRef.value;
-  if (!ta) return;
-  const s = ta.selectionStart, e = ta.selectionEnd;
-  if (s === e) {
-    // No selection — caret sits at the mouse position; show toolbar for insertion.
-    positionFloatBar(s);
+function onContextMenu(e = null) {
+  if (e && e.preventDefault) {
+    e.preventDefault();
+  }
+  if (cmView) {
+    const sel = cmView.state.selection.main;
+    const pos = sel.from;
+    positionFloatBar(pos, e);
     showFloatBar.value = true;
     return;
   }
-  onTextSelect();
+
+  const ta = textareaRef.value;
+  if (!ta) {
+    if (e && e.clientY !== undefined) {
+      positionFloatBar(0, e);
+      showFloatBar.value = true;
+    }
+    return;
+  }
+  const s = ta.selectionStart;
+  positionFloatBar(s, e);
+  showFloatBar.value = true;
 }
 
 // ── undo / redo ──
@@ -1048,61 +1097,6 @@ const insertSample = () => {
 // ── CodeMirror 6 Markdown Syntax Highlighting ──
 const isSyntaxHighlightActive = ref(true);
 const cmContainerRef = ref(null);
-// ── CodeMirror 6 Visual Line Numbers (每一行折行文案独立行号) ──
-class VisualLineMarker extends GutterMarker {
-  constructor(numbers) {
-    super();
-    this.numbers = numbers;
-  }
-  eq(other) {
-    if (!other || !other.numbers || this.numbers.length !== other.numbers.length) return false;
-    return this.numbers.every((n, i) => n === other.numbers[i]);
-  }
-  toDOM() {
-    const parent = document.createElement('div');
-    parent.className = 'cm-visual-line-numbers';
-    for (const num of this.numbers) {
-      const child = document.createElement('div');
-      child.className = 'cm-visual-line-number';
-      child.textContent = String(num);
-      parent.appendChild(child);
-    }
-    return parent;
-  }
-}
-
-const visualLineNumbersGutter = gutter({
-  class: 'cm-lineNumbers',
-  lineMarker(view, line) {
-    const doc = view.state.doc;
-    const lineObj = doc.lineAt(line.from);
-    const currentLineNum = lineObj.number;
-    const singleLineHeight = view.defaultLineHeight || 24;
-    const count = Math.max(1, Math.round(line.height / singleLineHeight));
-
-    // 计算当前逻辑行之前的视觉行总数
-    let startVisualLine = 1;
-    for (let i = 1; i < currentLineNum; i++) {
-      const prevLine = doc.line(i);
-      const prevBlock = view.lineBlockAt(prevLine.from);
-      const prevCount = Math.max(1, Math.round(prevBlock.height / singleLineHeight));
-      startVisualLine += prevCount;
-    }
-
-    const numbers = [];
-    for (let j = 0; j < count; j++) {
-      numbers.push(startVisualLine + j);
-    }
-    return new VisualLineMarker(numbers);
-  },
-  initialSpacer() {
-    return new VisualLineMarker([1]);
-  },
-  updateSpacer(spacer) {
-    return spacer;
-  }
-});
-
 let cmView = null;
 let isUpdatingFromCodeMirror = false;
 
@@ -1243,7 +1237,7 @@ function initCodeMirror() {
   cmView = new EditorView({
     doc: editorText.value || '',
     extensions: [
-      visualLineNumbersGutter,
+      cmLineNumbers(),
       highlightActiveLineGutter(),
       highlightSpecialChars(),
       history(),
@@ -1267,9 +1261,24 @@ function initCodeMirror() {
           emit('focusActive', 'editor');
           emit('editor-click');
         },
-        click: () => {
+        click: (e) => {
           emit('focusActive', 'editor');
           emit('editor-click');
+          if (cmView && cmView.state.selection.main.empty) {
+            showFloatBar.value = false;
+          }
+        },
+        mouseup: (e) => {
+          setTimeout(() => {
+            onTextSelect(e);
+          }, 10);
+        },
+        keyup: (e) => {
+          onTextSelect(e);
+        },
+        contextmenu: (e) => {
+          onContextMenu(e);
+          return true;
         },
         paste: (e) => {
           handleEditorPaste(e);
@@ -1316,19 +1325,21 @@ watch(isSyntaxHighlightActive, (active) => {
   }
 });
 
-watch(editorText, (newVal) => {
-  if (cmView && !isUpdatingFromCodeMirror) {
-    const currentDoc = cmView.state.doc.toString();
-    if (currentDoc !== newVal) {
-      cmView.dispatch({
-        changes: { from: 0, to: currentDoc.length, insert: newVal || '' }
-      });
-    }
+
+
+function handleGlobalPointerDown(e) {
+  if (!showFloatBar.value) return;
+  const target = e.target;
+  if (target && (target.closest('.float-format-bar') || target.closest('.table-picker'))) {
+    return;
   }
-});
+  showFloatBar.value = false;
+  showTablePicker.value = false;
+}
 
 onMounted(() => {
   window.addEventListener('nicemd-settings-updated', loadPreferences);
+  document.addEventListener('pointerdown', handleGlobalPointerDown);
   if (!editorText.value) {
     insertSample();
   }
@@ -1341,6 +1352,7 @@ onMounted(() => {
 
 onUnmounted(() => {
   window.removeEventListener('nicemd-settings-updated', loadPreferences);
+  document.removeEventListener('pointerdown', handleGlobalPointerDown);
   if (cmView) {
     cmView.destroy();
     cmView = null;
@@ -1394,33 +1406,31 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
       </div>
 
       <!-- Floating format bar on text selection -->
-      <Teleport to="body">
-        <div
-          v-if="showFloatBar"
-          class="float-format-bar"
-          :class="{ 'is-below': !floatBarAbove }"
-          :style="{ top: floatBarPos.top + 'px', left: floatBarPos.left + 'px' }"
-          @mousedown.prevent
-        >
-          <button @click="insertFormat('bold'); showFloatBar = false" title="粗体"><Bold size="14" /></button>
-          <button @click="insertFormat('italic'); showFloatBar = false" title="斜体"><Italic size="14" /></button>
-          <button @click="insertFormat('strike'); showFloatBar = false" title="删除线"><Strikethrough size="14" /></button>
-          <button @click="insertFormat('code'); showFloatBar = false" title="行内代码"><Code size="14" /></button>
-          <button @click="insertFormat('link'); showFloatBar = false" title="链接"><Link size="14" /></button>
-          <span class="float-sep"></span>
-          <button @click="insertFormat('h1'); showFloatBar = false" title="H1">H1</button>
-          <button @click="insertFormat('h2'); showFloatBar = false" title="H2">H2</button>
-          <button @click="insertFormat('h3'); showFloatBar = false" title="H3">H3</button>
-          <button @click="insertFormat('quote'); showFloatBar = false" title="引用">❝</button>
-          <button @click="insertFormat('ul'); showFloatBar = false" title="无序列表">•≡</button>
-          <button @click="insertFormat('ol'); showFloatBar = false" title="有序列表">1.</button>
-          <button @click="insertFormat('tasklist'); showFloatBar = false" title="任务清单">☑</button>
-          <span class="float-sep"></span>
-          <button @click="insertFormat('codeblock'); showFloatBar = false" title="代码块">{ }</button>
-          <button ref="tablePickerTriggerRef" @click="toggleTablePicker" title="表格">⊞</button>
-          <button @click="insertFormat('hr'); showFloatBar = false" title="分隔线">—</button>
-        </div>
-      </Teleport>
+      <div
+        v-if="showFloatBar"
+        class="float-format-bar"
+        :class="{ 'is-below': !floatBarAbove }"
+        :style="{ top: floatBarPos.top + 'px', left: floatBarPos.left + 'px' }"
+        @mousedown.prevent
+      >
+        <button @click="insertFormat('bold'); showFloatBar = false" title="粗体"><Bold size="14" /></button>
+        <button @click="insertFormat('italic'); showFloatBar = false" title="斜体"><Italic size="14" /></button>
+        <button @click="insertFormat('strike'); showFloatBar = false" title="删除线"><Strikethrough size="14" /></button>
+        <button @click="insertFormat('code'); showFloatBar = false" title="行内代码"><Code size="14" /></button>
+        <button @click="insertFormat('link'); showFloatBar = false" title="链接"><Link size="14" /></button>
+        <span class="float-sep"></span>
+        <button @click="insertFormat('h1'); showFloatBar = false" title="H1">H1</button>
+        <button @click="insertFormat('h2'); showFloatBar = false" title="H2">H2</button>
+        <button @click="insertFormat('h3'); showFloatBar = false" title="H3">H3</button>
+        <button @click="insertFormat('quote'); showFloatBar = false" title="引用">❝</button>
+        <button @click="insertFormat('ul'); showFloatBar = false" title="无序列表">•≡</button>
+        <button @click="insertFormat('ol'); showFloatBar = false" title="有序列表">1.</button>
+        <button @click="insertFormat('tasklist'); showFloatBar = false" title="任务清单">☑</button>
+        <span class="float-sep"></span>
+        <button @click="insertFormat('codeblock'); showFloatBar = false" title="代码块">{ }</button>
+        <button ref="tablePickerTriggerRef" @click="toggleTablePicker" title="表格">⊞</button>
+        <button @click="insertFormat('hr'); showFloatBar = false" title="分隔线">—</button>
+      </div>
 
       <!-- Table size picker (fixed-positioned so it's not clipped by the bar's overflow) -->
       <div

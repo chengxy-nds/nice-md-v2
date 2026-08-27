@@ -17,7 +17,19 @@ const wechatTheme = {
 import { codeThemes } from './codeThemes';
 import { themes } from './themePresets';
 import { buildWechatTypo } from './themeTypography';
-import { allMaterialTemplatesMap, getBackgroundPatternStyle } from './materialLibrary';
+import {
+  allMaterialTemplatesMap,
+  headingTemplatesMap,
+  quoteTemplatesMap,
+  calloutTemplatesMap,
+  dividerTemplatesMap,
+  listTemplatesMap,
+  tableTemplatesMap,
+  headerWidgetTemplatesMap,
+  footerWidgetTemplatesMap,
+  backgroundTemplatesMap,
+  getBackgroundPatternStyle
+} from './materialLibrary';
 
 function isMaterialEl(el) {
   if (!el || el.nodeType !== 1) return false;
@@ -130,8 +142,8 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
   ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].forEach(tag => {
     const matId = customStyles?.[tag]?.materialTemplateId || themeStyles?.[tag]?.materialTemplateId;
     const prefix = customStyles?.[tag]?.materialPrefix || (tag === 'h1' ? 'PART' : 'SECTION');
-    if (matId && matId !== 'none' && allMaterialTemplatesMap[matId]) {
-      const tmpl = allMaterialTemplatesMap[matId];
+    if (matId && matId !== 'none' && headingTemplatesMap[matId]) {
+      const tmpl = headingTemplatesMap[matId];
       let index = 0;
       root.querySelectorAll(tag).forEach(el => {
         if (isMaterialEl(el)) return;
@@ -154,8 +166,8 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
 
   // Blockquotes (引用/引入) Material Replacement
   const bqMatId = customStyles?.blockquote?.materialTemplateId || themeStyles?.blockquote?.materialTemplateId;
-  if (bqMatId && bqMatId !== 'none' && allMaterialTemplatesMap[bqMatId]) {
-    const tmpl = allMaterialTemplatesMap[bqMatId];
+  if (bqMatId && bqMatId !== 'none' && quoteTemplatesMap[bqMatId]) {
+    const tmpl = quoteTemplatesMap[bqMatId];
     root.querySelectorAll('blockquote').forEach(el => {
       if (isMaterialEl(el)) return;
       let contentHtml = el.innerHTML.trim();
@@ -179,8 +191,8 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
 
   // Dividers (分割线) Material Replacement
   const hrMatId = customStyles?.hr?.materialTemplateId || themeStyles?.hr?.materialTemplateId;
-  if (hrMatId && hrMatId !== 'none' && allMaterialTemplatesMap[hrMatId]) {
-    const tmpl = allMaterialTemplatesMap[hrMatId];
+  if (hrMatId && hrMatId !== 'none' && dividerTemplatesMap[hrMatId]) {
+    const tmpl = dividerTemplatesMap[hrMatId];
     root.querySelectorAll('hr').forEach(el => {
       if (isMaterialEl(el)) return;
       const renderedHtml = tmpl.render ? tmpl.render() : null;
@@ -198,8 +210,8 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
 
   // Lists (列表 ul/ol/li) Material Replacement
   const listMatId = customStyles?.li?.materialTemplateId || customStyles?.ul?.materialTemplateId || customStyles?.ol?.materialTemplateId || themeStyles?.li?.materialTemplateId;
-  if (listMatId && listMatId !== 'none' && allMaterialTemplatesMap[listMatId]) {
-    const tmpl = allMaterialTemplatesMap[listMatId];
+  if (listMatId && listMatId !== 'none' && listTemplatesMap[listMatId]) {
+    const tmpl = listTemplatesMap[listMatId];
     let liIndex = 0;
     root.querySelectorAll('li').forEach(el => {
       if (isMaterialEl(el)) return;
@@ -1143,8 +1155,8 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
 
   // Insert Global Header and Footer Widgets if configured in customStyles or themeStyles
   const headerWidgetId = customStyles?.globalWidgets?.headerWidgetId || themeStyles?.globalWidgets?.headerWidgetId;
-  if (headerWidgetId && headerWidgetId !== 'none' && allMaterialTemplatesMap[headerWidgetId]) {
-    const tmpl = allMaterialTemplatesMap[headerWidgetId];
+  if (headerWidgetId && headerWidgetId !== 'none' && headerWidgetTemplatesMap[headerWidgetId]) {
+    const tmpl = headerWidgetTemplatesMap[headerWidgetId];
     const headerHtml = tmpl.render ? tmpl.render({
       summary: customStyles?.globalWidgets?.headerSummary,
       readTime: customStyles?.globalWidgets?.headerReadTime,
@@ -1161,8 +1173,8 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
   }
 
   const footerWidgetId = customStyles?.globalWidgets?.footerWidgetId || themeStyles?.globalWidgets?.footerWidgetId;
-  if (footerWidgetId && footerWidgetId !== 'none' && allMaterialTemplatesMap[footerWidgetId]) {
-    const tmpl = allMaterialTemplatesMap[footerWidgetId];
+  if (footerWidgetId && footerWidgetId !== 'none' && footerWidgetTemplatesMap[footerWidgetId]) {
+    const tmpl = footerWidgetTemplatesMap[footerWidgetId];
     const footerHtml = tmpl.render ? tmpl.render({
       author: customStyles?.globalWidgets?.footerAuthor,
       desc: customStyles?.globalWidgets?.footerDesc,

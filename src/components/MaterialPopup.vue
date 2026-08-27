@@ -23,6 +23,10 @@ const props = defineProps({
   currentPrefix: {
     type: String,
     default: ''
+  },
+  position: {
+    type: Object,
+    default: () => ({ x: 0, y: 0 })
   }
 });
 
