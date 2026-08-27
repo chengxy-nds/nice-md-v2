@@ -83,13 +83,14 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
   });
 
   // 1. Global Container Styling with selected background pattern & body color
+  const bodyPadding = customStyles?.body?.padding || '5px';
   root.setAttribute('style', cleanCss(`
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     font-size: 16px;
     line-height: 1.5;
     color: ${colors.text};
     letter-spacing: 0.05em;
-    padding: 10px 0px;
+    padding: ${bodyPadding};
     background-image: ${pattern.backgroundImage};
     background-size: ${pattern.backgroundSize};
     ${pattern.backgroundPosition ? `background-position: ${pattern.backgroundPosition};` : ''}

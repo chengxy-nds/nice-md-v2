@@ -479,6 +479,7 @@ function generateCssFromStyles(styles) {
     css += addRule('#easymd', {
       color: cleanColor(S.body.color, '#2b2b2b'),
       backgroundColor: S.body.backgroundColor,
+      padding: S.body.padding || '5px',
       fontSize: S.body.fontSize,
       lineHeight: S.body.lineHeight,
       letterSpacing: S.body.letterSpacing,
@@ -720,6 +721,8 @@ function handleCssTextChange(val) {
     if (color) localStyles.value.body.color = color;
     const bg = getPropFromBlock(bodyBlock, 'background-color') || getPropFromBlock(bodyBlock, 'background');
     if (bg) localStyles.value.body.backgroundColor = bg;
+    const pad = getPropFromBlock(bodyBlock, 'padding');
+    if (pad) localStyles.value.body.padding = pad;
     const matId = getMetaFromBlock(bodyBlock, 'material');
     if (matId) {
       localStyles.value.body.backgroundTexture = matId;
@@ -1276,6 +1279,34 @@ const cssLineCount = computed(() => {
                 <option value="'Songti SC', 'SimSun', STSong, serif">典雅宋体 (Songti)</option>
                 <option value="'Kaiti SC', 'KaiTi', STKaiti, serif">温润楷体 (KaiTi)</option>
               </select>
+            </div>
+
+            <div class="body-setting-card">
+              <span class="body-setting-title">文章内边距</span>
+              <select
+                :value="['0px', '5px', '8px', '10px', '12px', '16px', '20px', '24px'].includes(getStyle('body').padding || '5px') ? (getStyle('body').padding || '5px') : 'custom'"
+                @change="(e) => { if (e.target.value !== 'custom') updateStyle('body', 'padding', e.target.value); }"
+                class="style-select full-width"
+              >
+                <option value="0px">0px (贴边紧凑)</option>
+                <option value="5px">5px (默认推荐)</option>
+                <option value="8px">8px (微展边距)</option>
+                <option value="10px">10px (适中标准)</option>
+                <option value="12px">12px (舒适留白)</option>
+                <option value="16px">16px (宽松透气)</option>
+                <option value="20px">20px (开阔空间)</option>
+                <option value="24px">24px (大刊留白)</option>
+                <option value="custom">自定义输入...</option>
+              </select>
+              <input
+                v-if="!['0px', '5px', '8px', '10px', '12px', '16px', '20px', '24px'].includes(getStyle('body').padding || '5px')"
+                type="text"
+                :value="getStyle('body').padding || '5px'"
+                @input="updateStyle('body', 'padding', $event.target.value)"
+                placeholder="如 5px / 10px 15px"
+                class="value-input full-width"
+                style="margin-top: 6px;"
+              />
             </div>
           </div>
         </div>

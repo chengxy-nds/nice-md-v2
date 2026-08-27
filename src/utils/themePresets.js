@@ -332,7 +332,7 @@ export function getThemeDefaultStyles(themeId = 'classic-indigo') {
   const borderColor = styles['--border-color'] || '#eaeef2';
 
   return {
-    body: { color: textMain, backgroundColor: bgPreview },
+    body: { color: textMain, backgroundColor: bgPreview, padding: '5px' },
     h1: {
       fontSize: parseFontSize(typo.h1?.size, '24px'),
       color: typo.h1?.color && typo.h1.color !== '#ffffff' ? typo.h1.color : primary,

@@ -175,6 +175,7 @@ const customStyleVars = computed(() => {
     if (!s.li?.color) vars['--ct-li-color'] = s.body.color;
   }
   if (s.body?.backgroundColor) vars['--ct-body-bg'] = s.body.backgroundColor;
+  if (s.body?.padding) vars['--ct-body-padding'] = s.body.padding;
   if (s.body?.fontSize) vars['--ct-body-size'] = s.body.fontSize;
   if (s.body?.lineHeight) vars['--ct-body-lineheight'] = s.body.lineHeight;
   if (s.body?.letterSpacing) vars['--ct-body-spacing'] = s.body.letterSpacing;
@@ -250,7 +251,7 @@ const injectedCustomCss = computed(() => {
     const mapped = rawSelectors.map(s => {
       const tag = s.trim();
       if (!tag || tag === 'body' || tag === '#easymd' || tag === '#nice' || tag === '.markdown-body' || tag === ':scope') {
-        return `.preview-body${NOT_MAT}, .wechat-body${NOT_MAT}, .tc-rendered-paper${NOT_MAT}`;
+        return `.preview-body${NOT_MAT}, .wechat-body${NOT_MAT}, .wechat-body > section:first-child${NOT_MAT}, .tc-rendered-paper${NOT_MAT}`;
       }
       if (tag.startsWith('.')) {
         return `.preview-body ${tag}${NOT_MAT}, .wechat-body ${tag}${NOT_MAT}, .tc-rendered-paper ${tag}${NOT_MAT}`;
