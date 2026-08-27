@@ -817,7 +817,7 @@ export const materials = [
     title: "国风朱砂·双印章雅宋标题",
     description: "朱砂方印章章次 + 雅致宋体字标 + 渐变金石横线与祥云暗纹",
     tags: ["国风", "水墨", "印章", "宋体", "文学"],
-    html: "<section style=\"margin: 28px 0 18px; clear: both; text-align: left;\" data-material=\"true\">\n  <section style=\"display: inline-flex; align-items: center; gap: 10px; border-bottom: 2px solid #b91c1c; padding-bottom: 6px; position: relative;\">\n    <section style=\"background: #b91c1c; color: #ffffff; font-family: 'Songti SC', 'SimSun', serif; font-size: 13px; font-weight: 700; padding: 3px 8px; border-radius: 2px; box-shadow: 2px 2px 0px rgba(185, 28, 28, 0.25); letter-spacing: 2px;\">\n      壹·章\n    </section>\n    <span style=\"font-family: 'Songti SC', 'Source Han Serif SC', serif; font-size: 19px; font-weight: 800; color: #1c1917; letter-spacing: 2px;\">\n      水墨流转·文气自华\n    </span>\n    <span style=\"color: #b91c1c; font-size: 16px; margin-left: 2px;\">❖</span>\n  </section>\n</section>"
+    html: "<section style=\"margin: 28px 0 18px; clear: both; text-align: left;\" data-material=\"true\">\n  <section style=\"display: inline-table; vertical-align: middle; border-bottom: 2px solid #b91c1c; padding-bottom: 6px;\">\n    <section style=\"display: table-row;\">\n      <section style=\"display: table-cell; vertical-align: middle;\">\n        <section style=\"background: #b91c1c; color: #ffffff; font-family: 'Songti SC', 'SimSun', serif; font-size: 13px; font-weight: 700; padding: 3px 8px; border-radius: 2px; box-shadow: 2px 2px 0px rgba(185, 28, 28, 0.25); letter-spacing: 2px; display: inline-block;\">\n          壹·章\n        </section>\n      </section>\n      <section style=\"display: table-cell; vertical-align: middle; padding-left: 10px;\">\n        <span style=\"font-family: 'Songti SC', 'Source Han Serif SC', serif; font-size: 19px; font-weight: 800; color: #1c1917; letter-spacing: 2px;\">\n          水墨流转·文气自华\n        </span>\n      </section>\n      <section style=\"display: table-cell; vertical-align: middle; padding-left: 6px;\">\n        <span style=\"color: #b91c1c; font-size: 16px;\">❖</span>\n      </section>\n    </section>\n  </section>\n</section>"
   },
   {
     id: "h-cyber-terminal",
@@ -837,7 +837,7 @@ export const materials = [
     title: "大刊社论·半透罗马序号大标题",
     description: "底置超大浅灰罗马序号 + 精致无衬线加粗主标 + 极简纯黑下划线",
     tags: ["杂志", "社论", "罗马数字", "大刊", "极简"],
-    html: "<section style=\"margin: 30px 0 20px; clear: both; text-align: left;\" data-material=\"true\">\n  <section style=\"display: inline-block; position: relative;\">\n    <section style=\"font-family: 'Times New Roman', Georgia, serif; font-size: 44px; font-weight: 900; color: #e5e7eb; line-height: 1; margin-bottom: -18px; letter-spacing: 1px;\">\n      01.\n    </section>\n    <section style=\"display: inline-block; border-bottom: 2.5px solid #0a0a0a; padding-bottom: 5px;\">\n      <span style=\"font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 19px; font-weight: 800; color: #0a0a0a; letter-spacing: 0.2px; line-height: 1.4; display: inline-block;\">\n        范式转移与核心增长飞轮\n      </span>\n    </section>\n  </section>\n</section>"
+    html: "<section style=\"margin: 32px 0 20px; clear: both; text-align: left;\" data-material=\"true\">\n  <section style=\"line-height: 0.7; margin-bottom: -18px;\">\n    <span style=\"font-family: 'Times New Roman', Georgia, serif; font-size: 46px; font-weight: 900; color: #e5e7eb; letter-spacing: 1px; line-height: 0.7; display: inline-block;\">\n      01.\n    </span>\n  </section>\n  <section style=\"margin: 0; padding: 0; line-height: 1.4;\">\n    <span style=\"display: inline-block; border-bottom: 2.5px solid #0a0a0a; padding-bottom: 5px; line-height: 1.4;\">\n      <span style=\"font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 19px; font-weight: 800; color: #0a0a0a; letter-spacing: 0.2px; line-height: 1.4; display: inline-block;\">\n        范式转移与核心增长飞轮\n      </span>\n    </span>\n  </section>\n</section>"
   },
   {
     id: "h-handdrawn-pin",
@@ -1600,14 +1600,22 @@ export const headingTemplates = [
       const numMap = ['零', '壹', '贰', '叁', '肆', '伍', '陆', '柒', '捌', '玖', '拾'];
       const numLabel = numMap[index] || String(index);
       return `<section style="margin: 28px 0 18px; clear: both; text-align: left;" data-material="true">
-  <section style="display: inline-flex; align-items: center; gap: 10px; border-bottom: 2px solid #b91c1c; padding-bottom: 6px; position: relative;">
-    <section style="background: #b91c1c; color: #ffffff; font-family: 'Songti SC', 'SimSun', serif; font-size: 13px; font-weight: 700; padding: 3px 8px; border-radius: 2px; box-shadow: 2px 2px 0px rgba(185, 28, 28, 0.25); letter-spacing: 2px;">
-      ${numLabel}·章
+  <section style="display: inline-table; vertical-align: middle; border-bottom: 2px solid #b91c1c; padding-bottom: 6px;">
+    <section style="display: table-row;">
+      <section style="display: table-cell; vertical-align: middle;">
+        <section style="background: #b91c1c; color: #ffffff; font-family: 'Songti SC', 'SimSun', serif; font-size: 13px; font-weight: 700; padding: 3px 8px; border-radius: 2px; box-shadow: 2px 2px 0px rgba(185, 28, 28, 0.25); letter-spacing: 2px; display: inline-block;">
+          ${numLabel}·章
+        </section>
+      </section>
+      <section style="display: table-cell; vertical-align: middle; padding-left: 10px;">
+        <span style="font-family: 'Songti SC', 'Source Han Serif SC', serif; font-size: 19px; font-weight: 800; color: #1c1917; letter-spacing: 2px;">
+          ${title}
+        </span>
+      </section>
+      <section style="display: table-cell; vertical-align: middle; padding-left: 6px;">
+        <span style="color: #b91c1c; font-size: 16px;">❖</span>
+      </section>
     </section>
-    <span style="font-family: 'Songti SC', 'Source Han Serif SC', serif; font-size: 19px; font-weight: 800; color: #1c1917; letter-spacing: 2px;">
-      ${title}
-    </span>
-    <span style="color: #b91c1c; font-size: 16px; margin-left: 2px;">❖</span>
   </section>
 </section>`;
     }
@@ -1643,16 +1651,18 @@ export const headingTemplates = [
     previewHtml: `<div style="position:relative;padding:4px 0;"><div style="font-size:24px;font-weight:900;color:rgba(0,0,0,0.08);line-height:1;margin-bottom:-10px;font-family:serif;">01.</div><div style="border-bottom:2px solid #0a0a0a;display:inline-block;padding-bottom:2px;font-size:13px;font-weight:800;color:#0a0a0a;">范式转移与核心增长飞轮</div></div>`,
     render: (title, index) => {
       const indexPadded = String(index).padStart(2, '0');
-      return `<section style="margin: 30px 0 20px; clear: both; text-align: left;" data-material="true">
-  <section style="display: inline-block; position: relative;">
-    <section style="font-family: 'Times New Roman', Georgia, serif; font-size: 44px; font-weight: 900; color: #e5e7eb; line-height: 1; margin-bottom: -18px; letter-spacing: 1px;">
+      return `<section style="margin: 32px 0 20px; clear: both; text-align: left;" data-material="true">
+  <section style="line-height: 0.7; margin-bottom: -18px;">
+    <span style="font-family: 'Times New Roman', Georgia, serif; font-size: 46px; font-weight: 900; color: #e5e7eb; letter-spacing: 1px; line-height: 0.7; display: inline-block;">
       ${indexPadded}.
-    </section>
-    <section style="display: inline-block; border-bottom: 2.5px solid #0a0a0a; padding-bottom: 5px;">
+    </span>
+  </section>
+  <section style="margin: 0; padding: 0; line-height: 1.4;">
+    <span style="display: inline-block; border-bottom: 2.5px solid #0a0a0a; padding-bottom: 5px; line-height: 1.4;">
       <span style="font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 19px; font-weight: 800; color: #0a0a0a; letter-spacing: 0.2px; line-height: 1.4; display: inline-block;">
         ${title}
       </span>
-    </section>
+    </span>
   </section>
 </section>`;
     }
