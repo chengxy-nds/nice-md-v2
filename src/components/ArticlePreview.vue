@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, onMounted, nextTick } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { marked } from 'marked';
 import renderMathInElement from 'katex/dist/contrib/auto-render.js';
 import 'katex/dist/katex.min.css';
@@ -467,10 +467,61 @@ watch(() => props.scrollPercentage, (percentage) => {
   }
 });
 
+let activeTargetTimer = null;
+
 function clearActivePreviewTarget() {
+  if (activeTargetTimer) {
+    clearTimeout(activeTargetTimer);
+    activeTargetTimer = null;
+  }
   const activeEls = document.querySelectorAll('.preview-active-target');
   activeEls.forEach(el => el.classList.remove('preview-active-target'));
 }
+
+function setActivePreviewTarget(el) {
+  clearActivePreviewTarget();
+  if (!el) return;
+  el.classList.add('preview-active-target');
+  // Auto clear focus outline after 2.5s so it never stays stuck
+  activeTargetTimer = setTimeout(() => {
+    clearActivePreviewTarget();
+  }, 2500);
+}
+
+function handleGlobalKeydown(e) {
+  if (e.key === 'Escape') {
+    materialPopupVisible.value = false;
+    clearActivePreviewTarget();
+  }
+}
+
+function handleGlobalClick(e) {
+  if (!e.target || !e.target.closest) return;
+  // If click was outside preview container, popup and theme customizer, clear target
+  if (!e.target.closest('.preview-body') && !e.target.closest('.material-popup-container') && !e.target.closest('.theme-sidebar-wrapper') && !e.target.closest('.material-popup-mask')) {
+    clearActivePreviewTarget();
+  }
+}
+
+watch(materialPopupVisible, (val) => {
+  if (!val) {
+    clearActivePreviewTarget();
+  }
+});
+
+onMounted(() => {
+  window.addEventListener('keydown', handleGlobalKeydown);
+  document.addEventListener('click', handleGlobalClick);
+});
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleGlobalKeydown);
+  document.removeEventListener('click', handleGlobalClick);
+  if (activeTargetTimer) {
+    clearTimeout(activeTargetTimer);
+    activeTargetTimer = null;
+  }
+});
 
 function handlePreviewElementClick(e) {
   const target = e.target;
@@ -505,7 +556,7 @@ function handlePreviewElementClick(e) {
     const sel = `${tag}, ${extraSelector}`;
     const matchedEl = target.closest(sel);
     if (matchedEl) {
-      matchedEl.classList.add('preview-active-target');
+      setActivePreviewTarget(matchedEl);
       emit('element-click', section);
       return;
     }
@@ -537,7 +588,7 @@ function handlePreviewElementClick(e) {
     const sel = `${tag}, ${extraSelector}`;
     const matchedEl = target.closest(sel);
     if (matchedEl) {
-      matchedEl.classList.add('preview-active-target');
+      setActivePreviewTarget(matchedEl);
       if (hasAppliedMaterial(section)) {
         // If material has already been replaced/applied, open Theme Customizer and anchor to it
         emit('element-click', section);
@@ -559,7 +610,7 @@ function handlePreviewElementClick(e) {
   if (target.closest('font, [color], [data-tag="font"], span, div, section')) {
     const parentHeading = target.closest('[data-heading], [data-tag="h1"], [data-tag="h2"], [data-tag="h3"], [data-tag="h4"], [data-tag="h5"], [data-tag="h6"], h1, h2, h3, h4, h5, h6');
     if (parentHeading) {
-      parentHeading.classList.add('preview-active-target');
+      setActivePreviewTarget(parentHeading);
       const headingTag = parentHeading.getAttribute('data-heading') || parentHeading.getAttribute('data-tag') || parentHeading.tagName.toLowerCase();
       if (hasAppliedMaterial(headingTag)) {
         emit('element-click', headingTag);
@@ -576,7 +627,7 @@ function handlePreviewElementClick(e) {
     }
     const parentTable = target.closest('table, th, td, thead, tbody, tfoot, tr, [data-tag="table"], [data-table-material], .table-container');
     if (parentTable) {
-      parentTable.classList.add('preview-active-target');
+      setActivePreviewTarget(parentTable);
       if (hasAppliedMaterial('table')) {
         emit('element-click', 'table');
         emit('open-customizer', 'table');
@@ -592,7 +643,7 @@ function handlePreviewElementClick(e) {
     }
     const parentBlock = target.closest('li, [data-tag="li"]') ? target.closest('li, [data-tag="li"]') : (target.closest('blockquote, [data-tag="blockquote"]') ? target.closest('blockquote, [data-tag="blockquote"]') : (target.closest('p, [data-tag="p"]') ? target.closest('p, [data-tag="p"]') : null));
     if (parentBlock) {
-      parentBlock.classList.add('preview-active-target');
+      setActivePreviewTarget(parentBlock);
       const blockKey = parentBlock.getAttribute('data-tag') || parentBlock.tagName.toLowerCase();
       if (hasAppliedMaterial(blockKey)) {
         emit('element-click', blockKey);

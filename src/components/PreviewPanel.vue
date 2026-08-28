@@ -239,6 +239,12 @@ watch(isWeChatMode, (newVal) => {
   localStorage.setItem('nicemd_wechat_mode', newVal.toString());
 });
 
+watch(() => props.themePanelVisible, (visible) => {
+  if (!visible) {
+    document.querySelectorAll('.preview-active-target').forEach(el => el.classList.remove('preview-active-target'));
+  }
+});
+
 const toastList = ref([]);
 let toastCounter = 0;
 

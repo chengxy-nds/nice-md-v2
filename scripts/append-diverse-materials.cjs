@@ -47,16 +47,20 @@ const newMaterials = [
     description: '底置超大淡雅罗马序号 + 错落叠压加粗主标 + 极简纯黑下划线',
     tags: ['杂志', '社论', '罗马数字', '大刊', '极简'],
     html: `<section style="margin: 32px 0 20px; clear: both; text-align: left;" data-material="true">
-  <section style="display: inline-block; max-width: 100%; text-align: left;">
-    <section style="margin: 0 0 -14px 0; padding: 0; line-height: 1; text-align: left;">
-      <span style="font-family: 'Times New Roman', Georgia, 'Songti SC', serif; font-size: 40px; font-weight: 900; color: #cbd5e1; letter-spacing: 1px; line-height: 1; display: inline-block;">
-        01.
-      </span>
+  <section style="display: inline-table; vertical-align: top; text-align: left; max-width: 100%; box-sizing: border-box;">
+    <section style="display: table-row;">
+      <section style="display: table-cell; vertical-align: bottom; text-align: left; padding: 0; line-height: 1;">
+        <span style="font-family: 'Times New Roman', Georgia, 'Songti SC', serif; font-size: 38px; font-weight: 900; color: #cbd5e1; letter-spacing: 1px; line-height: 1; display: inline-block; margin-bottom: -10px;">
+          01.
+        </span>
+      </section>
     </section>
-    <section style="margin: 0; padding: 0 0 5px 0; border-bottom: 2.5px solid #0a0a0a; display: inline-block; line-height: 1.4; text-align: left; position: relative; z-index: 2;">
-      <span style="font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 18.5px; font-weight: 800; color: #0a0a0a; letter-spacing: 0.2px; line-height: 1.4; display: inline-block;">
-        范式转移与核心增长飞轮
-      </span>
+    <section style="display: table-row;">
+      <section style="display: table-cell; vertical-align: top; text-align: left; border-bottom: 2.5px solid #0a0a0a; padding: 0 0 4px 0; line-height: 1.4; position: relative; z-index: 2;">
+        <span style="font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 18.5px; font-weight: 800; color: #0a0a0a; letter-spacing: 0.2px; line-height: 1.4; display: inline-block;">
+          范式转移与核心增长飞轮
+        </span>
+      </section>
     </section>
   </section>
 </section>`
