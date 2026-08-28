@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch, nextTick } from 'vue';
 import { X, Check, Search, ChevronDown, Sparkles } from 'lucide-vue-next';
 import {
   getMaterialTemplatesForKey,
@@ -31,6 +31,8 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['select', 'close', 'open-customizer', 'update-prefix']);
+
+const streamContainerRef = ref(null);
 
 const typeLabels = {
   body: '整体背景底纹',
@@ -80,6 +82,30 @@ const displayedList = computed(() => {
   }
   return list;
 });
+
+function scrollToSelected(behavior = 'instant') {
+  nextTick(() => {
+    if (!streamContainerRef.value) return;
+    const targetId = props.currentMaterialId || 'none';
+    const targetEl = streamContainerRef.value.querySelector(`[data-item-id="${targetId}"]`);
+    if (targetEl) {
+      targetEl.scrollIntoView({ block: 'center', inline: 'nearest', behavior });
+    }
+  });
+}
+
+watch(
+  () => [props.visible, props.elementKey, props.currentMaterialId],
+  ([newVisible]) => {
+    if (newVisible) {
+      scrollToSelected('instant');
+      setTimeout(() => {
+        scrollToSelected('instant');
+      }, 60);
+    }
+  },
+  { immediate: true }
+);
 
 function getRenderHtml(item) {
   if (item.id === 'none') {
@@ -193,12 +219,17 @@ function hasPrefixOption(id) {
         </div>
 
         <!-- 4. Pure Clean Material Showcase Stream (Highlighting Material Visuals) -->
-        <div class="drawer-materials-stream">
+        <div
+          ref="streamContainerRef"
+          class="drawer-materials-stream"
+          :class="{ 'is-table-stream': ['table', 'tables'].includes(props.elementKey) }"
+        >
           <div
             v-for="item in displayedList"
             :key="item.id"
             class="stream-material-row"
             :class="{ 'is-selected': (props.currentMaterialId || 'none') === item.id }"
+            :data-item-id="item.id"
             @click="handleSelect(item.id)"
           >
             <!-- Selected Badge on Top Right -->
@@ -257,7 +288,7 @@ function hasPrefixOption(id) {
   top: 0;
   right: 0;
   bottom: 0;
-  width: 27.5rem;
+  width: 32rem;
   max-width: 95vw;
   height: 100vh;
   background: #ffffff;
@@ -543,19 +574,23 @@ function hasPrefixOption(id) {
 .stream-material-row {
   position: relative;
   width: 100%;
-  min-height: 100px;
   height: auto;
+  min-height: auto;
   background: #ffffff;
-  border-bottom: 1px solid #F0F0F0;
+  border-bottom: 1px solid #EDEDED;
   border-left: 3px solid transparent;
-  padding: 1.25rem 1.25rem;
+  padding: 1.5rem 1.25rem;
   cursor: pointer;
   transition: background 0.15s ease, border-left-color 0.15s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   box-sizing: border-box;
   overflow: visible;
+}
+
+.drawer-materials-stream.is-table-stream .stream-material-row {
+  height: auto;
+  min-height: auto;
+  padding: 1.75rem 1.25rem;
 }
 
 .stream-material-row:hover {
@@ -588,13 +623,12 @@ function hasPrefixOption(id) {
 .stream-material-canvas {
   width: 100%;
   max-width: 100%;
+  height: auto;
   box-sizing: border-box;
   background: transparent;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  overflow: visible;
+  display: block;
+  overflow-x: auto;
+  overflow-y: visible;
 }
 
 /* Neutralize excessive outer margins in material previews so every item renders uniformly centered */
@@ -606,12 +640,17 @@ function hasPrefixOption(id) {
 .stream-material-canvas :deep(ul),
 .stream-material-canvas :deep(ol),
 .stream-material-canvas :deep(table) {
+  height: auto !important;
+  max-height: none !important;
   margin-top: 0 !important;
   margin-bottom: 0 !important;
+  box-sizing: border-box !important;
 }
 
 .stream-material-canvas :deep(table) {
+  width: 100% !important;
   max-width: 100% !important;
+  margin: 0 auto !important;
   box-sizing: border-box !important;
 }
 
@@ -739,6 +778,11 @@ function hasPrefixOption(id) {
 :global(html[data-color-mode="dark"]) .stream-material-row {
   background: #18181b;
   border-bottom-color: #27272a;
+}
+
+:global(html.dark) .drawer-materials-stream.is-table-stream .stream-material-row,
+:global(html[data-color-mode="dark"]) .drawer-materials-stream.is-table-stream .stream-material-row {
+  border-bottom-color: #121214;
 }
 
 :global(html.dark) .stream-material-row:hover,
