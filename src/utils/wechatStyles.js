@@ -22,6 +22,7 @@ import {
   headingTemplatesMap,
   quoteTemplatesMap,
   calloutTemplatesMap,
+  underlineTemplatesMap,
   dividerTemplatesMap,
   listTemplatesMap,
   tableTemplatesMap,
@@ -141,9 +142,9 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
   // 1.5 Material Template Replacement for Headings, Blockquotes & Dividers
   ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].forEach(tag => {
     const matId = customStyles?.[tag]?.materialTemplateId || themeStyles?.[tag]?.materialTemplateId;
-    const prefix = customStyles?.[tag]?.materialPrefix || (tag === 'h1' ? 'PART' : 'SECTION');
     if (matId && matId !== 'none' && headingTemplatesMap[matId]) {
       const tmpl = headingTemplatesMap[matId];
+      const prefix = customStyles?.[tag]?.materialPrefix || tmpl?.defaultPrefix || (tag === 'h1' ? 'PART' : 'SECTION');
       let index = 0;
       root.querySelectorAll(tag).forEach(el => {
         if (isMaterialEl(el)) return;
@@ -204,6 +205,27 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         const replacement = tempContainer.firstElementChild;
         if (replacement) {
           replacement.setAttribute('data-tag', 'hr');
+          replacement.setAttribute('data-material', 'true');
+          el.parentNode.replaceChild(replacement, el);
+        }
+      }
+    });
+  }
+
+  // Underlines (下划线 u / ins) Material Replacement
+  const uMatId = customStyles?.u?.materialTemplateId || themeStyles?.u?.materialTemplateId;
+  if (uMatId && uMatId !== 'none' && underlineTemplatesMap[uMatId]) {
+    const tmpl = underlineTemplatesMap[uMatId];
+    root.querySelectorAll('u, ins').forEach(el => {
+      if (isMaterialEl(el)) return;
+      const textHtml = el.innerHTML.trim();
+      const renderedHtml = tmpl.render ? tmpl.render(textHtml) : null;
+      if (renderedHtml) {
+        const tempContainer = doc.createElement('div');
+        tempContainer.innerHTML = renderedHtml;
+        const replacement = tempContainer.firstElementChild;
+        if (replacement) {
+          replacement.setAttribute('data-tag', 'u');
           replacement.setAttribute('data-material', 'true');
           el.parentNode.replaceChild(replacement, el);
         }

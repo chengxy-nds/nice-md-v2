@@ -19,6 +19,7 @@ export const materialCategories = [
   { id: 'lists', name: '步骤/列表' },
   { id: 'tech_cards', name: '代码/极客' },
   { id: 'tables', name: '表格/对比' },
+  { id: 'underlines', name: '下划线' },
   { id: 'dividers', name: '分割线' },
   { id: 'header_widgets', name: '顶部导读' },
   { id: 'footer_widgets', name: '文末三连' }
@@ -49,6 +50,7 @@ export const categoryNameMap = {
   'lists': '步骤/列表',
   'tech_cards': '代码/极客',
   'tables': '表格/对比',
+  'underlines': '下划线',
   'dividers': '分割线',
   'header_widgets': '顶部导读',
   'footer_widgets': '文末三连'
@@ -137,6 +139,34 @@ export const materials = [
     html: `<section style="margin: 0; width: 100%; height: 100%; min-height: 100px; background-color: #ffffff; border-radius: 8px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 1px dashed rgba(0, 0, 0, 0.08);" data-material="true"></section>`
   },
   // ── 135 爆款精选 ──
+  {
+    id: 'h-cyan-signpost-top',
+    category: 'headings',
+    tag: '指路标牌',
+    styleCategory: 'fresh',
+    title: '青绿指路牌TOP标牌',
+    description: '青绿倾斜指路牌标牌 + TOP序号 + 极简黑字与星芒点缀',
+    tags: ['路标', 'TOP', '箭头', '指路牌', '青绿', '爆款'],
+    html: `<section style="margin: 32px 0 24px; clear: both; box-sizing: border-box; text-align: center;" data-material="true">
+  <section style="display: inline-flex; align-items: flex-end; position: relative; max-width: 100%; vertical-align: bottom; margin: 0 auto; text-align: left;">
+    <svg width="78" height="66" viewBox="0 0 78 66" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: bottom; flex-shrink: 0; margin-right: -42px; overflow: visible;">
+      <rect x="23" y="24" width="7" height="40" fill="#FFFFFF" stroke="#000000" stroke-width="2.2" rx="0.5"/>
+      <g transform="rotate(-6 27 15)">
+        <path d="M 2 2 H 58 L 72 15 L 58 28 H 2 Z" fill="#00FFA6" stroke="#000000" stroke-width="2.2" stroke-linejoin="round"/>
+        <text x="30" y="20.5" font-family="-apple-system, BlinkMacSystemFont, Arial, sans-serif" font-weight="900" font-size="14.5" fill="#000000" text-anchor="middle" letter-spacing="0.5">TOP 1</text>
+      </g>
+    </svg>
+    <section style="display: inline-flex; align-items: flex-start; padding-left: 1rem; padding-bottom: 2px; min-width: 0; word-break: break-word;">
+      <span style="font-size: 19px; font-weight: 900; color: #000000; letter-spacing: 0.5px; line-height: 1.35; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;">
+        以简为序享从容
+      </span>
+      <svg viewBox="0 0 14 14" width="18" height="18" fill="#000000" style="margin-left: 9px; margin-top: -3px; flex-shrink: 0; display: inline-block;">
+        <path d="M 6.5 0 Q 6.5 6.5 13 6.5 Q 6.5 6.5 6.5 13 Q 6.5 6.5 0 6.5 Q 6.5 6.5 6.5 0 Z"/>
+      </svg>
+    </section>
+  </section>
+</section>`
+  },
   {
     id: 'h-135-part01-leaf',
     category: 'headings',
@@ -1705,6 +1735,157 @@ export const materials = [
   </table>
 </section>`
   },
+  // ── 下划线精选素材 (Underlines / U 文本修饰) ──
+  {
+    id: "u-amber-cream",
+    category: "underlines",
+    tag: "暖阳微光",
+    styleCategory: "fresh",
+    title: "暖阳米黄·柔和荧光马克笔",
+    description: "135爆款暖阳米黄微底衬，温润舒适，重点标注第一推荐",
+    tags: ["下划线", "暖阳", "米黄", "马克笔", "低饱和", "重点"],
+    html: `<u style="text-decoration: none; background: linear-gradient(180deg, transparent 58%, rgba(254, 240, 138, 0.75) 58%); padding: 0 4px 1px; border-radius: 2px; color: inherit; font-weight: 600; display: inline;" data-material="true">暖阳米黄柔和划重点</u>`
+  },
+  {
+    id: "u-sage-green",
+    category: "underlines",
+    tag: "莫兰迪绿",
+    styleCategory: "fresh",
+    title: "鼠尾草绿·低饱和清新微衬",
+    description: "莫兰迪低饱和鼠尾草浅绿，护眼文艺，干货科普首选",
+    tags: ["下划线", "鼠尾草绿", "莫兰迪", "清新", "护眼", "干货"],
+    html: `<u style="text-decoration: none; background: linear-gradient(180deg, transparent 58%, rgba(209, 250, 229, 0.8) 58%); padding: 0 4px 1px; border-radius: 2px; color: inherit; font-weight: 600; display: inline;" data-material="true">鼠尾草绿清新划重点</u>`
+  },
+  {
+    id: "u-morandi-blue",
+    category: "underlines",
+    tag: "极简双轨",
+    styleCategory: "tech",
+    title: "雾霾灰蓝·极简双轨科技线",
+    description: "莫兰迪雾霾灰蓝双层细线，克制严谨，科技与职场必备",
+    tags: ["下划线", "双轨", "灰蓝", "莫兰迪", "科技", "极简"],
+    html: `<u style="text-decoration: none; border-bottom: 3px double #64748b; padding-bottom: 2px; color: inherit; font-weight: 600; display: inline;" data-material="true">雾霾灰蓝双轨科技线</u>`
+  },
+  {
+    id: "u-kraft-coffee",
+    category: "underlines",
+    tag: "复古暖咖",
+    styleCategory: "minimal",
+    title: "复古暖咖·牛皮纸质感微衬",
+    description: "复古牛皮纸暖咖底衬 + 雅致细线，人文阅读与生活志质感",
+    tags: ["下划线", "暖咖", "牛皮纸", "复古", "质感", "人文"],
+    html: `<u style="text-decoration: none; background: linear-gradient(180deg, transparent 60%, rgba(245, 230, 211, 0.9) 60%); border-bottom: 1.5px solid #a87d51; padding: 0 4px 2px; border-radius: 2px; color: inherit; font-weight: 600; display: inline;" data-material="true">复古暖咖牛皮纸微衬</u>`
+  },
+  {
+    id: "u-slate-wavy",
+    category: "underlines",
+    tag: "手绘波浪",
+    styleCategory: "minimal",
+    title: "低调炭灰·手绘波浪细线",
+    description: "壹伴同款低饱和炭灰手绘波浪线，不突兀，轻盈灵动",
+    tags: ["下划线", "波浪", "炭灰", "手绘", "低饱和", "极简"],
+    html: `<u style="text-decoration: underline wavy rgba(71, 85, 105, 0.75); text-underline-offset: 4px; text-decoration-thickness: 1.2px; color: inherit; font-weight: 600; display: inline;" data-material="true">低调炭灰手绘波浪强调</u>`
+  },
+  {
+    id: "u-apricot-wavy",
+    category: "underlines",
+    tag: "温润暖杏",
+    styleCategory: "fresh",
+    title: "温润暖杏·柔和手绘波浪",
+    description: "暖杏橙黄波浪细线，温暖亲切，小红书与情感文首选",
+    tags: ["下划线", "暖杏", "波浪", "温暖", "小红书", "生活"],
+    html: `<u style="text-decoration: underline wavy #f97316; text-underline-offset: 4px; text-decoration-thickness: 1.2px; color: inherit; font-weight: 600; display: inline;" data-material="true">温润暖杏柔和波浪强调</u>`
+  },
+  {
+    id: "u-editorial-minimal",
+    category: "underlines",
+    tag: "杂志大刊",
+    styleCategory: "minimal",
+    title: "大刊社论·1.5px精致沉静底线",
+    description: "纽约客/GQ杂志社论风 1.5px 纯净炭黑悬浮细线，极简高端",
+    tags: ["下划线", "大刊", "杂志", "极简", "沉静", "高端"],
+    html: `<u style="text-decoration: none; border-bottom: 1.5px solid #1e293b; padding-bottom: 2px; color: inherit; font-weight: 700; display: inline;" data-material="true">大刊社论沉静极简底线</u>`
+  },
+  {
+    id: "u-notion-pill",
+    category: "underlines",
+    tag: "Notion风",
+    styleCategory: "minimal",
+    title: "晨雾浅灰·Notion极简胶囊底衬",
+    description: "Notion风格浅灰胶囊微衬 + 极细底边，结构清晰现代",
+    tags: ["下划线", "Notion", "胶囊", "浅灰", "极简", "现代"],
+    html: `<u style="text-decoration: none; background: rgba(241, 245, 249, 0.95); border-bottom: 2px solid #cbd5e1; padding: 2px 6px 3px; border-radius: 4px; color: #1e293b; font-weight: 600; display: inline;" data-material="true">Notion极简胶囊高亮</u>`
+  },
+  {
+    id: "u-fine-dotted",
+    category: "underlines",
+    tag: "点阵印线",
+    styleCategory: "minimal",
+    title: "复古印品·细密微墨点阵线",
+    description: "1.5px 极细点阵墨滴印线，细腻精致，极具书籍印刷质感",
+    tags: ["下划线", "点阵", "印品", "虚线", "复古", "墨滴"],
+    html: `<u style="text-decoration: none; border-bottom: 1.5px dotted #64748b; padding-bottom: 2px; color: inherit; font-weight: 600; display: inline;" data-material="true">复古书籍细密微墨点阵</u>`
+  },
+  {
+    id: "u-indigo-silk",
+    category: "underlines",
+    tag: "国风雅致",
+    styleCategory: "guofeng",
+    title: "沉香藏青·国风雅致宋韵细线",
+    description: "沉香藏青雅致细线 + 典雅宋体加粗，古雅沉稳，文化气息浓厚",
+    tags: ["下划线", "国风", "藏青", "宋韵", "雅致", "水墨"],
+    html: `<u style="text-decoration: none; border-bottom: 1.5px solid #1e3a8a; padding-bottom: 2px; color: #1e3a8a; font-weight: 700; font-family: 'Songti SC', SimSun, serif; display: inline;" data-material="true">沉香藏青宋韵雅致下划线</u>`
+  },
+  {
+    id: "u-terracotta-dash",
+    category: "underlines",
+    tag: "陶土大地",
+    styleCategory: "minimal",
+    title: "陶土赭石·手绘断点虚线",
+    description: "低饱和陶土暖赭色断点虚线，大地色系，质朴温暖",
+    tags: ["下划线", "陶土", "大地色", "虚线", "赭石", "质朴"],
+    html: `<u style="text-decoration: none; border-bottom: 2px dashed #b45309; padding-bottom: 2px; color: #92400e; font-weight: 600; display: inline;" data-material="true">陶土暖赭手绘断点虚线</u>`
+  },
+  {
+    id: "u-vintage-gold",
+    category: "underlines",
+    tag: "黑金轻奢",
+    styleCategory: "business",
+    title: "黑金工坊·暖琥珀双轨轻奢线",
+    description: "暖琥珀双轨细线条，低调奢华，高端商业排版品质",
+    tags: ["下划线", "黑金", "轻奢", "琥珀", "双轨", "高端"],
+    html: `<u style="text-decoration: none; border-bottom: 3px double #b45309; padding-bottom: 2px; color: inherit; font-weight: 600; display: inline;" data-material="true">暖琥珀双轨轻奢下划线</u>`
+  },
+  {
+    id: "u-ink-tint",
+    category: "underlines",
+    tag: "水墨清透",
+    styleCategory: "guofeng",
+    title: "水墨微澜·极简渐变水墨底托",
+    description: "水墨微渐变柔和底衬 + 沉水青蓝底线，东方意境，文雅清透",
+    tags: ["下划线", "水墨", "国风", "渐变", "意境", "文雅"],
+    html: `<u style="text-decoration: none; background: linear-gradient(90deg, rgba(30, 41, 59, 0.08) 0%, rgba(30, 41, 59, 0.02) 100%); border-bottom: 2px solid #475569; padding: 2px 6px; border-radius: 2px; color: inherit; font-weight: 600; display: inline;" data-material="true">水墨微澜渐变水墨底托</u>`
+  },
+  {
+    id: "u-ice-mist",
+    category: "underlines",
+    tag: "冰雾浅蓝",
+    styleCategory: "tech",
+    title: "极地冰雾·浅蓝半透微底衬",
+    description: "极浅海盐冰蓝微底衬，现代科技冷静感，清新通透",
+    tags: ["下划线", "浅蓝", "冰雾", "科技", "通透", "清新"],
+    html: `<u style="text-decoration: none; background: linear-gradient(180deg, transparent 58%, rgba(186, 230, 253, 0.65) 58%); padding: 0 4px 1px; border-radius: 2px; color: inherit; font-weight: 600; display: inline;" data-material="true">极地冰雾清透微底衬</u>`
+  },
+  {
+    id: "u-blush-rose",
+    category: "underlines",
+    tag: "莫兰迪粉",
+    styleCategory: "fresh",
+    title: "莫兰迪粉·温柔晚风浅底衬",
+    description: "莫兰迪低饱和灰粉微底衬，温柔治愈，美妆女性生活首选",
+    tags: ["下划线", "莫兰迪", "灰粉", "温柔", "美妆", "女性"],
+    html: `<u style="text-decoration: none; background: linear-gradient(180deg, transparent 58%, rgba(251, 207, 232, 0.65) 58%); padding: 0 4px 1px; border-radius: 2px; color: inherit; font-weight: 600; display: inline;" data-material="true">莫兰迪灰粉温柔微底衬</u>`
+  },
   {
     id: "d-sparkle-diamond",
     category: "dividers",
@@ -1724,6 +1905,117 @@ export const materials = [
     description: "✂️ 经典裁切剪刀 + 细密打孔虚线",
     tags: ["分割线", "剪刀", "打孔", "虚线", "活动"],
     html: "<section style=\"margin: 28px 0; display: flex; align-items: center; gap: 8px; color: #94a3b8;\" data-material=\"true\">\n  <span style=\"font-size: 16px; transform: rotate(-90deg);\">✂️</span>\n  <div style=\"flex: 1; border-top: 1.5px dashed #cbd5e1; height: 0;\"></div>\n</section>"
+  },
+  {
+    id: "d-wave-marker-yellow",
+    category: "dividers",
+    tag: "荧光波浪",
+    styleCategory: "fresh",
+    title: "荧光手绘·暖黄波浪马克线",
+    description: "明亮活泼的手绘马克笔双波浪线条，适合段落章节优雅过渡",
+    tags: ["分割线", "荧光", "手绘", "波浪", "马克笔", "清新"],
+    html: `<section style="margin: 28px auto; text-align: center; width: 100%; clear: both;" data-material="true">
+  <svg width="220" height="14" viewBox="0 0 220 14" fill="none" style="display: block; margin: 0 auto; max-width: 100%; overflow: visible;">
+    <path d="M 2 7 Q 15 1, 30 7 T 60 7 T 90 7 T 120 7 T 150 7 T 180 7 T 210 7 T 218 7" stroke="#facc15" stroke-width="3" stroke-linecap="round"/>
+  </svg>
+</section>`
+  },
+  {
+    id: "d-cyber-neon-pulse",
+    category: "dividers",
+    tag: "赛博极客",
+    styleCategory: "tech",
+    title: "极客赛博·霓虹渐变脉冲光线",
+    description: "双向渐变青蓝光轨 + 居中发光晶体命令符 ◈ [SYSTEM_BREAK] ◈",
+    tags: ["分割线", "极客", "赛博", "霓虹", "脉冲", "科技"],
+    html: `<section style="margin: 30px auto; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; clear: both;" data-material="true">
+  <div style="flex: 1; height: 1.5px; background: linear-gradient(90deg, transparent, #38bdf8);"></div>
+  <span style="color: #38bdf8; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; font-weight: bold; letter-spacing: 1.5px;">◈ [SYSTEM_BREAK] ◈</span>
+  <div style="flex: 1; height: 1.5px; background: linear-gradient(90deg, #38bdf8, transparent);"></div>
+</section>`
+  },
+  {
+    id: "d-guofeng-cloud-knot",
+    category: "dividers",
+    tag: "国风水墨",
+    styleCategory: "guofeng",
+    title: "国风水墨·朱砂双线祥云如意线",
+    description: "朱砂红双重纤细平直线 + 居中古雅朱红 ❖ 祥云文气纹样",
+    tags: ["分割线", "国风", "水墨", "朱砂", "古风", "祥云"],
+    html: `<section style="margin: 30px auto; width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px; clear: both;" data-material="true">
+  <div style="flex: 1; height: 1px; background: linear-gradient(90deg, transparent, #b91c1c);"></div>
+  <span style="color: #b91c1c; font-family: 'Songti SC', 'Source Han Serif SC', serif; font-size: 13.5px; letter-spacing: 3px; font-weight: 600;">❖ 雲水流轉 ❖</span>
+  <div style="flex: 1; height: 1px; background: linear-gradient(90deg, #b91c1c, transparent);"></div>
+</section>`
+  },
+  {
+    id: "d-editorial-double-rail",
+    category: "dividers",
+    tag: "杂志社论",
+    styleCategory: "minimal",
+    title: "大刊社论·纯黑双轨几何极简线",
+    description: "经典大刊双轨线（3px 纯黑实线 + 1px 细线），充满呼吸感与留白",
+    tags: ["分割线", "杂志", "社论", "极简", "双轨", "黑白"],
+    html: `<section style="margin: 32px 0; width: 100%; clear: both;" data-material="true">
+  <div style="height: 3px; background: #0a0a0a; margin-bottom: 3px; width: 100%;"></div>
+  <div style="height: 1px; background: #0a0a0a; width: 100%;"></div>
+</section>`
+  },
+  {
+    id: "d-leaf-sprout-green",
+    category: "dividers",
+    tag: "小清新",
+    styleCategory: "fresh",
+    title: "清新草木·嫩绿晨露小树叶线",
+    description: "双侧柔和浅绿渐变细线 + 居中清新绿植萌芽 🌱 🌿 🍃 呼吸点缀",
+    tags: ["分割线", "草木", "绿叶", "清新", "自然", "萌芽"],
+    html: `<section style="margin: 28px auto; width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px; clear: both;" data-material="true">
+  <div style="flex: 1; height: 1px; background: linear-gradient(90deg, transparent, #86efac);"></div>
+  <span style="font-size: 16px; line-height: 1;">🌿 🌱 🍃</span>
+  <div style="flex: 1; height: 1px; background: linear-gradient(90deg, #86efac, transparent);"></div>
+</section>`
+  },
+  {
+    id: "d-golden-gradient-lux",
+    category: "dividers",
+    tag: "黑金轻奢",
+    styleCategory: "business",
+    title: "极简黑金·鎏金微光四芒星线",
+    description: "从透明向暖金辉光过渡的细腻渐变光束 + 居中精致四芒星 ✧",
+    tags: ["分割线", "黑金", "轻奢", "四芒星", "金色", "渐变"],
+    html: `<section style="margin: 32px auto; width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px; clear: both;" data-material="true">
+  <div style="flex: 1; height: 1px; background: linear-gradient(90deg, transparent 0%, #f59e0b 50%, #d97706 100%);"></div>
+  <span style="color: #d97706; font-size: 15px; font-weight: bold;">✧</span>
+  <div style="flex: 1; height: 1px; background: linear-gradient(90deg, #d97706 0%, #f59e0b 50%, transparent 100%);"></div>
+</section>`
+  },
+  {
+    id: "d-stamp-ticket-tear",
+    category: "dividers",
+    tag: "手账便签",
+    styleCategory: "fresh",
+    title: "手账撕票·双孔锯齿撕裂虚线",
+    description: "左右打孔圆角 + 细密票据撕裂虚线，手账与活动优惠感十足",
+    tags: ["分割线", "手账", "撕票", "锯齿", "虚线", "优惠券"],
+    html: `<section style="margin: 28px auto; width: 100%; display: flex; align-items: center; gap: 6px; clear: both;" data-material="true">
+  <span style="width: 8px; height: 8px; border-radius: 50%; background: #cbd5e1; display: inline-block; flex-shrink: 0;"></span>
+  <div style="flex: 1; border-top: 1.5px dashed #cbd5e1; height: 0;"></div>
+  <span style="width: 8px; height: 8px; border-radius: 50%; background: #cbd5e1; display: inline-block; flex-shrink: 0;"></span>
+</section>`
+  },
+  {
+    id: "d-rhombus-morandi",
+    category: "dividers",
+    tag: "莫兰迪",
+    styleCategory: "minimal",
+    title: "莫兰迪·低饱和双菱形雅致微线",
+    description: "低饱和度豆沙灰绿对称微细线 + 居中对称双实心菱形 ◆ ◆",
+    tags: ["分割线", "莫兰迪", "菱形", "极简", "雅致", "高级感"],
+    html: `<section style="margin: 28px auto; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; clear: both;" data-material="true">
+  <div style="flex: 1; height: 1px; background: linear-gradient(90deg, transparent, #a3b18a);"></div>
+  <span style="color: #588157; font-size: 11px; letter-spacing: 2px;">◆ ◆</span>
+  <div style="flex: 1; height: 1px; background: linear-gradient(90deg, #a3b18a, transparent);"></div>
+</section>`
   },
   {
     id: "hw-tldr-summary",
@@ -1759,6 +2051,40 @@ export const headingTemplates = [
     hasCustomPrefix: false,
     previewHtml: `<div style="font-size: 15px; font-weight: bold; color: #2563eb; border-bottom: 2px solid #2563eb; padding-bottom: 4px;">默认主题标题</div>`,
     render: () => null
+  },
+  {
+    id: 'h-cyan-signpost-top',
+    name: '青绿指路牌TOP标牌',
+    description: '青绿倾斜指路牌标牌 + TOP序号 + 极简黑字与星芒点缀',
+    tag: '路标标牌',
+    styleCategory: 'fresh',
+    hasAutoNumber: true,
+    hasCustomPrefix: true,
+    defaultPrefix: 'TOP',
+    previewHtml: `<div style="display:flex;justify-content:center;align-items:flex-end;gap:0px;width:100%;text-align:center;"><svg width="48" height="40" viewBox="0 0 78 66" fill="none" style="display:inline-block;vertical-align:bottom;flex-shrink:0;margin-right:-26px;overflow:visible;"><rect x="23" y="24" width="7" height="40" fill="#FFFFFF" stroke="#000000" stroke-width="2.2" rx="0.5"/><g transform="rotate(-6 27 15)"><path d="M 2 2 H 58 L 72 15 L 58 28 H 2 Z" fill="#00FFA6" stroke="#000000" stroke-width="2.2" stroke-linejoin="round"/><text x="30" y="20.5" font-family="-apple-system, BlinkMacSystemFont, Arial, sans-serif" font-weight="900" font-size="14.5" fill="#000000" text-anchor="middle">TOP 1</text></g></svg><div style="display:inline-flex;align-items:flex-start;padding-left:0.5rem;padding-bottom:2px;text-align:left;"><span style="font-size:14px;font-weight:900;color:#000;">以简为序享从容</span><svg viewBox="0 0 14 14" width="13" height="13" fill="#000000" style="margin-left:5px;margin-top:-2px;"><path d="M 6.5 0 Q 6.5 6.5 13 6.5 Q 6.5 6.5 6.5 13 Q 6.5 6.5 0 6.5 Q 6.5 6.5 6.5 0 Z"/></svg></div></div>`,
+    render: (title, index, options = {}) => {
+      const prefix = options.prefix || 'TOP';
+      const num = index !== undefined ? index : 1;
+      return `<section style="margin: 32px 0 24px; clear: both; box-sizing: border-box; text-align: center;" data-material="true">
+  <section style="display: inline-flex; align-items: flex-end; position: relative; max-width: 100%; vertical-align: bottom; margin: 0 auto; text-align: left;">
+    <svg width="78" height="66" viewBox="0 0 78 66" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: bottom; flex-shrink: 0; margin-right: -42px; overflow: visible;">
+      <rect x="23" y="24" width="7" height="40" fill="#FFFFFF" stroke="#000000" stroke-width="2.2" rx="0.5"/>
+      <g transform="rotate(-6 27 15)">
+        <path d="M 2 2 H 58 L 72 15 L 58 28 H 2 Z" fill="#00FFA6" stroke="#000000" stroke-width="2.2" stroke-linejoin="round"/>
+        <text x="30" y="20.5" font-family="-apple-system, BlinkMacSystemFont, Arial, sans-serif" font-weight="900" font-size="14.5" fill="#000000" text-anchor="middle" letter-spacing="0.5">${prefix} ${num}</text>
+      </g>
+    </svg>
+    <section style="display: inline-flex; align-items: flex-start; padding-left: 1rem; padding-bottom: 2px; min-width: 0; word-break: break-word;">
+      <span style="font-size: 19px; font-weight: 900; color: #000000; letter-spacing: 0.5px; line-height: 1.35; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;">
+        ${title}
+      </span>
+      <svg viewBox="0 0 14 14" width="18" height="18" fill="#000000" style="margin-left: 9px; margin-top: -3px; flex-shrink: 0; display: inline-block;">
+        <path d="M 6.5 0 Q 6.5 6.5 13 6.5 Q 6.5 6.5 6.5 13 Q 6.5 6.5 0 6.5 Q 6.5 6.5 6.5 0 Z"/>
+      </svg>
+    </section>
+  </section>
+</section>`;
+    }
   },
   {
     id: 'h-135-yellow-marker-num',
@@ -2585,6 +2911,171 @@ export const calloutTemplates = [
   }
 ];
 
+// ── 下划线/重点标记模版（Underlines / U / INS 文本修饰模版）──
+// 甄选 135编辑器 / 壹伴 / 顶级公众号的高质感、低饱和、极简耐看排版设计
+export const underlineTemplates = [
+  {
+    id: 'none',
+    name: '默认原生下划线',
+    shortName: '默认下划线',
+    description: '使用当前主题预设的基础下划线样式',
+    tag: '默认',
+    styleCategory: 'all',
+    previewHtml: `<span style="text-decoration: underline; text-underline-offset: 3px; color: inherit; font-size: 13px;">默认下划线样式</span>`,
+    render: () => null
+  },
+  {
+    id: 'u-amber-cream',
+    name: '暖阳米黄·柔和荧光马克笔',
+    shortName: '暖阳米黄',
+    description: '135爆款暖阳米黄微底衬，温润舒适，重点标注第一推荐',
+    tag: '暖阳微光',
+    styleCategory: 'fresh',
+    previewHtml: `<span style="background: linear-gradient(180deg, transparent 58%, rgba(254, 240, 138, 0.75) 58%); padding: 0 4px 1px; border-radius: 2px; font-weight: 600; color: inherit;">暖阳米黄划线</span>`,
+    render: (text) => `<u style="text-decoration: none; background: linear-gradient(180deg, transparent 58%, rgba(254, 240, 138, 0.75) 58%); padding: 0 4px 1px; border-radius: 2px; color: inherit; font-weight: 600; display: inline;" data-material="true">${text}</u>`
+  },
+  {
+    id: 'u-sage-green',
+    name: '鼠尾草绿·低饱和清新微衬',
+    shortName: '鼠尾草绿',
+    description: '莫兰迪低饱和鼠尾草浅绿，护眼文艺，干货科普首选',
+    tag: '莫兰迪绿',
+    styleCategory: 'fresh',
+    previewHtml: `<span style="background: linear-gradient(180deg, transparent 58%, rgba(209, 250, 229, 0.8) 58%); padding: 0 4px 1px; border-radius: 2px; font-weight: 600; color: inherit;">鼠尾草绿划线</span>`,
+    render: (text) => `<u style="text-decoration: none; background: linear-gradient(180deg, transparent 58%, rgba(209, 250, 229, 0.8) 58%); padding: 0 4px 1px; border-radius: 2px; color: inherit; font-weight: 600; display: inline;" data-material="true">${text}</u>`
+  },
+  {
+    id: 'u-morandi-blue',
+    name: '雾霾灰蓝·极简双轨科技线',
+    shortName: '雾霾灰蓝',
+    description: '莫兰迪雾霾灰蓝双层细线，克制严谨，科技与职场必备',
+    tag: '极简双轨',
+    styleCategory: 'tech',
+    previewHtml: `<span style="border-bottom: 3px double #64748b; padding-bottom: 2px; color: inherit; font-weight: 600;">雾霾灰蓝双轨</span>`,
+    render: (text) => `<u style="text-decoration: none; border-bottom: 3px double #64748b; padding-bottom: 2px; color: inherit; font-weight: 600; display: inline;" data-material="true">${text}</u>`
+  },
+  {
+    id: 'u-kraft-coffee',
+    name: '复古暖咖·牛皮纸质感微衬',
+    shortName: '复古暖咖',
+    description: '复古牛皮纸暖咖底衬 + 雅致细线，人文阅读与生活志质感',
+    tag: '复古暖咖',
+    styleCategory: 'minimal',
+    previewHtml: `<span style="background: linear-gradient(180deg, transparent 60%, rgba(245, 230, 211, 0.9) 60%); border-bottom: 1.5px solid #a87d51; padding: 0 4px 2px; border-radius: 2px; font-weight: 600; color: inherit;">复古暖咖微衬</span>`,
+    render: (text) => `<u style="text-decoration: none; background: linear-gradient(180deg, transparent 60%, rgba(245, 230, 211, 0.9) 60%); border-bottom: 1.5px solid #a87d51; padding: 0 4px 2px; border-radius: 2px; color: inherit; font-weight: 600; display: inline;" data-material="true">${text}</u>`
+  },
+  {
+    id: 'u-slate-wavy',
+    name: '低调炭灰·手绘波浪细线',
+    shortName: '炭灰波浪',
+    description: '壹伴同款低饱和炭灰手绘波浪线，不突兀，轻盈灵动',
+    tag: '手绘波浪',
+    styleCategory: 'minimal',
+    previewHtml: `<span style="text-decoration: underline wavy rgba(71, 85, 105, 0.75); text-underline-offset: 4px; text-decoration-thickness: 1.2px; font-weight: 600; color: inherit;">炭灰手绘波浪</span>`,
+    render: (text) => `<u style="text-decoration: underline wavy rgba(71, 85, 105, 0.75); text-underline-offset: 4px; text-decoration-thickness: 1.2px; color: inherit; font-weight: 600; display: inline;" data-material="true">${text}</u>`
+  },
+  {
+    id: 'u-apricot-wavy',
+    name: '温润暖杏·柔和手绘波浪',
+    shortName: '暖杏波浪',
+    description: '暖杏橙黄波浪细线，温暖亲切，小红书与情感文首选',
+    tag: '温润暖杏',
+    styleCategory: 'fresh',
+    previewHtml: `<span style="text-decoration: underline wavy #f97316; text-underline-offset: 4px; text-decoration-thickness: 1.2px; font-weight: 600; color: inherit;">暖杏手绘波浪</span>`,
+    render: (text) => `<u style="text-decoration: underline wavy #f97316; text-underline-offset: 4px; text-decoration-thickness: 1.2px; color: inherit; font-weight: 600; display: inline;" data-material="true">${text}</u>`
+  },
+  {
+    id: 'u-editorial-minimal',
+    name: '大刊社论·1.5px精致沉静底线',
+    shortName: '大刊细线',
+    description: '纽约客/GQ杂志社论风 1.5px 纯净炭黑悬浮细线，极简高端',
+    tag: '杂志大刊',
+    styleCategory: 'minimal',
+    previewHtml: `<span style="border-bottom: 1.5px solid #1e293b; padding-bottom: 2px; font-weight: 700; color: inherit;">大刊社论底线</span>`,
+    render: (text) => `<u style="text-decoration: none; border-bottom: 1.5px solid #1e293b; padding-bottom: 2px; color: inherit; font-weight: 700; display: inline;" data-material="true">${text}</u>`
+  },
+  {
+    id: 'u-notion-pill',
+    name: '晨雾浅灰·Notion极简胶囊底衬',
+    shortName: 'Notion胶囊',
+    description: 'Notion风格浅灰胶囊微衬 + 极细底边，结构清晰现代',
+    tag: 'Notion风',
+    styleCategory: 'minimal',
+    previewHtml: `<span style="background: rgba(241, 245, 249, 0.95); border-bottom: 2px solid #cbd5e1; padding: 2px 6px 3px; border-radius: 4px; font-weight: 600; color: #1e293b;">Notion极简胶囊</span>`,
+    render: (text) => `<u style="text-decoration: none; background: rgba(241, 245, 249, 0.95); border-bottom: 2px solid #cbd5e1; padding: 2px 6px 3px; border-radius: 4px; color: #1e293b; font-weight: 600; display: inline;" data-material="true">${text}</u>`
+  },
+  {
+    id: 'u-fine-dotted',
+    name: '复古印品·细密微墨点阵线',
+    shortName: '细密点阵',
+    description: '1.5px 极细点阵墨滴印线，细腻精致，极具书籍印刷质感',
+    tag: '点阵印线',
+    styleCategory: 'minimal',
+    previewHtml: `<span style="border-bottom: 1.5px dotted #64748b; padding-bottom: 2px; font-weight: 600; color: inherit;">复古点阵印线</span>`,
+    render: (text) => `<u style="text-decoration: none; border-bottom: 1.5px dotted #64748b; padding-bottom: 2px; color: inherit; font-weight: 600; display: inline;" data-material="true">${text}</u>`
+  },
+  {
+    id: 'u-indigo-silk',
+    name: '沉香藏青·国风雅致宋韵细线',
+    shortName: '藏青宋韵',
+    description: '沉香藏青雅致细线 + 典雅宋体加粗，古雅沉稳，文化气息浓厚',
+    tag: '国风雅致',
+    styleCategory: 'guofeng',
+    previewHtml: `<span style="border-bottom: 1.5px solid #1e3a8a; padding-bottom: 2px; font-family: serif; font-weight: 700; color: #1e3a8a;">沉香藏青宋韵</span>`,
+    render: (text) => `<u style="text-decoration: none; border-bottom: 1.5px solid #1e3a8a; padding-bottom: 2px; color: #1e3a8a; font-weight: 700; font-family: 'Songti SC', SimSun, serif; display: inline;" data-material="true">${text}</u>`
+  },
+  {
+    id: 'u-terracotta-dash',
+    name: '陶土赭石·手绘断点虚线',
+    shortName: '陶土虚线',
+    description: '低饱和陶土暖赭色断点虚线，大地色系，质朴温暖',
+    tag: '陶土大地',
+    styleCategory: 'minimal',
+    previewHtml: `<span style="border-bottom: 2px dashed #b45309; padding-bottom: 2px; font-weight: 600; color: #92400e;">陶土手绘虚线</span>`,
+    render: (text) => `<u style="text-decoration: none; border-bottom: 2px dashed #b45309; padding-bottom: 2px; color: #92400e; font-weight: 600; display: inline;" data-material="true">${text}</u>`
+  },
+  {
+    id: 'u-vintage-gold',
+    name: '黑金工坊·暖琥珀双轨轻奢线',
+    shortName: '暖琥珀线',
+    description: '暖琥珀双轨细线条，低调奢华，高端商业排版品质',
+    tag: '黑金轻奢',
+    styleCategory: 'business',
+    previewHtml: `<span style="border-bottom: 3px double #b45309; padding-bottom: 2px; font-weight: 600; color: inherit;">暖琥珀双轨线</span>`,
+    render: (text) => `<u style="text-decoration: none; border-bottom: 3px double #b45309; padding-bottom: 2px; color: inherit; font-weight: 600; display: inline;" data-material="true">${text}</u>`
+  },
+  {
+    id: 'u-ink-tint',
+    name: '水墨微澜·极简渐变水墨底托',
+    shortName: '水墨微澜',
+    description: '水墨微渐变柔和底衬 + 沉水青蓝底线，东方意境，文雅清透',
+    tag: '水墨清透',
+    styleCategory: 'guofeng',
+    previewHtml: `<span style="background: linear-gradient(90deg, rgba(30, 41, 59, 0.08) 0%, rgba(30, 41, 59, 0.02) 100%); border-bottom: 2px solid #475569; padding: 2px 6px; border-radius: 2px; font-weight: 600; color: inherit;">水墨渐变微托</span>`,
+    render: (text) => `<u style="text-decoration: none; background: linear-gradient(90deg, rgba(30, 41, 59, 0.08) 0%, rgba(30, 41, 59, 0.02) 100%); border-bottom: 2px solid #475569; padding: 2px 6px; border-radius: 2px; color: inherit; font-weight: 600; display: inline;" data-material="true">${text}</u>`
+  },
+  {
+    id: 'u-ice-mist',
+    name: '极地冰雾·浅蓝半透微底衬',
+    shortName: '极地冰雾',
+    description: '极浅海盐冰蓝微底衬，现代科技冷静感，清新通透',
+    tag: '冰雾浅蓝',
+    styleCategory: 'tech',
+    previewHtml: `<span style="background: linear-gradient(180deg, transparent 58%, rgba(186, 230, 253, 0.65) 58%); padding: 0 4px 1px; border-radius: 2px; font-weight: 600; color: inherit;">极地冰雾微衬</span>`,
+    render: (text) => `<u style="text-decoration: none; background: linear-gradient(180deg, transparent 58%, rgba(186, 230, 253, 0.65) 58%); padding: 0 4px 1px; border-radius: 2px; color: inherit; font-weight: 600; display: inline;" data-material="true">${text}</u>`
+  },
+  {
+    id: 'u-blush-rose',
+    name: '莫兰迪粉·温柔晚风浅底衬',
+    shortName: '莫兰迪粉',
+    description: '莫兰迪低饱和灰粉微底衬，温柔治愈，美妆女性生活首选',
+    tag: '莫兰迪粉',
+    styleCategory: 'fresh',
+    previewHtml: `<span style="background: linear-gradient(180deg, transparent 58%, rgba(251, 207, 232, 0.65) 58%); padding: 0 4px 1px; border-radius: 2px; font-weight: 600; color: inherit;">莫兰迪灰粉</span>`,
+    render: (text) => `<u style="text-decoration: none; background: linear-gradient(180deg, transparent 58%, rgba(251, 207, 232, 0.65) 58%); padding: 0 4px 1px; border-radius: 2px; color: inherit; font-weight: 600; display: inline;" data-material="true">${text}</u>`
+  }
+];
+
 // ── 分割线模版 ──
 export const dividerTemplates = [
   {
@@ -2667,6 +3158,109 @@ export const dividerTemplates = [
     styleCategory: 'business',
     previewHtml: `<div style="border-top: 2px dashed #93c5fd; margin: 8px 0;"></div>`,
     render: () => `<section data-material="true" style="margin: 26px auto; width: 100%; text-align: center; clear: both;"><hr style="border: none; border-top: 2px dashed #93c5fd; margin: 0 auto; width: 100%;" /></section>`
+  },
+  {
+    id: 'd-wave-marker-yellow',
+    name: '荧光手绘·暖黄波浪马克线',
+    description: '明亮活泼的手绘马克笔双波浪线条，适合段落章节优雅过渡',
+    tag: '荧光波浪',
+    styleCategory: 'fresh',
+    previewHtml: `<div style="text-align: center; color: #facc15; font-size: 14px;">〰〰〰〰〰〰</div>`,
+    render: () => `<section style="margin: 28px auto; text-align: center; width: 100%; clear: both;" data-material="true">
+  <svg width="220" height="14" viewBox="0 0 220 14" fill="none" style="display: block; margin: 0 auto; max-width: 100%; overflow: visible;">
+    <path d="M 2 7 Q 15 1, 30 7 T 60 7 T 90 7 T 120 7 T 150 7 T 180 7 T 210 7 T 218 7" stroke="#facc15" stroke-width="3" stroke-linecap="round"/>
+  </svg>
+</section>`
+  },
+  {
+    id: 'd-cyber-neon-pulse',
+    name: '极客赛博·霓虹渐变脉冲光线',
+    description: '双向渐变青蓝光轨 + 居中发光晶体命令符 ◈ [SYSTEM_BREAK] ◈',
+    tag: '赛博极客',
+    styleCategory: 'tech',
+    previewHtml: `<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#38bdf8;font-family:monospace;"><div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,#38bdf8);"></div><span>◈ [BREAK] ◈</span><div style="flex:1;height:1px;background:linear-gradient(90deg,#38bdf8,transparent);"></div></div>`,
+    render: () => `<section style="margin: 30px auto; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; clear: both;" data-material="true">
+  <div style="flex: 1; height: 1.5px; background: linear-gradient(90deg, transparent, #38bdf8);"></div>
+  <span style="color: #38bdf8; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; font-weight: bold; letter-spacing: 1.5px;">◈ [SYSTEM_BREAK] ◈</span>
+  <div style="flex: 1; height: 1.5px; background: linear-gradient(90deg, #38bdf8, transparent);"></div>
+</section>`
+  },
+  {
+    id: 'd-guofeng-cloud-knot',
+    name: '国风水墨·朱砂双线祥云如意线',
+    description: '朱砂红双重纤细平直线 + 居中古雅朱红 ❖ 祥云文气纹样',
+    tag: '国风水墨',
+    styleCategory: 'guofeng',
+    previewHtml: `<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#b91c1c;font-family:serif;"><div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,#b91c1c);"></div><span>❖ 雲水流轉 ❖</span><div style="flex:1;height:1px;background:linear-gradient(90deg,#b91c1c,transparent);"></div></div>`,
+    render: () => `<section style="margin: 30px auto; width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px; clear: both;" data-material="true">
+  <div style="flex: 1; height: 1px; background: linear-gradient(90deg, transparent, #b91c1c);"></div>
+  <span style="color: #b91c1c; font-family: 'Songti SC', 'Source Han Serif SC', serif; font-size: 13.5px; letter-spacing: 3px; font-weight: 600;">❖ 雲水流轉 ❖</span>
+  <div style="flex: 1; height: 1px; background: linear-gradient(90deg, #b91c1c, transparent);"></div>
+</section>`
+  },
+  {
+    id: 'd-editorial-double-rail',
+    name: '大刊社论·纯黑双轨几何极简线',
+    description: '经典大刊双轨线（3px 纯黑实线 + 1px 细线），充满呼吸感与留白',
+    tag: '杂志社论',
+    styleCategory: 'minimal',
+    previewHtml: `<div style="padding:4px 0;"><div style="height:2.5px;background:#0a0a0a;margin-bottom:2px;"></div><div style="height:1px;background:#0a0a0a;"></div></div>`,
+    render: () => `<section style="margin: 32px 0; width: 100%; clear: both;" data-material="true">
+  <div style="height: 3px; background: #0a0a0a; margin-bottom: 3px; width: 100%;"></div>
+  <div style="height: 1px; background: #0a0a0a; width: 100%;"></div>
+</section>`
+  },
+  {
+    id: 'd-leaf-sprout-green',
+    name: '清新草木·嫩绿晨露小树叶线',
+    description: '双侧柔和浅绿渐变细线 + 居中清新绿植萌芽 🌱 🌿 🍃 呼吸点缀',
+    tag: '小清新',
+    styleCategory: 'fresh',
+    previewHtml: `<div style="display:flex;align-items:center;gap:6px;"><div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,#86efac);"></div><span style="font-size:12px;">🌿 🌱 🍃</span><div style="flex:1;height:1px;background:linear-gradient(90deg,#86efac,transparent);"></div></div>`,
+    render: () => `<section style="margin: 28px auto; width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px; clear: both;" data-material="true">
+  <div style="flex: 1; height: 1px; background: linear-gradient(90deg, transparent, #86efac);"></div>
+  <span style="font-size: 16px; line-height: 1;">🌿 🌱 🍃</span>
+  <div style="flex: 1; height: 1px; background: linear-gradient(90deg, #86efac, transparent);"></div>
+</section>`
+  },
+  {
+    id: 'd-golden-gradient-lux',
+    name: '极简黑金·鎏金微光四芒星线',
+    description: '从透明向暖金辉光过渡的细腻渐变光束 + 居中精致四芒星 ✧',
+    tag: '黑金轻奢',
+    styleCategory: 'business',
+    previewHtml: `<div style="display:flex;align-items:center;gap:6px;color:#d97706;"><div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,#f59e0b);"></div><span style="font-size:13px;">✧</span><div style="flex:1;height:1px;background:linear-gradient(90deg,#f59e0b,transparent);"></div></div>`,
+    render: () => `<section style="margin: 32px auto; width: 100%; display: flex; align-items: center; justify-content: center; gap: 12px; clear: both;" data-material="true">
+  <div style="flex: 1; height: 1px; background: linear-gradient(90deg, transparent 0%, #f59e0b 50%, #d97706 100%);"></div>
+  <span style="color: #d97706; font-size: 15px; font-weight: bold;">✧</span>
+  <div style="flex: 1; height: 1px; background: linear-gradient(90deg, #d97706 0%, #f59e0b 50%, transparent 100%);"></div>
+</section>`
+  },
+  {
+    id: 'd-stamp-ticket-tear',
+    name: '手账撕票·双孔锯齿撕裂虚线',
+    description: '左右打孔圆角 + 细密票据撕裂虚线，手账与活动优惠感十足',
+    tag: '手账便签',
+    styleCategory: 'fresh',
+    previewHtml: `<div style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#cbd5e1;"></span><div style="flex:1;border-top:1.5px dashed #cbd5e1;"></div><span style="width:6px;height:6px;border-radius:50%;background:#cbd5e1;"></span></div>`,
+    render: () => `<section style="margin: 28px auto; width: 100%; display: flex; align-items: center; gap: 6px; clear: both;" data-material="true">
+  <span style="width: 8px; height: 8px; border-radius: 50%; background: #cbd5e1; display: inline-block; flex-shrink: 0;"></span>
+  <div style="flex: 1; border-top: 1.5px dashed #cbd5e1; height: 0;"></div>
+  <span style="width: 8px; height: 8px; border-radius: 50%; background: #cbd5e1; display: inline-block; flex-shrink: 0;"></span>
+</section>`
+  },
+  {
+    id: 'd-rhombus-morandi',
+    name: '莫兰迪·低饱和双菱形雅致微线',
+    description: '低饱和度豆沙灰绿对称微细线 + 居中对称双实心菱形 ◆ ◆',
+    tag: '莫兰迪',
+    styleCategory: 'minimal',
+    previewHtml: `<div style="display:flex;align-items:center;gap:6px;color:#588157;"><div style="flex:1;height:1px;background:linear-gradient(90deg,transparent,#a3b18a);"></div><span style="font-size:10px;">◆ ◆</span><div style="flex:1;height:1px;background:linear-gradient(90deg,#a3b18a,transparent);"></div></div>`,
+    render: () => `<section style="margin: 28px auto; width: 100%; display: flex; align-items: center; justify-content: center; gap: 10px; clear: both;" data-material="true">
+  <div style="flex: 1; height: 1px; background: linear-gradient(90deg, transparent, #a3b18a);"></div>
+  <span style="color: #588157; font-size: 11px; letter-spacing: 2px;">◆ ◆</span>
+  <div style="flex: 1; height: 1px; background: linear-gradient(90deg, #a3b18a, transparent);"></div>
+</section>`
   }
 ];
 
@@ -3795,6 +4389,7 @@ export function getBackgroundPatternStyle(textureId) {
 export const headingTemplatesMap = headingTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {});
 export const quoteTemplatesMap = quoteTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {});
 export const calloutTemplatesMap = calloutTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {});
+export const underlineTemplatesMap = underlineTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {});
 export const dividerTemplatesMap = dividerTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {});
 export const listTemplatesMap = listTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {});
 export const tableTemplatesMap = tableTemplates.reduce((acc, c) => { acc[c.id] = c; return acc; }, {});
@@ -3806,6 +4401,7 @@ export const allMaterialTemplatesMap = {
   ...headingTemplatesMap,
   ...quoteTemplatesMap,
   ...calloutTemplatesMap,
+  ...underlineTemplatesMap,
   ...dividerTemplatesMap,
   ...listTemplatesMap,
   ...tableTemplatesMap,
@@ -3823,6 +4419,9 @@ export function getMaterialTemplatesForKey(key) {
   }
   if (key === 'callout') {
     return calloutTemplates;
+  }
+  if (key === 'u' || key === 'underline' || key === 'underlines') {
+    return underlineTemplates;
   }
   if (key === 'hr') {
     return dividerTemplates;

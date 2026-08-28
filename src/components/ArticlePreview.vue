@@ -140,7 +140,7 @@ const materialPopupVisible = ref(false);
 const currentPopupKey = ref('h1');
 const currentPopupPos = ref({ x: 0, y: 0 });
 
-const materialSupportedTags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'hr', 'ul', 'ol', 'li', 'table', 'tables'];
+const materialSupportedTags = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'hr', 'u', 'ul', 'ol', 'li', 'table', 'tables'];
 
 function handlePopupSelect({ key, templateId }) {
   const newStyles = JSON.parse(JSON.stringify(props.customStyles || {}));
@@ -552,22 +552,31 @@ function handlePreviewElementClick(e) {
     ['img', 'img', 'img']
   ];
 
-  for (const [tag, section, extraSelector] of inlinePriorityTags) {
-    const sel = `${tag}, ${extraSelector}`;
-    const matchedEl = target.closest(sel);
-    if (matchedEl) {
-      setActivePreviewTarget(matchedEl);
-      emit('element-click', section);
-      return;
-    }
-  }
-
   // Helper to determine if an element already has a custom material template applied
   const hasAppliedMaterial = (key) => {
     const normKey = (key === 'tables' || key === 'th' || key === 'td' || key === 'thead' || key === 'tbody' || key === 'tr') ? 'table' : key;
     const matId = props.customStyles?.[normKey]?.materialTemplateId || props.customStyles?.[key]?.materialTemplateId;
     return Boolean(matId && matId !== 'none' && matId !== 'clean');
   };
+
+  for (const [tag, section, extraSelector] of inlinePriorityTags) {
+    const sel = `${tag}, ${extraSelector}`;
+    const matchedEl = target.closest(sel);
+    if (matchedEl) {
+      setActivePreviewTarget(matchedEl);
+      if (hasAppliedMaterial(section)) {
+        emit('element-click', section);
+        emit('open-customizer', section);
+      } else if (materialSupportedTags.includes(section)) {
+        currentPopupKey.value = section;
+        currentPopupPos.value = { x: e.clientX, y: e.clientY };
+        materialPopupVisible.value = true;
+      } else {
+        emit('element-click', section);
+      }
+      return;
+    }
+  }
 
   // 3. Check block containers second
   const blockTags = [

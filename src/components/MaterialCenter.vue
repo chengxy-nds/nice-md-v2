@@ -19,6 +19,7 @@ import {
   Palette,
   Code,
   Table,
+  Underline,
   Filter,
   Tag,
   RotateCcw
@@ -49,6 +50,7 @@ const categoryIcons = {
   lists: ListOrdered,
   tech_cards: Code,
   tables: Table,
+  underlines: Underline,
   dividers: Minus,
   header_widgets: Sparkles,
   footer_widgets: UserCheck

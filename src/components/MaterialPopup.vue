@@ -47,6 +47,7 @@ const typeLabels = {
   callouts: '提示 / 重点卡片',
   callout: '提示 / 重点卡片',
   p: '正文排版',
+  u: '下划线文本修饰 ( <u>...</u> )',
   hr: '分割线',
   ul: '无序列表',
   ol: '有序列表',
@@ -112,6 +113,15 @@ function getRenderHtml(item) {
     const label = typeLabels[props.elementKey] || '样式';
     return `<div style="text-align: center; color: #64748b; font-size: 14px; font-weight: 700; border-bottom: 2px solid #2563eb; padding-bottom: 4px; display: inline-block;">默认主题${label}</div>`;
   }
+  if (props.elementKey === 'u' || props.elementKey === 'underlines') {
+    if (typeof item.render === 'function') {
+      const underlined = item.render('划重点核心语句');
+      return `<div style="padding: 12px 16px; background: #fafafa; border: 1px solid #f0f0f0; border-radius: 8px; font-size: 14px; color: #27272a; line-height: 1.8;">
+        <div style="font-size: 12px; font-weight: 700; color: #71717a; margin-bottom: 4px;">🏷️ ${item.name}</div>
+        <span>示例文本：在微信排版中对 ${underlined} 进行醒目修饰。</span>
+      </div>`;
+    }
+  }
   if (item.html) return item.html;
   if (typeof item.render === 'function') {
     const sampleText = item.name || '捕捉秋碎片 珍藏限定小浪漫';
@@ -130,7 +140,7 @@ function handlePrefixChange(e) {
 }
 
 function hasPrefixOption(id) {
-  return ['h-135-part01-leaf', 'h-135-part02-peach', 'h-135-part03-purple', 'h-135-morandi-block', 'h-pill-duotone', 'h-yellow-shadow-cube'].includes(id);
+  return ['h-cyan-signpost-top', 'h-135-part01-leaf', 'h-135-part02-peach', 'h-135-part03-purple', 'h-135-morandi-block', 'h-pill-duotone', 'h-yellow-shadow-cube'].includes(id);
 }
 </script>
 

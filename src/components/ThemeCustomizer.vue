@@ -2,7 +2,7 @@
 import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
 import { Palette, X, Save, Sliders, Code2, RotateCcw, Check, Sparkles, Hash, FileType } from 'lucide-vue-next';
 import { getThemeDefaultStyles, getThemeSavedStyles, isBuiltInTheme } from '../utils/themePresets';
-import { allMaterialTemplatesMap, getMaterialTemplatesForKey, backgroundTemplates } from '../utils/materialLibrary';
+import { allMaterialTemplatesMap, getMaterialTemplatesForKey, backgroundTemplates, underlineTemplates } from '../utils/materialLibrary';
 import MaterialPopup from './MaterialPopup.vue';
 import { codeThemes } from '../utils/codeThemes';
 import { EditorView, basicSetup } from 'codemirror';
@@ -36,7 +36,7 @@ const materialModalOpen = ref(false);
 const currentModalKey = ref('h1');
 
 function hasMaterialSupport(key) {
-  return ['body', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'hr', 'ul', 'ol', 'li', 'table', 'tables', 'header_widget', 'footer_widget'].includes(key);
+  return ['body', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'hr', 'u', 'ul', 'ol', 'li', 'table', 'tables', 'header_widget', 'footer_widget'].includes(key);
 }
 
 function getMaterialTypeLabel(key) {
@@ -49,6 +49,7 @@ function getMaterialTypeLabel(key) {
     h5: 'H5 五级标题',
     h6: 'H6 六级标题',
     blockquote: '引用 / 引入',
+    u: '下划线文本修饰',
     hr: '分割线',
     ul: '无序列表 (UL)',
     ol: '有序列表 (OL)',
@@ -130,7 +131,7 @@ function getMaterialTemplateName(id) {
 }
 
 function hasPrefixOption(id) {
-  return ['h-135-part01-leaf', 'h-135-part02-peach', 'h-135-part03-purple', 'h-135-morandi-block', 'h-pill-duotone', 'h-yellow-shadow-cube'].includes(id);
+  return ['h-cyan-signpost-top', 'h-135-part01-leaf', 'h-135-part02-peach', 'h-135-part03-purple', 'h-135-morandi-block', 'h-pill-duotone', 'h-yellow-shadow-cube'].includes(id);
 }
 
 function hasTableTitleOption(id) {
@@ -1895,7 +1896,7 @@ const cssLineCount = computed(() => {
             </div>
           </template>
 
-          <!-- 3. Standard Element Controls (For other elements) -->
+          <!-- 3. Standard Element Controls (For other elements including u, strong, blockquote, etc.) -->
           <template v-else>
             <!-- Color (文字色) -->
             <label class="style-field" v-if="getStyle(el.key).color !== undefined">
@@ -3498,5 +3499,26 @@ const cssLineCount = computed(() => {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem 1rem;
+}
+
+/* Dedicated Underline Swatch Box in Body-Texture-Grid */
+.u-swatch-box {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 48px;
+  height: 1.5rem;
+  padding: 0 4px;
+  border-radius: 0.25rem;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background-color: var(--bg-preview, #ffffff);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+:deep(.dark) .u-swatch-box,
+.u-swatch-box:where(.dark *) {
+  background-color: #1e1e1e;
+  border-color: rgba(255, 255, 255, 0.12);
 }
 </style>
