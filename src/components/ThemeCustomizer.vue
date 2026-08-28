@@ -75,6 +75,40 @@ function selectMaterialTemplate(templateId) {
   } else if (key === 'body') {
     updateStyle('body', 'backgroundTexture', templateId);
     updateStyle('body', 'materialTemplateId', templateId);
+  } else if (key === 'table' || key === 'tables') {
+    if (!localStyles.value) localStyles.value = {};
+    if (!localStyles.value.table) localStyles.value.table = {};
+    if (!localStyles.value.th) localStyles.value.th = {};
+    if (!localStyles.value.td) localStyles.value.td = {};
+
+    localStyles.value.table.materialTemplateId = templateId;
+    const tablePresets = getTableMaterialPresets(templateId);
+    if (tablePresets) {
+      localStyles.value.table.materialTitle = tablePresets.materialTitle;
+      localStyles.value.table.borderColor = tablePresets.borderColor;
+      localStyles.value.th.backgroundColor = tablePresets.thBg;
+      localStyles.value.th.color = tablePresets.thColor;
+      localStyles.value.th.fontWeight = tablePresets.thFontWeight;
+      localStyles.value.td.color = tablePresets.tdColor;
+      localStyles.value.td.borderColor = tablePresets.borderColor;
+    }
+    emitUpdate();
+  } else if (key === 'blockquote') {
+    updateStyle('blockquote', 'materialTemplateId', templateId);
+    const bqPresets = {
+      'quote-cyberpunk-neon': { backgroundColor: '#0f172a', borderLeftColor: '#00f0ff', color: '#e2e8f0' },
+      'quote-fresh-green': { backgroundColor: '#f0fdf4', borderLeftColor: '#16a34a', color: '#15803d' },
+      'quote-morandi-card': { backgroundColor: '#f4ede4', borderLeftColor: '#b89f88', color: '#4a3b32' },
+      'quote-amber-sunset': { backgroundColor: '#fffbeb', borderLeftColor: '#f59e0b', color: '#78350f' },
+      'quote-purple-dream': { backgroundColor: '#faf5ff', borderLeftColor: '#a855f7', color: '#581c87' },
+      'quote-glass-modern': { backgroundColor: '#f8fafc', borderLeftColor: '#3b82f6', color: '#334155' },
+      'quote-minimal-gray': { backgroundColor: '#f9fafb', borderLeftColor: '#6b7280', color: '#374151' }
+    }[templateId];
+    if (bqPresets) {
+      if (bqPresets.backgroundColor) updateStyle('blockquote', 'backgroundColor', bqPresets.backgroundColor);
+      if (bqPresets.borderLeftColor) updateStyle('blockquote', 'borderLeftColor', bqPresets.borderLeftColor);
+      if (bqPresets.color) updateStyle('blockquote', 'color', bqPresets.color);
+    }
   } else {
     updateStyle(key, 'materialTemplateId', templateId);
   }
@@ -122,6 +156,148 @@ function getDefaultTableTitle(id) {
   return map[id] || '表格标题';
 }
 
+function getTableMaterialPresets(id) {
+  const map = {
+    'tbl-slate-movie-rank': {
+      thBg: '#f0f4f6',
+      thColor: '#475569',
+      thFontWeight: 'bold',
+      tdColor: '#334155',
+      borderColor: '#ffffff',
+      materialTitle: ''
+    },
+    'tbl-apricot-star-card': {
+      thBg: '#faece1',
+      thColor: '#1c1917',
+      thFontWeight: '800',
+      tdColor: '#1c1917',
+      borderColor: '#292524',
+      materialTitle: '⭐ 超详细的考研全程攻略 ⭐'
+    },
+    'tbl-retro-window-size': {
+      thBg: '#181818',
+      thColor: '#ffffff',
+      thFontWeight: '800',
+      tdColor: '#1a1a1a',
+      borderColor: '#1a1a1a',
+      materialTitle: '品牌尺码参照表'
+    },
+    'tbl-morandi-blush-size': {
+      thBg: '#ebe0e0',
+      thColor: '#4a3838',
+      thFontWeight: 'bold',
+      tdColor: '#5c4848',
+      borderColor: '#ffffff',
+      materialTitle: ''
+    },
+    'tbl-milktea-apricot-schedule': {
+      thBg: '#f3ece5',
+      thColor: '#4a3a30',
+      thFontWeight: 'bold',
+      tdColor: '#5c4a3e',
+      borderColor: '#ffffff',
+      materialTitle: ''
+    },
+    'tbl-amber-schedule': {
+      thBg: '#fbf0e4',
+      thColor: '#633806',
+      thFontWeight: 'bold',
+      tdColor: '#633806',
+      borderColor: '#ffffff',
+      materialTitle: ''
+    },
+    'tbl-modern-striped': {
+      thBg: '#f1f5f9',
+      thColor: '#334155',
+      thFontWeight: 'bold',
+      tdColor: '#475569',
+      borderColor: '#f1f5f9',
+      materialTitle: ''
+    },
+    'tbl-tier-comparison': {
+      thBg: '#2563eb',
+      thColor: '#ffffff',
+      thFontWeight: 'bold',
+      tdColor: '#334155',
+      borderColor: '#e2e8f0',
+      materialTitle: ''
+    },
+    'tbl-business-blue-compare': {
+      thBg: '#1e3a8a',
+      thColor: '#ffffff',
+      thFontWeight: 'bold',
+      tdColor: '#1e293b',
+      borderColor: '#cbd5e1',
+      materialTitle: ''
+    },
+    'tbl-terminal-dark-metrics': {
+      thBg: '#0f172a',
+      thColor: '#38bdf8',
+      thFontWeight: 'bold',
+      tdColor: '#cbd5e1',
+      borderColor: '#1e293b',
+      materialTitle: 'cluster_metrics.log'
+    },
+    'tbl-matcha-green-progress': {
+      thBg: '#ecfdf5',
+      thColor: '#065f46',
+      thFontWeight: 'bold',
+      tdColor: '#047857',
+      borderColor: '#a7f3d0',
+      materialTitle: ''
+    },
+    'tbl-guofeng-crimson-classic': {
+      thBg: '#7f1d1d',
+      thColor: '#fef08a',
+      thFontWeight: 'bold',
+      tdColor: '#7f1d1d',
+      borderColor: '#b91c1c',
+      materialTitle: ''
+    },
+    'tbl-handdrawn-planner-card': {
+      thBg: '#fffbeb',
+      thColor: '#18181b',
+      thFontWeight: '800',
+      tdColor: '#18181b',
+      borderColor: '#18181b',
+      materialTitle: '✨ 本周打卡清单计划表 ✨'
+    },
+    'tbl-minimal-luxury-clean': {
+      thBg: '#fafafa',
+      thColor: '#18181b',
+      thFontWeight: 'bold',
+      tdColor: '#3f3f46',
+      borderColor: '#f4f4f5',
+      materialTitle: ''
+    },
+    'tbl-aurora-gradient-eval': {
+      thBg: '#090d16',
+      thColor: '#f8fafc',
+      thFontWeight: 'bold',
+      tdColor: '#cbd5e1',
+      borderColor: '#1e293b',
+      materialTitle: ''
+    },
+    'tbl-macaron-faq-qa': {
+      thBg: '#fef3c7',
+      thColor: '#92400e',
+      thFontWeight: '800',
+      tdColor: '#1e293b',
+      borderColor: '#fde68a',
+      materialTitle: '💡 常见核心疑问速查指南 (FAQ)'
+    },
+    'tbl-redbook-checkin-routine': {
+      thBg: '#ffe4e6',
+      thColor: '#881337',
+      thFontWeight: '800',
+      tdColor: '#881337',
+      borderColor: '#fb7185',
+      materialTitle: '🥗 超自律 7 天掉秤食谱打卡 💖'
+    }
+  };
+  return map[id] || null;
+}
+
 // Full list of all 27 Markdown syntax element definitions
 const elements = [
   { key: 'body', label: '整体背景 / 文字 ( body )', icon: '◻' },
@@ -151,16 +327,53 @@ const elements = [
   { key: 'img', label: '图片 ( ![img](url) )', icon: '🖼' }
 ];
 
-// Merge theme base defaults with user document overrides
+// Merge theme base defaults with material template defaults and user document overrides
 const effectiveStyles = computed(() => {
   const defaults = getThemeDefaultStyles(props.themeId);
   const userStyles = localStyles.value || {};
   const merged = {};
 
+  // If table has a material template active, blend in the material's preset signature colors
+  const tblMatId = userStyles.table?.materialTemplateId || defaults.table?.materialTemplateId;
+  let tableMaterialDefaults = {};
+  if (tblMatId && tblMatId !== 'none') {
+    const p = getTableMaterialPresets(tblMatId);
+    if (p) {
+      tableMaterialDefaults = {
+        th: { backgroundColor: p.thBg, color: p.thColor, fontWeight: p.thFontWeight },
+        td: { color: p.tdColor, borderColor: p.borderColor },
+        table: { borderColor: p.borderColor, materialTitle: p.materialTitle }
+      };
+    }
+  }
+
+  // If blockquote has a material template active, blend in its signature colors
+  const bqMatId = userStyles.blockquote?.materialTemplateId || defaults.blockquote?.materialTemplateId;
+  let bqMaterialDefaults = {};
+  if (bqMatId && bqMatId !== 'none') {
+    const bqMap = {
+      'quote-cyberpunk-neon': { backgroundColor: '#0f172a', borderLeftColor: '#00f0ff', textColor: '#e2e8f0' },
+      'quote-fresh-green': { backgroundColor: '#f0fdf4', borderLeftColor: '#16a34a', textColor: '#15803d' },
+      'quote-morandi-card': { backgroundColor: '#f4ede4', borderLeftColor: '#b89f88', textColor: '#4a3b32' },
+      'quote-amber-sunset': { backgroundColor: '#fffbeb', borderLeftColor: '#f59e0b', textColor: '#78350f' },
+      'quote-purple-dream': { backgroundColor: '#faf5ff', borderLeftColor: '#a855f7', textColor: '#581c87' },
+      'quote-glass-modern': { backgroundColor: '#f8fafc', borderLeftColor: '#3b82f6', textColor: '#334155' },
+      'quote-minimal-gray': { backgroundColor: '#f9fafb', borderLeftColor: '#6b7280', textColor: '#374151' }
+    };
+    if (bqMap[bqMatId]) {
+      bqMaterialDefaults = { blockquote: bqMap[bqMatId] };
+    }
+  }
+
   // Ensure defaults exist for all elements
   const allKeys = [...elements.map(e => e.key), 'pre', 'th', 'td'];
   for (const k of allKeys) {
-    merged[k] = { ...(defaults[k] || {}), ...(userStyles[k] || {}) };
+    merged[k] = {
+      ...(defaults[k] || {}),
+      ...(tableMaterialDefaults[k] || {}),
+      ...(bqMaterialDefaults[k] || {}),
+      ...(userStyles[k] || {})
+    };
   }
   return merged;
 });
@@ -199,6 +412,19 @@ function clearMaterial(key) {
   updateStyle(key, 'materialTemplateId', 'none');
   if (key === 'body') {
     updateStyle('body', 'backgroundTexture', 'clean');
+  }
+  if (key === 'table' || key === 'tables') {
+    if (localStyles.value) {
+      if (localStyles.value.table) {
+        localStyles.value.table.materialTitle = '';
+        delete localStyles.value.table.borderColor;
+        delete localStyles.value.table.headerBg;
+      }
+      delete localStyles.value.th;
+      delete localStyles.value.td;
+    }
+    syncFormToCssText(true);
+    emitUpdate();
   }
 }
 
@@ -377,6 +603,12 @@ function mergeIncrementalCss(existingCss, styles) {
           body = `\n  /* @prefix: ${meta.prefix} */` + body;
         }
       }
+      if (meta.title !== undefined) {
+        body = body.replace(/\/\*\s*@title:[^*]+\*\/\s*\n?/gi, '');
+        if (meta.title) {
+          body = `\n  /* @title: ${meta.title} */` + body;
+        }
+      }
 
       for (const [k, v] of Object.entries(newProps)) {
         if (v !== undefined && v !== null && v !== '') {
@@ -443,6 +675,30 @@ function mergeIncrementalCss(existingCss, styles) {
       color: S.blockquote.textColor
     }, {
       material: S.blockquote.materialTemplateId
+    });
+  }
+
+  if (S.table) {
+    updateRuleBlock('table', {
+      borderColor: S.table.borderColor
+    }, {
+      material: S.table.materialTemplateId,
+      title: S.table.materialTitle
+    });
+  }
+
+  if (S.th) {
+    updateRuleBlock('th', {
+      backgroundColor: S.th.backgroundColor,
+      color: S.th.color,
+      fontWeight: S.th.fontWeight
+    });
+  }
+
+  if (S.td) {
+    updateRuleBlock('td', {
+      borderColor: S.td.borderColor,
+      color: S.td.color
     });
   }
 
