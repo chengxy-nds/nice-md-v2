@@ -167,11 +167,23 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
   });
 
   // Blockquotes (引用/引入) Material Replacement
+  // Processed bottom-up (sorted by nesting depth descending) to ensure nested blockquotes
+  // are completely replaced at every depth level from innermost to outermost.
   const bqMatId = customStyles?.blockquote?.materialTemplateId || themeStyles?.blockquote?.materialTemplateId;
   if (bqMatId && bqMatId !== 'none' && quoteTemplatesMap[bqMatId]) {
     const tmpl = quoteTemplatesMap[bqMatId];
-    root.querySelectorAll('blockquote').forEach(el => {
-      if (isMaterialEl(el)) return;
+    const getBqDepth = (node) => {
+      let d = 0;
+      let p = node.parentNode;
+      while (p) {
+        if (p.tagName === 'BLOCKQUOTE') d++;
+        p = p.parentNode;
+      }
+      return d;
+    };
+    const bqList = Array.from(root.querySelectorAll('blockquote')).sort((a, b) => getBqDepth(b) - getBqDepth(a));
+    bqList.forEach(el => {
+      if (isMaterialEl(el) || !el.parentNode) return;
       let contentHtml = el.innerHTML.trim();
       // If content is a single <p>...</p>, unwrap it to keep it inline with icons/quotes
       const pMatch = contentHtml.match(/^<p(?:\s+[^>]*)?>([\s\S]*?)<\/p>$/i);
@@ -238,8 +250,18 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
   if (listMatId && listMatId !== 'none' && listTemplatesMap[listMatId]) {
     const tmpl = listTemplatesMap[listMatId];
     let liIndex = 0;
-    root.querySelectorAll('li').forEach(el => {
-      if (isMaterialEl(el)) return;
+    const getLiDepth = (node) => {
+      let d = 0;
+      let p = node.parentNode;
+      while (p) {
+        if (p.tagName === 'LI') d++;
+        p = p.parentNode;
+      }
+      return d;
+    };
+    const liList = Array.from(root.querySelectorAll('li')).sort((a, b) => getLiDepth(b) - getLiDepth(a));
+    liList.forEach(el => {
+      if (isMaterialEl(el) || !el.parentNode) return;
       liIndex++;
       const itemHtml = el.innerHTML.trim();
       const renderedHtml = tmpl.render ? tmpl.render(itemHtml, liIndex) : null;
@@ -1271,19 +1293,24 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
   });
 
   // 4. Blockquotes
-  styleEl('blockquote', wechatTypo.blockquote || `
+  const bqCustomBg = customStyles?.blockquote?.backgroundColor;
+  const bqCustomBorder = customStyles?.blockquote?.borderLeftColor || customStyles?.blockquote?.borderColor;
+  const bqCustomColor = customStyles?.blockquote?.color || customStyles?.blockquote?.textColor;
+
+  const defaultBqStyle = `
     padding: 12px 20px;
     margin: 0 0 1.2em 0;
-    background-color: ${colors.accentBg};
-    border-left: 4px solid ${colors.primary};
-    color: ${colors.text};
+    background-color: ${bqCustomBg || colors.accentBg};
+    border-left: 4px solid ${bqCustomBorder || colors.primary};
+    color: ${bqCustomColor || colors.text};
     border-radius: 4px;
-  `);
+  `;
+  styleEl('blockquote', wechatTypo.blockquote ? wechatTypo.blockquote : defaultBqStyle);
   
   styleEl('blockquote p', wechatTypo.blockquoteP || `
     margin-bottom: 0;
     line-height: 1.6;
-    color: ${colors.text};
+    color: ${bqCustomColor || colors.text};
   `);
 
   // 5. Lists

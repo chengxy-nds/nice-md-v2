@@ -1820,6 +1820,16 @@ export const materials = [
     html: `<u style="text-decoration: underline wavy #f97316; text-underline-offset: 4px; text-decoration-thickness: 1.2px; color: inherit; font-weight: 600; display: inline;" data-material="true">温润暖杏柔和波浪强调</u>`
   },
   {
+    id: "u-green-wavy",
+    category: "underlines",
+    tag: "翠绿大波浪",
+    styleCategory: "fresh",
+    title: "青翠生机·大波浪绿色细线",
+    description: "135/壹伴爆款清新大波浪绿色细线，舒展灵动，护眼活泼",
+    tags: ["下划线", "大波浪", "绿色", "细线", "清新", "手绘", "护眼"],
+    html: `<u style="text-decoration: underline wavy #10b981; text-underline-offset: 5px; text-decoration-thickness: 1.5px; color: inherit; font-weight: 600; display: inline;" data-material="true">青翠生机大波浪绿色细线</u>`
+  },
+  {
     id: "u-editorial-minimal",
     category: "underlines",
     tag: "杂志大刊",
@@ -3002,6 +3012,16 @@ export const underlineTemplates = [
     styleCategory: 'fresh',
     previewHtml: `<span style="text-decoration: underline wavy #f97316; text-underline-offset: 4px; text-decoration-thickness: 1.2px; font-weight: 600; color: inherit;">暖杏手绘波浪</span>`,
     render: (text) => `<u style="text-decoration: underline wavy #f97316; text-underline-offset: 4px; text-decoration-thickness: 1.2px; color: inherit; font-weight: 600; display: inline;" data-material="true">${text}</u>`
+  },
+  {
+    id: 'u-green-wavy',
+    name: '青翠生机·大波浪绿色细线',
+    shortName: '翠绿大波浪',
+    description: '135/壹伴爆款清新大波浪绿色细线，舒展灵动，护眼活泼',
+    tag: '翠绿大波浪',
+    styleCategory: 'fresh',
+    previewHtml: `<span style="text-decoration: underline wavy #10b981; text-underline-offset: 5px; text-decoration-thickness: 1.5px; font-weight: 600; color: inherit;">翠绿大波浪细线</span>`,
+    render: (text) => `<u style="text-decoration: underline wavy #10b981; text-underline-offset: 5px; text-decoration-thickness: 1.5px; color: inherit; font-weight: 600; display: inline;" data-material="true">${text}</u>`
   },
   {
     id: 'u-editorial-minimal',
