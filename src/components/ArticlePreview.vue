@@ -511,19 +511,26 @@ function handlePreviewElementClick(e) {
     }
   }
 
+  // Helper to determine if an element already has a custom material template applied
+  const hasAppliedMaterial = (key) => {
+    const normKey = (key === 'tables' || key === 'th' || key === 'td' || key === 'thead' || key === 'tbody' || key === 'tr') ? 'table' : key;
+    const matId = props.customStyles?.[normKey]?.materialTemplateId || props.customStyles?.[key]?.materialTemplateId;
+    return Boolean(matId && matId !== 'none' && matId !== 'clean');
+  };
+
   // 3. Check block containers second
   const blockTags = [
-    ['h1', 'h1', '[data-heading="h1"]'],
-    ['h2', 'h2', '[data-heading="h2"]'],
-    ['h3', 'h3', '[data-heading="h3"]'],
-    ['h4', 'h4', '[data-heading="h4"]'],
-    ['h5', 'h5', '[data-heading="h5"]'],
-    ['h6', 'h6', '[data-heading="h6"]'],
-    ['blockquote', 'blockquote', 'blockquote'],
-    ['table', 'table', 'th, td'],
-    ['li', 'li', 'ul, ol, li'],
-    ['hr', 'hr', 'hr'],
-    ['p', 'p', 'p']
+    ['h1', 'h1', '[data-heading="h1"], [data-tag="h1"]'],
+    ['h2', 'h2', '[data-heading="h2"], [data-tag="h2"]'],
+    ['h3', 'h3', '[data-heading="h3"], [data-tag="h3"]'],
+    ['h4', 'h4', '[data-heading="h4"], [data-tag="h4"]'],
+    ['h5', 'h5', '[data-heading="h5"], [data-tag="h5"]'],
+    ['h6', 'h6', '[data-heading="h6"], [data-tag="h6"]'],
+    ['blockquote', 'blockquote', 'blockquote, [data-tag="blockquote"]'],
+    ['table', 'table', 'th, td, thead, tbody, tfoot, tr, [data-tag="table"], [data-table-material], .table-container'],
+    ['li', 'li', 'ul, ol, li, [data-tag="li"]'],
+    ['hr', 'hr', 'hr, [data-tag="hr"]'],
+    ['p', 'p', 'p, [data-tag="p"]']
   ];
 
   for (const [tag, section, extraSelector] of blockTags) {
@@ -531,42 +538,72 @@ function handlePreviewElementClick(e) {
     const matchedEl = target.closest(sel);
     if (matchedEl) {
       matchedEl.classList.add('preview-active-target');
-      if (materialSupportedTags.includes(section)) {
+      if (hasAppliedMaterial(section)) {
+        // If material has already been replaced/applied, open Theme Customizer and anchor to it
+        emit('element-click', section);
+        emit('open-customizer', section);
+      } else if (materialSupportedTags.includes(section)) {
+        // If no material is applied yet, pop up the Material Selector popup
         currentPopupKey.value = section;
         currentPopupPos.value = { x: e.clientX, y: e.clientY };
         materialPopupVisible.value = true;
       } else {
         emit('element-click', section);
+        emit('open-customizer', section);
       }
       return;
     }
   }
 
   // 4. Fallback for font / inline text
-  if (target.closest('font, [color], [data-tag="font"], span')) {
-    const parentHeading = target.closest('[data-heading], h1, h2, h3, h4, h5, h6');
+  if (target.closest('font, [color], [data-tag="font"], span, div, section')) {
+    const parentHeading = target.closest('[data-heading], [data-tag="h1"], [data-tag="h2"], [data-tag="h3"], [data-tag="h4"], [data-tag="h5"], [data-tag="h6"], h1, h2, h3, h4, h5, h6');
     if (parentHeading) {
       parentHeading.classList.add('preview-active-target');
-      const headingTag = parentHeading.getAttribute('data-heading') || parentHeading.tagName.toLowerCase();
-      if (materialSupportedTags.includes(headingTag)) {
+      const headingTag = parentHeading.getAttribute('data-heading') || parentHeading.getAttribute('data-tag') || parentHeading.tagName.toLowerCase();
+      if (hasAppliedMaterial(headingTag)) {
+        emit('element-click', headingTag);
+        emit('open-customizer', headingTag);
+      } else if (materialSupportedTags.includes(headingTag)) {
         currentPopupKey.value = headingTag;
         currentPopupPos.value = { x: e.clientX, y: e.clientY };
         materialPopupVisible.value = true;
       } else {
         emit('element-click', headingTag);
+        emit('open-customizer', headingTag);
       }
       return;
     }
-    const parentBlock = target.closest('li') ? target.closest('li') : (target.closest('blockquote') ? target.closest('blockquote') : (target.closest('p') ? target.closest('p') : null));
+    const parentTable = target.closest('table, th, td, thead, tbody, tfoot, tr, [data-tag="table"], [data-table-material], .table-container');
+    if (parentTable) {
+      parentTable.classList.add('preview-active-target');
+      if (hasAppliedMaterial('table')) {
+        emit('element-click', 'table');
+        emit('open-customizer', 'table');
+      } else if (materialSupportedTags.includes('table')) {
+        currentPopupKey.value = 'table';
+        currentPopupPos.value = { x: e.clientX, y: e.clientY };
+        materialPopupVisible.value = true;
+      } else {
+        emit('element-click', 'table');
+        emit('open-customizer', 'table');
+      }
+      return;
+    }
+    const parentBlock = target.closest('li, [data-tag="li"]') ? target.closest('li, [data-tag="li"]') : (target.closest('blockquote, [data-tag="blockquote"]') ? target.closest('blockquote, [data-tag="blockquote"]') : (target.closest('p, [data-tag="p"]') ? target.closest('p, [data-tag="p"]') : null));
     if (parentBlock) {
       parentBlock.classList.add('preview-active-target');
-      const blockKey = parentBlock.tagName.toLowerCase();
-      if (materialSupportedTags.includes(blockKey)) {
+      const blockKey = parentBlock.getAttribute('data-tag') || parentBlock.tagName.toLowerCase();
+      if (hasAppliedMaterial(blockKey)) {
+        emit('element-click', blockKey);
+        emit('open-customizer', blockKey);
+      } else if (materialSupportedTags.includes(blockKey)) {
         currentPopupKey.value = blockKey;
         currentPopupPos.value = { x: e.clientX, y: e.clientY };
         materialPopupVisible.value = true;
       } else {
         emit('element-click', blockKey);
+        emit('open-customizer', blockKey);
       }
       return;
     }

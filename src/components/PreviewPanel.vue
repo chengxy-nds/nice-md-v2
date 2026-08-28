@@ -222,7 +222,7 @@ const codeThemeStyles = computed(() => getCodeThemeStyles(props.codeThemeId));
 const themeCustomizerRef = ref(null);
 
 async function handleElementClick(sectionName) {
-  const targetKey = (sectionName === 'pre' || sectionName === 'code') ? 'code' : sectionName;
+  const targetKey = (sectionName === 'pre' || sectionName === 'code') ? 'code' : ((sectionName === 'th' || sectionName === 'td' || sectionName === 'thead' || sectionName === 'tbody' || sectionName === 'tr' || sectionName === 'tables') ? 'table' : sectionName);
   if (!props.themePanelVisible) {
     emit('update:themePanelVisible', true);
   }

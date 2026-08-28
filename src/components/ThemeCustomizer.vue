@@ -1252,7 +1252,7 @@ const customizerBodyRef = ref(null);
 const highlightedKey = ref('');
 
 function scrollToSection(key) {
-  const targetKey = (key === 'pre' || key === 'code') ? 'code' : ((key === 'th' || key === 'td') ? 'table' : key);
+  const targetKey = (key === 'pre' || key === 'code') ? 'code' : ((key === 'th' || key === 'td' || key === 'thead' || key === 'tbody' || key === 'tr' || key === 'tables') ? 'table' : key);
   activeTab.value = 'form';
 
   const doScroll = () => {
@@ -1412,7 +1412,6 @@ const cssLineCount = computed(() => {
               @click="openMaterialModal(el.key)"
               :title="`选择${getMaterialTypeLabel(el.key)}素材模版`"
             >
-              <Sparkles size="12" class="btn-sparkle-icon" />
               <span>素材替换</span>
             </button>
             <button
@@ -2452,11 +2451,16 @@ const cssLineCount = computed(() => {
   min-width: 1.25rem;
 }
 
+.section-title-text {
+  min-width: 0;
+}
+
 .header-action-group {
   margin-left: auto;
   display: flex;
   align-items: center;
   gap: 6px;
+  flex-shrink: 0;
 }
 
 .reset-btn {
@@ -2947,10 +2951,10 @@ const cssLineCount = computed(() => {
 .replace-material-btn {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
   height: 22px;
   padding: 0 8px;
-  background: linear-gradient(135deg, #fb7fa6 0%, #ff784e 100%);
+  background: linear-gradient(135deg, #ff784e 0%, #ff784e 100%);
   border: none;
   border-radius: 4px;
   color: #ffffff;
@@ -2959,7 +2963,9 @@ const cssLineCount = computed(() => {
   cursor: pointer;
   transition: all 0.18s ease;
   user-select: none;
-  box-shadow: 0 2px 6px rgba(251, 127, 166, 0.28);
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(255, 120, 78, 0.28);
 }
 
 .replace-material-btn:hover {
@@ -2971,18 +2977,14 @@ const cssLineCount = computed(() => {
 
 .replace-material-btn:active {
   transform: translateY(0);
-  box-shadow: 0 1px 3px rgba(251, 127, 166, 0.3);
-}
-
-.replace-material-btn .btn-sparkle-icon {
-  color: #ffffff;
+  box-shadow: 0 1px 3px rgba(255, 120, 78, 0.3);
 }
 
 .active-material-banner {
   margin: 6px 0 10px;
   padding: 6px 10px;
-  background: #FAFAFA;
-  border: 1px solid #EDEDED;
+  background: #fff8f5;
+  border: 1px solid rgba(255, 120, 78, 0.25);
   border-radius: 4px;
   display: flex;
   flex-direction: column;
@@ -2991,8 +2993,8 @@ const cssLineCount = computed(() => {
 
 :deep(.dark) .active-material-banner,
 .active-material-banner:where(.dark *) {
-  background: #252526;
-  border-color: #333333;
+  background: rgba(255, 120, 78, 0.08);
+  border-color: rgba(255, 120, 78, 0.25);
 }
 
 .active-material-header {
@@ -3014,19 +3016,20 @@ const cssLineCount = computed(() => {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #16a34a;
+  background: #ff784e;
+  box-shadow: 0 0 0 2px rgba(255, 120, 78, 0.2);
   flex-shrink: 0;
 }
 
 .banner-tag {
-  color: #71717A;
-  font-weight: 500;
+  color: #ff784e;
+  font-weight: 600;
   font-size: 11px;
   white-space: nowrap;
 }
 
 .banner-name {
-  color: #18181B;
+  color: #d94b1f;
   font-weight: 600;
   font-size: 11.5px;
   white-space: nowrap;
@@ -3036,7 +3039,7 @@ const cssLineCount = computed(() => {
 
 :deep(.dark) .banner-name,
 .banner-name:where(.dark *) {
-  color: #EDEDED;
+  color: #ffab91;
 }
 
 .clear-material-btn {
@@ -3045,9 +3048,9 @@ const cssLineCount = computed(() => {
   gap: 3px;
   padding: 2px 6px;
   background: #FFFFFF;
-  border: 1px solid #EDEDED;
+  border: 1px solid rgba(255, 120, 78, 0.25);
   border-radius: 3px;
-  color: #71717A;
+  color: #ff784e;
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -3056,23 +3059,23 @@ const cssLineCount = computed(() => {
 }
 
 .clear-material-btn:hover {
-  background: #FEE2E2;
-  border-color: #FECACA;
-  color: #DC2626;
+  background: #fff0eb;
+  border-color: #ff784e;
+  color: #e65100;
 }
 
 :deep(.dark) .clear-material-btn,
 .clear-material-btn:where(.dark *) {
   background: #1e1e1e;
-  border-color: #333333;
-  color: #a1a1aa;
+  border-color: rgba(255, 120, 78, 0.3);
+  color: #ffab91;
 }
 
 :deep(.dark) .clear-material-btn:hover,
 .clear-material-btn:hover:where(.dark *) {
-  background: #450a0a;
-  border-color: #7f1d1d;
-  color: #f87171;
+  background: #3e1b10;
+  border-color: #ff784e;
+  color: #ffccbc;
 }
 
 .material-prefix-row {
@@ -3192,24 +3195,35 @@ const cssLineCount = computed(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #FAFAFA;
-  border: 1px solid #EDEDED;
+  background: #fff8f5;
+  border: 1px solid rgba(255, 120, 78, 0.25);
   padding: 4px 8px;
   border-radius: 4px;
   margin-top: 6px;
 }
 
+:deep(.dark) .active-widget-banner,
+.active-widget-banner:where(.dark *) {
+  background: rgba(255, 120, 78, 0.08);
+  border-color: rgba(255, 120, 78, 0.25);
+}
+
 .widget-active-name {
   font-size: 11.5px;
   font-weight: 600;
-  color: #18181B;
+  color: #d94b1f;
+}
+
+:deep(.dark) .widget-active-name,
+.widget-active-name:where(.dark *) {
+  color: #ffab91;
 }
 
 .clear-widget-btn {
   background: #FFFFFF;
-  border: 1px solid #EDEDED;
+  border: 1px solid rgba(255, 120, 78, 0.25);
   border-radius: 3px;
-  color: #71717A;
+  color: #ff784e;
   cursor: pointer;
   padding: 2px 6px;
   display: inline-flex;
@@ -3220,9 +3234,23 @@ const cssLineCount = computed(() => {
 }
 
 .clear-widget-btn:hover {
-  background: #FEE2E2;
-  border-color: #FECACA;
-  color: #DC2626;
+  background: #fff0eb;
+  border-color: #ff784e;
+  color: #e65100;
+}
+
+:deep(.dark) .clear-widget-btn,
+.clear-widget-btn:where(.dark *) {
+  background: #1e1e1e;
+  border-color: rgba(255, 120, 78, 0.3);
+  color: #ffab91;
+}
+
+:deep(.dark) .clear-widget-btn:hover,
+.clear-widget-btn:hover:where(.dark *) {
+  background: #3e1b10;
+  border-color: #ff784e;
+  color: #ffccbc;
 }
 
 .modal-feature-guide {

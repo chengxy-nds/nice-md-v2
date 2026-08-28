@@ -44,17 +44,21 @@ const newMaterials = [
     category: 'headings',
     tag: '杂志社论',
     title: '大刊社论·半透罗马序号大标题',
-    description: '底置超大浅灰罗马序号 + 精致无衬线加粗主标 + 极简纯黑下划线',
+    description: '底置超大淡雅罗马序号 + 错落叠压加粗主标 + 极简纯黑下划线',
     tags: ['杂志', '社论', '罗马数字', '大刊', '极简'],
-    html: `<section style="margin: 32px 0 20px; clear: both; position: relative;" data-material="true">
-  <div style="font-family: 'Times New Roman', serif; font-size: 46px; font-weight: 900; color: rgba(0, 0, 0, 0.07); line-height: 1; margin-bottom: -18px; user-select: none;">
-    01.
-  </div>
-  <div style="display: inline-block; border-bottom: 2.5px solid #0a0a0a; padding-bottom: 5px;">
-    <h3 style="margin: 0; font-family: 'Outfit', 'PingFang SC', sans-serif; font-size: 20px; font-weight: 800; color: #0a0a0a; letter-spacing: -0.02em;">
-      范式转移与核心增长飞轮
-    </h3>
-  </div>
+    html: `<section style="margin: 32px 0 20px; clear: both; text-align: left;" data-material="true">
+  <section style="display: inline-block; max-width: 100%; text-align: left;">
+    <section style="margin: 0 0 -14px 0; padding: 0; line-height: 1; text-align: left;">
+      <span style="font-family: 'Times New Roman', Georgia, 'Songti SC', serif; font-size: 40px; font-weight: 900; color: #cbd5e1; letter-spacing: 1px; line-height: 1; display: inline-block;">
+        01.
+      </span>
+    </section>
+    <section style="margin: 0; padding: 0 0 5px 0; border-bottom: 2.5px solid #0a0a0a; display: inline-block; line-height: 1.4; text-align: left; position: relative; z-index: 2;">
+      <span style="font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 18.5px; font-weight: 800; color: #0a0a0a; letter-spacing: 0.2px; line-height: 1.4; display: inline-block;">
+        范式转移与核心增长飞轮
+      </span>
+    </section>
+  </section>
 </section>`
   },
   {

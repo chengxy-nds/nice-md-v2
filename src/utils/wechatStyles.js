@@ -156,6 +156,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           const replacement = tempContainer.firstElementChild;
           if (replacement) {
             replacement.setAttribute('data-heading', tag);
+            replacement.setAttribute('data-tag', tag);
             replacement.setAttribute('data-material', 'true');
             el.parentNode.replaceChild(replacement, el);
           }
@@ -182,6 +183,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         tempContainer.innerHTML = renderedHtml;
         const replacement = tempContainer.firstElementChild;
         if (replacement) {
+          replacement.setAttribute('data-tag', 'blockquote');
           replacement.setAttribute('data-material', 'true');
           el.parentNode.replaceChild(replacement, el);
         }
@@ -201,6 +203,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         tempContainer.innerHTML = renderedHtml;
         const replacement = tempContainer.firstElementChild;
         if (replacement) {
+          replacement.setAttribute('data-tag', 'hr');
           replacement.setAttribute('data-material', 'true');
           el.parentNode.replaceChild(replacement, el);
         }
@@ -223,6 +226,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         tempContainer.innerHTML = renderedHtml;
         const replacement = tempContainer.firstElementChild;
         if (replacement) {
+          replacement.setAttribute('data-tag', 'li');
           replacement.setAttribute('data-material', 'true');
           el.parentNode.replaceChild(replacement, el);
         }
@@ -277,8 +281,18 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
       return extracted || defaultFallback;
     };
 
+    const createTableWrapper = (styleStr = '') => {
+      const wrapper = doc.createElement('section');
+      wrapper.setAttribute('data-material', 'true');
+      wrapper.setAttribute('data-tag', 'table');
+      wrapper.setAttribute('data-table-material', 'true');
+      if (styleStr) wrapper.setAttribute('style', cleanCss(styleStr));
+      return wrapper;
+    };
+
     root.querySelectorAll('table').forEach(tableEl => {
       if (isMaterialEl(tableEl)) return;
+      tableEl.setAttribute('data-tag', 'table');
 
       if (tblMatId === 'tbl-slate-movie-rank') {
         tableEl.setAttribute('style', cleanCss(`
@@ -290,6 +304,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           text-align: center;
           box-sizing: border-box;
           margin: 0;
+          display: table;
         `));
         tableEl.querySelectorAll('thead tr').forEach(tr => {
           tr.setAttribute('style', cleanCss('background-color: #f0f4f6; color: #475569;'));
@@ -313,9 +328,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           });
         });
 
-        const wrapper = doc.createElement('section');
-        wrapper.setAttribute('data-material', 'true');
-        wrapper.setAttribute('style', cleanCss('margin: 24px 0; overflow-x: auto; clear: both;'));
+        const wrapper = createTableWrapper('margin: 24px 0; overflow-x: auto; clear: both; display: block; box-sizing: border-box; width: 100%;');
         tableEl.parentNode.insertBefore(wrapper, tableEl);
         wrapper.appendChild(tableEl);
       } else if (tblMatId === 'tbl-apricot-star-card') {
@@ -329,6 +342,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           text-align: left;
           margin: 0;
           box-sizing: border-box;
+          display: table;
         `));
 
         const hasThead = !!tableEl.querySelector('thead th');
@@ -339,7 +353,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
               tr.setAttribute('style', cleanCss('background-color: #faf7f5; color: #78716c; border-bottom: 1px solid #e7e5e4;'));
             });
             tableEl.querySelectorAll('th').forEach(th => {
-              th.setAttribute('style', cleanCss('border: none; border-bottom: 1px solid #e7e5e4; padding: 9px 16px; font-weight: 700; font-size: 13.5px; color: #78716c; text-align: center;'));
+              th.setAttribute('style', cleanCss('border: none; border-bottom: 1px solid #e7e5e4; padding: 9px 16px; font-weight: 700; font-size: 13.5px; color: #78716c; text-align: center; background-color: #faf7f5;'));
             });
           }
         } else if (hasThead) {
@@ -347,7 +361,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
             tr.setAttribute('style', cleanCss('background-color: #faece1; color: #1c1917; border-bottom: 1.5px solid #292524;'));
           });
           tableEl.querySelectorAll('th').forEach(th => {
-            th.setAttribute('style', cleanCss('border: none; border-bottom: 1.5px solid #292524; padding: 11px 16px; font-weight: 800; font-size: 15px; color: #1c1917; text-align: center; letter-spacing: 0.5px;'));
+            th.setAttribute('style', cleanCss('border: none; border-bottom: 1.5px solid #292524; padding: 11px 16px; font-weight: 800; font-size: 15px; color: #1c1917; text-align: center; letter-spacing: 0.5px; background-color: #faece1;'));
           });
         }
 
@@ -355,12 +369,10 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           tr.setAttribute('style', cleanCss('background-color: #ffffff; color: #1c1917;'));
         });
         tableEl.querySelectorAll('td').forEach(td => {
-          td.setAttribute('style', cleanCss('border: none; padding: 10px 16px; font-weight: 600; font-size: 14px; color: #1c1917; text-align: left; line-height: 1.7;'));
+          td.setAttribute('style', cleanCss('border: none; padding: 10px 16px; font-weight: 600; font-size: 14px; color: #1c1917; text-align: left; line-height: 1.7; background-color: #ffffff;'));
         });
 
-        const wrapper = doc.createElement('section');
-        wrapper.setAttribute('data-material', 'true');
-        wrapper.setAttribute('style', cleanCss('margin: 24px 0; border: 1.5px solid #292524; border-radius: 14px; overflow: hidden; background: #ffffff; clear: both;'));
+        const wrapper = createTableWrapper('margin: 24px 0; border: 1.5px solid #292524; border-radius: 14px; overflow: hidden; background-color: #ffffff; clear: both; display: block; box-sizing: border-box; width: 100%;');
         
         tableEl.parentNode.insertBefore(wrapper, tableEl);
 
@@ -368,9 +380,10 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           let bannerText = explicitTitle || '⭐ 超详细的考研全程攻略 ⭐';
           if (!bannerText.startsWith('⭐')) bannerText = '⭐ ' + bannerText;
           if (!bannerText.endsWith('⭐')) bannerText = bannerText + ' ⭐';
-          const banner = doc.createElement('div');
-          banner.setAttribute('style', cleanCss('background-color: #faece1; padding: 11px 16px; border-bottom: 1.5px solid #292524; text-align: center; font-size: 15.5px; font-weight: 800; color: #1c1917; letter-spacing: 0.5px;'));
-          banner.innerHTML = bannerText;
+          const banner = doc.createElement('table');
+          banner.setAttribute('data-material', 'true');
+          banner.setAttribute('style', cleanCss('width: 100%; border-collapse: collapse; border: none; background-color: #faece1; border-bottom: 1.5px solid #292524; margin: 0; box-sizing: border-box; display: table;'));
+          banner.innerHTML = `<tbody><tr><td style="padding: 11px 16px; text-align: center; font-size: 15.5px; font-weight: 800; color: #1c1917; letter-spacing: 0.5px; border: none; background-color: #faece1;">${bannerText}</td></tr></tbody>`;
           wrapper.appendChild(banner);
         }
 
@@ -386,31 +399,35 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           text-align: center;
           margin: 0;
           box-sizing: border-box;
+          display: table;
         `));
         tableEl.querySelectorAll('thead tr').forEach(tr => {
           tr.setAttribute('style', cleanCss('background-color: #181818; color: #ffffff;'));
         });
         tableEl.querySelectorAll('th').forEach(th => {
-          th.setAttribute('style', cleanCss('border: 1.5px solid #1a1a1a; padding: 10px 8px; font-weight: 800; color: #ffffff; text-align: center;'));
+          th.setAttribute('style', cleanCss('border: 1.5px solid #1a1a1a; padding: 10px 8px; font-weight: 800; color: #ffffff; text-align: center; background-color: #181818;'));
         });
         tableEl.querySelectorAll('tbody tr').forEach(tr => {
           tr.setAttribute('style', cleanCss('background-color: #ffffff; color: #1a1a1a;'));
           tr.querySelectorAll('td').forEach((td, colIdx) => {
             if (colIdx === 0) {
-              td.setAttribute('style', cleanCss('border: 1.5px solid #1a1a1a; padding: 9px 8px; font-weight: 800; color: #1a1a1a; text-align: center;'));
+              td.setAttribute('style', cleanCss('border: 1.5px solid #1a1a1a; padding: 9px 8px; font-weight: 800; color: #1a1a1a; text-align: center; background-color: #ffffff;'));
             } else {
-              td.setAttribute('style', cleanCss('border: 1.5px solid #1a1a1a; padding: 9px 8px; font-weight: 600; color: #1a1a1a; text-align: center;'));
+              td.setAttribute('style', cleanCss('border: 1.5px solid #1a1a1a; padding: 9px 8px; font-weight: 600; color: #1a1a1a; text-align: center; background-color: #ffffff;'));
             }
           });
         });
 
-        const wrapper = doc.createElement('section');
-        wrapper.setAttribute('data-material', 'true');
-        wrapper.setAttribute('style', cleanCss('margin: 24px 0; border: 2px solid #1a1a1a; background: #ffffff; overflow: hidden; clear: both;'));
+        const wrapper = createTableWrapper('margin: 24px 0; border: 2px solid #1a1a1a; background-color: #ffffff; overflow: hidden; clear: both; display: block; box-sizing: border-box; width: 100%;');
         
-        const winHeader = doc.createElement('div');
-        winHeader.setAttribute('style', cleanCss('display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: #ffffff; border-bottom: 2px solid #1a1a1a; font-size: 14.5px; font-weight: 800; color: #1a1a1a;'));
-        winHeader.innerHTML = `<span style="visibility: hidden; font-size: 11px;">_ □ ✕</span><span style="letter-spacing: 1px;">${title}</span><span style="font-family: monospace; font-size: 13px; font-weight: bold; letter-spacing: 2px;">_ □ ✕</span>`;
+        const winHeader = doc.createElement('table');
+        winHeader.setAttribute('data-material', 'true');
+        winHeader.setAttribute('style', cleanCss('width: 100%; border-collapse: collapse; border: none; background-color: #ffffff; border-bottom: 2px solid #1a1a1a; margin: 0; box-sizing: border-box; display: table;'));
+        winHeader.innerHTML = `<tbody><tr>
+          <td style="width: 25%; padding: 8px 12px; text-align: left; vertical-align: middle; border: none; background-color: #ffffff;"><span style="visibility: hidden; font-size: 11px;">_ □ ✕</span></td>
+          <td style="padding: 8px 4px; text-align: center; vertical-align: middle; border: none; font-size: 14.5px; font-weight: 800; color: #1a1a1a; letter-spacing: 1px; background-color: #ffffff;">${title}</td>
+          <td style="width: 25%; padding: 8px 12px; text-align: right; vertical-align: middle; border: none; font-family: monospace; font-size: 13px; font-weight: bold; letter-spacing: 2px; color: #1a1a1a; background-color: #ffffff;">_ □ ✕</td>
+        </tr></tbody>`;
         
         tableEl.parentNode.insertBefore(wrapper, tableEl);
         wrapper.appendChild(winHeader);
@@ -425,12 +442,13 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           text-align: center;
           margin: 0;
           box-sizing: border-box;
+          display: table;
         `));
         tableEl.querySelectorAll('thead tr').forEach(tr => {
           tr.setAttribute('style', cleanCss('background-color: #ebe0e0; color: #4a3838;'));
         });
         tableEl.querySelectorAll('th').forEach(th => {
-          th.setAttribute('style', cleanCss('border: none; border-bottom: 1.5px solid #5a4848; padding: 11px 12px; font-weight: 700; color: #4a3838; text-align: center; font-size: 15px;'));
+          th.setAttribute('style', cleanCss('border: none; border-bottom: 1.5px solid #5a4848; padding: 11px 12px; font-weight: 700; color: #4a3838; text-align: center; font-size: 15px; background-color: #ebe0e0;'));
         });
         tableEl.querySelectorAll('tbody tr').forEach((tr, rowIdx, allRows) => {
           const isLast = rowIdx === allRows.length - 1;
@@ -438,13 +456,11 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           tr.setAttribute('style', cleanCss('background-color: #ffffff; color: #4a3838;'));
           tr.querySelectorAll('td').forEach((td, colIdx) => {
             const fw = colIdx === 0 ? '700' : '500';
-            td.setAttribute('style', cleanCss(`border: none; border-bottom: ${borderBottom}; padding: 10px 12px; font-weight: ${fw}; color: #4a3838; text-align: center; font-size: 14px;`));
+            td.setAttribute('style', cleanCss(`border: none; border-bottom: ${borderBottom}; padding: 10px 12px; font-weight: ${fw}; color: #4a3838; text-align: center; font-size: 14px; background-color: #ffffff;`));
           });
         });
 
-        const wrapper = doc.createElement('section');
-        wrapper.setAttribute('data-material', 'true');
-        wrapper.setAttribute('style', cleanCss('margin: 24px 0; border: 1.5px solid #5a4848; border-radius: 12px; overflow: hidden; background: #ffffff; clear: both;'));
+        const wrapper = createTableWrapper('margin: 24px 0; border: 1.5px solid #5a4848; border-radius: 12px; overflow: hidden; background-color: #ffffff; clear: both; display: block; box-sizing: border-box; width: 100%;');
         tableEl.parentNode.insertBefore(wrapper, tableEl);
         wrapper.appendChild(tableEl);
       } else if (tblMatId === 'tbl-milktea-apricot-schedule') {
@@ -457,24 +473,23 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           text-align: center;
           box-sizing: border-box;
           margin: 0;
+          display: table;
         `));
         tableEl.querySelectorAll('thead tr').forEach(tr => {
           tr.setAttribute('style', cleanCss('background-color: #faeee6; color: #231f20;'));
         });
         tableEl.querySelectorAll('th').forEach(th => {
-          th.setAttribute('style', cleanCss('border: 2px solid #231f20; padding: 12px 16px; font-weight: 800; letter-spacing: 0.5px; color: #231f20; text-align: center;'));
+          th.setAttribute('style', cleanCss('border: 2px solid #231f20; padding: 12px 16px; font-weight: 800; letter-spacing: 0.5px; color: #231f20; text-align: center; background-color: #faeee6;'));
         });
         tableEl.querySelectorAll('tbody tr').forEach(tr => {
           tr.setAttribute('style', cleanCss('background-color: #ffffff; color: #231f20;'));
           tr.querySelectorAll('td').forEach((td, colIdx) => {
             const fw = colIdx === 0 ? '800' : '600';
-            td.setAttribute('style', cleanCss(`border: 2px solid #231f20; padding: 11px 16px; font-weight: ${fw}; letter-spacing: 0.5px; color: #231f20; text-align: center;`));
+            td.setAttribute('style', cleanCss(`border: 2px solid #231f20; padding: 11px 16px; font-weight: ${fw}; letter-spacing: 0.5px; color: #231f20; text-align: center; background-color: #ffffff;`));
           });
         });
 
-        const wrapper = doc.createElement('section');
-        wrapper.setAttribute('data-material', 'true');
-        wrapper.setAttribute('style', cleanCss('margin: 24px 0; overflow-x: auto; clear: both;'));
+        const wrapper = createTableWrapper('margin: 24px 0; overflow-x: auto; clear: both; display: block; box-sizing: border-box; width: 100%;');
         tableEl.parentNode.insertBefore(wrapper, tableEl);
         wrapper.appendChild(tableEl);
       } else if (tblMatId === 'tbl-amber-schedule') {
@@ -487,25 +502,24 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           text-align: center;
           box-sizing: border-box;
           margin: 0;
+          display: table;
         `));
         tableEl.querySelectorAll('thead tr').forEach(tr => {
           tr.setAttribute('style', cleanCss('background-color: #f59e0b; color: #18181b;'));
         });
         tableEl.querySelectorAll('th').forEach(th => {
-          th.setAttribute('style', cleanCss('border: 1px solid #18181b; padding: 11px 16px; font-weight: 800; letter-spacing: 0.5px; text-align: center; color: #18181b;'));
+          th.setAttribute('style', cleanCss('border: 1px solid #18181b; padding: 11px 16px; font-weight: 800; letter-spacing: 0.5px; text-align: center; color: #18181b; background-color: #f59e0b;'));
         });
         tableEl.querySelectorAll('tbody tr').forEach((tr, rowIdx) => {
           const rowBg = rowIdx % 2 === 0 ? '#ffffff' : '#f7f4ed';
           tr.setAttribute('style', cleanCss(`background-color: ${rowBg}; color: #18181b;`));
           tr.querySelectorAll('td').forEach((td, colIdx) => {
             const fw = colIdx === 0 ? '800' : '600';
-            td.setAttribute('style', cleanCss(`border: 1px solid #18181b; padding: 10px 16px; font-weight: ${fw}; letter-spacing: 0.5px; text-align: center; color: #18181b;`));
+            td.setAttribute('style', cleanCss(`border: 1px solid #18181b; padding: 10px 16px; font-weight: ${fw}; letter-spacing: 0.5px; text-align: center; color: #18181b; background-color: ${rowBg};`));
           });
         });
 
-        const wrapper = doc.createElement('section');
-        wrapper.setAttribute('data-material', 'true');
-        wrapper.setAttribute('style', cleanCss('margin: 24px 0; overflow-x: auto; clear: both;'));
+        const wrapper = createTableWrapper('margin: 24px 0; overflow-x: auto; clear: both; display: block; box-sizing: border-box; width: 100%;');
         tableEl.parentNode.insertBefore(wrapper, tableEl);
         wrapper.appendChild(tableEl);
       } else if (tblMatId === 'tbl-modern-striped') {
@@ -517,6 +531,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           font-size: 13.5px;
           font-family: -apple-system, BlinkMacSystemFont, sans-serif;
           margin: 0;
+          display: table;
         `));
         tableEl.querySelectorAll('thead tr').forEach(tr => {
           tr.setAttribute('style', cleanCss('background-color: #0f172a; color: #ffffff;'));
@@ -524,7 +539,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         tableEl.querySelectorAll('thead th').forEach((th, idx, allThs) => {
           const isLast = idx === allThs.length - 1;
           const thColor = isLast ? '#38bdf8' : '#ffffff';
-          th.setAttribute('style', cleanCss(`border: none; padding: 12px 16px; font-weight: 700; color: ${thColor};`));
+          th.setAttribute('style', cleanCss(`border: none; padding: 12px 16px; font-weight: 700; color: ${thColor}; background-color: #0f172a;`));
         });
         tableEl.querySelectorAll('tbody tr').forEach((tr, rowIdx) => {
           const rowBg = rowIdx % 2 === 0 ? '#ffffff' : '#f8fafc';
@@ -532,18 +547,16 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           const allTds = tr.querySelectorAll('td');
           allTds.forEach((td, colIdx) => {
             if (colIdx === 0) {
-              td.setAttribute('style', cleanCss('border: none; padding: 10px 16px; font-weight: 600; color: #334155; text-align: left;'));
+              td.setAttribute('style', cleanCss(`border: none; padding: 10px 16px; font-weight: 600; color: #334155; text-align: left; background-color: ${rowBg};`));
             } else if (colIdx === allTds.length - 1) {
-              td.setAttribute('style', cleanCss('border: none; padding: 10px 16px; color: #16a34a; font-weight: 700;'));
+              td.setAttribute('style', cleanCss(`border: none; padding: 10px 16px; color: #16a34a; font-weight: 700; background-color: ${rowBg};`));
             } else {
-              td.setAttribute('style', cleanCss('border: none; padding: 10px 16px; color: #64748b;'));
+              td.setAttribute('style', cleanCss(`border: none; padding: 10px 16px; color: #64748b; background-color: ${rowBg};`));
             }
           });
         });
 
-        const wrapper = doc.createElement('section');
-        wrapper.setAttribute('data-material', 'true');
-        wrapper.setAttribute('style', cleanCss('margin: 24px 0; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 10px;'));
+        const wrapper = createTableWrapper('margin: 24px 0; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 10px; display: block; box-sizing: border-box; background-color: #ffffff; width: 100%;');
         tableEl.parentNode.insertBefore(wrapper, tableEl);
         wrapper.appendChild(tableEl);
       } else if (tblMatId === 'tbl-tier-comparison') {
@@ -554,6 +567,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           text-align: center;
           font-size: 13.5px;
           margin: 0;
+          display: table;
         `));
         tableEl.querySelectorAll('thead tr').forEach(tr => {
           tr.setAttribute('style', cleanCss('background-color: #f8fafc; border-bottom: 2px solid #e2e8f0;'));
@@ -561,30 +575,29 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         tableEl.querySelectorAll('thead th').forEach((th, idx, allThs) => {
           const isLast = idx === allThs.length - 1;
           if (idx === 0) {
-            th.setAttribute('style', cleanCss('border: none; border-bottom: 2px solid #e2e8f0; padding: 14px; text-align: left; color: #0f172a; font-weight: 700;'));
+            th.setAttribute('style', cleanCss('border: none; border-bottom: 2px solid #e2e8f0; padding: 14px; text-align: left; color: #0f172a; font-weight: 700; background-color: #f8fafc;'));
           } else if (isLast) {
-            th.setAttribute('style', cleanCss('border: none; border-bottom: 2px solid #e2e8f0; padding: 14px; background: #eff6ff; color: #2563eb; font-weight: 800;'));
+            th.setAttribute('style', cleanCss('border: none; border-bottom: 2px solid #e2e8f0; padding: 14px; background-color: #eff6ff; color: #2563eb; font-weight: 800;'));
           } else {
-            th.setAttribute('style', cleanCss('border: none; border-bottom: 2px solid #e2e8f0; padding: 14px; color: #64748b; font-weight: 600;'));
+            th.setAttribute('style', cleanCss('border: none; border-bottom: 2px solid #e2e8f0; padding: 14px; color: #64748b; font-weight: 600; background-color: #f8fafc;'));
           }
         });
-        tableEl.querySelectorAll('tbody tr').forEach(tr => {
-          tr.setAttribute('style', cleanCss('border-bottom: 1px solid #f1f5f9;'));
+        tableEl.querySelectorAll('tbody tr').forEach((tr, rowIdx) => {
+          const rowBg = rowIdx % 2 === 0 ? '#ffffff' : '#f8fafc';
+          tr.setAttribute('style', cleanCss(`background-color: ${rowBg}; border-bottom: 1px solid #f1f5f9;`));
           const allTds = tr.querySelectorAll('td');
           allTds.forEach((td, colIdx) => {
             if (colIdx === 0) {
-              td.setAttribute('style', cleanCss('border: none; padding: 10px 14px; text-align: left; color: #334155; font-weight: 600;'));
+              td.setAttribute('style', cleanCss(`border: none; padding: 10px 14px; text-align: left; color: #334155; font-weight: 600; background-color: ${rowBg};`));
             } else if (colIdx === allTds.length - 1) {
-              td.setAttribute('style', cleanCss('border: none; padding: 10px 14px; background: #eff6ff; color: #2563eb; font-weight: 700; text-align: center;'));
+              td.setAttribute('style', cleanCss('border: none; padding: 10px 14px; background-color: #eff6ff; color: #2563eb; font-weight: 700; text-align: center;'));
             } else {
-              td.setAttribute('style', cleanCss('border: none; padding: 10px 14px; text-align: center; color: #64748b;'));
+              td.setAttribute('style', cleanCss(`border: none; padding: 10px 14px; text-align: center; color: #64748b; background-color: ${rowBg};`));
             }
           });
         });
 
-        const wrapper = doc.createElement('section');
-        wrapper.setAttribute('data-material', 'true');
-        wrapper.setAttribute('style', cleanCss('margin: 24px 0; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);'));
+        const wrapper = createTableWrapper('margin: 24px 0; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.03); display: block; box-sizing: border-box; background-color: #ffffff; width: 100%;');
         tableEl.parentNode.insertBefore(wrapper, tableEl);
         wrapper.appendChild(tableEl);
       } else if (tblMatId === 'tbl-business-blue-compare') {
@@ -597,6 +610,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
           margin: 0;
           box-sizing: border-box;
+          display: table;
         `));
         tableEl.querySelectorAll('thead tr').forEach(tr => {
           tr.setAttribute('style', cleanCss('background-color: #1e3a8a; color: #ffffff;'));
@@ -604,11 +618,11 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         tableEl.querySelectorAll('thead th').forEach((th, idx, allThs) => {
           const isLast = idx === allThs.length - 1;
           if (idx === 0) {
-            th.setAttribute('style', cleanCss('border: none; padding: 13px 16px; text-align: left; font-weight: 700; color: #ffffff;'));
+            th.setAttribute('style', cleanCss('border: none; padding: 13px 16px; text-align: left; font-weight: 700; color: #ffffff; background-color: #1e3a8a;'));
           } else if (isLast) {
-            th.setAttribute('style', cleanCss('border: none; padding: 13px 16px; font-weight: 800; color: #ffffff; background: #2563eb;'));
+            th.setAttribute('style', cleanCss('border: none; padding: 13px 16px; font-weight: 800; color: #ffffff; background-color: #2563eb;'));
           } else {
-            th.setAttribute('style', cleanCss('border: none; padding: 13px 16px; font-weight: 700; color: #93c5fd;'));
+            th.setAttribute('style', cleanCss('border: none; padding: 13px 16px; font-weight: 700; color: #93c5fd; background-color: #1e3a8a;'));
           }
         });
         tableEl.querySelectorAll('tbody tr').forEach((tr, rowIdx) => {
@@ -617,18 +631,16 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           const allTds = tr.querySelectorAll('td');
           allTds.forEach((td, colIdx) => {
             if (colIdx === 0) {
-              td.setAttribute('style', cleanCss('border: none; padding: 11px 16px; text-align: left; font-weight: 600; color: #1e293b;'));
+              td.setAttribute('style', cleanCss(`border: none; padding: 11px 16px; text-align: left; font-weight: 600; color: #1e293b; background-color: ${rowBg};`));
             } else if (colIdx === allTds.length - 1) {
-              td.setAttribute('style', cleanCss('border: none; padding: 11px 16px; background: #eff6ff; color: #2563eb; font-weight: 700; text-align: center;'));
+              td.setAttribute('style', cleanCss('border: none; padding: 11px 16px; background-color: #eff6ff; color: #2563eb; font-weight: 700; text-align: center;'));
             } else {
-              td.setAttribute('style', cleanCss('border: none; padding: 11px 16px; text-align: center; color: #64748b;'));
+              td.setAttribute('style', cleanCss(`border: none; padding: 11px 16px; text-align: center; color: #64748b; background-color: ${rowBg};`));
             }
           });
         });
 
-        const wrapper = doc.createElement('section');
-        wrapper.setAttribute('data-material', 'true');
-        wrapper.setAttribute('style', cleanCss('margin: 24px 0; overflow-x: auto; border: 1.5px solid #bfdbfe; border-radius: 12px; box-shadow: 0 4px 16px rgba(37,99,235,0.06); clear: both;'));
+        const wrapper = createTableWrapper('margin: 24px 0; overflow-x: auto; border: 1.5px solid #bfdbfe; border-radius: 12px; box-shadow: 0 4px 16px rgba(37,99,235,0.06); clear: both; display: block; box-sizing: border-box; background-color: #ffffff; width: 100%;');
         tableEl.parentNode.insertBefore(wrapper, tableEl);
         wrapper.appendChild(tableEl);
       } else if (tblMatId === 'tbl-terminal-dark-metrics') {
@@ -642,12 +654,13 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           text-align: left;
           margin: 0;
           box-sizing: border-box;
+          display: table;
         `));
         tableEl.querySelectorAll('thead tr').forEach(tr => {
           tr.setAttribute('style', cleanCss('background-color: #0f172a; color: #38bdf8; border-bottom: 1.5px solid #334155;'));
         });
         tableEl.querySelectorAll('th').forEach(th => {
-          th.setAttribute('style', cleanCss('border: none; padding: 10px 14px; font-weight: 700; color: #38bdf8; font-family: "JetBrains Mono", Consolas, Monaco, monospace;'));
+          th.setAttribute('style', cleanCss('border: none; padding: 10px 14px; font-weight: 700; color: #38bdf8; font-family: "JetBrains Mono", Consolas, Monaco, monospace; background-color: #0f172a;'));
         });
         tableEl.querySelectorAll('tbody tr').forEach((tr, rowIdx) => {
           const rowBg = rowIdx % 2 === 0 ? '#0f172a' : '#131d33';
@@ -656,24 +669,28 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           allTds.forEach((td, colIdx) => {
             const isLast = colIdx === allTds.length - 1;
             if (colIdx === 0) {
-              td.setAttribute('style', cleanCss('border: none; padding: 9px 14px; color: #f8fafc; font-family: "JetBrains Mono", Consolas, Monaco, monospace; font-weight: 600;'));
+              td.setAttribute('style', cleanCss(`border: none; padding: 9px 14px; color: #f8fafc; font-family: "JetBrains Mono", Consolas, Monaco, monospace; font-weight: 600; background-color: ${rowBg};`));
             } else if (colIdx === 1) {
-              td.setAttribute('style', cleanCss('border: none; padding: 9px 14px; color: #10b981; font-weight: 700; font-family: "JetBrains Mono", Consolas, Monaco, monospace;'));
+              td.setAttribute('style', cleanCss(`border: none; padding: 9px 14px; color: #10b981; font-weight: 700; font-family: "JetBrains Mono", Consolas, Monaco, monospace; background-color: ${rowBg};`));
             } else if (isLast) {
-              td.setAttribute('style', cleanCss('border: none; padding: 9px 14px; color: #10b981; font-weight: 700; font-family: "JetBrains Mono", Consolas, Monaco, monospace;'));
+              td.setAttribute('style', cleanCss(`border: none; padding: 9px 14px; color: #10b981; font-weight: 700; font-family: "JetBrains Mono", Consolas, Monaco, monospace; background-color: ${rowBg};`));
             } else {
-              td.setAttribute('style', cleanCss('border: none; padding: 9px 14px; color: #f8fafc; font-family: "JetBrains Mono", Consolas, Monaco, monospace;'));
+              td.setAttribute('style', cleanCss(`border: none; padding: 9px 14px; color: #f8fafc; font-family: "JetBrains Mono", Consolas, Monaco, monospace; background-color: ${rowBg};`));
             }
           });
         });
 
-        const wrapper = doc.createElement('section');
-        wrapper.setAttribute('data-material', 'true');
-        wrapper.setAttribute('style', cleanCss('margin: 24px 0; border: 1.5px solid #334155; border-radius: 10px; overflow: hidden; background: #0f172a; clear: both; font-family: "JetBrains Mono", Consolas, Monaco, monospace;'));
+        const wrapper = createTableWrapper('margin: 24px 0; border: 1.5px solid #334155; border-radius: 10px; overflow: hidden; background-color: #0f172a; clear: both; font-family: "JetBrains Mono", Consolas, Monaco, monospace; display: block; box-sizing: border-box; width: 100%;');
         
-        const bar = doc.createElement('div');
-        bar.setAttribute('style', cleanCss('display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; background: #1e293b; border-bottom: 1px solid #334155;'));
-        bar.innerHTML = `<div style="display: flex; align-items: center; gap: 6px;"><span style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block;"></span><span style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span><span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span></div><span style="font-family: monospace; font-size: 11px; color: #94a3b8; font-weight: 700;">${title}</span>`;
+        const bar = doc.createElement('table');
+        bar.setAttribute('data-material', 'true');
+        bar.setAttribute('style', cleanCss('width: 100%; border-collapse: collapse; border: none; background-color: #1e293b; border-bottom: 1px solid #334155; margin: 0; box-sizing: border-box; display: table;'));
+        bar.innerHTML = `<tbody><tr>
+          <td style="padding: 9px 14px; text-align: left; vertical-align: middle; border: none; line-height: 1; background-color: #1e293b;">
+            <span style="width: 10px; height: 10px; border-radius: 50%; background-color: #ef4444; display: inline-block; margin-right: 6px; vertical-align: middle;"></span><span style="width: 10px; height: 10px; border-radius: 50%; background-color: #f59e0b; display: inline-block; margin-right: 6px; vertical-align: middle;"></span><span style="width: 10px; height: 10px; border-radius: 50%; background-color: #10b981; display: inline-block; vertical-align: middle;"></span>
+          </td>
+          <td style="padding: 9px 14px; text-align: right; vertical-align: middle; border: none; font-family: monospace; font-size: 11px; color: #94a3b8; font-weight: 700; background-color: #1e293b;">${title}</td>
+        </tr></tbody>`;
 
         tableEl.parentNode.insertBefore(wrapper, tableEl);
         wrapper.appendChild(bar);
@@ -688,12 +705,13 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           text-align: center;
           margin: 0;
           box-sizing: border-box;
+          display: table;
         `));
         tableEl.querySelectorAll('thead tr').forEach(tr => {
           tr.setAttribute('style', cleanCss('background-color: #2d6a4f; color: #ffffff;'));
         });
         tableEl.querySelectorAll('th').forEach(th => {
-          th.setAttribute('style', cleanCss('border: none; padding: 12px 14px; font-weight: 700; color: #ffffff; text-align: center;'));
+          th.setAttribute('style', cleanCss('border: none; padding: 12px 14px; font-weight: 700; color: #ffffff; text-align: center; background-color: #2d6a4f;'));
         });
         tableEl.querySelectorAll('tbody tr').forEach((tr, rowIdx) => {
           const rowBg = rowIdx % 2 === 0 ? '#f4fbf7' : '#ffffff';
@@ -701,18 +719,16 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           const allTds = tr.querySelectorAll('td');
           allTds.forEach((td, colIdx) => {
             if (colIdx === 0) {
-              td.setAttribute('style', cleanCss('border: none; padding: 10px 14px; font-weight: 700; color: #1e392a; text-align: center;'));
+              td.setAttribute('style', cleanCss(`border: none; padding: 10px 14px; font-weight: 700; color: #1e392a; text-align: center; background-color: ${rowBg};`));
             } else if (colIdx === allTds.length - 1) {
-              td.setAttribute('style', cleanCss('border: none; padding: 10px 14px; color: #15803d; font-weight: 800; text-align: center;'));
+              td.setAttribute('style', cleanCss(`border: none; padding: 10px 14px; color: #15803d; font-weight: 800; text-align: center; background-color: ${rowBg};`));
             } else {
-              td.setAttribute('style', cleanCss('border: none; padding: 10px 14px; color: #2d4a3e; font-weight: 600; text-align: left;'));
+              td.setAttribute('style', cleanCss(`border: none; padding: 10px 14px; color: #2d4a3e; font-weight: 600; text-align: left; background-color: ${rowBg};`));
             }
           });
         });
 
-        const wrapper = doc.createElement('section');
-        wrapper.setAttribute('data-material', 'true');
-        wrapper.setAttribute('style', cleanCss('margin: 24px 0; overflow-x: auto; border: 1.5px solid #bbf7d0; border-radius: 12px; overflow: hidden; clear: both;'));
+        const wrapper = createTableWrapper('margin: 24px 0; overflow-x: auto; border: 1.5px solid #bbf7d0; border-radius: 12px; overflow: hidden; clear: both; display: block; box-sizing: border-box; background-color: #ffffff; width: 100%;');
         tableEl.parentNode.insertBefore(wrapper, tableEl);
         wrapper.appendChild(tableEl);
       } else if (tblMatId === 'tbl-guofeng-crimson-classic') {
@@ -724,12 +740,13 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           text-align: center;
           margin: 0;
           box-sizing: border-box;
+          display: table;
         `));
         tableEl.querySelectorAll('thead tr').forEach(tr => {
           tr.setAttribute('style', cleanCss('background-color: #991b1b; color: #ffffff; font-family: "Songti SC", SimSun, "Source Han Serif SC", STSong, serif;'));
         });
         tableEl.querySelectorAll('th').forEach(th => {
-          th.setAttribute('style', cleanCss('border: 1px solid #7f1d1d; padding: 10px 12px; font-weight: 800; color: #ffffff; letter-spacing: 2px; font-family: "Songti SC", SimSun, "Source Han Serif SC", STSong, serif; text-align: center;'));
+          th.setAttribute('style', cleanCss('border: 1px solid #7f1d1d; padding: 10px 12px; font-weight: 800; color: #ffffff; letter-spacing: 2px; font-family: "Songti SC", SimSun, "Source Han Serif SC", STSong, serif; text-align: center; background-color: #991b1b;'));
         });
         tableEl.querySelectorAll('tbody tr').forEach((tr, rowIdx) => {
           const rowBg = rowIdx % 2 === 0 ? '#ffffff' : '#faf7f2';
@@ -737,21 +754,19 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           const allTds = tr.querySelectorAll('td');
           allTds.forEach((td, colIdx) => {
             if (colIdx === 0) {
-              td.setAttribute('style', cleanCss('border: 1px solid #e7dfd5; padding: 10px 12px; font-weight: 800; color: #991b1b; font-family: "Songti SC", SimSun, "Source Han Serif SC", STSong, serif; text-align: center;'));
+              td.setAttribute('style', cleanCss(`border: 1px solid #e7dfd5; padding: 10px 12px; font-weight: 800; color: #991b1b; font-family: "Songti SC", SimSun, "Source Han Serif SC", STSong, serif; text-align: center; background-color: ${rowBg};`));
             } else if (colIdx === 1) {
-              td.setAttribute('style', cleanCss('border: 1px solid #e7dfd5; padding: 10px 12px; font-weight: 700; color: #451a03; font-family: "Songti SC", SimSun, "Source Han Serif SC", STSong, serif; text-align: center;'));
+              td.setAttribute('style', cleanCss(`border: 1px solid #e7dfd5; padding: 10px 12px; font-weight: 700; color: #451a03; font-family: "Songti SC", SimSun, "Source Han Serif SC", STSong, serif; text-align: center; background-color: ${rowBg};`));
             } else {
-              td.setAttribute('style', cleanCss('border: 1px solid #e7dfd5; padding: 10px 12px; color: #292524; font-style: italic; font-family: "Songti SC", SimSun, "Source Han Serif SC", STSong, serif; text-align: left;'));
+              td.setAttribute('style', cleanCss(`border: 1px solid #e7dfd5; padding: 10px 12px; color: #292524; font-style: italic; font-family: "Songti SC", SimSun, "Source Han Serif SC", STSong, serif; text-align: left; background-color: ${rowBg};`));
             }
           });
         });
 
-        const wrapper = doc.createElement('section');
-        wrapper.setAttribute('data-material', 'true');
-        wrapper.setAttribute('style', cleanCss('margin: 24px 0; border: 2px solid #991b1b; padding: 3px; background: #faf7f2; clear: both; font-family: "Songti SC", SimSun, "Source Han Serif SC", STSong, serif;'));
+        const wrapper = createTableWrapper('margin: 24px 0; border: 2px solid #991b1b; padding: 3px; background-color: #faf7f2; clear: both; font-family: "Songti SC", SimSun, "Source Han Serif SC", STSong, serif; display: block; box-sizing: border-box; width: 100%;');
         
         const innerBox = doc.createElement('div');
-        innerBox.setAttribute('style', cleanCss('border: 1px solid #b91c1c; padding: 2px;'));
+        innerBox.setAttribute('style', cleanCss('border: 1px solid #b91c1c; padding: 2px; display: block; box-sizing: border-box;'));
 
         tableEl.parentNode.insertBefore(wrapper, tableEl);
         wrapper.appendChild(innerBox);
@@ -766,6 +781,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           text-align: center;
           margin: 0;
           box-sizing: border-box;
+          display: table;
         `));
         tableEl.querySelectorAll('thead tr').forEach(tr => {
           tr.setAttribute('style', cleanCss('background-color: #fffbeb; color: #18181b; border-bottom: 1.5px solid #18181b;'));
@@ -773,7 +789,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         tableEl.querySelectorAll('thead th').forEach((th, idx, allThs) => {
           const isLast = idx === allThs.length - 1;
           const borderRight = isLast ? 'none' : '1.5px solid #18181b';
-          th.setAttribute('style', cleanCss(`border: none; border-right: ${borderRight}; padding: 9px 8px; font-weight: 800; color: #18181b; text-align: center;`));
+          th.setAttribute('style', cleanCss(`border: none; border-right: ${borderRight}; padding: 9px 8px; font-weight: 800; color: #18181b; text-align: center; background-color: #fffbeb;`));
         });
         tableEl.querySelectorAll('tbody tr').forEach((tr, rowIdx) => {
           const rowBg = rowIdx % 2 === 0 ? '#ffffff' : '#fffdf5';
@@ -782,21 +798,21 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           allTds.forEach((td, colIdx) => {
             const isLast = colIdx === allTds.length - 1;
             const borderRight = isLast ? 'none' : '1.5px solid #18181b';
-            if (colIdx === 0) {
-              td.setAttribute('style', cleanCss(`border: none; border-right: ${borderRight}; padding: 9px 8px; font-weight: 700; color: #18181b; text-align: center;`));
-            } else {
-              td.setAttribute('style', cleanCss(`border: none; border-right: ${borderRight}; padding: 9px 8px; font-weight: 700; color: #18181b; text-align: center;`));
-            }
+            td.setAttribute('style', cleanCss(`border: none; border-right: ${borderRight}; padding: 9px 8px; font-weight: 700; color: #18181b; text-align: center; background-color: ${rowBg};`));
           });
         });
 
-        const wrapper = doc.createElement('section');
-        wrapper.setAttribute('data-material', 'true');
-        wrapper.setAttribute('style', cleanCss('margin: 24px 0; border: 2px solid #18181b; border-radius: 12px; background: #ffffff; box-shadow: 4px 4px 0px #fed7aa; overflow: hidden; clear: both;'));
+        const wrapper = createTableWrapper('margin: 24px 0; border: 2px solid #18181b; border-radius: 12px; background-color: #ffffff; box-shadow: 4px 4px 0px #fed7aa; overflow: hidden; clear: both; display: block; box-sizing: border-box; width: 100%;');
         
-        const banner = doc.createElement('div');
-        banner.setAttribute('style', cleanCss('background-color: #fef08a; padding: 10px 16px; border-bottom: 2px solid #18181b; display: flex; align-items: center; justify-content: space-between;'));
-        banner.innerHTML = `<span style="font-size: 14.5px; font-weight: 900; color: #18181b; letter-spacing: 0.5px;">${title}</span><span style="font-size: 12px; font-weight: 800; background: #ffffff; border: 1.5px solid #18181b; padding: 2px 8px; border-radius: 6px;">DAY 1-7</span>`;
+        const banner = doc.createElement('table');
+        banner.setAttribute('data-material', 'true');
+        banner.setAttribute('style', cleanCss('width: 100%; border-collapse: collapse; border: none; background-color: #fef08a; border-bottom: 2px solid #18181b; margin: 0; box-sizing: border-box; display: table;'));
+        banner.innerHTML = `<tbody><tr>
+          <td style="padding: 10px 14px; text-align: left; vertical-align: middle; border: none; font-size: 14.5px; font-weight: 900; color: #18181b; letter-spacing: 0.5px; background-color: #fef08a;">${title}</td>
+          <td style="padding: 10px 14px; text-align: right; vertical-align: middle; border: none; white-space: nowrap; background-color: #fef08a;">
+            <span style="display: inline-block; font-size: 12px; font-weight: 800; background-color: #ffffff; border: 1.5px solid #18181b; padding: 2px 8px; border-radius: 6px; color: #18181b;">DAY 1-7</span>
+          </td>
+        </tr></tbody>`;
 
         tableEl.parentNode.insertBefore(wrapper, tableEl);
         wrapper.appendChild(banner);
@@ -814,35 +830,34 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           text-align: left;
           margin: 0;
           box-sizing: border-box;
+          display: table;
         `));
         tableEl.querySelectorAll('thead tr').forEach(tr => {
-          tr.setAttribute('style', cleanCss('border-bottom: 1px solid #0f172a; color: #0f172a;'));
+          tr.setAttribute('style', cleanCss('border-bottom: 1px solid #0f172a; color: #0f172a; background-color: #ffffff;'));
         });
         tableEl.querySelectorAll('thead th').forEach((th, idx, allThs) => {
           const isFirst = idx === 0;
           const isLast = idx === allThs.length - 1;
           const textAlign = isFirst ? 'left' : (isLast ? 'right' : 'center');
-          th.setAttribute('style', cleanCss(`border: none; padding: 12px 16px; font-weight: 800; letter-spacing: 1px; color: #0f172a; text-align: ${textAlign};`));
+          th.setAttribute('style', cleanCss(`border: none; padding: 12px 16px; font-weight: 800; letter-spacing: 1px; color: #0f172a; text-align: ${textAlign}; background-color: #ffffff;`));
         });
         tableEl.querySelectorAll('tbody tr').forEach(tr => {
-          tr.setAttribute('style', cleanCss('border-bottom: 1px solid #f1f5f9;'));
+          tr.setAttribute('style', cleanCss('border-bottom: 1px solid #f1f5f9; background-color: #ffffff;'));
           const allTds = tr.querySelectorAll('td');
           allTds.forEach((td, colIdx) => {
             const isFirst = colIdx === 0;
             const isLast = colIdx === allTds.length - 1;
             if (isFirst) {
-              td.setAttribute('style', cleanCss('border: none; padding: 11px 16px; font-weight: 600; color: #1e293b; text-align: left;'));
+              td.setAttribute('style', cleanCss('border: none; padding: 11px 16px; font-weight: 600; color: #1e293b; text-align: left; background-color: #ffffff;'));
             } else if (isLast) {
-              td.setAttribute('style', cleanCss('border: none; padding: 11px 16px; color: #16a34a; font-weight: 800; text-align: right;'));
+              td.setAttribute('style', cleanCss('border: none; padding: 11px 16px; color: #16a34a; font-weight: 800; text-align: right; background-color: #ffffff;'));
             } else {
-              td.setAttribute('style', cleanCss('border: none; padding: 11px 16px; color: #475569; text-align: center;'));
+              td.setAttribute('style', cleanCss('border: none; padding: 11px 16px; color: #475569; text-align: center; background-color: #ffffff;'));
             }
           });
         });
 
-        const wrapper = doc.createElement('section');
-        wrapper.setAttribute('data-material', 'true');
-        wrapper.setAttribute('style', cleanCss('margin: 28px 0; overflow-x: auto; clear: both;'));
+        const wrapper = createTableWrapper('margin: 28px 0; overflow-x: auto; clear: both; display: block; box-sizing: border-box; background-color: #ffffff; width: 100%;');
         tableEl.parentNode.insertBefore(wrapper, tableEl);
         wrapper.appendChild(tableEl);
       } else if (tblMatId === 'tbl-aurora-gradient-eval') {
@@ -855,19 +870,20 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           text-align: center;
           margin: 0;
           box-sizing: border-box;
+          display: table;
         `));
         tableEl.querySelectorAll('thead tr').forEach(tr => {
-          tr.setAttribute('style', cleanCss('background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff;'));
+          tr.setAttribute('style', cleanCss('background-color: #4f46e5; background-image: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff;'));
         });
         tableEl.querySelectorAll('thead th').forEach((th, idx, allThs) => {
           const isFirst = idx === 0;
           const isLast = idx === allThs.length - 1;
           if (isFirst) {
-            th.setAttribute('style', cleanCss('border: none; padding: 12px 14px; font-weight: 700; color: #ffffff; text-align: left;'));
+            th.setAttribute('style', cleanCss('border: none; padding: 12px 14px; font-weight: 700; color: #ffffff; text-align: left; background-color: #4f46e5; background-image: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);'));
           } else if (isLast) {
-            th.setAttribute('style', cleanCss('border: none; padding: 12px 14px; font-weight: 800; color: #fde047; background: rgba(0,0,0,0.15); text-align: center;'));
+            th.setAttribute('style', cleanCss('border: none; padding: 12px 14px; font-weight: 800; color: #fde047; background-color: #6366f1; text-align: center;'));
           } else {
-            th.setAttribute('style', cleanCss('border: none; padding: 12px 14px; font-weight: 700; color: #ffffff; text-align: center;'));
+            th.setAttribute('style', cleanCss('border: none; padding: 12px 14px; font-weight: 700; color: #ffffff; text-align: center; background-color: #5b21b6;'));
           }
         });
         tableEl.querySelectorAll('tbody tr').forEach((tr, rowIdx) => {
@@ -878,18 +894,16 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
             const isFirst = colIdx === 0;
             const isLast = colIdx === allTds.length - 1;
             if (isFirst) {
-              td.setAttribute('style', cleanCss('border: none; padding: 10px 14px; text-align: left; font-weight: 600; color: #334155;'));
+              td.setAttribute('style', cleanCss(`border: none; padding: 10px 14px; text-align: left; font-weight: 600; color: #334155; background-color: ${rowBg};`));
             } else if (isLast) {
-              td.setAttribute('style', cleanCss('border: none; padding: 10px 14px; text-align: center; color: #4f46e5; font-weight: 800; background: #f5f3ff;'));
+              td.setAttribute('style', cleanCss('border: none; padding: 10px 14px; text-align: center; color: #4f46e5; font-weight: 800; background-color: #f5f3ff;'));
             } else {
-              td.setAttribute('style', cleanCss('border: none; padding: 10px 14px; text-align: center; color: #64748b;'));
+              td.setAttribute('style', cleanCss(`border: none; padding: 10px 14px; text-align: center; color: #64748b; background-color: ${rowBg};`));
             }
           });
         });
 
-        const wrapper = doc.createElement('section');
-        wrapper.setAttribute('data-material', 'true');
-        wrapper.setAttribute('style', cleanCss('margin: 24px 0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(99,102,241,0.12); border: 1px solid #e0e7ff; background: #ffffff; clear: both;'));
+        const wrapper = createTableWrapper('margin: 24px 0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(99,102,241,0.12); border: 1px solid #e0e7ff; background-color: #ffffff; clear: both; display: block; box-sizing: border-box; width: 100%;');
         tableEl.parentNode.insertBefore(wrapper, tableEl);
         wrapper.appendChild(tableEl);
       } else if (tblMatId === 'tbl-macaron-faq-qa') {
@@ -903,6 +917,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           text-align: left;
           margin: 0;
           box-sizing: border-box;
+          display: table;
         `));
 
         const hasThead = !!tableEl.querySelector('thead th');
@@ -913,7 +928,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
               tr.setAttribute('style', cleanCss('background-color: #f8fafc; color: #64748b; border-bottom: 1px solid #e2e8f0;'));
             });
             tableEl.querySelectorAll('th').forEach(th => {
-              th.setAttribute('style', cleanCss('border: none; padding: 10px 14px; font-weight: 700; color: #64748b; text-align: left;'));
+              th.setAttribute('style', cleanCss('border: none; padding: 10px 14px; font-weight: 700; color: #64748b; text-align: left; background-color: #f8fafc;'));
             });
           }
         } else if (hasThead) {
@@ -921,7 +936,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
             tr.setAttribute('style', cleanCss('background-color: #e0f2fe; color: #0369a1; border-bottom: 1.5px solid #cbd5e1;'));
           });
           tableEl.querySelectorAll('th').forEach(th => {
-            th.setAttribute('style', cleanCss('border: none; padding: 11px 14px; font-weight: 800; color: #0369a1; text-align: left;'));
+            th.setAttribute('style', cleanCss('border: none; padding: 11px 14px; font-weight: 800; color: #0369a1; text-align: left; background-color: #e0f2fe;'));
           });
         }
 
@@ -937,25 +952,24 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           const allTds = tr.querySelectorAll('td');
           allTds.forEach((td, colIdx) => {
             if (colIdx === 0) {
-              td.setAttribute('style', cleanCss(`padding: 11px 14px; background: ${colorTheme.bg}; color: ${colorTheme.text}; font-weight: 800; width: 32%; border-right: 1px solid #e2e8f0; text-align: left; border-top: none; border-left: none;`));
+              td.setAttribute('style', cleanCss(`padding: 11px 14px; background-color: ${colorTheme.bg}; color: ${colorTheme.text}; font-weight: 800; width: 32%; border-right: 1px solid #e2e8f0; text-align: left; border-top: none; border-left: none;`));
             } else {
-              td.setAttribute('style', cleanCss('padding: 11px 14px; background: #ffffff; color: #334155; line-height: 1.6; text-align: left; border: none;'));
+              td.setAttribute('style', cleanCss('padding: 11px 14px; background-color: #ffffff; color: #334155; line-height: 1.6; text-align: left; border: none;'));
             }
           });
         });
 
-        const wrapper = doc.createElement('section');
-        wrapper.setAttribute('data-material', 'true');
-        wrapper.setAttribute('style', cleanCss('margin: 24px 0; border: 1.5px solid #cbd5e1; border-radius: 12px; overflow: hidden; background: #ffffff; clear: both;'));
+        const wrapper = createTableWrapper('margin: 24px 0; border: 1.5px solid #cbd5e1; border-radius: 12px; overflow: hidden; background-color: #ffffff; clear: both; display: block; box-sizing: border-box; width: 100%;');
         
         tableEl.parentNode.insertBefore(wrapper, tableEl);
 
         if (explicitTitle || !hasThead) {
           let bannerText = explicitTitle || '💡 常见核心疑问速查指南 (FAQ)';
           if (!bannerText.startsWith('💡')) bannerText = '💡 ' + bannerText;
-          const banner = doc.createElement('div');
-          banner.setAttribute('style', cleanCss('background: #e0f2fe; padding: 10px 16px; border-bottom: 1.5px solid #cbd5e1; font-weight: 800; font-size: 14.5px; color: #0369a1; text-align: center;'));
-          banner.innerHTML = bannerText;
+          const banner = doc.createElement('table');
+          banner.setAttribute('data-material', 'true');
+          banner.setAttribute('style', cleanCss('width: 100%; border-collapse: collapse; border: none; background-color: #e0f2fe; border-bottom: 1.5px solid #cbd5e1; margin: 0; box-sizing: border-box; display: table;'));
+          banner.innerHTML = `<tbody><tr><td style="padding: 10px 16px; font-weight: 800; font-size: 14.5px; color: #0369a1; text-align: center; border: none; background-color: #e0f2fe;">${bannerText}</td></tr></tbody>`;
           wrapper.appendChild(banner);
         }
 
@@ -970,12 +984,13 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           text-align: center;
           margin: 0;
           box-sizing: border-box;
+          display: table;
         `));
         tableEl.querySelectorAll('thead tr').forEach(tr => {
           tr.setAttribute('style', cleanCss('background-color: #fff1f2; color: #9f1239; border-bottom: 1px solid #fecdd3;'));
         });
         tableEl.querySelectorAll('th').forEach(th => {
-          th.setAttribute('style', cleanCss('padding: 10px 12px; font-weight: 800; color: #9f1239; text-align: center;'));
+          th.setAttribute('style', cleanCss('padding: 10px 12px; font-weight: 800; color: #9f1239; text-align: center; background-color: #fff1f2;'));
         });
         tableEl.querySelectorAll('tbody tr').forEach((tr, rowIdx) => {
           const rowBg = rowIdx % 2 === 0 ? '#ffffff' : '#fffbfb';
@@ -984,22 +999,21 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           allTds.forEach((td, colIdx) => {
             const isLast = colIdx === allTds.length - 1;
             if (colIdx === 0) {
-              td.setAttribute('style', cleanCss('padding: 10px 12px; font-weight: 700; color: #e11d48; background: #fff5f5; border-right: 1px solid #ffe4e6; text-align: center;'));
+              td.setAttribute('style', cleanCss('padding: 10px 12px; font-weight: 700; color: #e11d48; background-color: #fff5f5; border-right: 1px solid #ffe4e6; text-align: center;'));
             } else if (isLast) {
-              td.setAttribute('style', cleanCss('padding: 10px 12px; color: #e11d48; font-weight: 800; text-align: center;'));
+              td.setAttribute('style', cleanCss(`padding: 10px 12px; color: #e11d48; font-weight: 800; text-align: center; background-color: ${rowBg};`));
             } else {
-              td.setAttribute('style', cleanCss('padding: 10px 12px; text-align: left; color: #4c0519; font-weight: 600;'));
+              td.setAttribute('style', cleanCss(`padding: 10px 12px; text-align: left; color: #4c0519; font-weight: 600; background-color: ${rowBg};`));
             }
           });
         });
 
-        const wrapper = doc.createElement('section');
-        wrapper.setAttribute('data-material', 'true');
-        wrapper.setAttribute('style', cleanCss('margin: 24px 0; border: 1.5px solid #fda4af; border-radius: 14px; overflow: hidden; background: #ffffff; box-shadow: 0 4px 14px rgba(244,63,94,0.08); clear: both;'));
+        const wrapper = createTableWrapper('margin: 24px 0; border: 1.5px solid #fda4af; border-radius: 14px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 14px rgba(244,63,94,0.08); clear: both; display: block; box-sizing: border-box; width: 100%;');
         
-        const banner = doc.createElement('div');
-        banner.setAttribute('style', cleanCss('background: linear-gradient(135deg, #fb7185, #f43f5e); padding: 10px 16px; text-align: center; color: #ffffff; font-size: 15px; font-weight: 800; letter-spacing: 0.5px;'));
-        banner.innerHTML = title;
+        const banner = doc.createElement('table');
+        banner.setAttribute('data-material', 'true');
+        banner.setAttribute('style', cleanCss('width: 100%; border-collapse: collapse; border: none; background-color: #f43f5e; background-image: linear-gradient(135deg, #fb7185, #f43f5e); margin: 0; box-sizing: border-box; display: table;'));
+        banner.innerHTML = `<tbody><tr><td style="padding: 10px 16px; text-align: center; color: #ffffff; font-size: 15px; font-weight: 800; letter-spacing: 0.5px; border: none; background-color: #f43f5e; background-image: linear-gradient(135deg, #fb7185, #f43f5e);">${title}</td></tr></tbody>`;
 
         tableEl.parentNode.insertBefore(wrapper, tableEl);
         wrapper.appendChild(banner);
@@ -1620,11 +1634,13 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     });
 
     // Wrap in section.table-container for mobile horizontal scrolling in WeChat MP Editor
+    table.setAttribute('data-tag', 'table');
     const parent = table.parentNode;
     if (parent && !parent.classList.contains('table-container')) {
       const container = doc.createElement('section');
       container.className = 'table-container';
       container.setAttribute('data-tool', 'EasyMD编辑器');
+      container.setAttribute('data-tag', 'table');
       container.setAttribute('style', cleanCss('margin: 16px 0; padding: 0; overflow-x: auto; display: block;'));
       parent.replaceChild(container, table);
       container.appendChild(table);

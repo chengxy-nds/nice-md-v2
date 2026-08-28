@@ -137,17 +137,19 @@ graph TD
 \`\`\`mermaid
 sequenceDiagram
     autonumber
-    Actor 用户
-    Participant 编辑器
-    Participant 后端API
-    A[撰写 Markdown] --> B[EasyMD 实时渲染]
-    B --> C{选择排版主题}
-    C -->|经典山海| D[商务深度长文]
-    C -->|Typora Vue| E[清新技术博客]
-    C -->|暖沙| F[生活随笔专栏]
-    D --> G[一键分发至全网平台]
-    E --> G
-    F --> G
+    actor A as 创作者
+    participant B as EasyMD 编辑器
+    participant C as 云端排版引擎
+    participant D as 微信公众号后台
+
+    A->>B: 输入 Markdown 与素材
+    B->>B: 实时解析并渲染精美样式
+    A->>B: 点击「同步草稿」
+    B->>C: 发起图文同步请求
+    C->>D: 推送排版内容至草稿箱
+    D-->>C: 返回同步成功 (MediaId)
+    C-->>B: 同步完成
+    B-->>A: 提示「已成功同步至草稿箱」
 \`\`\`
 
 ---

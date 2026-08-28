@@ -835,9 +835,9 @@ export const materials = [
     tag: "杂志社论",
     styleCategory: "minimal",
     title: "大刊社论·半透罗马序号大标题",
-    description: "底置超大浅灰罗马序号 + 精致无衬线加粗主标 + 极简纯黑下划线",
+    description: "底置超大淡雅罗马序号 + 错落叠压加粗主标 + 极简纯黑下划线",
     tags: ["杂志", "社论", "罗马数字", "大刊", "极简"],
-    html: "<section style=\"margin: 32px 0 20px; clear: both; text-align: left;\" data-material=\"true\">\n  <section style=\"line-height: 0.7; margin-bottom: -18px;\">\n    <span style=\"font-family: 'Times New Roman', Georgia, serif; font-size: 46px; font-weight: 900; color: #e5e7eb; letter-spacing: 1px; line-height: 0.7; display: inline-block;\">\n      01.\n    </span>\n  </section>\n  <section style=\"margin: 0; padding: 0; line-height: 1.4;\">\n    <span style=\"display: inline-block; border-bottom: 2.5px solid #0a0a0a; padding-bottom: 5px; line-height: 1.4;\">\n      <span style=\"font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 19px; font-weight: 800; color: #0a0a0a; letter-spacing: 0.2px; line-height: 1.4; display: inline-block;\">\n        范式转移与核心增长飞轮\n      </span>\n    </span>\n  </section>\n</section>"
+    html: "<section style=\"margin: 32px 0 20px; clear: both; text-align: left;\" data-material=\"true\">\n  <section style=\"display: inline-block; max-width: 100%; text-align: left;\">\n    <section style=\"margin: 0 0 -14px 0; padding: 0; line-height: 1; text-align: left;\">\n      <span style=\"font-family: 'Times New Roman', Georgia, 'Songti SC', serif; font-size: 40px; font-weight: 900; color: #cbd5e1; letter-spacing: 1px; line-height: 1; display: inline-block;\">\n        01.\n      </span>\n    </section>\n    <section style=\"margin: 0; padding: 0 0 5px 0; border-bottom: 2.5px solid #0a0a0a; display: inline-block; line-height: 1.4; text-align: left; position: relative; z-index: 2;\">\n      <span style=\"font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 18.5px; font-weight: 800; color: #0a0a0a; letter-spacing: 0.2px; line-height: 1.4; display: inline-block;\">\n        范式转移与核心增长飞轮\n      </span>\n    </section>\n  </section>\n</section>"
   },
   {
     id: "h-handdrawn-pin",
@@ -2264,26 +2264,26 @@ export const headingTemplates = [
   {
     id: 'h-editorial-roman',
     name: '大刊社论·半透罗马序号大标题',
-    description: '底置超大浅灰罗马序号 + 精致无衬线加粗主标 + 极简纯黑下划线',
+    description: '底置超大淡雅罗马序号 + 错落叠压加粗主标 + 极简纯黑下划线',
     tag: '杂志社论',
     styleCategory: 'minimal',
     hasAutoNumber: true,
     hasCustomPrefix: false,
-    previewHtml: `<div style="position:relative;padding:4px 0;"><div style="font-size:24px;font-weight:900;color:rgba(0,0,0,0.08);line-height:1;margin-bottom:-10px;font-family:serif;">01.</div><div style="border-bottom:2px solid #0a0a0a;display:inline-block;padding-bottom:2px;font-size:13px;font-weight:800;color:#0a0a0a;">范式转移与核心增长飞轮</div></div>`,
+    previewHtml: `<div style="padding:2px 0;text-align:left;"><div style="font-family:serif;font-size:24px;font-weight:900;color:#cbd5e1;line-height:1;margin-bottom:-8px;">01.</div><div style="border-bottom:2px solid #0a0a0a;display:inline-block;padding-bottom:2px;font-size:13px;font-weight:800;color:#0a0a0a;position:relative;z-index:2;">范式转移与核心增长飞轮</div></div>`,
     render: (title, index) => {
       const indexPadded = String(index).padStart(2, '0');
       return `<section style="margin: 32px 0 20px; clear: both; text-align: left;" data-material="true">
-  <section style="line-height: 0.7; margin-bottom: -18px;">
-    <span style="font-family: 'Times New Roman', Georgia, serif; font-size: 46px; font-weight: 900; color: #e5e7eb; letter-spacing: 1px; line-height: 0.7; display: inline-block;">
-      ${indexPadded}.
-    </span>
-  </section>
-  <section style="margin: 0; padding: 0; line-height: 1.4;">
-    <span style="display: inline-block; border-bottom: 2.5px solid #0a0a0a; padding-bottom: 5px; line-height: 1.4;">
-      <span style="font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 19px; font-weight: 800; color: #0a0a0a; letter-spacing: 0.2px; line-height: 1.4; display: inline-block;">
+  <section style="display: inline-block; max-width: 100%; text-align: left;">
+    <section style="margin: 0 0 -14px 0; padding: 0; line-height: 1; text-align: left;">
+      <span style="font-family: 'Times New Roman', Georgia, 'Songti SC', serif; font-size: 40px; font-weight: 900; color: #cbd5e1; letter-spacing: 1px; line-height: 1; display: inline-block;">
+        ${indexPadded}.
+      </span>
+    </section>
+    <section style="margin: 0; padding: 0 0 5px 0; border-bottom: 2.5px solid #0a0a0a; display: inline-block; line-height: 1.4; text-align: left; position: relative; z-index: 2;">
+      <span style="font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 18.5px; font-weight: 800; color: #0a0a0a; letter-spacing: 0.2px; line-height: 1.4; display: inline-block;">
         ${title}
       </span>
-    </span>
+    </section>
   </section>
 </section>`;
     }

@@ -120,9 +120,10 @@ function handleSaveCustomStyles(val) {
 }
 
 async function handleElementClick(sectionName) {
+  const targetKey = (sectionName === 'pre' || sectionName === 'code') ? 'code' : ((sectionName === 'th' || sectionName === 'td' || sectionName === 'thead' || sectionName === 'tbody' || sectionName === 'tr' || sectionName === 'tables') ? 'table' : sectionName);
   showThemePanel.value = true;
   await nextTick();
-  themeCustomizerRef.value?.scrollToSection(sectionName);
+  themeCustomizerRef.value?.scrollToSection(targetKey);
 }
 </script>
 
