@@ -511,6 +511,29 @@ export const materials = [
   </section>
 </section>`
   },
+  {
+    id: 'h-editorial-roman',
+    category: 'headings',
+    tag: '杂志社论',
+    styleCategory: 'minimal',
+    title: '大刊社论·半透罗马序号大标题',
+    description: '底置超大淡雅罗马序号 + 错落叠压加粗主标 + 极简纯黑下划线',
+    tags: ['大刊', '社论', '罗马序号', '叠压', '极简'],
+    html: `<section style="margin: 36px 0 22px; clear: both; text-align: left;" data-material="true">
+  <section style="display: inline-block; position: relative; text-align: left; max-width: 100%; box-sizing: border-box;">
+    <section style="line-height: 1; margin-bottom: -20px; margin-left: 2px;">
+      <span style="font-family: 'Times New Roman', Georgia, 'Songti SC', serif; font-size: 42px; font-weight: 900; color: #cbd5e1; letter-spacing: 1px; line-height: 1; opacity: 0.85; display: inline-block;">
+        01.
+      </span>
+    </section>
+    <section style="position: relative; z-index: 2; border-bottom: 2.5px solid #0a0a0a; padding-bottom: 5px; line-height: 1.4;">
+      <span style="font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 19px; font-weight: 900; color: #0a0a0a; letter-spacing: 0.3px; line-height: 1.4; display: inline-block;">
+        大刊社论·半透罗马序号大标题
+      </span>
+    </section>
+  </section>
+</section>`
+  },
 
   // ── 引用/金句素材 ──
   {
