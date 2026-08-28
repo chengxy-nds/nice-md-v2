@@ -143,7 +143,7 @@ function onDrop(e) {
       <FileText size="15" class="doc-icon" />
     </div>
 
-    <!-- Right Content Column: Title Row + Time Row (100% Left Aligned) -->
+    <!-- Right Content Column: Title Row + Time & Actions Row -->
     <div class="doc-content-col">
       <!-- Title Row -->
       <div class="doc-title-row">
@@ -168,23 +168,23 @@ function onDrop(e) {
         <span v-if="isActive && !isRenaming" class="active-point-indicator">✦</span>
       </div>
 
-      <!-- Time Row -->
+      <!-- Time & Actions Row (Same line, actions aligned right) -->
       <div class="doc-time-row">
         <span class="doc-time">{{ docTime }}</span>
-      </div>
-    </div>
 
-    <!-- hover actions -->
-    <div class="doc-actions" v-show="!isRenaming">
-      <button class="action-btn" @click.stop="$emit('history', doc)" title="历史版本与比对">
-        <History size="11" />
-      </button>
-      <button class="action-btn" @click.stop="startRename" title="重命名">
-        <Pencil size="11" />
-      </button>
-      <button class="action-btn" @click.stop="handleDelete" title="删除">
-        <Trash2 size="11" />
-      </button>
+        <!-- hover actions: same line with time, aligned right -->
+        <div class="doc-actions" v-show="!isRenaming">
+          <button class="action-btn" @click.stop="$emit('history', doc)" title="历史版本与比对">
+            <History size="11" />
+          </button>
+          <button class="action-btn" @click.stop="startRename" title="重命名">
+            <Pencil size="11" />
+          </button>
+          <button class="action-btn btn-trash" @click.stop="handleDelete" title="删除">
+            <Trash2 size="11" />
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 </template>
@@ -193,14 +193,14 @@ function onDrop(e) {
 .doc-item {
   display: flex;
   align-items: flex-start;
-  min-height: 52px;
-  padding: 8px 10px;
+  min-height: 48px;
+  padding: 6px 8px;
   border-radius: 8px;
   cursor: pointer;
   transition: all 0.15s ease;
   position: relative;
   user-select: none;
-  margin-bottom: 3px;
+  margin-bottom: 2px;
   box-sizing: border-box;
 }
 
@@ -242,9 +242,10 @@ html.dark .doc-item.is-active:hover {
 .doc-leading {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
   flex-shrink: 0;
-  height: 18px;
+  height: 20px;
+  margin-top: 1px;
 }
 
 .grip-icon {
@@ -270,13 +271,14 @@ html.dark .doc-item.is-active:hover {
   color: var(--accent-color, #4f46e5);
 }
 
-/* Content Column (Title + Time strictly left aligned) */
+/* Content Column (Title + Time & Actions Row) */
 .doc-content-col {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+  margin-left: 2px;
 }
 
 .doc-title-row {
@@ -285,12 +287,7 @@ html.dark .doc-item.is-active:hover {
   justify-content: space-between;
   gap: 4px;
   min-width: 0;
-  height: 18px;
-  transition: padding-right 0.15s ease;
-}
-
-.doc-item:hover .doc-title-row {
-  padding-right: 76px;
+  height: 20px;
 }
 
 .doc-title {
@@ -315,16 +312,13 @@ html.dark .doc-item.is-active:hover {
   flex-shrink: 0;
   line-height: 1;
   margin-left: 2px;
-  transition: opacity 0.15s ease;
-}
-
-.doc-item:hover .active-point-indicator {
-  opacity: 0;
 }
 
 .doc-time-row {
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  min-height: 18px;
   line-height: 1;
 }
 
@@ -333,6 +327,7 @@ html.dark .doc-item.is-active:hover {
   color: var(--text-muted, #94a3b8);
   line-height: 1.2;
   font-weight: 400;
+  flex-shrink: 0;
 }
 
 .doc-item.is-active .doc-time {
@@ -357,16 +352,10 @@ html.dark .doc-item.is-active:hover {
   display: flex;
   align-items: center;
   gap: 2px;
+  margin-left: auto;
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s ease;
-  position: absolute;
-  right: 6px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: transparent;
-  padding: 0;
-  z-index: 3;
 }
 
 .doc-item:hover .doc-actions {
@@ -378,14 +367,15 @@ html.dark .doc-item.is-active:hover {
   background: transparent;
   border: none;
   color: var(--text-muted, #78716c);
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: all 0.15s ease;
+  padding: 0;
 }
 
 .action-btn:hover {

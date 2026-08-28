@@ -1493,7 +1493,7 @@ watch(customStyles, () => {
           <!-- Top Toolbar: editor-header spanning 100% width across the top of both columns -->
           <div class="editor-header workspace-toolbar">
             <div class="header-actions">
-              <!-- Current Active Document Title with Double-Click Inline Rename -->
+              <!-- Document Title & Rename -->
               <div
                 class="toolbar-doc-title-box"
                 :class="{ 'is-editing': isRenamingToolbarDoc }"
@@ -1523,42 +1523,56 @@ watch(customStyles, () => {
 
               <span class="toolbar-sep"></span>
 
-              <button @click="editorPanelRef?.openFindReplace()" class="btn-icon" title="查找替换"><Search size="15" /></button>
-              <button @click="editorPanelRef?.handleImageUpload()" class="btn-icon" title="图片"><Image size="15" /></button>
-              <span class="toolbar-sep"></span>
-              <button @click="editorPanelRef?.insertSample()" class="btn-icon" title="模板"><HelpCircle size="15" /></button>
-              <button @click="editorPanelRef?.toggleUrlImport()" class="btn-icon" title="URL 导入"><Link size="15" /></button>
-              <div class="export-trigger-container">
-                <button @click="showImportMenu = !showImportMenu" class="btn-icon" :class="{ 'is-active': showImportMenu }" title="导入文件"><Upload size="15" /></button>
-                <div class="header-popout-panel" v-if="showImportMenu" @mouseleave="showImportMenu = false">
-                  <button class="popout-item" @click="editorPanelRef?.triggerFileInput('.md,.markdown'); showImportMenu = false"><FileCode size="14" /><span>Markdown (.md)</span></button>
-                  <button class="popout-item" @click="editorPanelRef?.triggerFileInput('.docx,.doc'); showImportMenu = false"><FileText size="14" /><span>Word (.docx)</span></button>
-                  <button class="popout-item" @click="editorPanelRef?.triggerFileInput('.html,.htm'); showImportMenu = false"><Globe size="14" /><span>HTML (.html)</span></button>
-                  <button class="popout-item" @click="editorPanelRef?.triggerFileInput('.txt'); showImportMenu = false"><FileCode size="14" /><span>纯文本 (.txt)</span></button>
+              <!-- Content Editing & Import Group -->
+              <div class="toolbar-btn-group">
+                <button @click="editorPanelRef?.openFindReplace()" class="btn-icon" title="查找与替换"><Search size="15" /></button>
+                <button @click="editorPanelRef?.handleImageUpload()" class="btn-icon" title="插入图片"><Image size="15" /></button>
+                <button @click="editorPanelRef?.insertSample()" class="btn-icon" title="插入示例模板"><HelpCircle size="15" /></button>
+                <button @click="editorPanelRef?.toggleUrlImport()" class="btn-icon" title="URL 文章抓取导入"><Link size="15" /></button>
+                <div class="export-trigger-container">
+                  <button @click="showImportMenu = !showImportMenu" class="btn-icon" :class="{ 'is-active': showImportMenu }" title="导入文件"><Upload size="15" /></button>
+                  <div class="header-popout-panel" v-if="showImportMenu" @mouseleave="showImportMenu = false">
+                    <button class="popout-item" @click="editorPanelRef?.triggerFileInput('.md,.markdown'); showImportMenu = false"><FileCode size="14" /><span>Markdown (.md)</span></button>
+                    <button class="popout-item" @click="editorPanelRef?.triggerFileInput('.docx,.doc'); showImportMenu = false"><FileText size="14" /><span>Word (.docx)</span></button>
+                    <button class="popout-item" @click="editorPanelRef?.triggerFileInput('.html,.htm'); showImportMenu = false"><Globe size="14" /><span>HTML (.html)</span></button>
+                    <button class="popout-item" @click="editorPanelRef?.triggerFileInput('.txt'); showImportMenu = false"><FileCode size="14" /><span>纯文本 (.txt)</span></button>
+                  </div>
                 </div>
               </div>
-              <button @click="editorPanelRef?.clearContent()" class="btn-icon btn-danger" title="清空"><Trash2 size="15" /></button>
+
               <span class="toolbar-sep"></span>
 
-              <!-- Export Trigger -->
-              <div class="export-trigger-container">
-                <button class="btn-icon" @click="showExportMenu = !showExportMenu" title="导出"><Download size="15" /></button>
-                <div class="header-popout-panel" v-if="showExportMenu" @mouseleave="showExportMenu = false">
-                  <button class="popout-item" @click="exportMD(); showExportMenu = false"><FileCode size="14" /><span>Markdown</span></button>
-                  <button class="popout-item" @click="exportHTML(); showExportMenu = false"><Globe size="14" /><span>HTML</span></button>
-                  <button class="popout-item" @click="exportWord(); showExportMenu = false"><FileText size="14" /><span>Word (.docx)</span></button>
-                  <button class="popout-item" @click="exportPDF(); showExportMenu = false"><Download size="14" /><span>PDF</span></button>
-                  <button class="popout-item" @click="exportPDF({ raw: true }); showExportMenu = false"><Download size="14" /><span>PDF (无主题)</span></button>
-                  <button class="popout-item" @click="exportPNG(); showExportMenu = false"><Image size="14" /><span>PNG 长图</span></button>
-                </div>
+              <!-- History & Undo/Redo Group -->
+              <div class="toolbar-btn-group">
+                <button @click="editorPanelRef?.handleUndo()" class="btn-icon" title="撤销 (Ctrl+Z)"><Undo2 size="15" /></button>
+                <button @click="editorPanelRef?.handleRedo()" class="btn-icon" title="重做 (Ctrl+Y)"><Redo2 size="15" /></button>
+                <button @click="openDocHistory(activeDocument)" class="btn-icon" title="历史版本与内容比对"><History size="15" /></button>
               </div>
-              <button @click="editorPanelRef?.handleUndo()" class="btn-icon" title="撤销"><Undo2 size="15" /></button>
-              <button @click="editorPanelRef?.handleRedo()" class="btn-icon" title="重做"><Redo2 size="15" /></button>
-              <button @click="openDocHistory(activeDocument)" class="btn-icon" title="历史版本与内容比对"><History size="15" /></button>
 
               <span class="toolbar-sep"></span>
-              <button @click="toggleSyncScroll" class="btn-icon" :class="{ 'is-active': syncScrollEnabled }" title="同步滚动"><Link2 v-if="syncScrollEnabled" size="15" /><Link2Off v-else size="15" /></button>
-              <button @click="togglePreview" class="btn-icon" :class="{ 'is-active': previewVisible }" title="预览"><Eye v-if="previewVisible" size="15" /><EyeOff v-else size="15" /></button>
+
+              <!-- Export & Clean Group -->
+              <div class="toolbar-btn-group">
+                <div class="export-trigger-container">
+                  <button class="btn-icon" @click="showExportMenu = !showExportMenu" title="导出文件"><Download size="15" /></button>
+                  <div class="header-popout-panel" v-if="showExportMenu" @mouseleave="showExportMenu = false">
+                    <button class="popout-item" @click="exportMD(); showExportMenu = false"><FileCode size="14" /><span>Markdown</span></button>
+                    <button class="popout-item" @click="exportHTML(); showExportMenu = false"><Globe size="14" /><span>HTML</span></button>
+                    <button class="popout-item" @click="exportWord(); showExportMenu = false"><FileText size="14" /><span>Word (.docx)</span></button>
+                    <button class="popout-item" @click="exportPDF(); showExportMenu = false"><Download size="14" /><span>PDF</span></button>
+                    <button class="popout-item" @click="exportPDF({ raw: true }); showExportMenu = false"><Download size="14" /><span>PDF (无主题)</span></button>
+                    <button class="popout-item" @click="exportPNG(); showExportMenu = false"><Image size="14" /><span>PNG 长图</span></button>
+                  </div>
+                </div>
+                <button @click="editorPanelRef?.clearContent()" class="btn-icon btn-danger" title="清空内容"><Trash2 size="15" /></button>
+              </div>
+
+              <span class="toolbar-sep"></span>
+
+              <!-- View & Sync Group -->
+              <div class="toolbar-btn-group">
+                <button @click="toggleSyncScroll" class="btn-icon" :class="{ 'is-active': syncScrollEnabled }" title="双栏同步滚动"><Link2 v-if="syncScrollEnabled" size="15" /><Link2Off v-else size="15" /></button>
+              </div>
 
               <!-- Spacer pushing Theme & Code style dropdowns to the far right -->
               <span class="toolbar-spacer"></span>
@@ -2464,9 +2478,24 @@ html.dark .btn-header-publish:hover {
 
 .header-actions {
   display: flex;
-  gap: 4px;
+  gap: 6px;
   align-items: center;
   width: 100%;
+}
+
+.toolbar-btn-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 8px;
+  background: var(--bg-hover-subtle, rgba(0, 0, 0, 0.02));
+  border: 1px solid var(--border-color-subtle, transparent);
+  transition: all 0.2s ease;
+}
+
+[data-color-mode="dark"] .toolbar-btn-group {
+  background: rgba(255, 255, 255, 0.03);
 }
 
 .toolbar-doc-title-box {
@@ -2561,7 +2590,8 @@ html.dark .btn-header-publish:hover {
   height: 16px;
   background: var(--border-color);
   display: inline-block;
-  margin: 0 2px;
+  margin: 0 1px;
+  opacity: 0.7;
 }
 
 .toolbar-spacer {
