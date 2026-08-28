@@ -125,10 +125,16 @@ const loadPreferences = () => {
   editorFontSize.value = localStorage.getItem('nicemd_font_size') || '14.5px';
   showLineNumbers.value = localStorage.getItem('nicemd_line_numbers') !== 'false';
   if (cmView) {
+    const currentSelection = cmView.state.selection;
     cmView.destroy();
     cmView = null;
     nextTick(() => {
       initCodeMirror();
+      if (cmView && currentSelection) {
+        try {
+          cmView.dispatch({ selection: currentSelection });
+        } catch (e) {}
+      }
     });
   }
 };
@@ -1237,8 +1243,7 @@ function initCodeMirror() {
   cmView = new EditorView({
     doc: editorText.value || '',
     extensions: [
-      cmLineNumbers(),
-      highlightActiveLineGutter(),
+      ...(showLineNumbers.value ? [cmLineNumbers(), highlightActiveLineGutter()] : []),
       highlightSpecialChars(),
       history(),
       drawSelection(),

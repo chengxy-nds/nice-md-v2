@@ -236,7 +236,169 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     root.querySelectorAll('table').forEach(tableEl => {
       if (isMaterialEl(tableEl)) return;
 
-      if (tblMatId === 'tbl-amber-schedule') {
+      if (tblMatId === 'tbl-slate-movie-rank') {
+        tableEl.setAttribute('style', cleanCss(`
+          width: 100%;
+          border-collapse: collapse;
+          border: none;
+          font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+          font-size: 14px;
+          text-align: center;
+          box-sizing: border-box;
+          margin: 0;
+        `));
+        tableEl.querySelectorAll('thead tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('background-color: #f0f4f6; color: #475569;'));
+        });
+        tableEl.querySelectorAll('th').forEach((th, idx) => {
+          if (idx === 0) {
+            th.setAttribute('style', cleanCss('background-color: #8da5b4; color: #ffffff; font-weight: 700; border: 1.5px solid #ffffff; padding: 11px 14px; text-align: center; width: 55px;'));
+          } else {
+            th.setAttribute('style', cleanCss('background-color: #f0f4f6; color: #475569; font-weight: 700; border: 1.5px solid #ffffff; padding: 11px 16px; text-align: center;'));
+          }
+        });
+        tableEl.querySelectorAll('tbody tr').forEach((tr, rowIdx) => {
+          const rowBg = rowIdx % 2 === 0 ? '#f8fafc' : '#ffffff';
+          tr.setAttribute('style', cleanCss(`background-color: ${rowBg};`));
+          tr.querySelectorAll('td').forEach((td, colIdx) => {
+            if (colIdx === 0) {
+              td.setAttribute('style', cleanCss('background-color: #8da5b4; color: #ffffff; font-weight: 800; border: 1.5px solid #ffffff; padding: 10px 14px; text-align: center;'));
+            } else {
+              td.setAttribute('style', cleanCss(`background-color: ${rowBg}; color: #334155; font-weight: 600; border: 1.5px solid #ffffff; padding: 10px 16px; text-align: center;`));
+            }
+          });
+        });
+
+        const wrapper = doc.createElement('section');
+        wrapper.setAttribute('data-material', 'true');
+        wrapper.setAttribute('style', cleanCss('margin: 24px 0; overflow-x: auto; clear: both;'));
+        tableEl.parentNode.insertBefore(wrapper, tableEl);
+        wrapper.appendChild(tableEl);
+      } else if (tblMatId === 'tbl-apricot-star-card') {
+        tableEl.setAttribute('style', cleanCss(`
+          width: 100%;
+          border-collapse: collapse;
+          border: none;
+          font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+          font-size: 14.5px;
+          text-align: left;
+          margin: 0;
+          box-sizing: border-box;
+        `));
+        tableEl.querySelectorAll('thead tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('background-color: #faece1; color: #1c1917;'));
+        });
+        tableEl.querySelectorAll('th').forEach(th => {
+          th.setAttribute('style', cleanCss('border: none; border-bottom: 1.5px solid #292524; padding: 11px 16px; font-weight: 800; font-size: 15px; color: #1c1917; text-align: center; letter-spacing: 0.5px;'));
+        });
+        tableEl.querySelectorAll('tbody tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('background-color: #ffffff; color: #1c1917;'));
+        });
+        tableEl.querySelectorAll('td').forEach(td => {
+          td.setAttribute('style', cleanCss('border: none; padding: 10px 16px; font-weight: 600; font-size: 14px; color: #1c1917; text-align: left; line-height: 1.7;'));
+        });
+
+        const wrapper = doc.createElement('section');
+        wrapper.setAttribute('data-material', 'true');
+        wrapper.setAttribute('style', cleanCss('margin: 24px 0; border: 1.5px solid #292524; border-radius: 14px; overflow: hidden; background: #ffffff; clear: both;'));
+        tableEl.parentNode.insertBefore(wrapper, tableEl);
+        wrapper.appendChild(tableEl);
+      } else if (tblMatId === 'tbl-retro-window-size') {
+        tableEl.setAttribute('style', cleanCss(`
+          width: 100%;
+          border-collapse: collapse;
+          border: none;
+          font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+          font-size: 14px;
+          text-align: center;
+          margin: 0;
+          box-sizing: border-box;
+        `));
+        tableEl.querySelectorAll('thead tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('background-color: #181818; color: #ffffff;'));
+        });
+        tableEl.querySelectorAll('th').forEach(th => {
+          th.setAttribute('style', cleanCss('border: 1.5px solid #1a1a1a; padding: 10px 8px; font-weight: 800; color: #ffffff; text-align: center;'));
+        });
+        tableEl.querySelectorAll('tbody tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('background-color: #ffffff; color: #1a1a1a;'));
+        });
+        tableEl.querySelectorAll('td').forEach(td => {
+          td.setAttribute('style', cleanCss('border: 1.5px solid #1a1a1a; padding: 9px 8px; font-weight: 700; color: #1a1a1a; text-align: center;'));
+        });
+
+        const wrapper = doc.createElement('section');
+        wrapper.setAttribute('data-material', 'true');
+        wrapper.setAttribute('style', cleanCss('margin: 24px 0; border: 2px solid #1a1a1a; background: #ffffff; overflow: hidden; clear: both;'));
+        
+        const winHeader = doc.createElement('div');
+        winHeader.setAttribute('style', cleanCss('display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; background: #ffffff; border-bottom: 2px solid #1a1a1a; font-size: 14.5px; font-weight: 800; color: #1a1a1a;'));
+        winHeader.innerHTML = '<span style="visibility: hidden; font-size: 11px;">_ □ ✕</span><span style="letter-spacing: 1px;">品牌尺码参照表</span><span style="font-family: monospace; font-size: 13px; font-weight: bold; letter-spacing: 2px;">_ □ ✕</span>';
+        
+        tableEl.parentNode.insertBefore(wrapper, tableEl);
+        wrapper.appendChild(winHeader);
+        wrapper.appendChild(tableEl);
+      } else if (tblMatId === 'tbl-morandi-blush-size') {
+        tableEl.setAttribute('style', cleanCss(`
+          width: 100%;
+          border-collapse: collapse;
+          border: none;
+          font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+          font-size: 14px;
+          text-align: center;
+          margin: 0;
+          box-sizing: border-box;
+        `));
+        tableEl.querySelectorAll('thead tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('background-color: #ebe0e0; color: #4a3838;'));
+        });
+        tableEl.querySelectorAll('th').forEach(th => {
+          th.setAttribute('style', cleanCss('border: none; border-bottom: 1.5px solid #5a4848; padding: 11px 12px; font-weight: 700; color: #4a3838; text-align: center; font-size: 15px;'));
+        });
+        tableEl.querySelectorAll('tbody tr').forEach((tr, rowIdx, allRows) => {
+          const isLast = rowIdx === allRows.length - 1;
+          const borderBottom = isLast ? 'none' : '1px dashed #d9c5c5';
+          tr.setAttribute('style', cleanCss('background-color: #ffffff; color: #4a3838;'));
+          tr.querySelectorAll('td').forEach(td => {
+            td.setAttribute('style', cleanCss(`border: none; border-bottom: ${borderBottom}; padding: 10px 12px; font-weight: 600; color: #4a3838; text-align: center; font-size: 14px;`));
+          });
+        });
+
+        const wrapper = doc.createElement('section');
+        wrapper.setAttribute('data-material', 'true');
+        wrapper.setAttribute('style', cleanCss('margin: 24px 0; border: 1.5px solid #5a4848; border-radius: 12px; overflow: hidden; background: #ffffff; clear: both;'));
+        tableEl.parentNode.insertBefore(wrapper, tableEl);
+        wrapper.appendChild(tableEl);
+      } else if (tblMatId === 'tbl-milktea-apricot-schedule') {
+        tableEl.setAttribute('style', cleanCss(`
+          width: 100%;
+          border-collapse: collapse;
+          border: 2px solid #231f20;
+          font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Microsoft YaHei", sans-serif;
+          font-size: 14.5px;
+          text-align: center;
+          box-sizing: border-box;
+          margin: 0;
+        `));
+        tableEl.querySelectorAll('thead tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('background-color: #faeee6; color: #231f20;'));
+        });
+        tableEl.querySelectorAll('th').forEach(th => {
+          th.setAttribute('style', cleanCss('border: 2px solid #231f20; padding: 12px 16px; font-weight: 800; letter-spacing: 0.5px; color: #231f20; text-align: center;'));
+        });
+        tableEl.querySelectorAll('tbody tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('background-color: #ffffff; color: #231f20;'));
+        });
+        tableEl.querySelectorAll('td').forEach(td => {
+          td.setAttribute('style', cleanCss('border: 2px solid #231f20; padding: 11px 16px; font-weight: 700; color: #231f20; text-align: center;'));
+        });
+
+        const wrapper = doc.createElement('section');
+        wrapper.setAttribute('data-material', 'true');
+        wrapper.setAttribute('style', cleanCss('margin: 24px 0; overflow-x: auto; clear: both;'));
+        tableEl.parentNode.insertBefore(wrapper, tableEl);
+        wrapper.appendChild(tableEl);
+      } else if (tblMatId === 'tbl-amber-schedule') {
         tableEl.setAttribute('style', cleanCss(`
           width: 100%;
           border-collapse: collapse;
@@ -318,6 +480,265 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         const wrapper = doc.createElement('section');
         wrapper.setAttribute('data-material', 'true');
         wrapper.setAttribute('style', cleanCss('margin: 24px 0; overflow-x: auto; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.03);'));
+        tableEl.parentNode.insertBefore(wrapper, tableEl);
+        wrapper.appendChild(tableEl);
+      } else if (tblMatId === 'tbl-business-blue-compare') {
+        tableEl.setAttribute('style', cleanCss(`
+          width: 100%;
+          border-collapse: collapse;
+          text-align: center;
+          font-size: 13.5px;
+          font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+          margin: 0;
+          box-sizing: border-box;
+        `));
+        tableEl.querySelectorAll('thead tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('background-color: #1e3a8a; color: #ffffff;'));
+        });
+        tableEl.querySelectorAll('th').forEach(th => {
+          th.setAttribute('style', cleanCss('padding: 13px 16px; font-weight: 700; color: #ffffff;'));
+        });
+        tableEl.querySelectorAll('tbody tr').forEach((tr, rowIdx) => {
+          const rowBg = rowIdx % 2 === 0 ? '#ffffff' : '#f8fafc';
+          tr.setAttribute('style', cleanCss(`background-color: ${rowBg}; border-bottom: 1px solid #eff6ff;`));
+        });
+        tableEl.querySelectorAll('td').forEach(td => {
+          td.setAttribute('style', cleanCss('padding: 11px 16px; text-align: center; color: #1e293b;'));
+        });
+
+        const wrapper = doc.createElement('section');
+        wrapper.setAttribute('data-material', 'true');
+        wrapper.setAttribute('style', cleanCss('margin: 24px 0; overflow-x: auto; border: 1.5px solid #bfdbfe; border-radius: 12px; box-shadow: 0 4px 16px rgba(37,99,235,0.06); clear: both;'));
+        tableEl.parentNode.insertBefore(wrapper, tableEl);
+        wrapper.appendChild(tableEl);
+      } else if (tblMatId === 'tbl-terminal-dark-metrics') {
+        tableEl.setAttribute('style', cleanCss(`
+          width: 100%;
+          border-collapse: collapse;
+          font-family: 'JetBrains Mono', Consolas, monospace;
+          font-size: 13px;
+          text-align: left;
+          margin: 0;
+          box-sizing: border-box;
+        `));
+        tableEl.querySelectorAll('thead tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('background-color: #0f172a; color: #38bdf8; border-bottom: 1.5px solid #334155;'));
+        });
+        tableEl.querySelectorAll('th').forEach(th => {
+          th.setAttribute('style', cleanCss('padding: 10px 14px; font-weight: 700; color: #38bdf8;'));
+        });
+        tableEl.querySelectorAll('tbody tr').forEach((tr, rowIdx) => {
+          const rowBg = rowIdx % 2 === 0 ? '#0f172a' : '#131d33';
+          tr.setAttribute('style', cleanCss(`background-color: ${rowBg}; border-bottom: 1px solid #1e293b;`));
+        });
+        tableEl.querySelectorAll('td').forEach(td => {
+          td.setAttribute('style', cleanCss('padding: 9px 14px; color: #f8fafc;'));
+        });
+
+        const wrapper = doc.createElement('section');
+        wrapper.setAttribute('data-material', 'true');
+        wrapper.setAttribute('style', cleanCss('margin: 24px 0; border: 1.5px solid #334155; border-radius: 10px; overflow: hidden; background: #0f172a; clear: both;'));
+        tableEl.parentNode.insertBefore(wrapper, tableEl);
+        wrapper.appendChild(tableEl);
+      } else if (tblMatId === 'tbl-matcha-green-progress') {
+        tableEl.setAttribute('style', cleanCss(`
+          width: 100%;
+          border-collapse: collapse;
+          font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+          font-size: 14px;
+          text-align: center;
+          margin: 0;
+          box-sizing: border-box;
+        `));
+        tableEl.querySelectorAll('thead tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('background-color: #2d6a4f; color: #ffffff;'));
+        });
+        tableEl.querySelectorAll('th').forEach(th => {
+          th.setAttribute('style', cleanCss('padding: 12px 14px; font-weight: 700; color: #ffffff;'));
+        });
+        tableEl.querySelectorAll('tbody tr').forEach((tr, rowIdx) => {
+          const rowBg = rowIdx % 2 === 0 ? '#f4fbf7' : '#ffffff';
+          tr.setAttribute('style', cleanCss(`background-color: ${rowBg}; border-bottom: 1px solid #dcfce7;`));
+        });
+        tableEl.querySelectorAll('td').forEach(td => {
+          td.setAttribute('style', cleanCss('padding: 10px 14px; color: #2d4a3e;'));
+        });
+
+        const wrapper = doc.createElement('section');
+        wrapper.setAttribute('data-material', 'true');
+        wrapper.setAttribute('style', cleanCss('margin: 24px 0; overflow-x: auto; border: 1.5px solid #bbf7d0; border-radius: 12px; overflow: hidden; clear: both;'));
+        tableEl.parentNode.insertBefore(wrapper, tableEl);
+        wrapper.appendChild(tableEl);
+      } else if (tblMatId === 'tbl-guofeng-crimson-classic') {
+        tableEl.setAttribute('style', cleanCss(`
+          width: 100%;
+          border-collapse: collapse;
+          font-family: 'Songti SC', SimSun, 'Source Han Serif SC', serif;
+          font-size: 14px;
+          text-align: center;
+          margin: 0;
+          box-sizing: border-box;
+        `));
+        tableEl.querySelectorAll('thead tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('background-color: #991b1b; color: #ffffff;'));
+        });
+        tableEl.querySelectorAll('th').forEach(th => {
+          th.setAttribute('style', cleanCss('border: 1px solid #7f1d1d; padding: 10px 12px; font-weight: 800; color: #ffffff; letter-spacing: 2px;'));
+        });
+        tableEl.querySelectorAll('tbody tr').forEach((tr, rowIdx) => {
+          const rowBg = rowIdx % 2 === 0 ? '#ffffff' : '#faf7f2';
+          tr.setAttribute('style', cleanCss(`background-color: ${rowBg};`));
+        });
+        tableEl.querySelectorAll('td').forEach(td => {
+          td.setAttribute('style', cleanCss('border: 1px solid #e7dfd5; padding: 10px 12px; color: #451a03;'));
+        });
+
+        const wrapper = doc.createElement('section');
+        wrapper.setAttribute('data-material', 'true');
+        wrapper.setAttribute('style', cleanCss('margin: 24px 0; border: 2px solid #991b1b; padding: 3px; background: #faf7f2; clear: both;'));
+        tableEl.parentNode.insertBefore(wrapper, tableEl);
+        wrapper.appendChild(tableEl);
+      } else if (tblMatId === 'tbl-handdrawn-planner-card') {
+        tableEl.setAttribute('style', cleanCss(`
+          width: 100%;
+          border-collapse: collapse;
+          font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+          font-size: 14px;
+          text-align: center;
+          margin: 0;
+          box-sizing: border-box;
+        `));
+        tableEl.querySelectorAll('thead tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('background-color: #fffbeb; color: #18181b; border-bottom: 1.5px solid #18181b;'));
+        });
+        tableEl.querySelectorAll('th').forEach(th => {
+          th.setAttribute('style', cleanCss('border-right: 1.5px solid #18181b; padding: 9px 8px; font-weight: 800; color: #18181b;'));
+        });
+        tableEl.querySelectorAll('tbody tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('border-bottom: 1.5px solid #18181b;'));
+        });
+        tableEl.querySelectorAll('td').forEach(td => {
+          td.setAttribute('style', cleanCss('border-right: 1.5px solid #18181b; padding: 9px 8px; color: #18181b; font-weight: 600;'));
+        });
+
+        const wrapper = doc.createElement('section');
+        wrapper.setAttribute('data-material', 'true');
+        wrapper.setAttribute('style', cleanCss('margin: 24px 0; border: 2px solid #18181b; border-radius: 12px; background: #ffffff; box-shadow: 4px 4px 0px #fed7aa; overflow: hidden; clear: both;'));
+        tableEl.parentNode.insertBefore(wrapper, tableEl);
+        wrapper.appendChild(tableEl);
+      } else if (tblMatId === 'tbl-minimal-luxury-clean') {
+        tableEl.setAttribute('style', cleanCss(`
+          width: 100%;
+          border-collapse: collapse;
+          border-top: 2px solid #0f172a;
+          border-bottom: 2px solid #0f172a;
+          font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+          font-size: 14px;
+          text-align: left;
+          margin: 0;
+          box-sizing: border-box;
+        `));
+        tableEl.querySelectorAll('thead tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('border-bottom: 1px solid #0f172a; color: #0f172a;'));
+        });
+        tableEl.querySelectorAll('th').forEach(th => {
+          th.setAttribute('style', cleanCss('padding: 12px 16px; font-weight: 800; letter-spacing: 1px; color: #0f172a;'));
+        });
+        tableEl.querySelectorAll('tbody tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('border-bottom: 1px solid #f1f5f9;'));
+        });
+        tableEl.querySelectorAll('td').forEach(td => {
+          td.setAttribute('style', cleanCss('padding: 11px 16px; font-weight: 600; color: #1e293b;'));
+        });
+
+        const wrapper = doc.createElement('section');
+        wrapper.setAttribute('data-material', 'true');
+        wrapper.setAttribute('style', cleanCss('margin: 28px 0; overflow-x: auto; clear: both;'));
+        tableEl.parentNode.insertBefore(wrapper, tableEl);
+        wrapper.appendChild(tableEl);
+      } else if (tblMatId === 'tbl-aurora-gradient-eval') {
+        tableEl.setAttribute('style', cleanCss(`
+          width: 100%;
+          border-collapse: collapse;
+          font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+          font-size: 13.5px;
+          text-align: center;
+          margin: 0;
+          box-sizing: border-box;
+        `));
+        tableEl.querySelectorAll('thead tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%); color: #ffffff;'));
+        });
+        tableEl.querySelectorAll('th').forEach(th => {
+          th.setAttribute('style', cleanCss('padding: 12px 14px; font-weight: 700; color: #ffffff;'));
+        });
+        tableEl.querySelectorAll('tbody tr').forEach((tr, rowIdx) => {
+          const rowBg = rowIdx % 2 === 0 ? '#ffffff' : '#faf5ff';
+          tr.setAttribute('style', cleanCss(`background-color: ${rowBg}; border-bottom: 1px solid #f1f5f9;`));
+        });
+        tableEl.querySelectorAll('td').forEach(td => {
+          td.setAttribute('style', cleanCss('padding: 10px 14px; color: #334155;'));
+        });
+
+        const wrapper = doc.createElement('section');
+        wrapper.setAttribute('data-material', 'true');
+        wrapper.setAttribute('style', cleanCss('margin: 24px 0; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(99,102,241,0.12); border: 1px solid #e0e7ff; background: #ffffff; clear: both;'));
+        tableEl.parentNode.insertBefore(wrapper, tableEl);
+        wrapper.appendChild(tableEl);
+      } else if (tblMatId === 'tbl-macaron-faq-qa') {
+        tableEl.setAttribute('style', cleanCss(`
+          width: 100%;
+          border-collapse: collapse;
+          font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+          font-size: 13.5px;
+          text-align: left;
+          margin: 0;
+          box-sizing: border-box;
+        `));
+        tableEl.querySelectorAll('thead tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('background-color: #e0f2fe; color: #0369a1;'));
+        });
+        tableEl.querySelectorAll('th').forEach(th => {
+          th.setAttribute('style', cleanCss('padding: 11px 14px; font-weight: 800; color: #0369a1;'));
+        });
+        tableEl.querySelectorAll('tbody tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('border-bottom: 1px solid #f1f5f9;'));
+        });
+        tableEl.querySelectorAll('td').forEach(td => {
+          td.setAttribute('style', cleanCss('padding: 11px 14px; color: #334155; line-height: 1.6;'));
+        });
+
+        const wrapper = doc.createElement('section');
+        wrapper.setAttribute('data-material', 'true');
+        wrapper.setAttribute('style', cleanCss('margin: 24px 0; border: 1.5px solid #cbd5e1; border-radius: 12px; overflow: hidden; background: #ffffff; clear: both;'));
+        tableEl.parentNode.insertBefore(wrapper, tableEl);
+        wrapper.appendChild(tableEl);
+      } else if (tblMatId === 'tbl-redbook-checkin-routine') {
+        tableEl.setAttribute('style', cleanCss(`
+          width: 100%;
+          border-collapse: collapse;
+          font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", sans-serif;
+          font-size: 13.5px;
+          text-align: center;
+          margin: 0;
+          box-sizing: border-box;
+        `));
+        tableEl.querySelectorAll('thead tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('background-color: #fff1f2; color: #9f1239; border-bottom: 1px solid #fecdd3;'));
+        });
+        tableEl.querySelectorAll('th').forEach(th => {
+          th.setAttribute('style', cleanCss('padding: 10px 12px; font-weight: 800; color: #9f1239;'));
+        });
+        tableEl.querySelectorAll('tbody tr').forEach(tr => {
+          tr.setAttribute('style', cleanCss('border-bottom: 1px solid #fff1f2;'));
+        });
+        tableEl.querySelectorAll('td').forEach(td => {
+          td.setAttribute('style', cleanCss('padding: 10px 12px; color: #4c0519;'));
+        });
+
+        const wrapper = doc.createElement('section');
+        wrapper.setAttribute('data-material', 'true');
+        wrapper.setAttribute('style', cleanCss('margin: 24px 0; border: 1.5px solid #fda4af; border-radius: 14px; overflow: hidden; background: #ffffff; box-shadow: 0 4px 14px rgba(244,63,94,0.08); clear: both;'));
         tableEl.parentNode.insertBefore(wrapper, tableEl);
         wrapper.appendChild(tableEl);
       }

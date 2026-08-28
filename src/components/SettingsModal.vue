@@ -424,6 +424,21 @@ const handleSave = () => {
 
 const handleReset = async () => {
   soundEngine.playClick('backspace');
+  if (activeTab.value === 'general') {
+    const ok = await showConfirm({
+      title: '恢复默认通用设置',
+      message: '确认恢复系统通用偏好设置为默认值吗？',
+      confirmText: '恢复默认',
+      danger: true
+    });
+    if (ok) {
+      soundMuted.value = false;
+      syncScroll.value = true;
+      editorFontSize.value = '14.5px';
+      lineNumbers.value = true;
+    }
+    return;
+  }
   const ok = await showConfirm({
     title: '恢复默认配置',
     message: '确认恢复默认平台选择器配置吗？所有自定义修改都将被覆盖。',
@@ -602,7 +617,7 @@ const supportsSilent = (id) => {
             <!-- Line Numbers Toggle -->
             <div class="form-group">
               <label>显示行号</label>
-              <label class="checkbox-container" style="margin-top: 10px;">
+              <label class="checkbox-container">
                 <input type="checkbox" v-model="lineNumbers" />
                 <span class="checkbox-label-text">在编辑器左侧显示行号</span>
               </label>
@@ -1236,6 +1251,26 @@ const supportsSilent = (id) => {
   border-color: var(--accent-color);
 }
 
+.input-with-icon select {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-app);
+  color: var(--text-main);
+  font-size: 13px;
+  outline: none;
+  font-family: inherit;
+  height: 38px;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.input-with-icon select:focus {
+  border-color: var(--accent-color);
+}
+
 .format-select {
   padding: 8px 12px;
   border: 1px solid var(--border-color);
@@ -1348,11 +1383,13 @@ const supportsSilent = (id) => {
   gap: 8px;
   cursor: pointer;
   user-select: none;
-  padding: 10px 12px;
+  padding: 8px 12px;
   background: var(--bg-app);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  margin-top: 4px;
+  height: 38px;
+  box-sizing: border-box;
+  margin: 0;
 }
 
 .checkbox-container input {
@@ -1360,6 +1397,7 @@ const supportsSilent = (id) => {
   accent-color: var(--accent-color);
   width: 16px;
   height: 16px;
+  margin: 0;
 }
 
 .checkbox-label-text {
