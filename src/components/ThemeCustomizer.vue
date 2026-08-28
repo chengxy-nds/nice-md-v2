@@ -99,6 +99,29 @@ function hasPrefixOption(id) {
   return ['h-135-part01-leaf', 'h-135-part02-peach', 'h-135-part03-purple', 'h-135-morandi-block', 'h-pill-duotone', 'h-yellow-shadow-cube'].includes(id);
 }
 
+function hasTableTitleOption(id) {
+  return [
+    'tbl-handdrawn-planner-card',
+    'tbl-retro-window-size',
+    'tbl-terminal-dark-metrics',
+    'tbl-apricot-star-card',
+    'tbl-macaron-faq-qa',
+    'tbl-redbook-checkin-routine'
+  ].includes(id);
+}
+
+function getDefaultTableTitle(id) {
+  const map = {
+    'tbl-handdrawn-planner-card': '✨ 本周打卡清单计划表 ✨',
+    'tbl-retro-window-size': '品牌尺码参照表',
+    'tbl-terminal-dark-metrics': 'cluster_metrics.log',
+    'tbl-apricot-star-card': '⭐ 超详细的考研全程攻略 ⭐',
+    'tbl-macaron-faq-qa': '💡 常见核心疑问速查指南 (FAQ)',
+    'tbl-redbook-checkin-routine': '🥗 超自律 7 天掉秤食谱打卡 💖'
+  };
+  return map[id] || '表格标题';
+}
+
 // Full list of all 27 Markdown syntax element definitions
 const elements = [
   { key: 'body', label: '整体背景 / 文字 ( body )', icon: '◻' },
@@ -122,9 +145,7 @@ const elements = [
   { key: 'ul', label: '无序列表 ( - / * )', icon: '•' },
   { key: 'ol', label: '有序列表 ( 1. 2. )', icon: '1.' },
   { key: 'li', label: '列表项 ( li )', icon: '—' },
-  { key: 'table', label: '表格容器 ( table )', icon: '田' },
-  { key: 'th', label: '表头单元格 ( th )', icon: 'TH' },
-  { key: 'td', label: '内容单元格 ( td )', icon: 'TD' },
+  { key: 'table', label: '表格样式设置 ( table / th / td )', icon: '田' },
   { key: 'hr', label: '分割线 ( --- )', icon: '―' },
   { key: 'a', label: '超链接 ( [link](url) )', icon: '🔗' },
   { key: 'img', label: '图片 ( ![img](url) )', icon: '🖼' }
@@ -137,7 +158,7 @@ const effectiveStyles = computed(() => {
   const merged = {};
 
   // Ensure defaults exist for all elements
-  const allKeys = [...elements.map(e => e.key), 'pre'];
+  const allKeys = [...elements.map(e => e.key), 'pre', 'th', 'td'];
   for (const k of allKeys) {
     merged[k] = { ...(defaults[k] || {}), ...(userStyles[k] || {}) };
   }
@@ -172,7 +193,7 @@ function getStyle(category) {
   return effectiveStyles.value[category] || {};
 }
 
-const knownProps = ['color', 'backgroundColor', 'borderLeftColor', 'borderColor', 'textColor', 'headerBg', 'fontSize', 'fontWeight', 'lineHeight', 'margin', 'borderRadius', 'maxWidth', 'boxShadow', 'border', 'display', 'materialTemplateId', 'materialPrefix', 'codeThemeId', 'macStyle', 'showLang', 'letterSpacing', 'fontFamily', 'padding', 'backgroundTexture'];
+const knownProps = ['color', 'backgroundColor', 'borderLeftColor', 'borderColor', 'textColor', 'headerBg', 'fontSize', 'fontWeight', 'lineHeight', 'margin', 'borderRadius', 'maxWidth', 'boxShadow', 'border', 'display', 'materialTemplateId', 'materialPrefix', 'materialTitle', 'codeThemeId', 'macStyle', 'showLang', 'letterSpacing', 'fontFamily', 'padding', 'backgroundTexture'];
 
 function clearMaterial(key) {
   updateStyle(key, 'materialTemplateId', 'none');
@@ -214,6 +235,10 @@ function updateStyle(category, prop, value) {
 function resetCategory(category) {
   if (localStyles.value) {
     delete localStyles.value[category];
+    if (category === 'table') {
+      delete localStyles.value.th;
+      delete localStyles.value.td;
+    }
   }
   syncFormToCssText(true);
   emitUpdate();
@@ -591,7 +616,15 @@ function generateCssFromStyles(styles) {
   }
 
   // Table
-  if (S.table) css += addRule('table', { borderColor: S.table.borderColor, width: '100%' });
+  if (S.table) {
+    const matId = S.table.materialTemplateId || 'none';
+    const meta = {};
+    if (matId && matId !== 'none') {
+      meta.material = matId;
+      if (S.table.materialTitle) meta.title = S.table.materialTitle;
+    }
+    css += addRule('table', { borderColor: S.table.borderColor, width: '100%' }, meta);
+  }
   if (S.th) css += addRule('th', { backgroundColor: S.th.backgroundColor, color: S.th.color, fontWeight: S.th.fontWeight });
   if (S.td) css += addRule('td', { borderColor: S.td.borderColor, color: S.td.color });
 
@@ -684,7 +717,7 @@ function handleCssTextChange(val) {
   };
 
   // 4. Update tags with material template support & CSS properties
-  const tagsWithMaterial = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'hr', 'ul', 'ol', 'li'];
+  const tagsWithMaterial = ['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'hr', 'ul', 'ol', 'li', 'table'];
   tagsWithMaterial.forEach(tag => {
     const block = extractBlock(tag);
     if (!localStyles.value[tag]) localStyles.value[tag] = {};
@@ -705,6 +738,11 @@ function handleCssTextChange(val) {
     const prefix = getMetaFromBlock(block, 'prefix');
     if (prefix) {
       localStyles.value[tag].materialPrefix = prefix;
+    }
+
+    const matTitle = getMetaFromBlock(block, 'title');
+    if (matTitle) {
+      localStyles.value[tag].materialTitle = matTitle;
     }
 
     if (block) {
@@ -958,7 +996,7 @@ const customizerBodyRef = ref(null);
 const highlightedKey = ref('');
 
 function scrollToSection(key) {
-  const targetKey = (key === 'pre' || key === 'code') ? 'code' : key;
+  const targetKey = (key === 'pre' || key === 'code') ? 'code' : ((key === 'th' || key === 'td') ? 'table' : key);
   activeTab.value = 'form';
 
   const doScroll = () => {
@@ -1157,6 +1195,16 @@ const cssLineCount = computed(() => {
               :value="getStyle(el.key).materialPrefix || (el.key === 'h1' ? 'PART' : 'SECTION')"
               @input="updateStyle(el.key, 'materialPrefix', $event.target.value)"
               placeholder="如 PART / SECTION / 第"
+              class="prefix-input-field"
+            />
+          </div>
+          <div v-if="hasTableTitleOption(getStyle(el.key).materialTemplateId)" class="material-prefix-row">
+            <span class="prefix-label">表头文案:</span>
+            <input
+              type="text"
+              :value="getStyle(el.key).materialTitle !== undefined ? getStyle(el.key).materialTitle : getDefaultTableTitle(getStyle(el.key).materialTemplateId)"
+              @input="updateStyle(el.key, 'materialTitle', $event.target.value)"
+              :placeholder="getDefaultTableTitle(getStyle(el.key).materialTemplateId)"
               class="prefix-input-field"
             />
           </div>
@@ -1488,7 +1536,111 @@ const cssLineCount = computed(() => {
             </label>
           </template>
 
-          <!-- 2. Standard Element Controls (For other elements) -->
+          <!-- 2. Dedicated Unified Table Customizer (合并表格 table / th / td 统一设置) -->
+          <template v-else-if="el.key === 'table'">
+            <div class="table-customizer-grid">
+              <!-- Subsection 1: 表头样式 (th) -->
+              <div class="table-sub-group">
+                <span class="table-sub-title">📌 表头样式 ( th )</span>
+                <div class="table-sub-fields">
+                  <label class="style-field">
+                    <span class="field-label">表头背景</span>
+                    <div class="color-row">
+                      <input
+                        type="color"
+                        :value="getStyle('th').backgroundColor || getStyle('table').headerBg || '#f8fafc'"
+                        @input="e => { updateStyle('th', 'backgroundColor', e.target.value); updateStyle('table', 'headerBg', e.target.value); }"
+                        class="color-picker"
+                      />
+                      <input
+                        type="text"
+                        :value="getStyle('th').backgroundColor || getStyle('table').headerBg || '#f8fafc'"
+                        @input="e => { updateStyle('th', 'backgroundColor', e.target.value); updateStyle('table', 'headerBg', e.target.value); }"
+                        class="value-input"
+                      />
+                    </div>
+                  </label>
+
+                  <label class="style-field">
+                    <span class="field-label">表头文字</span>
+                    <div class="color-row">
+                      <input
+                        type="color"
+                        :value="getStyle('th').color || '#18181b'"
+                        @input="updateStyle('th', 'color', $event.target.value)"
+                        class="color-picker"
+                      />
+                      <input
+                        type="text"
+                        :value="getStyle('th').color || '#18181b'"
+                        @input="updateStyle('th', 'color', $event.target.value)"
+                        class="value-input"
+                      />
+                    </div>
+                  </label>
+
+                  <label class="style-field">
+                    <span class="field-label">表头字重</span>
+                    <select
+                      :value="getStyle('th').fontWeight || '700'"
+                      @change="updateStyle('th', 'fontWeight', $event.target.value)"
+                      class="style-select"
+                    >
+                      <option value="400">常规 (400)</option>
+                      <option value="500">中等 (500)</option>
+                      <option value="600">半粗 (600)</option>
+                      <option value="700">加粗 (700)</option>
+                      <option value="800">特粗 (800)</option>
+                    </select>
+                  </label>
+                </div>
+              </div>
+
+              <!-- Subsection 2: 内容单元格 (td) 与边框 -->
+              <div class="table-sub-group">
+                <span class="table-sub-title">📄 内容单元格与边框 ( td / table )</span>
+                <div class="table-sub-fields">
+                  <label class="style-field">
+                    <span class="field-label">单元格文字</span>
+                    <div class="color-row">
+                      <input
+                        type="color"
+                        :value="getStyle('td').color || '#27272a'"
+                        @input="updateStyle('td', 'color', $event.target.value)"
+                        class="color-picker"
+                      />
+                      <input
+                        type="text"
+                        :value="getStyle('td').color || '#27272a'"
+                        @input="updateStyle('td', 'color', $event.target.value)"
+                        class="value-input"
+                      />
+                    </div>
+                  </label>
+
+                  <label class="style-field">
+                    <span class="field-label">网格边框色</span>
+                    <div class="color-row">
+                      <input
+                        type="color"
+                        :value="getStyle('td').borderColor || getStyle('table').borderColor || '#e4e4e7'"
+                        @input="e => { updateStyle('td', 'borderColor', e.target.value); updateStyle('table', 'borderColor', e.target.value); }"
+                        class="color-picker"
+                      />
+                      <input
+                        type="text"
+                        :value="getStyle('td').borderColor || getStyle('table').borderColor || '#e4e4e7'"
+                        @input="e => { updateStyle('td', 'borderColor', e.target.value); updateStyle('table', 'borderColor', e.target.value); }"
+                        class="value-input"
+                      />
+                    </div>
+                  </label>
+                </div>
+              </div>
+            </div>
+          </template>
+
+          <!-- 3. Standard Element Controls (For other elements) -->
           <template v-else>
             <!-- Color (文字色) -->
             <label class="style-field" v-if="getStyle(el.key).color !== undefined">
@@ -3030,5 +3182,37 @@ const cssLineCount = computed(() => {
   background: #262626;
   border-color: #404040;
   color: #a3a3a3;
+}
+
+.table-customizer-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  width: 100%;
+}
+
+.table-sub-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  background: var(--bg-sidebar, #fcfcfc);
+  border: 1px solid var(--border-color, #f0f0f0);
+  border-radius: 6px;
+  padding: 0.5rem 0.625rem;
+  box-sizing: border-box;
+}
+
+.table-sub-title {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  color: var(--text-muted, #71717a);
+  letter-spacing: 0.2px;
+}
+
+.table-sub-fields {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
 }
 </style>
