@@ -125,7 +125,7 @@ function scrollToChannels() {
         <!-- Brand Wordmark with Light/Dark Adaptive Vector Logo -->
         <div class="wandor-brand-box" @click="emit('enter-editor')">
           <BrandLogo :size="36" />
-          <span class="wandor-wordmark">easymd</span>
+          <span class="wandor-wordmark">EASY MD</span>
         </div>
 
         <!-- Center Nav Links (Tailored to NiceMD) -->
@@ -285,8 +285,8 @@ function scrollToChannels() {
     <footer class="wandor-footer">
       <div class="footer-brand-side">
         <BrandLogo :size="24" />
-        <span class="footer-wordmark">easymd</span>
-        <span class="footer-copyright">© 2026 EasyMD Studio · 让优质内容自由流动</span>
+        <span class="footer-wordmark">EASY MD</span>
+        <span class="footer-copyright">© 2026 EASY MD Studio · 让优质内容自由流动</span>
       </div>
       <div class="footer-links-side">
         <button class="footer-link" @click="emit('enter-editor')">排版工作台</button>

@@ -62,6 +62,8 @@ const isFinished = ref(false);
 const isCheckingLogins = ref(false);
 const isExtensionInstalled = ref(false);
 const showManagementMenu = ref(false);
+const showExtensionTip = ref(false);
+const isDemoMode = ref(false);
 
 // Publishing settings state
 const isScheduled = ref(false);
@@ -949,9 +951,63 @@ watch(showPlatformManageModal, (newVal) => {
   }
 });
 
+const toggleDemoMode = () => {
+  isDemoMode.value = !isDemoMode.value;
+  soundEngine.playClick?.();
+  if (isDemoMode.value) {
+    platforms.value.forEach(p => {
+      if (p.id !== 'zip-download') {
+        p.loginStatus = 'logged_in';
+        p.username = p.username || '创作者演示号';
+        p.selected = true;
+      }
+    });
+  } else {
+    platforms.value.forEach(p => {
+      if (p.id !== 'zip-download') {
+        p.loginStatus = 'not_logged_in';
+        p.username = '';
+        p.selected = false;
+      }
+    });
+  }
+};
+
+const handleManualRefresh = () => {
+  checkAllLogins(true);
+};
+
 const checkAllLogins = (force = false) => {
   resetPlatformSyncStatuses();
+  
+  // Ping extension
+  window.postMessage({ type: 'NICEMD_PING' }, '*');
+
+  if (force) {
+    soundEngine.playClick?.();
+    isCheckingLogins.value = true;
+  }
+
   if (!isExtensionInstalled.value) {
+    platforms.value.forEach(p => {
+      if (p.id !== 'zip-download' && !isDemoMode.value) {
+        p.loginStatus = 'checking';
+      }
+    });
+
+    setTimeout(() => {
+      if (!isExtensionInstalled.value) {
+        isCheckingLogins.value = false;
+        platforms.value.forEach(p => {
+          if (p.id !== 'zip-download' && !isDemoMode.value) {
+            p.loginStatus = 'not_logged_in';
+          }
+        });
+        if (force) {
+          showExtensionTip.value = true;
+        }
+      }
+    }, 800);
     return;
   }
 
@@ -965,9 +1021,6 @@ const checkAllLogins = (force = false) => {
     }
   }
   
-  if (force) {
-    soundEngine.playClick?.();
-  }
   isCheckingLogins.value = true;
   platforms.value.forEach(p => {
     if (p.id !== 'zip-download') {
@@ -1443,7 +1496,7 @@ onMounted(() => {
               
               <button 
                 class="btn-action-dark btn-refresh-status" 
-                @click="checkAllLogins" 
+                @click="handleManualRefresh" 
                 :disabled="isCheckingLogins" 
                 title="刷新各平台登录状态"
               >
@@ -1451,6 +1504,32 @@ onMounted(() => {
                 <span>刷新状态</span>
               </button>
             </div>
+          </div>
+
+          <!-- Web Mode / Extension Guidance Banner -->
+          <div v-if="!isExtensionInstalled" class="extension-status-banner">
+            <div class="ext-banner-header">
+              <div class="ext-banner-info">
+                <span class="ext-dot" :class="isDemoMode ? 'is-demo' : 'is-web'"></span>
+                <span class="ext-status-title">
+                  {{ isDemoMode ? '已开启演示模拟登录模式' : '提示：当前为纯 Web 预览环境' }}
+                </span>
+              </div>
+              <div class="ext-banner-actions">
+                <button 
+                  class="ext-btn-demo" 
+                  :class="{ 'is-active': isDemoMode }"
+                  @click="toggleDemoMode"
+                  :title="isDemoMode ? '退出模拟模式' : '一键模拟全部渠道已登录，方便测试分发与打包功能'"
+                >
+                  <Sparkles size="12" />
+                  <span>{{ isDemoMode ? '退出模拟模式' : '开启模拟登录体验' }}</span>
+                </button>
+              </div>
+            </div>
+            <p class="ext-banner-desc">
+              受浏览器同源安全策略限制，纯网页无法跨域探测外部网站（知乎/掘金/公众号等）的 Cookie。实际多平台一键分发需在 Chrome/Edge 中加载配套的 <code>extension/</code> 插件。
+            </p>
           </div>
 
           <!-- Platforms Card Container -->
@@ -4638,5 +4717,121 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 :global(html[data-color-mode="dark"]) .btn-picker-cancel:hover {
   background: var(--bg-capsule-btn-hover, #37373d);
   color: var(--text-main, #ffffff);
+}
+
+/* Extension & Web Mode Banner */
+.extension-status-banner {
+  margin: 0.625rem 0 0.875rem 0;
+  padding: 0.75rem 0.875rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.ext-banner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.ext-banner-info {
+  display: flex;
+  align-items: center;
+  gap: 0.4375rem;
+}
+
+.ext-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.ext-dot.is-web {
+  background: #f59e0b;
+  box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+}
+
+.ext-dot.is-demo {
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+}
+
+.ext-status-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #334155;
+}
+
+.ext-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.ext-btn-demo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.25rem 0.625rem;
+  border-radius: 6px;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ext-btn-demo:hover {
+  background: #dbeafe;
+  color: #1d4ed8;
+}
+
+.ext-btn-demo.is-active {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  color: #059669;
+}
+
+.ext-banner-desc {
+  font-size: 0.6875rem;
+  line-height: 1.45;
+  color: #64748b;
+}
+
+.ext-banner-desc code {
+  font-family: monospace;
+  background: #f1f5f9;
+  padding: 0.1rem 0.3rem;
+  border-radius: 4px;
+  color: #0f172a;
+}
+
+:global(html.dark) .extension-status-banner,
+:global(html[data-color-mode="dark"]) .extension-status-banner {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+:global(html.dark) .ext-status-title,
+:global(html[data-color-mode="dark"]) .ext-status-title {
+  color: #f1f5f9;
+}
+
+:global(html.dark) .ext-banner-desc,
+:global(html[data-color-mode="dark"]) .ext-banner-desc {
+  color: #94a3b8;
+}
+
+:global(html.dark) .ext-banner-desc code,
+:global(html[data-color-mode="dark"]) .ext-banner-desc code {
+  background: #0f172a;
+  color: #e2e8f0;
 }
 </style>

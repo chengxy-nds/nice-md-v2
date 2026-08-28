@@ -1334,9 +1334,9 @@ watch(customStyles, () => {
       <!-- Header spanning top full width -->
       <header class="app-header">
         <div class="header-left">
-          <div class="wandor-brand-box" @click="currentView = 'home'" title="返回官方首页">
+          <div class="wandor-brand-box" @click="currentView = 'home'">
             <BrandLogo :size="32" />
-            <span class="wandor-wordmark">easymd</span>
+            <span class="wandor-wordmark">EASY MD</span>
           </div>
           <button class="btn-menu-toggle" @click="toggleMobileSidebar" title="文档列表">
             <Menu size="18" />
