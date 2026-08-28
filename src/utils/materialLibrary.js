@@ -2595,24 +2595,20 @@ export const headingTemplates = [
     styleCategory: 'minimal',
     hasAutoNumber: true,
     hasCustomPrefix: false,
-    previewHtml: `<div style="display:inline-table;vertical-align:middle;text-align:left;"><div style="display:table-row;"><div style="display:table-cell;font-family:serif;font-size:22px;font-weight:900;color:#cbd5e1;line-height:1;"><div style="margin-bottom:-6px;">01.</div></div></div><div style="display:table-row;"><div style="display:table-cell;border-bottom:2px solid #0a0a0a;padding-bottom:2px;font-size:13px;font-weight:800;color:#0a0a0a;position:relative;z-index:2;">范式转移与核心增长飞轮</div></div></div>`,
+    previewHtml: `<div style="display:inline-block;position:relative;text-align:left;"><div style="line-height:1;margin-bottom:-12px;margin-left:1px;"><span style="font-family:'Times New Roman',Georgia,serif;font-size:26px;font-weight:900;color:#cbd5e1;line-height:1;opacity:0.85;">01.</span></div><div style="position:relative;z-index:2;border-bottom:2px solid #0a0a0a;padding-bottom:3px;"><span style="font-size:13.5px;font-weight:900;color:#0a0a0a;">范式转移与核心增长飞轮</span></div></div>`,
     render: (title, index) => {
       const indexPadded = String(index).padStart(2, '0');
-      return `<section style="margin: 32px 0 20px; clear: both; text-align: left;" data-material="true">
-  <section style="display: inline-table; vertical-align: top; text-align: left; max-width: 100%; box-sizing: border-box;">
-    <section style="display: table-row;">
-      <section style="display: table-cell; vertical-align: bottom; text-align: left; padding: 0; line-height: 1;">
-        <span style="font-family: 'Times New Roman', Georgia, 'Songti SC', serif; font-size: 38px; font-weight: 900; color: #cbd5e1; letter-spacing: 1px; line-height: 1; display: inline-block; margin-bottom: -10px;">
-          ${indexPadded}.
-        </span>
-      </section>
+      return `<section style="margin: 36px 0 22px; clear: both; text-align: left;" data-material="true">
+  <section style="display: inline-block; position: relative; text-align: left; max-width: 100%; box-sizing: border-box;">
+    <section style="line-height: 1; margin-bottom: -20px; margin-left: 2px;">
+      <span style="font-family: 'Times New Roman', Georgia, 'Songti SC', serif; font-size: 42px; font-weight: 900; color: #cbd5e1; letter-spacing: 1px; line-height: 1; opacity: 0.85; display: inline-block;">
+        ${indexPadded}.
+      </span>
     </section>
-    <section style="display: table-row;">
-      <section style="display: table-cell; vertical-align: top; text-align: left; border-bottom: 2.5px solid #0a0a0a; padding: 0 0 4px 0; line-height: 1.4; position: relative; z-index: 2;">
-        <span style="font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 18.5px; font-weight: 800; color: #0a0a0a; letter-spacing: 0.2px; line-height: 1.4; display: inline-block;">
-          ${title}
-        </span>
-      </section>
+    <section style="position: relative; z-index: 2; border-bottom: 2.5px solid #0a0a0a; padding-bottom: 5px; line-height: 1.4;">
+      <span style="font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 19px; font-weight: 900; color: #0a0a0a; letter-spacing: 0.3px; line-height: 1.4; display: inline-block;">
+        ${title}
+      </span>
     </section>
   </section>
 </section>`;
