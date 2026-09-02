@@ -61,7 +61,9 @@
         "https://cloud.tencent.com/developer/*",
         "https://*.nowcoder.com/*",
         "https://developer.aliyun.com/*",
-        "https://leetcode.cn/*"
+        "https://leetcode.cn/*",
+        "https://creator.xiaohongshu.com/*",
+        "https://*.xiaohongshu.com/*"
       ],
       "js": ["content-automation.js"],
       "run_at": "document_end"

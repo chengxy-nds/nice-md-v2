@@ -215,7 +215,9 @@ const PLATFORM_NAMES = {
   tencentcloud: '腾讯云开发者社区',
   nowcoder: '牛客网',
   aliyun: '阿里云开发者社区',
-  leetcode: '力扣'
+  leetcode: '力扣',
+  xiaohongshu: '小红书',
+  xhs: '小红书'
 };
 
 function inferPlatformId(url, platformId) {
@@ -535,6 +537,123 @@ async function checkSingleLogin(platformId) {
           avatar: json.data.face
         };
       }
+      return { loggedIn: false };
+    }
+
+    // 5.1 小红书 (xiaohongshu)
+    if (platformId === 'xiaohongshu' || platformId === 'xhs') {
+      try {
+        const webSession = await getCookieVal('https://creator.xiaohongshu.com', 'web_session')
+          || await getCookieVal('https://www.xiaohongshu.com', 'web_session')
+          || await getCookieVal('https://xiaohongshu.com', 'web_session');
+        const creatorSession = await getCookieVal('https://creator.xiaohongshu.com', 'galaxy_creator_session')
+          || await getCookieVal('https://creator.xiaohongshu.com', 'galaxy.creator.session');
+
+        if (!((webSession && webSession.trim().length > 15) || (creatorSession && creatorSession.trim().length > 15))) {
+          return { loggedIn: false };
+        }
+
+        const extractUser = (json) => {
+          if (!json) return null;
+          if (json.code !== 0 && json.success !== true) return null;
+          const d = json.data;
+          if (!d) return null;
+          const u = d.userInfo || d.user || d.creatorInfo || d.creator || d.personalInfo || d.userPageData || d;
+          const nickname = u.nickname || u.userName || u.user_name || u.name || u.nickName || d.nickname || d.userName || '';
+          const userId = u.user_id || u.userId || u.id || d.user_id || d.userId || '';
+          const avatar = u.avatar || u.image || u.head_img || u.avatar_url || d.avatar || d.image || null;
+
+          if (nickname || userId) {
+            return {
+              loggedIn: true,
+              userId: String(userId),
+              username: nickname || `小红书用户${userId ? String(userId).slice(-4) : ''}`,
+              avatar: avatar
+            };
+          }
+          return null;
+        };
+
+        // 1. Try Creator APIs
+        const creatorEndpoints = [
+          'https://creator.xiaohongshu.com/api/galaxy/creator/user/info',
+          'https://creator.xiaohongshu.com/api/galaxy/user/info',
+          'https://creator.xiaohongshu.com/api/galaxy/creator/home/personal_info',
+          'https://creator.xiaohongshu.com/api/galaxy/creator/home/info'
+        ];
+
+        for (const endpoint of creatorEndpoints) {
+          try {
+            const response = await doFetch(endpoint, {
+              headers: {
+                'accept': 'application/json, text/plain, */*',
+                'referer': 'https://creator.xiaohongshu.com/'
+              }
+            });
+            if (response.ok) {
+              const json = await response.json();
+              const user = extractUser(json);
+              if (user) return user;
+            }
+          } catch (e) {}
+        }
+
+        // 2. Try Edith Self Info API (Main Web)
+        const edithEndpoints = [
+          'https://edith.xiaohongshu.com/api/sns/web/v1/user/selfinfo',
+          'https://www.xiaohongshu.com/api/sns/web/v1/user/selfinfo',
+          'https://edith.xiaohongshu.com/api/sns/web/v2/user/me'
+        ];
+
+        for (const endpoint of edithEndpoints) {
+          try {
+            const resEdith = await doFetch(endpoint, {
+              headers: {
+                'accept': 'application/json, text/plain, */*',
+                'referer': 'https://www.xiaohongshu.com/'
+              }
+            });
+            if (resEdith.ok) {
+              const json = await resEdith.json();
+              const user = extractUser(json);
+              if (user) return user;
+            }
+          } catch (e) {}
+        }
+
+        // 3. Try Creator Home HTML parse
+        try {
+          const respHome = await doFetch('https://creator.xiaohongshu.com/creator/home', {
+            headers: {
+              'accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+              'referer': 'https://creator.xiaohongshu.com/'
+            }
+          });
+          const html = await respHome.text();
+          const stateMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*(\{[\s\S]*?\});/);
+          if (stateMatch) {
+            try {
+              const state = JSON.parse(stateMatch[1]);
+              const user = extractUser({ code: 0, success: true, data: state.user || state.userInfo || state });
+              if (user) return user;
+            } catch (e) {}
+          }
+          const nickMatch = html.match(/"nickname":\s*"([^"]+)"/) || html.match(/"userName":\s*"([^"]+)"/);
+          if (nickMatch && nickMatch[1]) {
+            return {
+              loggedIn: true,
+              username: nickMatch[1]
+            };
+          }
+        } catch (e) {}
+
+        if ((webSession && webSession.length > 30) || (creatorSession && creatorSession.length > 30)) {
+          return {
+            loggedIn: true,
+            username: '小红书已登录'
+          };
+        }
+      } catch (e) {}
       return { loggedIn: false };
     }
 

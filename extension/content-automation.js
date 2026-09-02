@@ -130,6 +130,12 @@ const SELECTORS = {
     editor: '.ProseMirror, .byte-editor [contenteditable="true"], .editor-content [contenteditable="true"], .tui-editor [contenteditable="true"], [contenteditable="true"], .editor-tar, .ql-editor',
     cover: '.byte-upload input[type="file"], .upload-box input[type="file"], .s-cover-uploader input[type="file"], input[type="file"]',
     format: 'text/html'
+  },
+  xiaohongshu: {
+    title: '.titleInput input, input.d-input__inner, [placeholder*="填写标题"], input[placeholder*="标题"], .c-input_inner, .title-input',
+    editor: '.post-content, .ql-editor, .notranslate[contenteditable="true"], [contenteditable="true"], .content-input textarea, textarea[placeholder*="正文"], textarea[placeholder*="填写正文"]',
+    cover: '.upload-input, input[type="file"][accept*="image"], .upload-wrapper input[type="file"], input[type="file"]',
+    format: 'text/plain'
   }
 };
 
@@ -142,6 +148,7 @@ function getPlatformKey() {
   if (host.includes('cnblogs.com')) return 'cnblogs';
   if (host.includes('baidu.com')) return 'baijiahao';
   if (host.includes('bilibili.com')) return 'bilibili';
+  if (host.includes('xiaohongshu.com')) return 'xiaohongshu';
   if (host.includes('eastmoney.com')) return 'eastmoney';
   if (host.includes('oschina.net')) return 'oschina';
   if (host.includes('sohu.com')) return 'sohu';

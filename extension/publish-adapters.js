@@ -3248,6 +3248,24 @@ class LeetcodeAdapter extends CodeAdapter {
   }
 }
 
+// 29. Xiaohongshu (小红书) Adapter
+class XiaohongshuAdapter extends CodeAdapter {
+  constructor() {
+    super('xiaohongshu');
+  }
+
+  async publish(article) {
+    const { title, markdown, html, cover } = article || {};
+    return this.createResult(true, {
+      postUrl: 'https://creator.xiaohongshu.com/publish/publish?source=official',
+      draftOnly: true,
+      markdown,
+      html,
+      cover
+    });
+  }
+}
+
 const publishAdapters = {
   csdn: new CsdnAdapter(),
   juejin: new JuejinAdapter(),
@@ -3257,6 +3275,8 @@ const publishAdapters = {
   weibo: new WeiboAdapter(),
   baijiahao: new BaijiahaoAdapter(),
   bilibili: new BilibiliAdapter(),
+  xiaohongshu: new XiaohongshuAdapter(),
+  xhs: new XiaohongshuAdapter(), // alias
   cnblogs: new CnblogsAdapter(),
   yuque: new YuqueAdapter(),
   segmentfault: new SegmentfaultAdapter(),

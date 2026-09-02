@@ -100,6 +100,19 @@ const DEFAULT_PLATFORMS_CONFIG = [
     }
   },
   {
+    id: 'xiaohongshu',
+    name: '小红书',
+    color: '#ff2442',
+    writeUrl: 'https://creator.xiaohongshu.com/publish/publish?source=official',
+    matchHosts: ['creator.xiaohongshu.com', 'xiaohongshu.com', 'www.xiaohongshu.com'],
+    silentEnabled: true,
+    selectors: {
+      title: '.titleInput input, input.d-input__inner, [placeholder*="填写标题"], input[placeholder*="标题"], .c-input_inner, .title-input',
+      editor: '.post-content, .ql-editor, .notranslate[contenteditable="true"], [contenteditable="true"], .content-input textarea, textarea[placeholder*="正文"], textarea[placeholder*="填写正文"]',
+      format: 'text/plain'
+    }
+  },
+  {
     id: 'eastmoney',
     name: '东方财富',
     color: '#f59e0b',
@@ -576,6 +589,33 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     });
     return true; // async response
   }
+
+  // 9. TiDB Cloud Serverless Fetch (Bypass browser CORS restrictions)
+  if (message.type === 'TIDB_FETCH') {
+    (async () => {
+      try {
+        const { url, options = {} } = message;
+        const resp = await fetch(url, options);
+        const headers = {};
+        resp.headers.forEach((v, k) => { headers[k] = v; });
+        const text = await resp.text();
+        sendResponse({
+          success: resp.ok,
+          status: resp.status,
+          statusText: resp.statusText,
+          headers,
+          data: text
+        });
+      } catch (err) {
+        sendResponse({
+          success: false,
+          status: 500,
+          error: err.message || 'TiDB Background Fetch Error'
+        });
+      }
+    })();
+    return true; // async response
+  }
 });
 
 // Helper to query open NiceMD editor tabs
@@ -1008,6 +1048,36 @@ async function registerNetRequestRules() {
         urlFilter: '||cloud.tencent.com/developer/services/ajax/',
         resourceTypes: ['xmlhttprequest', 'other']
       }
+    },
+    {
+      id: 28,
+      priority: 1,
+      action: {
+        type: 'modifyHeaders',
+        requestHeaders: [
+          { header: 'Origin', operation: 'set', value: 'https://creator.xiaohongshu.com' },
+          { header: 'Referer', operation: 'set', value: 'https://creator.xiaohongshu.com/' }
+        ]
+      },
+      condition: {
+        urlFilter: '||creator.xiaohongshu.com/api/',
+        resourceTypes: ['xmlhttprequest', 'other']
+      }
+    },
+    {
+      id: 29,
+      priority: 1,
+      action: {
+        type: 'modifyHeaders',
+        requestHeaders: [
+          { header: 'Origin', operation: 'set', value: 'https://www.xiaohongshu.com' },
+          { header: 'Referer', operation: 'set', value: 'https://www.xiaohongshu.com/' }
+        ]
+      },
+      condition: {
+        urlFilter: '||edith.xiaohongshu.com/api/',
+        resourceTypes: ['xmlhttprequest', 'other']
+      }
     }
   ];
 
@@ -1178,6 +1248,198 @@ async function checkLoginStatus(platformId, writeUrl) {
         };
       }
       return { loggedIn: false };
+    }
+
+    if (platformId === 'xiaohongshu' || platformId === 'xhs') {
+      try {
+        // Step 1: Strict Cookie Verification (Only real auth session tokens)
+        const [xhsCookies, creatorCookies] = await Promise.all([
+          chrome.cookies.getAll({ domain: 'xiaohongshu.com' }).catch(() => []),
+          chrome.cookies.getAll({ domain: 'creator.xiaohongshu.com' }).catch(() => [])
+        ]);
+
+        const cookieMap = new Map();
+        [...xhsCookies, ...creatorCookies].forEach(c => {
+          if (c && c.name && c.value) {
+            cookieMap.set(c.name, c.value);
+          }
+        });
+
+        // ONLY web_session and galaxy_creator_session represent logged-in user tokens.
+        // Guest/device tracking cookies (customerClientId, a1, webId, etc.) MUST NEVER be used as auth flags.
+        const webSession = cookieMap.get('web_session');
+        const creatorSession = cookieMap.get('galaxy_creator_session') || cookieMap.get('galaxy.creator.session');
+
+        const hasValidSession = !!(
+          (webSession && webSession.trim().length > 15) ||
+          (creatorSession && creatorSession.trim().length > 15)
+        );
+
+        if (!hasValidSession) {
+          return { loggedIn: false };
+        }
+
+        // Helper to extract user info from various API response formats
+        const extractUser = (json) => {
+          if (!json) return null;
+          if (json.code !== 0 && json.success !== true) return null;
+          const d = json.data;
+          if (!d) return null;
+          
+          const u = d.userInfo || d.user || d.creatorInfo || d.creator || d.personalInfo || d.userPageData || d;
+          const nickname = u.nickname || u.userName || u.user_name || u.name || u.nickName || d.nickname || d.userName || '';
+          const userId = u.user_id || u.userId || u.id || d.user_id || d.userId || '';
+          const avatar = u.avatar || u.image || u.head_img || u.avatar_url || d.avatar || d.image || null;
+
+          if (nickname || userId) {
+            return {
+              loggedIn: true,
+              userId: String(userId),
+              username: nickname || `小红书用户${userId ? String(userId).slice(-4) : ''}`,
+              avatar: avatar
+            };
+          }
+          return null;
+        };
+
+        // Step 2: Try Creator User Info endpoints
+        const creatorEndpoints = [
+          'https://creator.xiaohongshu.com/api/galaxy/creator/user/info',
+          'https://creator.xiaohongshu.com/api/galaxy/user/info',
+          'https://creator.xiaohongshu.com/api/galaxy/creator/home/personal_info',
+          'https://creator.xiaohongshu.com/api/galaxy/creator/home/info'
+        ];
+
+        for (const endpoint of creatorEndpoints) {
+          try {
+            const resp = await fetch(endpoint, {
+              method: 'GET',
+              credentials: 'include',
+              headers: {
+                'Accept': 'application/json, text/plain, */*',
+                'Referer': 'https://creator.xiaohongshu.com/'
+              },
+              cache: 'no-cache'
+            });
+            if (resp.ok) {
+              const json = await resp.json();
+              const user = extractUser(json);
+              if (user) return user;
+            }
+          } catch (e) {}
+        }
+
+        // Step 3: Try Edith Main Site API
+        const edithEndpoints = [
+          'https://edith.xiaohongshu.com/api/sns/web/v1/user/selfinfo',
+          'https://www.xiaohongshu.com/api/sns/web/v1/user/selfinfo',
+          'https://edith.xiaohongshu.com/api/sns/web/v2/user/me'
+        ];
+
+        for (const endpoint of edithEndpoints) {
+          try {
+            const resp = await fetch(endpoint, {
+              method: 'GET',
+              credentials: 'include',
+              headers: {
+                'Accept': 'application/json, text/plain, */*',
+                'Referer': 'https://www.xiaohongshu.com/'
+              },
+              cache: 'no-cache'
+            });
+            if (resp.ok) {
+              const json = await resp.json();
+              const user = extractUser(json);
+              if (user) return user;
+            }
+          } catch (e) {}
+        }
+
+        // Step 4: Try fetching Creator Home HTML page to parse window.__INITIAL_STATE__
+        try {
+          const respHome = await fetch('https://creator.xiaohongshu.com/creator/home', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+              'Referer': 'https://creator.xiaohongshu.com/'
+            },
+            cache: 'no-cache'
+          });
+          const finalUrl = respHome.url || '';
+          if (!finalUrl.includes('/login') && !finalUrl.includes('unlogin')) {
+            const html = await respHome.text();
+            const stateMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*(\{[\s\S]*?\});/);
+            if (stateMatch) {
+              try {
+                const state = JSON.parse(stateMatch[1]);
+                const user = extractUser({ code: 0, success: true, data: state.user || state.userInfo || state });
+                if (user) return user;
+              } catch (e) {}
+            }
+            const nickMatch = html.match(/"nickname":\s*"([^"]+)"/) || html.match(/"userName":\s*"([^"]+)"/);
+            const avatarMatch = html.match(/"avatar":\s*"([^"]+)"/) || html.match(/"image":\s*"([^"]+)"/);
+            const uidMatch = html.match(/"userId":\s*"([^"]+)"/) || html.match(/"user_id":\s*"([^"]+)"/);
+            if (nickMatch && nickMatch[1]) {
+              return {
+                loggedIn: true,
+                userId: uidMatch ? uidMatch[1] : '',
+                username: nickMatch[1],
+                avatar: avatarMatch ? avatarMatch[1] : null
+              };
+            }
+          }
+        } catch (e) {}
+
+        // Step 5: Try fetching Main Site Explore HTML page to parse window.__INITIAL_STATE__
+        try {
+          const respExplore = await fetch('https://www.xiaohongshu.com/explore', {
+            method: 'GET',
+            credentials: 'include',
+            headers: {
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+              'Referer': 'https://www.xiaohongshu.com/'
+            },
+            cache: 'no-cache'
+          });
+          const html = await respExplore.text();
+          const stateMatch = html.match(/window\.__INITIAL_STATE__\s*=\s*(\{[\s\S]*?\});/);
+          if (stateMatch) {
+            try {
+              const state = JSON.parse(stateMatch[1]);
+              const u = state.user && (state.user.userPageData || state.user.userInfo || state.user);
+              if (u && (u.nickname || u.userName)) {
+                return {
+                  loggedIn: true,
+                  userId: u.userId || u.user_id || '',
+                  username: u.nickname || u.userName,
+                  avatar: u.avatar || u.image || null
+                };
+              }
+            } catch (e) {}
+          }
+          const nickMatch = html.match(/"nickname":\s*"([^"]+)"/);
+          if (nickMatch && nickMatch[1]) {
+            return {
+              loggedIn: true,
+              username: nickMatch[1]
+            };
+          }
+        } catch (e) {}
+
+        // If we reach here, we have a valid web_session token (>30 chars), return logged in
+        if ((webSession && webSession.length > 30) || (creatorSession && creatorSession.length > 30)) {
+          return {
+            loggedIn: true,
+            username: '小红书已登录'
+          };
+        }
+
+        return { loggedIn: false };
+      } catch (err) {
+        console.warn('[NiceMD Check Login] Xiaohongshu check error:', err);
+        return { loggedIn: false };
+      }
     }
 
     if (platformId === 'oschina') {

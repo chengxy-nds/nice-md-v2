@@ -126,6 +126,28 @@ window.addEventListener('message', (event) => {
       window.postMessage({ type: 'NICEMD_GET_PENDING_IMPORT_RESPONSE', success: false, error: 'Extension context invalidated' }, '*');
     }
   }
+
+  // 9. TiDB Cloud CORS Bypass Fetch
+  if (message.type === 'NICEMD_TIDB_FETCH') {
+    const { requestId, url, options } = message;
+    const sent = safeSendMessage({ type: 'TIDB_FETCH', url, options }, (response) => {
+      if (response) {
+        window.postMessage({
+          type: 'NICEMD_TIDB_FETCH_RESPONSE',
+          requestId,
+          ...response
+        }, '*');
+      }
+    });
+    if (!sent) {
+      window.postMessage({
+        type: 'NICEMD_TIDB_FETCH_RESPONSE',
+        requestId,
+        success: false,
+        error: 'Extension context invalidated'
+      }, '*');
+    }
+  }
 });
 
 // Listen to messages from background worker and forward to NiceMD web app page

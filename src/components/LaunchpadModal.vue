@@ -311,6 +311,23 @@ const platforms = ref([
     avatar: ''
   },
   {
+    id: 'xiaohongshu',
+    name: '小红书',
+    category: 'media',
+    iconUrl: './svg/小红书.svg',
+    color: '#ff2442',
+    writeUrl: 'https://creator.xiaohongshu.com/publish/publish?source=official',
+    status: 'idle',
+    progress: 0,
+    actionLabel: '复制并前往发布',
+    format: 'md',
+    loginStatus: 'not_logged_in',
+    selected: false,
+    enabled: true,
+    username: '',
+    avatar: ''
+  },
+  {
     id: 'cnblogs',
     name: '博客园',
     category: 'tech',
@@ -937,13 +954,6 @@ const resetPlatformSyncStatuses = () => {
   isFinished.value = false;
 };
 
-watch(() => props.isOpen, (newVal) => {
-  if (newVal) {
-    resetPlatformSyncStatuses();
-    checkAllLogins(false);
-  }
-});
-
 watch(showPlatformManageModal, (newVal) => {
   if (newVal && isExtensionInstalled.value) {
     checkAllLogins(true);
@@ -956,9 +966,6 @@ const handleManualRefresh = () => {
 
 const checkAllLogins = (force = false) => {
   resetPlatformSyncStatuses();
-  
-  // Ping extension
-  window.postMessage({ type: 'NICEMD_PING' }, '*');
 
   if (force) {
     soundEngine.playClick?.();
@@ -988,22 +995,27 @@ const checkAllLogins = (force = false) => {
     return;
   }
 
-  // 30-minute cache validation
-  if (!force) {
-    const cacheInfo = loadCachedLogins();
-    if (cacheInfo.isFresh) {
-      const minsAgo = Math.round((Date.now() - cacheInfo.lastChecked) / 60000);
-      console.log(`[NiceMD] 登录状态在 30 分钟有效期内（上次更新于 ${minsAgo} 分钟前），跳过后台重复检测。`);
-      return;
+  // Cache instant render
+  const cacheInfo = loadCachedLogins();
+  
+  if (force) {
+    isCheckingLogins.value = true;
+    platforms.value.forEach(p => {
+      if (p.id !== 'zip-download') {
+        p.loginStatus = 'checking';
+      }
+    });
+  } else {
+    // Background silent revalidation (does not disturb UI with spinners if cache exists)
+    if (!cacheInfo.hasCache) {
+      isCheckingLogins.value = true;
+      platforms.value.forEach(p => {
+        if (p.id !== 'zip-download') {
+          p.loginStatus = 'checking';
+        }
+      });
     }
   }
-  
-  isCheckingLogins.value = true;
-  platforms.value.forEach(p => {
-    if (p.id !== 'zip-download') {
-      p.loginStatus = 'checking';
-    }
-  });
   
   const payloadPlatforms = platforms.value
     .filter(p => p.id !== 'zip-download')
@@ -1048,6 +1060,9 @@ const getUserHomeUrl = (plat) => {
       return uid ? `https://leetcode.cn/u/${uid}` : 'https://leetcode.cn/circle/discuss/create/';
     case 'bilibili':
       return uid ? `https://space.bilibili.com/${uid}` : 'https://member.bilibili.com/platform/home';
+    case 'xiaohongshu':
+    case 'xhs':
+      return uid ? `https://www.xiaohongshu.com/user/profile/${uid}` : 'https://creator.xiaohongshu.com/';
     case 'oschina':
       return uid ? `https://my.oschina.net/u/${uid}` : 'https://my.oschina.net/';
     case 'weibo':
@@ -1376,13 +1391,10 @@ onMounted(() => {
     
     if (event.data && event.data.type === 'NICEMD_PONG') {
       isExtensionInstalled.value = true;
-      checkAllLogins(false);
     }
 
     if (event.data && event.data.type === 'NICEMD_GET_CONFIG_RESPONSE') {
-      if (event.data.success && event.data.config) {
-        checkAllLogins(false);
-      }
+      // Configuration retrieved
     }
 
     if (event.data && event.data.type === 'NICEMD_CHECK_LOGINS_RESPONSE') {

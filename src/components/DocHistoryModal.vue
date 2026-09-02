@@ -236,7 +236,7 @@ async function copyHistoricalContent() {
                 <span>历史版本与内容比对</span>
                 <span class="doc-badge">{{ props.doc?.title || '当前文档' }}</span>
               </h2>
-              <p class="modal-subtitle">查看历史变更节点，逐行比对内容差异并支持一键回滚</p>
+              <p class="modal-subtitle">查看历史变更节点，逐行比对内容差异并支持一键回滚（自动保留最近 15 个版本快照）</p>
             </div>
           </div>
 

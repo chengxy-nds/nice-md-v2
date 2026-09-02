@@ -8,8 +8,9 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite --port=3000 --host=0.0.0.0",
-    "build": "vite build",
+    "build": "vite build && npm run extension:zip",
     "preview": "vite preview",
+    "extension:zip": "node scripts/package-extension.cjs",
     "electron:dev": "concurrently -k \"cross-env DISABLE_HMR=false vite --port=3000\" \"wait-on tcp:3000 && electron .\"",
     "electron:build": "vite build && electron-builder --win",
     "electron:build:dir": "vite build && electron-builder --win --dir",
@@ -89,5 +90,9 @@
       "createStartMenuShortcut": true,
       "shortcutName": "NiceMD"
     }
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "@tidbcloud/serverless": "^0.3.0"
   }
 }

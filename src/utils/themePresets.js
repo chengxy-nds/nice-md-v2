@@ -257,23 +257,75 @@ export const themes = [
   }
 ];
 
-// Load any saved custom themes on initialization
-try {
-  if (typeof localStorage !== 'undefined') {
-    const savedCustomThemes = JSON.parse(localStorage.getItem('nicemd_custom_themes') || '[]');
-    if (Array.isArray(savedCustomThemes)) {
-      const existingIds = new Set(themes.map(t => t.id));
-      savedCustomThemes.forEach(t => {
-        if (t && t.id && !existingIds.has(t.id)) {
-          themes.push(t);
-          existingIds.add(t.id);
-        }
-      });
+// Custom theme helpers
+export function loadCustomThemes() {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      const raw = localStorage.getItem('nicemd_custom_themes');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return Array.isArray(parsed) ? parsed : [];
+      }
+    }
+  } catch (e) {
+    console.warn('[NiceMD] Failed to load custom themes from localStorage:', e);
+  }
+  return [];
+}
+
+export function saveCustomThemes(customThemes = []) {
+  try {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem('nicemd_custom_themes', JSON.stringify(customThemes));
+    }
+  } catch (e) {
+    console.warn('[NiceMD] Failed to save custom themes to localStorage:', e);
+  }
+}
+
+export function mergeCustomThemes(cloudCustomThemes = []) {
+  if (!Array.isArray(cloudCustomThemes)) return loadCustomThemes();
+  const local = loadCustomThemes();
+  const map = new Map(local.map(t => [t.id, t]));
+
+  for (const ct of cloudCustomThemes) {
+    if (!ct || !ct.id) continue;
+    const existing = map.get(ct.id);
+    if (!existing || (ct.updatedAt || 0) >= (existing.updatedAt || 0)) {
+      map.set(ct.id, ct);
     }
   }
-} catch (e) {
-  console.warn('[NiceMD] Failed to load custom themes from localStorage:', e);
+
+  const merged = Array.from(map.values());
+  saveCustomThemes(merged);
+
+  // Sync with in-memory themes array
+  const builtInIds = new Set(themes.filter(t => !t.isCustom && t.builtIn !== false).map(t => t.id));
+  // Remove existing custom themes from in-memory array
+  for (let i = themes.length - 1; i >= 0; i--) {
+    if (themes[i].isCustom || !builtInIds.has(themes[i].id)) {
+      themes.splice(i, 1);
+    }
+  }
+  // Append merged custom themes
+  for (const t of merged) {
+    themes.push(t);
+  }
+
+  return merged;
 }
+
+// Load any saved custom themes on initialization
+try {
+  const savedCustomThemes = loadCustomThemes();
+  const existingIds = new Set(themes.map(t => t.id));
+  savedCustomThemes.forEach(t => {
+    if (t && t.id && !existingIds.has(t.id)) {
+      themes.push(t);
+      existingIds.add(t.id);
+    }
+  });
+} catch (e) {}
 
 export const builtInThemeIds = new Set([
   'classic-indigo',

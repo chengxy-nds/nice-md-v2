@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, nextTick, watch } from 'vue';
+import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue';
 import {
   Plus,
   FolderPlus,
@@ -12,10 +12,40 @@ import {
   Trash2,
   GripVertical,
   Check,
-  X
+  X,
+  Cloud
 } from '@lucide/vue';
 import { showConfirm } from '../utils/confirmDialog';
 import SidebarDocItem from './SidebarDocItem.vue';
+import { isCloudSyncEnabled, getActiveCloudProvider } from '../utils/cloudSync';
+
+const currentCloudProvider = ref(getActiveCloudProvider());
+const isCloudSyncActive = ref(isCloudSyncEnabled());
+
+const cloudSyncTitle = computed(() => {
+  const provider = currentCloudProvider.value === 'tidb' ? 'TiDB Cloud (MySQL)' : 'Neon (Postgres)';
+  return `${provider} 实时同步已开启`;
+});
+
+function refreshCloudSyncState() {
+  currentCloudProvider.value = getActiveCloudProvider();
+  isCloudSyncActive.value = isCloudSyncEnabled();
+}
+
+onMounted(() => {
+  refreshCloudSyncState();
+  window.addEventListener('nicemd-cloud-provider-changed', refreshCloudSyncState);
+  window.addEventListener('nicemd-tidb-config-updated', refreshCloudSyncState);
+  window.addEventListener('nicemd-neon-config-updated', refreshCloudSyncState);
+  window.addEventListener('storage', refreshCloudSyncState);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('nicemd-cloud-provider-changed', refreshCloudSyncState);
+  window.removeEventListener('nicemd-tidb-config-updated', refreshCloudSyncState);
+  window.removeEventListener('nicemd-neon-config-updated', refreshCloudSyncState);
+  window.removeEventListener('storage', refreshCloudSyncState);
+});
 
 const props = defineProps({
   documents: { type: Array, required: true },
@@ -255,7 +285,13 @@ function onGroupDragStart(e, groupId) {
 
     <!-- Section Header: 我的文档 -->
     <div class="section-title-row">
-      <span class="section-title">我的文档</span>
+      <div class="section-title-group">
+        <span class="section-title">我的文档</span>
+        <span v-if="isCloudSyncActive" class="cloud-sync-badge" :title="cloudSyncTitle">
+          <Cloud size="12" class="cloud-sync-icon" />
+          <span class="cloud-sync-dot"></span>
+        </span>
+      </div>
       <div class="section-icons">
         <button class="title-icon-btn" @click="handleCreateDoc(null)" title="新建文档">
           <Plus size="16" stroke-width="2" />
@@ -525,11 +561,47 @@ html.dark .btn-create-doc-primary:hover {
   padding: 4px 2px 10px 4px;
 }
 
+.section-title-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .section-title {
   font-size: 14px;
   font-weight: 700;
   color: var(--text-main, #18181b);
   letter-spacing: -0.01em;
+}
+
+.cloud-sync-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 5px;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.2);
+  border-radius: 9999px;
+  color: #10b981;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.cloud-sync-icon {
+  color: #10b981;
+}
+
+.cloud-sync-dot {
+  width: 4px;
+  height: 4px;
+  background-color: #10b981;
+  border-radius: 50%;
+  animation: pulse-dot 2s infinite ease-in-out;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.4; transform: scale(0.85); }
+  50% { opacity: 1; transform: scale(1.15); }
 }
 
 .section-icons {

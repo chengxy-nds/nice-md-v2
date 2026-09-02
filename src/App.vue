@@ -28,7 +28,8 @@ import TemplateCenter from './components/TemplateCenter.vue';
 import MaterialCenter from './components/MaterialCenter.vue';
 import HomeLandingView from './components/HomeLandingView.vue';
 import BrandLogo from './components/BrandLogo.vue';
-import { createSnapshot } from './utils/docHistory';
+import { createSnapshot, getAllDocSnapshots, saveAllDocSnapshots } from './utils/docHistory';
+import { loadCustomThemes, saveCustomThemes, mergeCustomThemes } from './utils/themePresets';
 import {
   loadDocuments, saveDocuments,
   loadGroups, saveGroups,
@@ -36,6 +37,20 @@ import {
   loadSidebarVisible, saveSidebarVisible,
   generateId
 } from './utils/docStorage';
+import {
+  triggerAutoSyncDebounced,
+  isCloudSyncEnabled,
+  isNeonSyncEnabled,
+  isTidbSyncEnabled,
+  realtimeSyncDoc,
+  realtimeSyncGroup,
+  realtimeDeleteDoc,
+  realtimeDeleteGroup,
+  realtimeSyncHistory,
+  realtimeDeleteHistory,
+  realtimeSyncCustomTheme,
+  realtimeDeleteCustomTheme
+} from './utils/cloudSync';
 
 // ── view & document state ──
 const currentView = ref('editor'); // 'home' | 'editor' | 'templates' | 'materials'
@@ -81,6 +96,7 @@ const markdownContent = computed({
       doc.content = val;
       doc.updatedAt = Date.now();
       saveDocuments(documents.value);
+      realtimeSyncDoc(doc);
     }
   }
 });
@@ -93,6 +109,7 @@ const customStyles = computed({
       doc.customStyles = val;
       doc.updatedAt = Date.now();
       saveDocuments(documents.value);
+      realtimeSyncDoc(doc);
     }
   }
 });
@@ -186,13 +203,15 @@ function handleCreateDoc(groupId = null) {
   soundEngine.playClick();
   const id = generateId();
   const now = Date.now();
-  documents.value.push({
+  const newDoc = {
     id, title: '未命名文档', content: '', groupId, createdAt: now, updatedAt: now,
     customStyles: {}
-  });
+  };
+  documents.value.push(newDoc);
   activeDocId.value = id;
   saveDocuments(documents.value);
   saveActiveDocId(id);
+  realtimeSyncDoc(newDoc);
 }
 
 function handleApplyTemplate(template) {
@@ -205,17 +224,22 @@ function handleApplyTemplate(template) {
     if (activeDocument.value) {
       activeDocument.value.title = title;
       activeDocument.value.customStyles = JSON.parse(JSON.stringify(tmplCustomStyles));
+      activeDocument.value.updatedAt = Date.now();
+      saveDocuments(documents.value);
+      realtimeSyncDoc(activeDocument.value);
     }
   } else {
     const id = generateId();
     const now = Date.now();
-    documents.value.push({
+    const newDoc = {
       id, title, content, groupId: null, createdAt: now, updatedAt: now,
       customStyles: JSON.parse(JSON.stringify(tmplCustomStyles))
-    });
+    };
+    documents.value.push(newDoc);
     activeDocId.value = id;
     saveDocuments(documents.value);
     saveActiveDocId(id);
+    realtimeSyncDoc(newDoc);
   }
 
   currentView.value = 'editor';
@@ -240,6 +264,7 @@ function handleApplyTheme(theme) {
   if (activeDocument.value) {
     activeDocument.value.customStyles = customStylesObj;
     activeDocument.value.updatedAt = Date.now();
+    realtimeSyncDoc(activeDocument.value);
   }
   customStyles.value = customStylesObj;
 
@@ -252,8 +277,12 @@ function handleApplyTheme(theme) {
 function handleRenameDoc({ id, title }) {
   soundEngine.playClick();
   const doc = documents.value.find(d => d.id === id);
-  if (doc) { doc.title = title; doc.updatedAt = Date.now(); }
-  saveDocuments(documents.value);
+  if (doc) {
+    doc.title = title;
+    doc.updatedAt = Date.now();
+    saveDocuments(documents.value);
+    realtimeSyncDoc(doc);
+  }
 }
 
 // ── Toolbar document title inline rename ──
@@ -298,28 +327,41 @@ function handleDeleteDoc(id) {
     }
   }
   saveDocuments(documents.value);
+  realtimeDeleteDoc(id);
 }
 
 function handleCreateGroup(name) {
   soundEngine.playClick();
-  const group = { id: generateId(), name, createdAt: Date.now() };
+  const group = { id: generateId(), name, createdAt: Date.now(), updatedAt: Date.now() };
   groups.value.push(group);
   saveGroups(groups.value);
+  realtimeSyncGroup(group);
 }
 
 function handleRenameGroup({ id, name }) {
   soundEngine.playClick();
   const group = groups.value.find(g => g.id === id);
-  if (group) group.name = name;
-  saveGroups(groups.value);
+  if (group) {
+    group.name = name;
+    group.updatedAt = Date.now();
+    saveGroups(groups.value);
+    realtimeSyncGroup(group);
+  }
 }
 
 function handleDeleteGroup(id) {
   soundEngine.playClick('backspace');
   groups.value = groups.value.filter(g => g.id !== id);
-  documents.value.forEach(d => { if (d.groupId === id) d.groupId = null; });
+  documents.value.forEach(d => {
+    if (d.groupId === id) {
+      d.groupId = null;
+      d.updatedAt = Date.now();
+      realtimeSyncDoc(d);
+    }
+  });
   saveDocuments(documents.value);
   saveGroups(groups.value);
+  realtimeDeleteGroup(id);
 }
 
 function handleMoveDoc({ docId, groupId }) {
@@ -334,6 +376,7 @@ function handleMoveDoc({ docId, groupId }) {
     }
     documents.value = [...documents.value];
     saveDocuments(documents.value);
+    realtimeSyncDoc(doc);
   }
 }
 
@@ -361,6 +404,59 @@ function handleReorderGroups({ groupId, targetGroupId }) {
   const insertIdx = srcIdx < tgtIdx ? tgtIdx - 1 : tgtIdx;
   groups.value.splice(insertIdx, 0, moved);
   saveGroups(groups.value);
+}
+
+function handleSyncComplete(payload) {
+  if (payload?.docs && Array.isArray(payload.docs)) {
+    documents.value = payload.docs;
+  }
+  if (payload?.groups && Array.isArray(payload.groups)) {
+    groups.value = payload.groups;
+  }
+  if (payload?.histories && Array.isArray(payload.histories)) {
+    saveAllDocSnapshots(payload.histories);
+  }
+  if (payload?.customThemes && Array.isArray(payload.customThemes)) {
+    mergeCustomThemes(payload.customThemes);
+  }
+  if (documents.value.length > 0) {
+    if (!documents.value.some(d => d.id === activeDocId.value)) {
+      activeDocId.value = documents.value[0].id;
+      saveActiveDocId(activeDocId.value);
+    }
+  }
+}
+
+// Watch documents and groups changes for background debounced auto-sync to Cloud
+function triggerFullAutoSync() {
+  if (isCloudSyncEnabled()) {
+    triggerAutoSyncDebounced(
+      documents.value,
+      groups.value,
+      getAllDocSnapshots(),
+      loadCustomThemes()
+    );
+  }
+}
+
+watch([documents, groups], () => {
+  triggerFullAutoSync();
+}, { deep: true });
+
+// Listen for cloud config updates from Settings Modal
+window.addEventListener('nicemd-neon-config-updated', () => {
+  triggerFullAutoSync();
+});
+window.addEventListener('nicemd-tidb-config-updated', () => {
+  triggerFullAutoSync();
+});
+window.addEventListener('nicemd-cloud-provider-changed', () => {
+  triggerFullAutoSync();
+});
+
+// Initial startup sync if Cloud Sync is enabled
+if (isCloudSyncEnabled()) {
+  triggerFullAutoSync();
 }
 
 const currentTheme = ref(localStorage.getItem('nicemd_theme') || 'classic-indigo');
@@ -392,7 +488,7 @@ function closeExportMenu() {
 function handleSaveTheme(styles) {
   const name = prompt('请输入新主题名称：');
   if (!name || !name.trim()) return;
-  const id = 'custom-' + Date.now().toString(36);
+  const id = 'custom-' + Date.now().toString(36) + '_' + Math.random().toString(36).substring(2, 6);
   const cleanStyles = JSON.parse(JSON.stringify(styles || {}));
 
   const newTheme = {
@@ -419,11 +515,15 @@ function handleSaveTheme(styles) {
       '--code-text': cleanStyles.code?.color || '#bb2243',
       '--shadow-sm': '0 2px 8px rgba(0,0,0,0.02)',
       '--shadow-md': '0 8px 24px rgba(0,0,0,0.04)'
-    }
+    },
+    customCss: cleanStyles.customCss || '',
+    createdAt: Date.now(),
+    updatedAt: Date.now()
   };
   themePresets.push(newTheme);
   const customOnly = themePresets.filter(t => t.isCustom || !t.builtIn || t.id.startsWith('custom-'));
-  localStorage.setItem('nicemd_custom_themes', JSON.stringify(customOnly));
+  saveCustomThemes(customOnly);
+  realtimeSyncCustomTheme(newTheme);
   currentTheme.value = id;
   applyTheme(id);
   localStorage.setItem('nicemd_theme', id);
@@ -442,6 +542,8 @@ function handleSaveCustomTheme({ themeId, styles, css }) {
   const cleanStyles = JSON.parse(JSON.stringify(styles || {}));
   cleanStyles.customCss = css;
   theme.customStyles = cleanStyles;
+  theme.customCss = css || '';
+  theme.updatedAt = Date.now();
   if (!theme.styles) theme.styles = {};
   if (cleanStyles.body?.backgroundColor) {
     theme.styles['--bg-preview'] = cleanStyles.body.backgroundColor;
@@ -454,7 +556,8 @@ function handleSaveCustomTheme({ themeId, styles, css }) {
     theme.styles['--accent-color'] = cleanStyles.h1.color;
   }
   const customOnly = themePresets.filter(t => t.isCustom || !t.builtIn || t.id.startsWith('custom-'));
-  localStorage.setItem('nicemd_custom_themes', JSON.stringify(customOnly));
+  saveCustomThemes(customOnly);
+  realtimeSyncCustomTheme(theme);
   customStyles.value = cleanStyles;
   if (activeDocument.value) {
     activeDocument.value.customStyles = cleanStyles;
@@ -1227,7 +1330,24 @@ onMounted(() => {
   document.documentElement.setAttribute('data-color-mode', 'light');
   try { localStorage.removeItem('nicemd_color_mode'); } catch (e) {}
 
-  // 5. Load custom themes from localStorage (append, never replace built-ins)
+  // 5. Background Auto-sync on boot if enabled
+  if (isCloudSyncEnabled()) {
+    triggerAutoSyncDebounced(
+      documents.value,
+      groups.value,
+      getAllDocSnapshots(),
+      loadCustomThemes(),
+      null,
+      (err, res) => {
+        if (!err && res?.docs) {
+          documents.value = res.docs;
+          groups.value = res.groups;
+        }
+      }
+    );
+  }
+
+  // 6. Load custom themes from localStorage (append, never replace built-ins)
   try {
     const saved = JSON.parse(localStorage.getItem('nicemd_custom_themes'));
     if (saved && Array.isArray(saved)) {
@@ -1248,9 +1368,11 @@ onMounted(() => {
 
     // Connection established (PONG)
     if (event.data && event.data.type === 'NICEMD_PONG') {
-      console.log('[NiceMD App] Assistant Extension connection active.');
-      isExtensionConnected.value = true;
-      window.postMessage({ type: 'NICEMD_GET_PENDING_IMPORT' }, '*');
+      if (!isExtensionConnected.value) {
+        console.log('[NiceMD App] Assistant Extension connection active.');
+        isExtensionConnected.value = true;
+        window.postMessage({ type: 'NICEMD_GET_PENDING_IMPORT' }, '*');
+      }
     }
 
     // Pending import article retrieved
@@ -1691,6 +1813,7 @@ watch(customStyles, () => {
     <SettingsModal
       :isOpen="isSettingsOpen"
       @close="isSettingsOpen = false"
+      @sync-complete="handleSyncComplete"
     />
 
     <!-- Document Version History & Diff Modal -->
