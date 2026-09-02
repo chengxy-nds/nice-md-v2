@@ -208,6 +208,10 @@ const customStyleVars = computed(() => {
   if (s.p?.color) vars['--ct-p-color'] = s.p.color;
   if (s.p?.fontSize) vars['--ct-p-size'] = s.p.fontSize;
   if (s.p?.lineHeight) vars['--ct-p-lineheight'] = s.p.lineHeight;
+  if (s.p?.letterSpacing) vars['--ct-p-spacing'] = s.p.letterSpacing;
+  if (s.p?.textIndent) vars['--ct-p-indent'] = s.p.textIndent;
+  if (s.p?.textAlign) vars['--ct-p-align'] = s.p.textAlign;
+  if (s.p?.marginBottom) vars['--ct-p-margin-bottom'] = s.p.marginBottom;
 
   if (s.li?.color) vars['--ct-li-color'] = s.li.color;
 
@@ -883,9 +887,12 @@ function handlePopupClose() {
 
 .markdown-body :deep(p) {
   color: var(--ct-p-color, var(--ct-body-color, var(--text-main)));
-  font-size: var(--ct-p-size, var(--ct-body-size, 16px));
-  line-height: var(--ct-p-lineheight, var(--ct-body-lineheight, 1.9));
-  margin-bottom: 0;
+  font-size: var(--ct-p-size, 16px);
+  line-height: var(--ct-p-lineheight, 1.8);
+  letter-spacing: var(--ct-p-spacing, normal);
+  text-indent: var(--ct-p-indent, 0);
+  text-align: var(--ct-p-align, left);
+  margin-bottom: var(--ct-p-margin-bottom, 0);
   padding-top: 8px;
   padding-bottom: 8px;
 }

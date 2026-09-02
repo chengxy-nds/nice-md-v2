@@ -41,9 +41,9 @@ function cancel() {
 .dialog-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.36);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -56,45 +56,42 @@ function cancel() {
   to { opacity: 1; }
 }
 
-/* Liquid Glass Prompt Dialog Card */
+/* Figma UI Kit Dialog Card */
 .dialog-card {
-  background: var(--glass-bg, rgba(255, 255, 255, 0.85));
-  backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
-  -webkit-backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
-  border: 1.5px solid var(--glass-border, rgba(255, 255, 255, 0.8));
-  border-radius: 1.5rem;
+  background: var(--bg-card, #FFFFFF);
+  border: 1px solid var(--border-color, #E2E8F0);
+  border-radius: 12px;
   box-shadow: 
-    0 1.25rem 3.125rem rgba(0, 0, 0, 0.12),
-    0 0.125rem 0.5rem rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  padding: 1.375rem 1.5rem 1.25rem;
-  width: 21rem;
-  max-width: 90vw;
+    0 12px 36px rgba(19, 10, 46, 0.12),
+    0 2px 8px rgba(19, 10, 46, 0.04);
+  padding: 20px 22px;
+  width: 360px;
+  max-width: 92vw;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 12px;
   font-family: var(--font-sans);
-  animation: scaleIn 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
 }
 
 @keyframes scaleIn {
-  from { transform: scale(0.93) translateY(8px); opacity: 0; }
+  from { transform: scale(0.95) translateY(6px); opacity: 0; }
   to { transform: scale(1) translateY(0); opacity: 1; }
 }
 
 .dialog-header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 10px;
 }
 
 .danger-icon-box {
-  width: 1.625rem;
-  height: 1.625rem;
-  border-radius: 9999px;
-  background: rgba(220, 38, 38, 0.12);
-  color: #dc2626;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -103,16 +100,16 @@ function cancel() {
 
 .dialog-title {
   font-family: var(--font-sans);
-  font-size: 0.9375rem;
+  font-size: 15px;
   font-weight: 600;
-  color: var(--wandor-text, #1a1a1a);
+  color: var(--text-main, #1F2937);
   letter-spacing: -0.01em;
   margin: 0;
 }
 
 .dialog-message {
-  font-size: 0.8125rem;
-  color: var(--wandor-muted, #767676);
+  font-size: 13px;
+  color: var(--text-muted, #6B7280);
   line-height: 1.5;
   margin: 0;
 }
@@ -121,68 +118,81 @@ function cancel() {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 0.5rem;
-  margin-top: 0.5rem;
+  gap: 8px;
+  margin-top: 8px;
 }
 
-/* Tactile Pill Buttons */
+/* UI Kit Action Buttons */
 .btn-cancel {
-  padding: 0.4375rem 1rem;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(10px);
-  color: var(--wandor-text, #1a1a1a);
+  padding: 7px 14px;
+  border: 1px solid var(--border-color, #E2E8F0);
+  border-radius: 8px;
+  background: var(--bg-card, #FFFFFF);
+  color: var(--text-main, #374151);
   font-family: var(--font-sans);
-  font-size: 0.75rem;
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
-  user-select: none;
 }
 
 .btn-cancel:hover {
-  background: rgba(0, 0, 0, 0.05);
-  transform: translateY(-1px);
-}
-
-.btn-cancel:active {
-  transform: scale(0.95);
+  background: var(--bg-capsule, #F3F4F6);
+  border-color: var(--border-strong, #CBD5E1);
+  color: var(--text-main, #1F2937);
 }
 
 .btn-confirm {
-  padding: 0.4375rem 1.125rem;
-  border: none;
-  border-radius: 9999px;
-  background: var(--wandor-dark, #0a0a0a);
-  color: #fafafa;
+  padding: 7px 16px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: var(--brand-primary, #116ACC);
+  color: #ffffff;
   font-family: var(--font-sans);
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-  user-select: none;
+  box-shadow: 0 1px 2px rgba(17, 106, 204, 0.18);
 }
 
 .btn-confirm:hover {
-  background: #333333;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-}
-
-.btn-confirm:active {
-  transform: scale(0.95);
+  background: var(--brand-primary-hover, #0C4A8F);
+  box-shadow: 0 4px 12px rgba(17, 106, 204, 0.28);
 }
 
 .btn-confirm.is-danger {
-  background: #dc2626;
-  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.35);
+  background: #ef4444;
+  box-shadow: 0 1px 2px rgba(239, 68, 68, 0.18);
 }
 
 .btn-confirm.is-danger:hover {
-  background: #b91c1c;
-  box-shadow: 0 4px 12px rgba(220, 38, 38, 0.45);
+  background: #dc2626;
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.28);
+}
+
+/* Dark Mode Adaptation */
+html.dark .dialog-card {
+  background: #1e293b;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.45);
+}
+
+html.dark .dialog-title {
+  color: #f8fafc;
+}
+
+html.dark .dialog-message {
+  color: #94a3b8;
+}
+
+html.dark .btn-cancel {
+  background: #334155;
+  border-color: #475569;
+  color: #f1f5f9;
+}
+
+html.dark .btn-cancel:hover {
+  background: #475569;
 }
 </style>

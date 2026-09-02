@@ -204,7 +204,7 @@ function onDrop(e) {
 }
 
 .doc-item:hover:not(.is-active) {
-  background: rgba(99, 102, 241, 0.04);
+  background: var(--bg-capsule, #F1F5F9);
 }
 
 html.dark .doc-item:hover:not(.is-active) {
@@ -212,29 +212,29 @@ html.dark .doc-item:hover:not(.is-active) {
 }
 
 .doc-item.is-active {
-  background: rgba(99, 102, 241, 0.08);
+  background: var(--brand-primary-subtle, rgba(17, 106, 204, 0.08));
 }
 
 .doc-item.is-active:hover {
-  background: rgba(99, 102, 241, 0.12);
+  background: rgba(17, 106, 204, 0.12);
 }
 
 html.dark .doc-item.is-active {
-  background: rgba(99, 102, 241, 0.16);
+  background: rgba(17, 106, 204, 0.2);
 }
 
 html.dark .doc-item.is-active:hover {
-  background: rgba(99, 102, 241, 0.22);
+  background: rgba(17, 106, 204, 0.26);
 }
 
 .doc-item.is-dragging-before {
   background: var(--accent-bg);
-  box-shadow: inset 0 2px 0 var(--accent-color, #6366f1);
+  box-shadow: inset 0 2px 0 var(--brand-primary, #116ACC);
 }
 
 .doc-item.is-dragging-after {
   background: var(--accent-bg);
-  box-shadow: inset 0 -2px 0 var(--accent-color, #6366f1);
+  box-shadow: inset 0 -2px 0 var(--brand-primary, #116ACC);
 }
 
 /* Leading Icon Area */

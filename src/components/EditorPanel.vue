@@ -2178,27 +2178,27 @@ html.dark .btn-submit-url:hover:not(:disabled) {
   top: 100%;
   right: 0;
   margin-top: 6px;
-  background: var(--bg-editor);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  box-shadow: var(--shadow-md);
-  padding: 4px;
+  background: var(--bg-card, #FFFFFF);
+  border: 1px solid var(--border-color, #E2E8F0);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(19, 10, 46, 0.12), 0 2px 8px rgba(19, 10, 46, 0.04);
+  padding: 6px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
   z-index: 200;
-  min-width: 140px;
+  min-width: 150px;
 }
 .btn-toolbar-dropdown {
   display: flex;
   align-items: center;
-  gap: 5px;
-  background: var(--bg-editor);
-  border: 1px solid var(--border-color);
-  color: var(--text-main);
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 11px;
+  gap: 6px;
+  background: var(--bg-card, #FFFFFF);
+  border: 1px solid var(--border-color, #E2E8F0);
+  color: var(--text-main, #374151);
+  padding: 5px 10px;
+  border-radius: 7px;
+  font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -2207,31 +2207,32 @@ html.dark .btn-submit-url:hover:not(:disabled) {
 
 .btn-toolbar-dropdown:hover,
 .btn-toolbar-dropdown.is-active {
-  background: var(--accent-bg);
-  border-color: var(--accent-color);
-  color: var(--accent-color);
+  background: var(--brand-primary-subtle, rgba(17, 106, 204, 0.08));
+  border-color: var(--brand-primary, #116ACC);
+  color: var(--brand-primary, #116ACC);
 }
 
 .popout-item {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 10px;
+  padding: 7px 12px;
   border: none;
   background: transparent;
-  color: var(--text-main);
-  font-size: 12px;
+  color: var(--text-main, #374151);
+  font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  border-radius: 5px;
+  border-radius: 6px;
   transition: all 0.12s ease;
 }
 .popout-item:hover {
-  background: var(--accent-bg);
+  background: var(--bg-capsule, #F3F4F6);
+  color: var(--text-main, #1F2937);
 }
 .popout-item.is-active {
-  background: var(--accent-bg);
-  color: var(--accent-color);
+  background: var(--brand-primary-subtle, rgba(17, 106, 204, 0.08));
+  color: var(--brand-primary, #116ACC);
   font-weight: 600;
 }
 

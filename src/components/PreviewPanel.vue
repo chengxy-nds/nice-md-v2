@@ -124,6 +124,10 @@ const customStyleVars = computed(() => {
   if (s.p?.color) vars['--ct-p-color'] = s.p.color;
   if (s.p?.fontSize) vars['--ct-p-size'] = s.p.fontSize;
   if (s.p?.lineHeight) vars['--ct-p-lineheight'] = s.p.lineHeight;
+  if (s.p?.letterSpacing) vars['--ct-p-spacing'] = s.p.letterSpacing;
+  if (s.p?.textIndent) vars['--ct-p-indent'] = s.p.textIndent;
+  if (s.p?.textAlign) vars['--ct-p-align'] = s.p.textAlign;
+  if (s.p?.marginBottom) vars['--ct-p-margin-bottom'] = s.p.marginBottom;
 
   if (s.blockquote?.borderLeftColor) vars['--ct-bq-border'] = s.blockquote.borderLeftColor;
   if (s.blockquote?.backgroundColor) vars['--ct-bq-bg'] = s.blockquote.backgroundColor;

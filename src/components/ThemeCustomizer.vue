@@ -301,7 +301,8 @@ function getTableMaterialPresets(id) {
 
 // Full list of all 27 Markdown syntax element definitions
 const elements = [
-  { key: 'body', label: '整体背景 / 文字 ( body )', icon: '◻' },
+  { key: 'body', label: '整体背景 / 容器 ( body )', icon: '◻' },
+  { key: 'p', label: '正文段落 ( p )', icon: 'P' },
   { key: 'h1', label: '标题 H1 ( # )', icon: 'H1' },
   { key: 'h2', label: '标题 H2 ( ## )', icon: 'H2' },
   { key: 'h3', label: '标题 H3 ( ### )', icon: 'H3' },
@@ -309,7 +310,6 @@ const elements = [
   { key: 'h5', label: '标题 H5 ( ##### )', icon: 'H5' },
   { key: 'h6', label: '标题 H6 ( ###### )', icon: 'H6' },
   { key: 'code', label: '代码块设置 ( code / pre )', icon: '</>' },
-  { key: 'p', label: '正文段落 ( p )', icon: 'P' },
   { key: 'strong', label: '加粗强调 ( **bold** )', icon: 'B' },
   { key: 'em', label: '斜体文本 ( *italic* )', icon: 'I' },
   { key: 'del', label: '删除线 ( ~~del~~ )', icon: '~' },
@@ -769,12 +769,9 @@ function generateCssFromStyles(styles) {
     const bgTexture = S.body.backgroundTexture || S.body.materialTemplateId;
     const meta = (bgTexture && bgTexture !== 'none') ? { material: bgTexture } : {};
     css += addRule('#easymd', {
-      color: cleanColor(S.body.color, '#2b2b2b'),
+      color: cleanColor(S.p?.color || S.body?.color, '#2b2b2b'),
       backgroundColor: S.body.backgroundColor,
       padding: S.body.padding || '5px',
-      fontSize: S.body.fontSize,
-      lineHeight: S.body.lineHeight,
-      letterSpacing: S.body.letterSpacing,
       fontFamily: S.body.fontFamily
     }, meta);
   }
@@ -810,7 +807,11 @@ function generateCssFromStyles(styles) {
     css += addRule('p', {
       color: S.p.color,
       fontSize: S.p.fontSize,
-      lineHeight: S.p.lineHeight
+      lineHeight: S.p.lineHeight,
+      letterSpacing: S.p.letterSpacing,
+      textIndent: S.p.textIndent,
+      textAlign: S.p.textAlign,
+      marginBottom: S.p.marginBottom
     });
   }
 
@@ -1465,44 +1466,24 @@ const cssLineCount = computed(() => {
             />
           </div>
         </div>
-        <!-- Dedicated Body Customizer Section (整体背景 / 文字色 / 底纹纹理 / 字体排版) -->
+        <!-- Dedicated Body Customizer Section (整体背景 / 底纹纹理 / 容器内边距 / 字体族) -->
         <div v-if="el.key === 'body'" class="body-customizer-panel">
-          <!-- 1. Color Settings (文字色 & 背景色) -->
-          <div class="body-row-two-col">
-            <div class="body-setting-card">
-              <span class="body-setting-title">全局正文字色</span>
-              <div class="color-row">
-                <input
-                  type="color"
-                  :value="getStyle('body').color || '#2D3139'"
-                  @input="updateStyle('body', 'color', $event.target.value)"
-                  class="color-picker"
-                />
-                <input
-                  type="text"
-                  :value="getStyle('body').color || '#2D3139'"
-                  @input="updateStyle('body', 'color', $event.target.value)"
-                  class="value-input full-width"
-                />
-              </div>
-            </div>
-
-            <div class="body-setting-card">
-              <span class="body-setting-title">文章背景底色</span>
-              <div class="color-row">
-                <input
-                  type="color"
-                  :value="getStyle('body').backgroundColor || '#ffffff'"
-                  @input="updateStyle('body', 'backgroundColor', $event.target.value)"
-                  class="color-picker"
-                />
-                <input
-                  type="text"
-                  :value="getStyle('body').backgroundColor || '#ffffff'"
-                  @input="updateStyle('body', 'backgroundColor', $event.target.value)"
-                  class="value-input full-width"
-                />
-              </div>
+          <!-- 1. Background Color -->
+          <div class="body-setting-card is-row">
+            <span class="body-setting-title">文章背景底色</span>
+            <div class="color-row">
+              <input
+                type="color"
+                :value="getStyle('body').backgroundColor || '#ffffff'"
+                @input="updateStyle('body', 'backgroundColor', $event.target.value)"
+                class="color-picker"
+              />
+              <input
+                type="text"
+                :value="getStyle('body').backgroundColor || '#ffffff'"
+                @input="updateStyle('body', 'backgroundColor', $event.target.value)"
+                class="value-input"
+              />
             </div>
           </div>
 
@@ -1541,56 +1522,10 @@ const cssLineCount = computed(() => {
             </div>
           </div>
 
-          <!-- 3. Typography & Spacing (字号、行高、字间距、字体族) -->
+          <!-- 3. Container Properties (字体族 & 文章内边距) -->
           <div class="body-row-two-col">
             <div class="body-setting-card">
-              <span class="body-setting-title">默认字号</span>
-              <select
-                :value="getStyle('body').fontSize || '16px'"
-                @change="updateStyle('body', 'fontSize', $event.target.value)"
-                class="style-select full-width"
-              >
-                <option value="14px">14px (精致小字)</option>
-                <option value="15px">15px (紧凑舒适)</option>
-                <option value="16px">16px (标准推荐)</option>
-                <option value="17px">17px (宽松舒展)</option>
-                <option value="18px">18px (清晰大字)</option>
-              </select>
-            </div>
-
-            <div class="body-setting-card">
-              <span class="body-setting-title">行高倍数</span>
-              <select
-                :value="getStyle('body').lineHeight || '1.8'"
-                @change="updateStyle('body', 'lineHeight', $event.target.value)"
-                class="style-select full-width"
-              >
-                <option value="1.5">1.5 (紧凑)</option>
-                <option value="1.6">1.6 (适中)</option>
-                <option value="1.75">1.75 (舒适推荐)</option>
-                <option value="1.8">1.8 (标准推荐)</option>
-                <option value="2.0">2.0 (宽松透气)</option>
-                <option value="2.2">2.2 (大幅留白)</option>
-              </select>
-            </div>
-
-            <div class="body-setting-card">
-              <span class="body-setting-title">字间距</span>
-              <select
-                :value="getStyle('body').letterSpacing || '0.05em'"
-                @change="updateStyle('body', 'letterSpacing', $event.target.value)"
-                class="style-select full-width"
-              >
-                <option value="0px">0px (紧密)</option>
-                <option value="0.03em">0.03em (微展)</option>
-                <option value="0.05em">0.05em (标准推荐)</option>
-                <option value="0.08em">0.08em (开阔)</option>
-                <option value="0.1em">0.1em (优雅呼吸)</option>
-              </select>
-            </div>
-
-            <div class="body-setting-card">
-              <span class="body-setting-title">字体族</span>
+              <span class="body-setting-title">全局中英文字体族</span>
               <select
                 :value="getStyle('body').fontFamily || '-apple-system, BlinkMacSystemFont, \'PingFang SC\', \'Hiragino Sans GB\', \'Microsoft YaHei\', sans-serif'"
                 @change="updateStyle('body', 'fontFamily', $event.target.value)"
@@ -1606,7 +1541,7 @@ const cssLineCount = computed(() => {
             </div>
 
             <div class="body-setting-card">
-              <span class="body-setting-title">文章内边距</span>
+              <span class="body-setting-title">文章内边距 (Padding)</span>
               <select
                 :value="['0px', '5px', '8px', '10px', '12px', '16px', '20px', '24px'].includes(getStyle('body').padding || '5px') ? (getStyle('body').padding || '5px') : 'custom'"
                 @change="(e) => { if (e.target.value !== 'custom') updateStyle('body', 'padding', e.target.value); }"
@@ -1630,6 +1565,91 @@ const cssLineCount = computed(() => {
                 placeholder="如 5px / 10px 15px"
                 class="value-input full-width"
                 style="margin-top: 6px;"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Dedicated Paragraph Customizer (正文段落) -->
+        <div v-else-if="el.key === 'p'" class="body-customizer-panel">
+          <!-- 1. Paragraph Colors & Alignment -->
+          <div class="body-row-two-col">
+            <div class="body-setting-card is-row">
+              <span class="body-setting-title">正文字色</span>
+              <div class="color-row">
+                <input
+                  type="color"
+                  :value="getStyle('p').color || getStyle('body').color || '#2b2b2b'"
+                  @input="updateStyle('p', 'color', $event.target.value)"
+                  class="color-picker"
+                />
+                <input
+                  type="text"
+                  :value="getStyle('p').color || getStyle('body').color || '#2b2b2b'"
+                  @input="updateStyle('p', 'color', $event.target.value)"
+                  class="value-input"
+                />
+              </div>
+            </div>
+
+            <div class="body-setting-card is-row">
+              <span class="body-setting-title">文本对齐</span>
+              <select
+                :value="getStyle('p').textAlign || 'left'"
+                @change="updateStyle('p', 'textAlign', $event.target.value)"
+                class="style-select"
+                style="width: 6.5rem;"
+              >
+                <option value="left">左对齐</option>
+                <option value="justify">两端对齐</option>
+                <option value="center">居中对齐</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- 2. Typography Hierarchy (字号、行高、字间距、首行缩进 - 紧凑行内输入框) -->
+          <div class="body-row-two-col">
+            <div class="body-setting-card is-row">
+              <span class="body-setting-title">正文字号</span>
+              <input
+                type="text"
+                :value="getStyle('p').fontSize || '16px'"
+                @input="updateStyle('p', 'fontSize', $event.target.value)"
+                placeholder="16px"
+                class="value-input"
+              />
+            </div>
+
+            <div class="body-setting-card is-row">
+              <span class="body-setting-title">行高倍数</span>
+              <input
+                type="text"
+                :value="getStyle('p').lineHeight || '1.8'"
+                @input="updateStyle('p', 'lineHeight', $event.target.value)"
+                placeholder="1.8"
+                class="value-input"
+              />
+            </div>
+
+            <div class="body-setting-card is-row">
+              <span class="body-setting-title">字间距</span>
+              <input
+                type="text"
+                :value="getStyle('p').letterSpacing || '0.05em'"
+                @input="updateStyle('p', 'letterSpacing', $event.target.value)"
+                placeholder="0.05em"
+                class="value-input"
+              />
+            </div>
+
+            <div class="body-setting-card is-row">
+              <span class="body-setting-title">首行缩进</span>
+              <input
+                type="text"
+                :value="getStyle('p').textIndent || '0'"
+                @input="updateStyle('p', 'textIndent', $event.target.value)"
+                placeholder="0"
+                class="value-input"
               />
             </div>
           </div>
@@ -3342,6 +3362,15 @@ const cssLineCount = computed(() => {
   border-radius: 0.5rem;
   padding: 0.5rem 0.625rem;
   box-sizing: border-box;
+}
+
+.body-setting-card.is-row {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.375rem 0.625rem;
+  min-height: 2.375rem;
 }
 
 .body-setting-title {

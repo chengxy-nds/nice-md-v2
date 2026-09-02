@@ -1763,15 +1763,16 @@ const supportsSilent = (id) => {
 </template>
 
 <style scoped>
+/* Figma UI Kit Modal Overlay & Card */
 .modal-overlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.38);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1790,17 +1791,14 @@ const supportsSilent = (id) => {
   opacity: 0;
 }
 
-/* Wandor Liquid Glass Modal Card */
+/* UI Kit Modal Card */
 .modal-card {
-  background: var(--glass-bg, rgba(255, 255, 255, 0.88));
-  backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
-  -webkit-backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
-  border: 1.5px solid var(--glass-border, rgba(255, 255, 255, 0.8));
-  border-radius: 1.5rem;
+  background: var(--bg-card, #FFFFFF);
+  border: 1px solid var(--border-color, #E2E8F0);
+  border-radius: 12px;
   box-shadow: 
-    0 1.5rem 3.75rem rgba(0, 0, 0, 0.12),
-    0 0.125rem 0.5rem rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
+    0 20px 40px rgba(19, 10, 46, 0.12),
+    0 1px 4px rgba(19, 10, 46, 0.04);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1808,51 +1806,51 @@ const supportsSilent = (id) => {
 }
 /* Card slides up inside the fading overlay */
 .modal-enter-active .modal-card {
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease;
 }
 .modal-leave-active .modal-card {
   transition: transform 0.15s ease, opacity 0.15s ease;
 }
 .modal-enter-from .modal-card {
-  transform: translateY(20px) scale(0.96);
+  transform: translateY(12px) scale(0.97);
   opacity: 0;
 }
 .modal-leave-to .modal-card {
-  transform: translateY(10px) scale(0.98);
+  transform: translateY(8px) scale(0.98);
   opacity: 0;
 }
 
 .modal-header {
-  padding: 1rem 1.5rem;
-  border-bottom: 1px solid var(--border-color);
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--border-color, #E2E8F0);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--bg-card, #FFFFFF);
 }
 
 .title-area {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .title-area h2 {
   margin: 0;
-  font-size: 1rem;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 600;
   font-family: var(--font-sans);
-  color: var(--wandor-text, #1a1a1a);
-  letter-spacing: -0.02em;
+  color: var(--text-main, #1F2937);
+  letter-spacing: -0.01em;
 }
 
 .btn-close {
-  background: rgba(0, 0, 0, 0.04);
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  color: var(--text-muted);
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 9999px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #6B7280);
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1861,9 +1859,8 @@ const supportsSilent = (id) => {
 }
 
 .btn-close:hover {
-  background: rgba(0, 0, 0, 0.08);
-  color: var(--wandor-text, #1a1a1a);
-  transform: scale(1.05);
+  background: var(--bg-capsule, #F3F4F6);
+  color: var(--text-main, #1F2937);
 }
 
 .btn-close:active {
@@ -1871,9 +1868,9 @@ const supportsSilent = (id) => {
 }
 
 .settings-card {
-  width: 820px;
+  width: 840px;
   max-width: 95vw;
-  height: 620px;
+  height: 640px;
   max-height: 90vh;
 }
 
@@ -2165,92 +2162,90 @@ const supportsSilent = (id) => {
 }
 
 .modal-footer {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid var(--border-color);
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-color, #E2E8F0);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(255, 255, 255, 0.25);
+  background: var(--bg-sidebar, #F8FAFC);
 }
 
 .connection-status {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.72rem;
-  color: var(--wandor-muted, #767676);
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted, #6B7280);
   font-family: var(--font-sans);
 }
 
 .status-dot {
-  width: 0.375rem;
-  height: 0.375rem;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
-  background: #88888e;
+  background: #94a3b8;
 }
 
 .status-dot.is-connected {
   background: #10b981;
-  box-shadow: 0 0 6px #10b981;
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.4);
 }
 
 .footer-actions {
   display: flex;
-  gap: 0.75rem;
+  gap: 8px;
 }
 
 .btn-secondary-action {
-  background: rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  color: var(--wandor-text, #1a1a1a);
-  padding: 0.5rem 1rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  background: var(--bg-card, #FFFFFF);
+  border: 1px solid var(--border-color, #E2E8F0);
+  color: var(--text-main, #374151);
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 6px;
   cursor: pointer;
   font-family: var(--font-sans);
   transition: all 0.15s ease;
 }
 
 .btn-secondary-action:hover {
-  background: rgba(0, 0, 0, 0.05);
-  transform: translateY(-1px);
+  background: var(--bg-capsule, #F3F4F6);
+  border-color: var(--border-strong, #CBD5E1);
+  color: var(--text-main, #1F2937);
 }
 
 .btn-secondary-action:active {
-  transform: scale(0.95);
+  transform: scale(0.98);
 }
 
 .btn-save-settings {
-  background: var(--wandor-dark, #0a0a0a);
+  background: var(--brand-primary, #116ACC);
   border: none;
-  color: #fafafa;
-  padding: 0.5rem 1.25rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  color: #ffffff;
+  padding: 7px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 6px;
   cursor: pointer;
   font-family: var(--font-sans);
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 1px 2px rgba(17, 106, 204, 0.18);
   transition: all 0.15s ease;
 }
 
 .btn-save-settings:hover {
-  background: #333333;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.25);
+  background: var(--brand-primary-hover, #0C4A8F);
+  box-shadow: 0 4px 12px rgba(17, 106, 204, 0.28);
 }
 
 .btn-save-settings:active {
-  transform: scale(0.95);
+  transform: scale(0.98);
 }
 
 .btn-save-settings.success {

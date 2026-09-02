@@ -608,8 +608,8 @@ function hasPrefixOption(id) {
 }
 
 .stream-material-row.is-selected {
-  background: #FFFBF9;
-  border-left-color: #ff5e36;
+  background: rgba(17, 106, 204, 0.04);
+  border-left-color: var(--brand-primary, #116ACC);
 }
 
 /* Selected Pill */
@@ -623,10 +623,10 @@ function hasPrefixOption(id) {
   font-size: 0.625rem;
   font-weight: 700;
   color: #ffffff;
-  background: linear-gradient(135deg, #ff5e36 0%, #ea580c 100%);
+  background: var(--brand-primary, #116ACC);
   padding: 0.125rem 0.375rem;
-  border-radius: 3px;
-  box-shadow: 0 2px 6px rgba(255, 94, 54, 0.3);
+  border-radius: 4px;
+  box-shadow: 0 2px 6px rgba(17, 106, 204, 0.3);
   z-index: 5;
 }
 

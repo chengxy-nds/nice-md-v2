@@ -963,14 +963,14 @@ html.dark .title-icon-btn:hover {
   line-height: 20px;
   padding: 0 4px;
   margin: 0;
-  border: 1px solid var(--accent-color, #6366f1);
+  border: 1px solid var(--brand-primary, #116ACC);
   border-radius: 4px;
   background: var(--bg-editor, #ffffff);
   color: var(--text-main);
   outline: none;
   font-family: inherit;
   box-sizing: border-box;
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
+  box-shadow: 0 0 0 2px rgba(17, 106, 204, 0.15);
 }
 
 .group-header-right {

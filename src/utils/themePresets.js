@@ -388,6 +388,7 @@ export function getThemeDefaultStyles(themeId = 'classic-indigo') {
 
   return {
     body: { color: textMain, backgroundColor: bgPreview, padding: '5px' },
+    p: { fontSize: parseFontSize(typo.p?.size, '16px'), color: typo.p?.color || textMain, lineHeight: String(typo.p?.lineHeight || 1.8), letterSpacing: typo.p?.letterSpacing || '0.05em' },
     h1: {
       fontSize: parseFontSize(typo.h1?.size, '24px'),
       color: typo.h1?.color && typo.h1.color !== '#ffffff' ? typo.h1.color : primary,
@@ -403,7 +404,6 @@ export function getThemeDefaultStyles(themeId = 'classic-indigo') {
     h4: { fontSize: parseFontSize(typo.h4?.size, '16px'), color: textMain, fontWeight: '700' },
     h5: { fontSize: '15px', color: textMain, fontWeight: '700' },
     h6: { fontSize: '14px', color: textMuted, fontWeight: '700' },
-    p: { fontSize: parseFontSize(typo.p?.size, '16px'), color: typo.p?.color || textMain, lineHeight: String(typo.p?.lineHeight || 1.8) },
     strong: { color: typo.strong?.color || primary, fontWeight: String(typo.strong?.weight || 700) },
     em: { color: primary, fontStyle: 'italic' },
     del: { color: textMuted, textDecoration: 'line-through' },
