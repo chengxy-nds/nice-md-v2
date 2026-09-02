@@ -13,7 +13,9 @@ import {
   GripVertical,
   Check,
   X,
-  Cloud
+  Cloud,
+  RotateCcw,
+  FileText
 } from '@lucide/vue';
 import { showConfirm } from '../utils/confirmDialog';
 import SidebarDocItem from './SidebarDocItem.vue';
@@ -56,6 +58,7 @@ const props = defineProps({
 
 const emit = defineEmits([
   'select-doc', 'create-doc', 'rename-doc', 'delete-doc',
+  'restore-doc', 'permanent-delete-doc', 'empty-recycle-bin',
   'create-group', 'rename-group', 'delete-group',
   'move-doc', 'reorder-docs', 'reorder-groups', 'toggle-collapse',
   'open-templates', 'open-materials', 'open-doc-history'
@@ -188,19 +191,68 @@ async function handleDeleteGroup(group) {
   if (ok) emit('delete-group', group.id);
 }
 
+function isDocDeleted(d) {
+  if (!d) return false;
+  return Boolean(
+    d.isDeleted === true ||
+    d.isDeleted === 1 ||
+    d.isDeleted === '1' ||
+    d.isDeleted === 'true' ||
+    d.is_deleted === 1 ||
+    d.is_deleted === true ||
+    d.is_deleted === '1' ||
+    d.is_deleted === 'true'
+  );
+}
+
 // ── Computed Filtered Lists ──
 const filteredUngroupedDocs = computed(() => {
-  const all = props.documents.filter(d => !d.groupId || d.groupId === null);
+  const all = props.documents.filter(d => !isDocDeleted(d) && (!d.groupId || d.groupId === null));
   const q = searchQuery.value.trim().toLowerCase();
   if (!q) return all;
   return all.filter(d => (d.title || '').toLowerCase().includes(q));
 });
 
 function docsInGroup(groupId) {
-  const all = props.documents.filter(d => d.groupId === groupId);
+  const all = props.documents.filter(d => !isDocDeleted(d) && d.groupId === groupId);
   const q = searchQuery.value.trim().toLowerCase();
   if (!q) return all;
   return all.filter(d => (d.title || '').toLowerCase().includes(q));
+}
+
+const filteredDeletedDocs = computed(() => {
+  const all = props.documents.filter(d => isDocDeleted(d));
+  const q = searchQuery.value.trim().toLowerCase();
+  if (!q) return all;
+  return all.filter(d => (d.title || '').toLowerCase().includes(q));
+});
+
+function handleRestoreDoc(doc) {
+  emit('restore-doc', doc.id);
+}
+
+async function handlePermanentDeleteDoc(doc) {
+  const ok = await showConfirm({
+    title: '彻底删除文档',
+    message: `确定要彻底删除「${doc.title || '未命名文档'}」吗？此操作无法撤销！`,
+    confirmText: '彻底删除',
+    danger: true
+  });
+  if (ok) {
+    emit('permanent-delete-doc', doc.id);
+  }
+}
+
+async function handleEmptyTrashClick() {
+  const ok = await showConfirm({
+    title: '清空回收站',
+    message: `确定要永久清空回收站中的 ${filteredDeletedDocs.value.length} 篇文档吗？此操作无法撤销！`,
+    confirmText: '清空回收站',
+    danger: true
+  });
+  if (ok) {
+    emit('empty-recycle-bin');
+  }
 }
 
 // ── Drag & Drop ──
@@ -460,6 +512,59 @@ function onGroupDragStart(e, groupId) {
         </div>
       </section>
 
+      <!-- ── 回收站 ♻️ ── -->
+      <section class="group-section trash-section">
+        <div
+          class="group-header trash-header"
+          @click="toggleGroup('__trash__')"
+        >
+          <span class="group-chevron">
+            <ChevronRight v-if="!isGroupExpanded('__trash__')" size="12" stroke-width="1.6" />
+            <ChevronDown v-else size="12" stroke-width="1.6" />
+          </span>
+          <Trash2 size="14" stroke-width="1.6" class="group-icon trash-icon" />
+          <span class="group-name">回收站</span>
+          <div class="group-header-right">
+            <span class="group-count trash-count">{{ filteredDeletedDocs.length }}</span>
+            <div class="group-actions" @click.stop v-if="filteredDeletedDocs.length > 0">
+              <button class="mini-btn text-danger" @click="handleEmptyTrashClick" title="清空回收站">
+                <Trash2 size="12" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div
+          v-show="isGroupExpanded('__trash__')"
+          class="doc-list group-doc-list trash-doc-list"
+        >
+          <div
+            v-for="doc in filteredDeletedDocs"
+            :key="doc.id"
+            class="trash-doc-item"
+            :class="{ 'is-active': doc.id === activeDocId }"
+            @click="$emit('select-doc', doc.id)"
+          >
+            <div class="trash-item-left">
+              <FileText size="13" class="trash-doc-icon" />
+              <span class="trash-doc-title" :title="doc.title || '未命名文档'">{{ doc.title || '未命名文档' }}</span>
+            </div>
+            <div class="trash-item-actions" @click.stop>
+              <button class="trash-action-btn restore-btn" @click="handleRestoreDoc(doc)" title="恢复文档">
+                <RotateCcw size="12" />
+                <span>恢复</span>
+              </button>
+              <button class="trash-action-btn delete-btn" @click="handlePermanentDeleteDoc(doc)" title="彻底删除">
+                <Trash2 size="12" />
+              </button>
+            </div>
+          </div>
+          <div v-if="filteredDeletedDocs.length === 0" class="empty-group-drop-hint">
+            <span>回收站为空</span>
+          </div>
+        </div>
+      </section>
+
       <!-- Group Creation Inline Row (at bottom of list) -->
       <div v-if="isCreatingGroup" class="create-group-row">
         <Folder size="14" stroke-width="1.6" class="create-icon" />
@@ -495,7 +600,7 @@ function onGroupDragStart(e, groupId) {
   background: var(--bg-sidebar, #F8F8F8);
   border-right: 1px solid var(--border-color, #EDEDED);
   box-shadow: var(--shadow-sidebar-left);
-  padding: 16px 14px;
+  padding: 10px;
   overflow: hidden;
   z-index: 4;
   transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
@@ -838,7 +943,7 @@ html.dark .title-icon-btn:hover {
 .group-name {
   flex: 1;
   min-width: 0;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 500;
   color: var(--text-main, #2c2c2c);
   overflow: hidden;
@@ -952,5 +1057,117 @@ html.dark .mini-btn:hover {
   border-color: var(--accent-color, #6366f1);
   color: var(--accent-color, #6366f1);
   background: var(--accent-bg, rgba(99, 102, 241, 0.04));
+}
+
+/* ── Recycle Bin (回收站) Styles ── */
+.trash-section {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--border-color, rgba(0, 0, 0, 0.08));
+}
+
+.trash-header .trash-icon {
+  color: var(--text-muted, #888);
+}
+
+.trash-count {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--text-muted, #888);
+}
+
+.text-danger {
+  color: #ef4444 !important;
+}
+
+.text-danger:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
+}
+
+.trash-doc-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  margin: 2px 0;
+  border-radius: 6px;
+  font-size: 12px;
+  color: var(--text-muted, #737373);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.trash-doc-item:hover {
+  background: var(--bg-capsule, rgba(0, 0, 0, 0.04));
+  color: var(--text-main, #111827);
+}
+
+.trash-doc-item.is-active {
+  background: var(--bg-capsule, rgba(0, 0, 0, 0.06));
+  color: var(--text-main, #111827);
+  font-weight: 500;
+}
+
+.trash-item-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1;
+}
+
+.trash-doc-icon {
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.trash-doc-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-decoration: line-through;
+  opacity: 0.85;
+}
+
+.trash-item-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.trash-doc-item:hover .trash-item-actions {
+  opacity: 1;
+}
+
+.trash-action-btn {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  font-size: 11px;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.trash-action-btn.restore-btn {
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.08);
+}
+
+.trash-action-btn.restore-btn:hover {
+  background: rgba(16, 185, 129, 0.18);
+}
+
+.trash-action-btn.delete-btn {
+  color: #ef4444;
+  padding: 3px 4px;
+}
+
+.trash-action-btn.delete-btn:hover {
+  background: rgba(239, 68, 68, 0.12);
 }
 </style>

@@ -1,4 +1,5 @@
 import { neon } from '@neondatabase/serverless';
+import { builtInThemeIds } from './themePresets.js';
 
 const NEON_CONFIG_KEY = 'nicemd_neon_sync_config_v1';
 const NEON_LAST_SYNC_KEY = 'nicemd_neon_last_sync_timestamp';
@@ -172,6 +173,18 @@ export async function initNeonTables(connectionString) {
   await sql`CREATE INDEX IF NOT EXISTS idx_histories_created_at ON nicemd_doc_histories(created_at);`;
   await sql`CREATE INDEX IF NOT EXISTS idx_custom_themes_updated_at ON nicemd_custom_themes(updated_at);`;
 
+  // Clean up any built-in preset theme ids that might have been accidentally inserted in earlier versions
+  await sql`
+    UPDATE nicemd_custom_themes 
+    SET is_deleted = TRUE 
+    WHERE id IN (
+      'classic-indigo', 'mountain-warm', 'mountain-forest', 'mountain-tea',
+      'mountain-red', 'mountain-purple', 'mountain-gold', '135-morandi',
+      '135-guofeng', 'github-clean', 'typora-github', 'typora-vue',
+      'vue-emerald', 'nordic-ice', 'typora-dark', 'default'
+    );
+  `;
+
   return true;
 }
 
@@ -194,7 +207,16 @@ export async function testNeonConnection(connectionString) {
   const docCountRes = await sql`SELECT count(*)::int as count FROM nicemd_documents WHERE is_deleted = FALSE;`;
   const groupCountRes = await sql`SELECT count(*)::int as count FROM nicemd_groups WHERE is_deleted = FALSE;`;
   const historyCountRes = await sql`SELECT count(*)::int as count FROM nicemd_doc_histories WHERE is_deleted = FALSE;`;
-  const themeCountRes = await sql`SELECT count(*)::int as count FROM nicemd_custom_themes WHERE is_deleted = FALSE;`;
+  const themeCountRes = await sql`
+    SELECT count(*)::int as count FROM nicemd_custom_themes 
+    WHERE is_deleted = FALSE
+    AND id NOT IN (
+      'classic-indigo', 'mountain-warm', 'mountain-forest', 'mountain-tea',
+      'mountain-red', 'mountain-purple', 'mountain-gold', '135-morandi',
+      '135-guofeng', 'github-clean', 'typora-github', 'typora-vue',
+      'vue-emerald', 'nordic-ice', 'typora-dark', 'default'
+    );
+  `;
 
   return {
     ok: true,
@@ -215,11 +237,10 @@ export async function pullFromNeon(connectionString) {
   const sql = neon(connectionString.trim());
   await ensureNeonTables(connectionString);
 
-  // 1. Documents
+  // 1. Documents (all documents including recycle bin)
   const docsRows = await sql`
-    SELECT id, title, markdown, group_id, theme_id, code_theme_id, font_size, custom_styles, is_favorite, sort_order, created_at, updated_at
+    SELECT id, title, markdown, group_id, theme_id, code_theme_id, font_size, custom_styles, is_favorite, sort_order, created_at, updated_at, is_deleted
     FROM nicemd_documents
-    WHERE is_deleted = FALSE
     ORDER BY sort_order ASC, updated_at DESC;
   `;
 
@@ -259,12 +280,14 @@ export async function pullFromNeon(connectionString) {
       id: r.id,
       title: r.title || '无标题文档',
       content: r.markdown || '',
+      markdown: r.markdown || '',
       groupId: r.group_id || null,
       themeId: r.theme_id || 'default',
       codeThemeId: r.code_theme_id || 'atom-one-dark',
       fontSize: r.font_size || '16px',
       customStyles: customStyles || {},
       isFavorite: Boolean(r.is_favorite),
+      isDeleted: Boolean(r.is_deleted),
       sortOrder: r.sort_order || 0,
       createdAt: Number(r.created_at) || Date.now(),
       updatedAt: Number(r.updated_at) || Date.now()
@@ -328,7 +351,7 @@ export async function pullFromNeon(connectionString) {
       createdAt: Number(r.created_at) || Date.now(),
       updatedAt: Number(r.updated_at) || Date.now()
     };
-  });
+  }).filter(t => t && t.id && !builtInThemeIds.has(t.id));
 
   return { docs, groups, histories, customThemes };
 }
@@ -383,7 +406,7 @@ export async function pushAllToNeon(connectionString, localDocs = [], localGroup
         ${d.sortOrder || 0},
         ${d.createdAt || Date.now()},
         ${d.updatedAt || Date.now()},
-        FALSE
+        ${Boolean(d.isDeleted || d.is_deleted)}
       )
       ON CONFLICT (id) DO UPDATE SET
         title = EXCLUDED.title,
@@ -396,7 +419,7 @@ export async function pushAllToNeon(connectionString, localDocs = [], localGroup
         is_favorite = EXCLUDED.is_favorite,
         sort_order = EXCLUDED.sort_order,
         updated_at = EXCLUDED.updated_at,
-        is_deleted = FALSE;
+        is_deleted = EXCLUDED.is_deleted;
     `;
   }
 
@@ -436,8 +459,9 @@ export async function pushAllToNeon(connectionString, localDocs = [], localGroup
     `;
   }
 
-  // 4. Push Custom Themes
-  for (const t of localCustomThemes) {
+  // 4. Push Custom Themes (Only user-created "另存为" custom themes, NEVER built-in presets)
+  const validCustomThemes = (localCustomThemes || []).filter(t => t && t.id && !builtInThemeIds.has(t.id) && (t.isCustom || t.id.startsWith('custom-')));
+  for (const t of validCustomThemes) {
     const customStylesJson = JSON.stringify(t.customStyles || {});
     const stylesJson = JSON.stringify(t.styles || {});
     await sql`
@@ -582,9 +606,12 @@ export async function syncNeonBidirectional(
     }
   }
 
-  // ── Reconcile Custom Themes ──
-  const localThemesMap = new Map(localCustomThemes.map(t => [t.id, t]));
-  const cloudThemesMap = new Map(cloudThemes.map(t => [t.id, t]));
+  // ── Reconcile Custom Themes (Only user-created "另存为" custom themes) ──
+  const validLocalThemes = (localCustomThemes || []).filter(t => t && t.id && !builtInThemeIds.has(t.id) && (t.isCustom || t.id.startsWith('custom-')));
+  const validCloudThemes = (cloudThemes || []).filter(t => t && t.id && !builtInThemeIds.has(t.id));
+
+  const localThemesMap = new Map(validLocalThemes.map(t => [t.id, t]));
+  const cloudThemesMap = new Map(validCloudThemes.map(t => [t.id, t]));
   const mergedThemes = [];
   const themesToUpload = [];
   const allThemeIds = new Set([...localThemesMap.keys(), ...cloudThemesMap.keys()]);
@@ -648,7 +675,7 @@ export async function syncNeonBidirectional(
         ${d.sortOrder || 0},
         ${d.createdAt || Date.now()},
         ${d.updatedAt || Date.now()},
-        FALSE
+        ${Boolean(d.isDeleted || d.is_deleted)}
       )
       ON CONFLICT (id) DO UPDATE SET
         title = EXCLUDED.title,
@@ -661,7 +688,7 @@ export async function syncNeonBidirectional(
         is_favorite = EXCLUDED.is_favorite,
         sort_order = EXCLUDED.sort_order,
         updated_at = EXCLUDED.updated_at,
-        is_deleted = FALSE;
+        is_deleted = EXCLUDED.is_deleted;
     `;
   }
 
@@ -782,7 +809,7 @@ export async function syncSingleDocToNeon(connectionString, doc) {
         ${doc.sortOrder || 0},
         ${doc.createdAt || Date.now()},
         ${doc.updatedAt || Date.now()},
-        FALSE
+        ${Boolean(doc.isDeleted)}
       )
       ON CONFLICT (id) DO UPDATE SET
         title = EXCLUDED.title,
@@ -795,7 +822,7 @@ export async function syncSingleDocToNeon(connectionString, doc) {
         is_favorite = EXCLUDED.is_favorite,
         sort_order = EXCLUDED.sort_order,
         updated_at = EXCLUDED.updated_at,
-        is_deleted = FALSE;
+        is_deleted = EXCLUDED.is_deleted;
     `;
     setLastSyncTime();
   };
@@ -918,7 +945,7 @@ export async function syncSingleHistoryToNeon(connectionString, history) {
  * Fast single custom theme upsert to Neon
  */
 export async function syncSingleCustomThemeToNeon(connectionString, theme) {
-  if (!connectionString || !theme) return;
+  if (!connectionString || !theme || !theme.id || builtInThemeIds.has(theme.id) || (!theme.isCustom && !theme.id.startsWith('custom-'))) return;
   const conn = connectionString.trim();
   const executeInsert = async () => {
     const sql = neon(conn);
@@ -1047,15 +1074,35 @@ export async function deleteDocInNeon(connectionString, docId) {
   }
 }
 
+export async function permanentDeleteDocInNeon(connectionString, docId) {
+  if (!connectionString || !docId) return;
+  try {
+    await ensureNeonTables(connectionString);
+    const sql = neon(connectionString.trim());
+    await sql`
+      DELETE FROM nicemd_documents 
+      WHERE id = ${docId};
+    `;
+  } catch (e) {
+    console.warn('[Neon Sync] Failed to permanently delete document in cloud:', e);
+  }
+}
+
 export async function deleteGroupInNeon(connectionString, groupId) {
   if (!connectionString || !groupId) return;
   try {
     await ensureNeonTables(connectionString);
     const sql = neon(connectionString.trim());
+    // Hard delete group
     await sql`
-      UPDATE nicemd_groups 
-      SET is_deleted = TRUE, updated_at = ${Date.now()}
+      DELETE FROM nicemd_groups 
       WHERE id = ${groupId};
+    `;
+    // Set docs under this group to ungrouped (null)
+    await sql`
+      UPDATE nicemd_documents 
+      SET group_id = NULL 
+      WHERE group_id = ${groupId};
     `;
   } catch (e) {
     console.warn('[Neon Sync] Failed to delete group in cloud:', e);

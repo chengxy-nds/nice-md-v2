@@ -31,7 +31,7 @@ import BrandLogo from './components/BrandLogo.vue';
 import { createSnapshot, getAllDocSnapshots, saveAllDocSnapshots } from './utils/docHistory';
 import { loadCustomThemes, saveCustomThemes, mergeCustomThemes } from './utils/themePresets';
 import {
-  loadDocuments, saveDocuments,
+  loadDocuments, saveDocuments, normalizeDoc,
   loadGroups, saveGroups,
   loadActiveDocId, saveActiveDocId,
   loadSidebarVisible, saveSidebarVisible,
@@ -45,6 +45,7 @@ import {
   realtimeSyncDoc,
   realtimeSyncGroup,
   realtimeDeleteDoc,
+  realtimePermanentDeleteDoc,
   realtimeDeleteGroup,
   realtimeSyncHistory,
   realtimeDeleteHistory,
@@ -315,10 +316,70 @@ function cancelRenameToolbarDoc() {
 
 function handleDeleteDoc(id) {
   soundEngine.playClick('backspace');
-  const idx = documents.value.findIndex(d => d.id === id);
-  if (idx === -1) return;
-  documents.value.splice(idx, 1);
+  const doc = documents.value.find(d => d.id === id);
+  if (!doc) return;
+
+  // 逻辑软删除
+  doc.isDeleted = true;
+  doc.updatedAt = Date.now();
+
+  // 若当前正在查看被删除文档，自动切换到未删除文档
   if (activeDocId.value === id) {
+    const activeDocs = documents.value.filter(d => !d.isDeleted);
+    if (activeDocs.length === 0) {
+      handleCreateDoc(null);
+    } else {
+      activeDocId.value = activeDocs[0].id;
+      saveActiveDocId(activeDocId.value);
+    }
+  }
+
+  saveDocuments(documents.value);
+  realtimeDeleteDoc(id);
+}
+
+function handleRestoreDoc(id) {
+  soundEngine.playChime();
+  const doc = documents.value.find(d => d.id === id);
+  if (!doc) return;
+
+  // 恢复文档
+  doc.isDeleted = false;
+  doc.updatedAt = Date.now();
+  activeDocId.value = id;
+  saveActiveDocId(id);
+
+  saveDocuments(documents.value);
+  realtimeSyncDoc(doc);
+}
+
+function handlePermanentDeleteDoc(id) {
+  soundEngine.playClick('backspace');
+  const idx = documents.value.findIndex(d => d.id === id);
+  if (idx !== -1) {
+    documents.value.splice(idx, 1);
+  }
+
+  if (activeDocId.value === id) {
+    const activeDocs = documents.value.filter(d => !d.isDeleted);
+    if (activeDocs.length === 0) {
+      handleCreateDoc(null);
+    } else {
+      activeDocId.value = activeDocs[0].id;
+      saveActiveDocId(activeDocId.value);
+    }
+  }
+
+  saveDocuments(documents.value);
+  realtimePermanentDeleteDoc(id);
+}
+
+function handleEmptyRecycleBin() {
+  soundEngine.playClick('backspace');
+  const deletedIds = documents.value.filter(d => d.isDeleted).map(d => d.id);
+  documents.value = documents.value.filter(d => !d.isDeleted);
+
+  if (activeDocId.value && deletedIds.includes(activeDocId.value)) {
     if (documents.value.length === 0) {
       handleCreateDoc(null);
     } else {
@@ -326,8 +387,11 @@ function handleDeleteDoc(id) {
       saveActiveDocId(activeDocId.value);
     }
   }
+
   saveDocuments(documents.value);
-  realtimeDeleteDoc(id);
+  for (const id of deletedIds) {
+    realtimePermanentDeleteDoc(id);
+  }
 }
 
 function handleCreateGroup(name) {
@@ -406,35 +470,52 @@ function handleReorderGroups({ groupId, targetGroupId }) {
   saveGroups(groups.value);
 }
 
+let isApplyingSync = false;
+
 function handleSyncComplete(payload) {
-  if (payload?.docs && Array.isArray(payload.docs)) {
-    documents.value = payload.docs;
+  if (!payload) return;
+  isApplyingSync = true;
+  if (payload.docs && Array.isArray(payload.docs)) {
+    documents.value = [...payload.docs.map(normalizeDoc)];
+    saveDocuments(documents.value);
   }
-  if (payload?.groups && Array.isArray(payload.groups)) {
-    groups.value = payload.groups;
+  if (payload.groups && Array.isArray(payload.groups)) {
+    groups.value = [...payload.groups];
+    saveGroups(groups.value);
   }
-  if (payload?.histories && Array.isArray(payload.histories)) {
+  if (payload.histories && Array.isArray(payload.histories)) {
     saveAllDocSnapshots(payload.histories);
   }
-  if (payload?.customThemes && Array.isArray(payload.customThemes)) {
+  if (payload.customThemes && Array.isArray(payload.customThemes)) {
     mergeCustomThemes(payload.customThemes);
   }
-  if (documents.value.length > 0) {
-    if (!documents.value.some(d => d.id === activeDocId.value)) {
-      activeDocId.value = documents.value[0].id;
+  const activeDocs = documents.value.filter(d => !d.isDeleted && !d.is_deleted);
+  if (activeDocs.length > 0) {
+    if (!activeDocs.some(d => d.id === activeDocId.value)) {
+      activeDocId.value = activeDocs[0].id;
       saveActiveDocId(activeDocId.value);
     }
   }
+  setTimeout(() => {
+    isApplyingSync = false;
+  }, 1000);
 }
 
 // Watch documents and groups changes for background debounced auto-sync to Cloud
 function triggerFullAutoSync() {
+  if (isApplyingSync) return;
   if (isCloudSyncEnabled()) {
     triggerAutoSyncDebounced(
       documents.value,
       groups.value,
       getAllDocSnapshots(),
-      loadCustomThemes()
+      loadCustomThemes(),
+      () => {},
+      (err, res) => {
+        if (!err && res) {
+          handleSyncComplete(res);
+        }
+      }
     );
   }
 }
@@ -1585,6 +1666,9 @@ watch(customStyles, () => {
             @open-doc-history="openDocHistory"
             @rename-doc="handleRenameDoc"
             @delete-doc="handleDeleteDoc"
+            @restore-doc="handleRestoreDoc"
+            @permanent-delete-doc="handlePermanentDeleteDoc"
+            @empty-recycle-bin="handleEmptyRecycleBin"
             @create-group="handleCreateGroup"
             @rename-group="handleRenameGroup"
             @delete-group="handleDeleteGroup"

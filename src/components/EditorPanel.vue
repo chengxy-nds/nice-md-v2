@@ -1330,6 +1330,24 @@ watch(isSyntaxHighlightActive, (active) => {
   }
 });
 
+watch(() => props.modelValue, (newVal) => {
+  if (isUpdatingFromCodeMirror) return;
+  const val = newVal ?? '';
+  if (editorText.value !== val) {
+    editorText.value = val;
+  }
+  if (cmView) {
+    const currentDoc = cmView.state.doc.toString();
+    if (currentDoc !== val) {
+      cmView.dispatch({
+        changes: { from: 0, to: currentDoc.length, insert: val }
+      });
+    }
+  } else if (textareaRef.value && textareaRef.value.value !== val) {
+    textareaRef.value.value = val;
+  }
+});
+
 
 
 function handleGlobalPointerDown(e) {

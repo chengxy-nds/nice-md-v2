@@ -257,14 +257,39 @@ export const themes = [
   }
 ];
 
-// Custom theme helpers
+export const builtInThemeIds = new Set([
+  'classic-indigo',
+  'mountain-warm',
+  'mountain-forest',
+  'mountain-tea',
+  'mountain-red',
+  'mountain-purple',
+  'mountain-gold',
+  '135-morandi',
+  '135-guofeng',
+  'github-clean',
+  'typora-github',
+  'typora-vue',
+  'vue-emerald',
+  'nordic-ice',
+  'typora-dark',
+  'default'
+]);
+
+export function isBuiltInTheme(themeId) {
+  return builtInThemeIds.has(themeId);
+}
+
+// Custom theme helpers (Only manages user-created "另存为" themes, NEVER built-in presets)
 export function loadCustomThemes() {
   try {
     if (typeof localStorage !== 'undefined') {
       const raw = localStorage.getItem('nicemd_custom_themes');
       if (raw) {
         const parsed = JSON.parse(raw);
-        return Array.isArray(parsed) ? parsed : [];
+        if (Array.isArray(parsed)) {
+          return parsed.filter(t => t && t.id && !builtInThemeIds.has(t.id) && (t.isCustom || t.id.startsWith('custom-')));
+        }
       }
     }
   } catch (e) {
@@ -276,7 +301,8 @@ export function loadCustomThemes() {
 export function saveCustomThemes(customThemes = []) {
   try {
     if (typeof localStorage !== 'undefined') {
-      localStorage.setItem('nicemd_custom_themes', JSON.stringify(customThemes));
+      const onlyCustom = (customThemes || []).filter(t => t && t.id && !builtInThemeIds.has(t.id) && (t.isCustom || t.id.startsWith('custom-')));
+      localStorage.setItem('nicemd_custom_themes', JSON.stringify(onlyCustom));
     }
   } catch (e) {
     console.warn('[NiceMD] Failed to save custom themes to localStorage:', e);
@@ -289,7 +315,7 @@ export function mergeCustomThemes(cloudCustomThemes = []) {
   const map = new Map(local.map(t => [t.id, t]));
 
   for (const ct of cloudCustomThemes) {
-    if (!ct || !ct.id) continue;
+    if (!ct || !ct.id || builtInThemeIds.has(ct.id)) continue;
     const existing = map.get(ct.id);
     if (!existing || (ct.updatedAt || 0) >= (existing.updatedAt || 0)) {
       map.set(ct.id, ct);
@@ -299,18 +325,10 @@ export function mergeCustomThemes(cloudCustomThemes = []) {
   const merged = Array.from(map.values());
   saveCustomThemes(merged);
 
-  // Sync with in-memory themes array
-  const builtInIds = new Set(themes.filter(t => !t.isCustom && t.builtIn !== false).map(t => t.id));
-  // Remove existing custom themes from in-memory array
-  for (let i = themes.length - 1; i >= 0; i--) {
-    if (themes[i].isCustom || !builtInIds.has(themes[i].id)) {
-      themes.splice(i, 1);
-    }
-  }
-  // Append merged custom themes
-  for (const t of merged) {
-    themes.push(t);
-  }
+  // Sync with in-memory themes array: keep built-ins, append only custom
+  const builtIns = themes.filter(t => builtInThemeIds.has(t.id) && !t.isCustom && !t.id.startsWith('custom-'));
+  themes.length = 0;
+  themes.push(...builtIns, ...merged);
 
   return merged;
 }
@@ -326,21 +344,6 @@ try {
     }
   });
 } catch (e) {}
-
-export const builtInThemeIds = new Set([
-  'classic-indigo',
-  'mountain-warm',
-  'mountain-forest',
-  'mountain-tea',
-  'mountain-red',
-  'github-clean',
-  'vue-emerald',
-  'nordic-ice'
-]);
-
-export function isBuiltInTheme(themeId) {
-  return builtInThemeIds.has(themeId);
-}
 
 export function getThemeSavedStyles(themeId = 'classic-indigo') {
   const theme = themes.find(t => t.id === themeId) || themes[0];

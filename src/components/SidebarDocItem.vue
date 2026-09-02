@@ -76,9 +76,9 @@ function cancelRename() {
 
 async function handleDelete() {
   const ok = await showConfirm({
-    title: '删除文档',
-    message: `确定要删除「${props.doc.title}」吗？此操作不可撤销。`,
-    confirmText: '删除',
+    title: '移至回收站',
+    message: `确定要将「${props.doc.title || '未命名文档'}」移至回收站吗？您可随时在回收站中恢复。`,
+    confirmText: '移至回收站',
     danger: true
   });
   if (ok) emit('delete', props.doc.id);
@@ -200,7 +200,6 @@ function onDrop(e) {
   transition: all 0.15s ease;
   position: relative;
   user-select: none;
-  margin-bottom: 2px;
   box-sizing: border-box;
 }
 

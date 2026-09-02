@@ -11,6 +11,7 @@ import {
   syncSingleHistoryToTidb,
   syncSingleCustomThemeToTidb,
   deleteDocInTidb,
+  permanentDeleteDocInTidb,
   deleteGroupInTidb,
   deleteHistoryInTidb,
   clearDocHistoriesInTidb,
@@ -31,6 +32,7 @@ import {
   syncSingleHistoryToNeon,
   syncSingleCustomThemeToNeon,
   deleteDocInNeon,
+  permanentDeleteDocInNeon,
   deleteGroupInNeon,
   deleteHistoryInNeon,
   clearDocHistoriesInNeon,
@@ -249,6 +251,18 @@ export function realtimeDeleteDoc(docId) {
   } else {
     const config = getNeonConfig();
     deleteDocInNeon(config.connectionString, docId);
+  }
+}
+
+export function realtimePermanentDeleteDoc(docId) {
+  if (!isCloudSyncEnabled() || !docId) return;
+  const provider = getActiveCloudProvider();
+  if (provider === 'tidb') {
+    const config = getTidbConfig();
+    permanentDeleteDocInTidb(config.connectionString, docId);
+  } else {
+    const config = getNeonConfig();
+    permanentDeleteDocInNeon(config.connectionString, docId);
   }
 }
 

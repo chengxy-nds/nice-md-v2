@@ -865,6 +865,9 @@ const handleSave = () => {
   soundEngine.playClick();
   saveStatus.value = 'saving';
   
+  if (tidbConfig.value) saveTidbConfig({ ...tidbConfig.value });
+  if (neonConfig.value) saveNeonConfig({ ...neonConfig.value });
+
   if (isExtensionConnected.value) {
     // Send to extension via message bridge
     window.postMessage({
@@ -1315,15 +1318,13 @@ const supportsSilent = (id) => {
               <div class="modern-input-group">
                 <span class="input-prefix-icon"><Database size="14" /></span>
                 <input
-                  :type="showTidbKey ? 'text' : 'password'"
+                  type="text"
                   v-model="tidbConfig.connectionString"
                   placeholder="mysql://username:password@gateway01.ap-northeast-1.prod.aws.tidbcloud.com:4000/easymd?ssl=true"
                   class="modern-code-input"
+                  spellcheck="false"
+                  autocomplete="off"
                 />
-                <button class="input-suffix-action" @click="showTidbKey = !showTidbKey" type="button" :title="showTidbKey ? '隐藏' : '显示'">
-                  <Eye v-if="!showTidbKey" size="14" />
-                  <EyeOff v-else size="14" />
-                </button>
               </div>
               
               <div class="config-helper-row">
@@ -1344,7 +1345,7 @@ const supportsSilent = (id) => {
               </label>
             </div>
 
-            <!-- Test Connection & Save Action Strip -->
+            <!-- Test Connection Action Strip -->
             <div class="cloud-action-strip">
               <button 
                 @click="handleTestTidb" 
@@ -1358,12 +1359,6 @@ const supportsSilent = (id) => {
                 <span v-else-if="tidbTestResult === 'testing'">正在连接 TiDB...</span>
                 <span v-else-if="tidbTestResult === 'success'">✓ 连接成功</span>
                 <span v-else-if="tidbTestResult === 'error'">✗ 连接失败</span>
-              </button>
-
-              <button @click="handleSaveTidb" class="btn-cloud-save" :class="{ 'is-saved': tidbSaveStatus === 'success' }">
-                <Check v-if="tidbSaveStatus === 'success'" size="14" />
-                <Save v-else size="14" />
-                <span>{{ tidbSaveStatus === 'success' ? '✓ 已保存配置' : '保存 TiDB 配置' }}</span>
               </button>
             </div>
 
@@ -1503,15 +1498,13 @@ const supportsSilent = (id) => {
               <div class="modern-input-group">
                 <span class="input-prefix-icon"><Database size="14" /></span>
                 <input
-                  :type="showNeonKey ? 'text' : 'password'"
+                  type="text"
                   v-model="neonConfig.connectionString"
                   placeholder="postgresql://neondb_owner:***@ep-***.neon.tech/easymd?sslmode=require"
                   class="modern-code-input"
+                  spellcheck="false"
+                  autocomplete="off"
                 />
-                <button class="input-suffix-action" @click="showNeonKey = !showNeonKey" type="button" :title="showNeonKey ? '隐藏' : '显示'">
-                  <Eye v-if="!showNeonKey" size="14" />
-                  <EyeOff v-else size="14" />
-                </button>
               </div>
               
               <div class="config-helper-row">
@@ -1532,7 +1525,7 @@ const supportsSilent = (id) => {
               </label>
             </div>
 
-            <!-- Test Connection & Save Action Strip -->
+            <!-- Test Connection Action Strip -->
             <div class="cloud-action-strip">
               <button 
                 @click="handleTestNeon" 
@@ -1546,12 +1539,6 @@ const supportsSilent = (id) => {
                 <span v-else-if="neonTestResult === 'testing'">正在连接 Neon...</span>
                 <span v-else-if="neonTestResult === 'success'">✓ 连接成功</span>
                 <span v-else-if="neonTestResult === 'error'">✗ 连接失败</span>
-              </button>
-
-              <button @click="handleSaveNeon" class="btn-cloud-save" :class="{ 'is-saved': neonSaveStatus === 'success' }">
-                <Check v-if="neonSaveStatus === 'success'" size="14" />
-                <Save v-else size="14" />
-                <span>{{ neonSaveStatus === 'success' ? '✓ 已保存配置' : '保存 Neon 配置' }}</span>
               </button>
             </div>
 

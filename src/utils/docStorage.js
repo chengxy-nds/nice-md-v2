@@ -31,12 +31,33 @@ export function generateId() {
   return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
 }
 
+export function normalizeDoc(doc) {
+  if (!doc) return doc;
+  const isDel = Boolean(
+    doc.isDeleted === true ||
+    doc.isDeleted === 1 ||
+    doc.isDeleted === '1' ||
+    doc.isDeleted === 'true' ||
+    doc.is_deleted === 1 ||
+    doc.is_deleted === true ||
+    doc.is_deleted === '1' ||
+    doc.is_deleted === 'true'
+  );
+  return {
+    ...doc,
+    isDeleted: isDel,
+    is_deleted: isDel ? 1 : 0
+  };
+}
+
 export function loadDocuments() {
-  return safeGet(KEYS.documents, []);
+  const docs = safeGet(KEYS.documents, []);
+  return (Array.isArray(docs) ? docs : []).map(normalizeDoc);
 }
 
 export function saveDocuments(docs) {
-  safeSet(KEYS.documents, docs);
+  const normalized = (Array.isArray(docs) ? docs : []).map(normalizeDoc);
+  safeSet(KEYS.documents, normalized);
 }
 
 export function loadGroups() {

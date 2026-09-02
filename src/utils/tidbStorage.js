@@ -1,4 +1,5 @@
 import { connect } from '@tidbcloud/serverless';
+import { builtInThemeIds } from './themePresets.js';
 
 const TIDB_CONFIG_KEY = 'nicemd_tidb_sync_config_v1';
 const TIDB_LAST_SYNC_KEY = 'nicemd_tidb_last_sync_timestamp';
@@ -273,6 +274,18 @@ export async function initTidbTables(connectionString) {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
   `);
 
+  // Clean up any built-in preset theme ids that might have been accidentally inserted in earlier versions
+  await client.execute(`
+    UPDATE nicemd_custom_themes 
+    SET is_deleted = 1 
+    WHERE id IN (
+      'classic-indigo', 'mountain-warm', 'mountain-forest', 'mountain-tea',
+      'mountain-red', 'mountain-purple', 'mountain-gold', '135-morandi',
+      '135-guofeng', 'github-clean', 'typora-github', 'typora-vue',
+      'vue-emerald', 'nordic-ice', 'typora-dark', 'default'
+    );
+  `);
+
   return true;
 }
 
@@ -295,7 +308,16 @@ export async function testTidbConnection(connectionString) {
   const docCountRes = await client.execute('SELECT COUNT(*) as cnt FROM nicemd_documents WHERE is_deleted = 0;');
   const groupCountRes = await client.execute('SELECT COUNT(*) as cnt FROM nicemd_groups WHERE is_deleted = 0;');
   const historyCountRes = await client.execute('SELECT COUNT(*) as cnt FROM nicemd_doc_histories WHERE is_deleted = 0;');
-  const themeCountRes = await client.execute('SELECT COUNT(*) as cnt FROM nicemd_custom_themes WHERE is_deleted = 0;');
+  const themeCountRes = await client.execute(`
+    SELECT COUNT(*) as cnt FROM nicemd_custom_themes 
+    WHERE is_deleted = 0 
+    AND id NOT IN (
+      'classic-indigo', 'mountain-warm', 'mountain-forest', 'mountain-tea',
+      'mountain-red', 'mountain-purple', 'mountain-gold', '135-morandi',
+      '135-guofeng', 'github-clean', 'typora-github', 'typora-vue',
+      'vue-emerald', 'nordic-ice', 'typora-dark', 'default'
+    );
+  `);
 
   return {
     success: true,
@@ -352,7 +374,7 @@ export async function pushAllToTidb(connectionString, docs = [], groups = [], hi
            id, title, markdown, group_id, theme_id, code_theme_id, font_size,
            custom_styles, is_favorite, sort_order, created_at, updated_at, version, is_deleted
          )
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
          ON DUPLICATE KEY UPDATE
            title = VALUES(title),
            markdown = VALUES(markdown),
@@ -365,7 +387,7 @@ export async function pushAllToTidb(connectionString, docs = [], groups = [], hi
            sort_order = VALUES(sort_order),
            updated_at = VALUES(updated_at),
            version = VALUES(version),
-           is_deleted = 0;`,
+           is_deleted = VALUES(is_deleted);`,
         [
           d.id,
           d.title || '',
@@ -379,7 +401,8 @@ export async function pushAllToTidb(connectionString, docs = [], groups = [], hi
           d.sortOrder || 0,
           d.createdAt || now,
           d.updatedAt || now,
-          d.version || 1
+          d.version || 1,
+          (d.isDeleted || d.is_deleted) ? 1 : 0
         ]
       );
     }
@@ -424,9 +447,10 @@ export async function pushAllToTidb(connectionString, docs = [], groups = [], hi
     }
   }
 
-  // 4. Push Custom Themes
-  if (customThemes && customThemes.length > 0) {
-    for (const t of customThemes) {
+  // 4. Push Custom Themes (Only user-created "另存为" custom themes, NEVER built-in presets)
+  const validCustomThemes = (customThemes || []).filter(t => t && t.id && !builtInThemeIds.has(t.id) && (t.isCustom || t.id.startsWith('custom-')));
+  if (validCustomThemes && validCustomThemes.length > 0) {
+    for (const t of validCustomThemes) {
       const customStylesJson = JSON.stringify(t.customStyles || {});
       const stylesJson = JSON.stringify(t.styles || {});
       await client.execute(
@@ -497,10 +521,9 @@ export async function pullFromTidb(connectionString) {
     updatedAt: Number(r.updated_at || Date.now())
   }));
 
-  // 2. Pull Documents
+  // 2. Pull Documents (all documents including recycle bin)
   const docRows = await client.execute(`
     SELECT * FROM nicemd_documents 
-    WHERE is_deleted = 0 
     ORDER BY sort_order ASC, updated_at DESC;
   `);
   const docs = (docRows || []).map(r => {
@@ -520,6 +543,7 @@ export async function pullFromTidb(connectionString) {
       fontSize: r.font_size || '16px',
       customStyles,
       isFavorite: Boolean(Number(r.is_favorite)),
+      isDeleted: Boolean(Number(r.is_deleted)),
       sortOrder: Number(r.sort_order || 0),
       createdAt: Number(r.created_at || Date.now()),
       updatedAt: Number(r.updated_at || Date.now()),
@@ -560,30 +584,32 @@ export async function pullFromTidb(connectionString) {
     WHERE is_deleted = 0 
     ORDER BY created_at ASC;
   `);
-  const customThemes = (themeRows || []).map(r => {
-    let customStyles = {};
-    let styles = {};
-    try {
-      if (r.custom_styles) customStyles = JSON.parse(r.custom_styles);
-    } catch {}
-    try {
-      if (r.styles) styles = JSON.parse(r.styles);
-    } catch {}
-    return {
-      id: r.id,
-      name: r.name,
-      icon: r.icon || 'Palette',
-      dark: Boolean(Number(r.dark)),
-      description: r.description || '',
-      tag: r.tag || '我的主题',
-      isCustom: true,
-      customStyles,
-      styles,
-      customCss: r.custom_css || '',
-      createdAt: Number(r.created_at || Date.now()),
-      updatedAt: Number(r.updated_at || Date.now())
-    };
-  });
+  const customThemes = (themeRows || [])
+    .map(r => {
+      let customStyles = {};
+      let styles = {};
+      try {
+        if (r.custom_styles) customStyles = JSON.parse(r.custom_styles);
+      } catch {}
+      try {
+        if (r.styles) styles = JSON.parse(r.styles);
+      } catch {}
+      return {
+        id: r.id,
+        name: r.name,
+        icon: r.icon || 'Palette',
+        dark: Boolean(Number(r.dark)),
+        description: r.description || '',
+        tag: r.tag || '我的主题',
+        isCustom: true,
+        customStyles,
+        styles,
+        customCss: r.custom_css || '',
+        createdAt: Number(r.created_at || Date.now()),
+        updatedAt: Number(r.updated_at || Date.now())
+      };
+    })
+    .filter(t => t && t.id && !builtInThemeIds.has(t.id));
 
   setTidbLastSyncTime();
 
@@ -591,20 +617,15 @@ export async function pullFromTidb(connectionString) {
 }
 
 /**
- * Bi-directional Sync with Timestamp Reconciliation
+ * Bi-directional Sync with TiDB
  */
 export async function syncTidbBidirectional(connectionString, localDocs = [], localGroups = [], localHistories = [], localThemes = []) {
   if (!connectionString) throw new Error('数据库连接串不能为空');
   await ensureTidbTables(connectionString);
   const client = getClient(connectionString);
 
-  // 1. Pull current non-deleted cloud state
-  const {
-    docs: cloudDocs,
-    groups: cloudGroups,
-    histories: cloudHistories,
-    customThemes: cloudThemes
-  } = await pullFromTidb(connectionString);
+  // 1. Pull all remote records
+  const { docs: cloudDocs, groups: cloudGroups, histories: cloudHistories, customThemes: cloudThemes } = await pullFromTidb(connectionString);
 
   // ── Reconcile Groups ──
   const localGroupsMap = new Map(localGroups.map(g => [g.id, g]));
@@ -617,9 +638,9 @@ export async function syncTidbBidirectional(connectionString, localDocs = [], lo
     const local = localGroupsMap.get(id);
     const cloud = cloudGroupsMap.get(id);
     if (local && cloud) {
-      if ((local.updatedAt || 0) >= (cloud.updatedAt || 0)) {
+      if ((local.updatedAt || local.createdAt || 0) >= (cloud.updatedAt || cloud.createdAt || 0)) {
         mergedGroups.push(local);
-        if ((local.updatedAt || 0) > (cloud.updatedAt || 0)) groupsToUpload.push(local);
+        if ((local.updatedAt || local.createdAt || 0) > (cloud.updatedAt || cloud.createdAt || 0)) groupsToUpload.push(local);
       } else {
         mergedGroups.push(cloud);
       }
@@ -642,9 +663,9 @@ export async function syncTidbBidirectional(connectionString, localDocs = [], lo
     const local = localDocsMap.get(id);
     const cloud = cloudDocsMap.get(id);
     if (local && cloud) {
-      if ((local.updatedAt || 0) >= (cloud.updatedAt || 0)) {
+      if ((local.updatedAt || local.createdAt || 0) >= (cloud.updatedAt || cloud.createdAt || 0)) {
         mergedDocs.push(local);
-        if ((local.updatedAt || 0) > (cloud.updatedAt || 0)) docsToUpload.push(local);
+        if ((local.updatedAt || local.createdAt || 0) > (cloud.updatedAt || cloud.createdAt || 0)) docsToUpload.push(local);
       } else {
         mergedDocs.push(cloud);
       }
@@ -683,9 +704,12 @@ export async function syncTidbBidirectional(connectionString, localDocs = [], lo
     }
   }
 
-  // ── Reconcile Custom Themes ──
-  const localThemesMap = new Map(localThemes.map(t => [t.id, t]));
-  const cloudThemesMap = new Map(cloudThemes.map(t => [t.id, t]));
+  // ── Reconcile Custom Themes (Only user-created "另存为" custom themes) ──
+  const validLocalThemes = (localThemes || []).filter(t => t && t.id && !builtInThemeIds.has(t.id) && (t.isCustom || t.id.startsWith('custom-')));
+  const validCloudThemes = (cloudThemes || []).filter(t => t && t.id && !builtInThemeIds.has(t.id));
+
+  const localThemesMap = new Map(validLocalThemes.map(t => [t.id, t]));
+  const cloudThemesMap = new Map(validCloudThemes.map(t => [t.id, t]));
   const mergedThemes = [];
   const themesToUpload = [];
   const allThemeIds = new Set([...localThemesMap.keys(), ...cloudThemesMap.keys()]);
@@ -738,7 +762,7 @@ export async function syncTidbBidirectional(connectionString, localDocs = [], lo
          id, title, markdown, group_id, theme_id, code_theme_id, font_size,
          custom_styles, is_favorite, sort_order, created_at, updated_at, version, is_deleted
        )
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
        ON DUPLICATE KEY UPDATE
          title = VALUES(title),
          markdown = VALUES(markdown),
@@ -751,7 +775,7 @@ export async function syncTidbBidirectional(connectionString, localDocs = [], lo
          sort_order = VALUES(sort_order),
          updated_at = VALUES(updated_at),
          version = VALUES(version),
-         is_deleted = 0;`,
+         is_deleted = VALUES(is_deleted);`,
       [
         d.id,
         d.title || '',
@@ -765,7 +789,8 @@ export async function syncTidbBidirectional(connectionString, localDocs = [], lo
         d.sortOrder || 0,
         d.createdAt || Date.now(),
         d.updatedAt || Date.now(),
-        d.version || 1
+        d.version || 1,
+        (d.isDeleted || d.is_deleted) ? 1 : 0
       ]
     );
   }
@@ -883,7 +908,7 @@ export async function syncSingleDocToTidb(connectionString, doc, debounceMs = 50
              id, title, markdown, group_id, theme_id, code_theme_id, font_size,
              custom_styles, is_favorite, sort_order, created_at, updated_at, version, is_deleted
            )
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
            ON DUPLICATE KEY UPDATE
              title = VALUES(title),
              markdown = VALUES(markdown),
@@ -896,7 +921,7 @@ export async function syncSingleDocToTidb(connectionString, doc, debounceMs = 50
              sort_order = VALUES(sort_order),
              updated_at = VALUES(updated_at),
              version = VALUES(version),
-             is_deleted = 0;`,
+             is_deleted = VALUES(is_deleted);`,
           [
             doc.id,
             doc.title || '',
@@ -910,7 +935,8 @@ export async function syncSingleDocToTidb(connectionString, doc, debounceMs = 50
             doc.sortOrder || 0,
             doc.createdAt || Date.now(),
             doc.updatedAt || Date.now(),
-            doc.version || 1
+            doc.version || 1,
+            doc.isDeleted ? 1 : 0
           ]
         );
         setTidbLastSyncTime();
@@ -1046,7 +1072,7 @@ export async function syncSingleHistoryToTidb(connectionString, history) {
  * Fast Single Custom Theme Upsert to TiDB
  */
 export async function syncSingleCustomThemeToTidb(connectionString, theme) {
-  if (!connectionString || !theme) return;
+  if (!connectionString || !theme || !theme.id || builtInThemeIds.has(theme.id) || (!theme.isCustom && !theme.id.startsWith('custom-'))) return;
   const conn = connectionString.trim();
   const executeInsert = async () => {
     const client = getClient(conn);
@@ -1136,14 +1162,55 @@ export async function deleteDocInTidb(connectionString, docId) {
   }
 }
 
+/**
+ * Permanent Hard Deletions on TiDB Cloud
+ */
+export async function permanentDeleteDocInTidb(connectionString, docId) {
+  if (!connectionString || !docId) return;
+  const conn = connectionString.trim();
+
+  if (docSyncDebounceMap.has(docId)) {
+    clearTimeout(docSyncDebounceMap.get(docId));
+    docSyncDebounceMap.delete(docId);
+  }
+
+  const executeDelete = async () => {
+    const client = getClient(conn);
+    await client.execute(
+      `DELETE FROM nicemd_documents WHERE id = ?;`,
+      [docId]
+    );
+    setTidbLastSyncTime();
+  };
+
+  try {
+    await ensureTidbTables(conn);
+    await executeDelete();
+  } catch (err) {
+    try {
+      await initTidbTables(conn);
+      tablesEnsuredFor = conn;
+      await executeDelete();
+    } catch (retryErr) {
+      console.warn('[TiDB Sync] Failed to permanently delete document in cloud:', retryErr);
+    }
+  }
+}
+
 export async function deleteGroupInTidb(connectionString, groupId) {
   if (!connectionString || !groupId) return;
   const conn = connectionString.trim();
   const executeDelete = async () => {
     const client = getClient(conn);
+    // Hard delete group
     await client.execute(
-      `UPDATE nicemd_groups SET is_deleted = 1, updated_at = ? WHERE id = ?;`,
-      [Date.now(), groupId]
+      `DELETE FROM nicemd_groups WHERE id = ?;`,
+      [groupId]
+    );
+    // Set docs under this group to ungrouped (null)
+    await client.execute(
+      `UPDATE nicemd_documents SET group_id = NULL WHERE group_id = ?;`,
+      [groupId]
     );
     setTidbLastSyncTime();
   };
