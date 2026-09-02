@@ -111,8 +111,34 @@ watch(
 function getRenderHtml(item) {
   if (item.id === 'none') {
     const label = typeLabels[props.elementKey] || '样式';
+    if (['body', 'background'].includes(props.elementKey)) {
+      return `<div style="min-height: 140px; padding: 24px 20px; background: #ffffff; border: 1px dashed #cbd5e1; border-radius: 12px; display: flex; flex-direction: column; justify-content: center; text-align: center; box-sizing: border-box;">
+        <div style="font-size: 15px; font-weight: 700; color: #1e293b; margin-bottom: 6px;">◻ 极简纯色 (默认无底纹)</div>
+        <div style="font-size: 12.5px; color: #64748b;">保持纯白纸面质感，适合极简阅读风格</div>
+      </div>`;
+    }
     return `<div style="text-align: center; color: #64748b; font-size: 14px; font-weight: 700; border-bottom: 2px solid #2563eb; padding-bottom: 4px; display: inline-block;">默认主题${label}</div>`;
   }
+
+  // Dedicated Rich Immersive Canvas for Background Textures
+  if (props.elementKey === 'body' || props.elementKey === 'background') {
+    const bgImg = item.bgImage || 'none';
+    const bgSize = item.bgSize || 'auto';
+    const bgPos = item.bgPosition || '0 0';
+    return `<div style="min-height: 150px; padding: 22px 20px; background-color: #ffffff; background-image: ${bgImg}; background-size: ${bgSize}; background-position: ${bgPos}; background-repeat: repeat; border: 1px solid #e2e8f0; border-radius: 12px; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box; box-shadow: 0 2px 8px rgba(0,0,0,0.03);">
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+        <div style="font-size: 14.5px; font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 6px;">
+          <span>🎨</span>
+          <span>${item.name}</span>
+        </div>
+        <span style="font-size: 11px; font-weight: 600; color: #116ACC; background: rgba(17,106,204,0.08); padding: 2px 8px; border-radius: 9999px;">${item.tag || '底纹'}</span>
+      </div>
+      <p style="margin: 0; font-size: 13px; color: #475569; line-height: 1.8; font-weight: 400;">
+        ${item.description || '细腻排版背景肌理，为整篇公众号长文营造沉浸式纸张呼吸感与层次美学。'}
+      </p>
+    </div>`;
+  }
+
   if (props.elementKey === 'u' || props.elementKey === 'underlines') {
     if (typeof item.render === 'function') {
       const underlined = item.render('划重点核心语句');
@@ -232,7 +258,10 @@ function hasPrefixOption(id) {
         <div
           ref="streamContainerRef"
           class="drawer-materials-stream"
-          :class="{ 'is-table-stream': ['table', 'tables'].includes(props.elementKey) }"
+          :class="{
+            'is-table-stream': ['table', 'tables'].includes(props.elementKey),
+            'is-bg-stream': ['body', 'background'].includes(props.elementKey)
+          }"
         >
           <div
             v-for="item in displayedList"
@@ -601,6 +630,12 @@ function hasPrefixOption(id) {
   height: auto;
   min-height: auto;
   padding: 1.75rem 1.25rem;
+}
+
+.drawer-materials-stream.is-bg-stream .stream-material-row {
+  height: auto;
+  min-height: auto;
+  padding: 1.25rem 1.25rem;
 }
 
 .stream-material-row:hover {

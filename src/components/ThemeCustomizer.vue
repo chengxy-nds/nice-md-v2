@@ -301,7 +301,7 @@ function getTableMaterialPresets(id) {
 
 // Full list of all 27 Markdown syntax element definitions
 const elements = [
-  { key: 'body', label: '整体背景 / 容器 ( body )', icon: '◻' },
+  { key: 'body', label: '整体背景 ( body )', icon: '◻' },
   { key: 'p', label: '正文段落 ( p )', icon: 'P' },
   { key: 'h1', label: '标题 H1 ( # )', icon: 'H1' },
   { key: 'h2', label: '标题 H2 ( ## )', icon: 'H2' },
@@ -1466,11 +1466,11 @@ const cssLineCount = computed(() => {
             />
           </div>
         </div>
-        <!-- Dedicated Body Customizer Section (整体背景 / 底纹纹理 / 容器内边距 / 字体族) -->
+        <!-- Dedicated Body Customizer Section (整体背景 / 容器内边距 / 字体) -->
         <div v-if="el.key === 'body'" class="body-customizer-panel">
           <!-- 1. Background Color -->
           <div class="body-setting-card is-row">
-            <span class="body-setting-title">文章背景底色</span>
+            <span class="body-setting-title">背景底色</span>
             <div class="color-row">
               <input
                 type="color"
@@ -1487,85 +1487,33 @@ const cssLineCount = computed(() => {
             </div>
           </div>
 
-          <!-- 2. Background Texture / Pattern Selector (背景底纹) -->
-          <div class="body-texture-box">
-            <div class="body-texture-header">
-              <div class="body-texture-title-group">
-                <span class="body-setting-title">背景底纹样式</span>
-                <span class="body-setting-sub">选择整篇排版的背景肌理</span>
-              </div>
-              <button
-                type="button"
-                class="mini-material-btn"
-                @click="openMaterialModal('body')"
-                title="在素材中心挑选更多底纹"
-              >
-                <Sparkles class="w-3 h-3 text-amber-500 inline" />
-                <span>素材库挑选</span>
-              </button>
-            </div>
-
-            <!-- 8 Texture Pill Selection Grid -->
-            <div class="body-texture-grid">
-              <button
-                type="button"
-                v-for="bgTpl in backgroundTemplates"
-                :key="bgTpl.id"
-                class="body-texture-card"
-                :class="{ 'is-active': (getStyle('body').backgroundTexture || getStyle('body').materialTemplateId || 'grid') === bgTpl.id }"
-                @click="updateStyle('body', 'backgroundTexture', bgTpl.id); updateStyle('body', 'materialTemplateId', bgTpl.id);"
-                :title="bgTpl.description"
-              >
-                <span class="body-texture-swatch" :style="{ backgroundImage: bgTpl.bgImage, backgroundSize: bgTpl.bgSize, backgroundPosition: bgTpl.bgPosition || '0 0' }"></span>
-                <span class="body-texture-label">{{ bgTpl.name.split(' ')[0] }}</span>
-              </button>
-            </div>
-          </div>
-
-          <!-- 3. Container Properties (字体族 & 文章内边距) -->
+          <!-- 2. Inner Padding & Font Family in 1 Row -->
           <div class="body-row-two-col">
-            <div class="body-setting-card">
-              <span class="body-setting-title">全局中英文字体族</span>
-              <select
-                :value="getStyle('body').fontFamily || '-apple-system, BlinkMacSystemFont, \'PingFang SC\', \'Hiragino Sans GB\', \'Microsoft YaHei\', sans-serif'"
-                @change="updateStyle('body', 'fontFamily', $event.target.value)"
-                class="style-select full-width"
-              >
-                <option value="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif">山海 · 经典字体 (系统推荐)</option>
-                <option value="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">现代黑体 (Inter)</option>
-                <option value="'PingFang SC', 'Microsoft YaHei', sans-serif">微软雅黑 / 苹方</option>
-                <option value="'Songti SC', 'SimSun', STSong, serif">典雅宋体 (Songti)</option>
-                <option value="'Kaiti SC', 'KaiTi', STKaiti, serif">温润楷体 (KaiTi)</option>
-                <option value="Georgia, 'Times New Roman', serif">优雅衬线 (Georgia)</option>
-              </select>
-            </div>
-
-            <div class="body-setting-card">
-              <span class="body-setting-title">文章内边距 (Padding)</span>
-              <select
-                :value="['0px', '5px', '8px', '10px', '12px', '16px', '20px', '24px'].includes(getStyle('body').padding || '5px') ? (getStyle('body').padding || '5px') : 'custom'"
-                @change="(e) => { if (e.target.value !== 'custom') updateStyle('body', 'padding', e.target.value); }"
-                class="style-select full-width"
-              >
-                <option value="0px">0px (贴边紧凑)</option>
-                <option value="5px">5px (默认推荐)</option>
-                <option value="8px">8px (微展边距)</option>
-                <option value="10px">10px (适中标准)</option>
-                <option value="12px">12px (舒适留白)</option>
-                <option value="16px">16px (宽松透气)</option>
-                <option value="20px">20px (开阔空间)</option>
-                <option value="24px">24px (大刊留白)</option>
-                <option value="custom">自定义输入...</option>
-              </select>
+            <div class="body-setting-card is-row">
+              <span class="body-setting-title">内边距</span>
               <input
-                v-if="!['0px', '5px', '8px', '10px', '12px', '16px', '20px', '24px'].includes(getStyle('body').padding || '5px')"
                 type="text"
                 :value="getStyle('body').padding || '5px'"
                 @input="updateStyle('body', 'padding', $event.target.value)"
-                placeholder="如 5px / 10px 15px"
-                class="value-input full-width"
-                style="margin-top: 6px;"
+                placeholder="5px"
+                class="value-input"
               />
+            </div>
+
+            <div class="body-setting-card is-row">
+              <span class="body-setting-title">字体</span>
+              <select
+                :value="getStyle('body').fontFamily || '-apple-system, BlinkMacSystemFont, \'PingFang SC\', \'Hiragino Sans GB\', \'Microsoft YaHei\', sans-serif'"
+                @change="updateStyle('body', 'fontFamily', $event.target.value)"
+                class="style-select"
+              >
+                <option value="-apple-system, BlinkMacSystemFont, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif">山海经典</option>
+                <option value="'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif">现代黑体</option>
+                <option value="'PingFang SC', 'Microsoft YaHei', sans-serif">微软雅黑</option>
+                <option value="'Songti SC', 'SimSun', STSong, serif">典雅宋体</option>
+                <option value="'Kaiti SC', 'KaiTi', STKaiti, serif">温润楷体</option>
+                <option value="Georgia, 'Times New Roman', serif">优雅衬线</option>
+              </select>
             </div>
           </div>
         </div>
@@ -1711,19 +1659,13 @@ const cssLineCount = computed(() => {
             <!-- Code Font Size -->
             <label class="style-field">
               <span class="field-label">代码字号</span>
-              <select
+              <input
+                type="text"
                 :value="getStyle('code').fontSize || '13px'"
-                @change="updateStyle('code', 'fontSize', $event.target.value)"
-                class="style-select"
-              >
-                <option value="11px">11px (紧凑)</option>
-                <option value="12px">12px</option>
-                <option value="12.5px">12.5px</option>
-                <option value="13px">13px (推荐)</option>
-                <option value="14px">14px</option>
-                <option value="15px">15px</option>
-                <option value="16px">16px (醒目)</option>
-              </select>
+                @input="updateStyle('code', 'fontSize', $event.target.value)"
+                class="value-input"
+                placeholder="13px"
+              />
             </label>
 
             <!-- Code Line Height -->
@@ -1857,17 +1799,13 @@ const cssLineCount = computed(() => {
 
                   <label class="style-field">
                     <span class="field-label">表头字重</span>
-                    <select
+                    <input
+                      type="text"
                       :value="getStyle('th').fontWeight || '700'"
-                      @change="updateStyle('th', 'fontWeight', $event.target.value)"
-                      class="style-select"
-                    >
-                      <option value="400">常规 (400)</option>
-                      <option value="500">中等 (500)</option>
-                      <option value="600">半粗 (600)</option>
-                      <option value="700">加粗 (700)</option>
-                      <option value="800">特粗 (800)</option>
-                    </select>
+                      @input="updateStyle('th', 'fontWeight', $event.target.value)"
+                      class="value-input"
+                      placeholder="700 / bold"
+                    />
                   </label>
                 </div>
               </div>
@@ -2016,44 +1954,25 @@ const cssLineCount = computed(() => {
             <!-- Font size -->
             <label class="style-field" v-if="getStyle(el.key).fontSize !== undefined">
               <span class="field-label">字号</span>
-              <select
+              <input
+                type="text"
                 :value="getStyle(el.key).fontSize"
-                @change="updateStyle(el.key, 'fontSize', $event.target.value)"
-                class="style-select"
-              >
-                <option v-if="getStyle(el.key).fontSize && !['11px','12px','13px','14px','15px','16px','18px','20px','22px','24px','26px','28px','32px'].includes(getStyle(el.key).fontSize)" :value="getStyle(el.key).fontSize">
-                  {{ getStyle(el.key).fontSize }}
-                </option>
-                <option value="11px">11px</option>
-                <option value="12px">12px</option>
-                <option value="13px">13px</option>
-                <option value="14px">14px</option>
-                <option value="15px">15px</option>
-                <option value="16px">16px</option>
-                <option value="18px">18px</option>
-                <option value="20px">20px</option>
-                <option value="22px">22px</option>
-                <option value="24px">24px</option>
-                <option value="26px">26px</option>
-                <option value="28px">28px</option>
-                <option value="32px">32px</option>
-              </select>
+                @input="updateStyle(el.key, 'fontSize', $event.target.value)"
+                class="value-input"
+                :placeholder="el.key === 'h1' ? '22px' : el.key === 'h2' ? '18px' : el.key === 'h3' ? '16px' : el.key === 'h4' ? '15px' : '14px'"
+              />
             </label>
 
             <!-- Font weight -->
             <label class="style-field" v-if="getStyle(el.key).fontWeight !== undefined">
               <span class="field-label">字重</span>
-              <select
+              <input
+                type="text"
                 :value="getStyle(el.key).fontWeight"
-                @change="updateStyle(el.key, 'fontWeight', $event.target.value)"
-                class="style-select"
-              >
-                <option value="400">Normal (400)</option>
-                <option value="500">Medium (500)</option>
-                <option value="600">Semi Bold (600)</option>
-                <option value="700">Bold (700)</option>
-                <option value="800">Extra Bold (800)</option>
-              </select>
+                @input="updateStyle(el.key, 'fontWeight', $event.target.value)"
+                class="value-input"
+                placeholder="700 / bold"
+              />
             </label>
 
             <!-- Line height -->
@@ -3348,9 +3267,10 @@ const cssLineCount = computed(() => {
 
 .body-row-two-col {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0.625rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .body-setting-card {
@@ -3362,6 +3282,7 @@ const cssLineCount = computed(() => {
   border-radius: 0.5rem;
   padding: 0.5rem 0.625rem;
   box-sizing: border-box;
+  min-width: 0;
 }
 
 .body-setting-card.is-row {
@@ -3371,12 +3292,27 @@ const cssLineCount = computed(() => {
   gap: 0.5rem;
   padding: 0.375rem 0.625rem;
   min-height: 2.375rem;
+  min-width: 0;
+}
+
+.body-setting-card.is-row .style-select {
+  max-width: 65%;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.body-setting-card.is-row .value-input {
+  max-width: 5rem;
+  min-width: 0;
+  flex: 0 1 auto;
 }
 
 .body-setting-title {
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--text-main, #334155);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .body-setting-sub {
