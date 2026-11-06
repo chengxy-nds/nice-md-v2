@@ -1129,32 +1129,33 @@ function initCodeMirror() {
     ".cm-gutters": {
       display: showLineNumbers.value ? "flex" : "none",
       backgroundColor: "transparent",
-      borderRight: "1px solid var(--border-color, #EDEDED)",
-      color: "var(--text-muted, #9ca3af)",
-      minWidth: "40px"
+      borderRight: "none",
+      color: "var(--text-muted, #94a3b8)",
+      minWidth: "42px",
+      paddingLeft: "6px"
     },
     ".cm-lineNumbers": {
-      minWidth: "40px",
+      minWidth: "36px",
       display: "flex",
       flexDirection: "column"
     },
     ".cm-lineNumbers .cm-gutterElement": {
       padding: "0 4px",
-      minWidth: "38px",
-      textAlign: "center",
+      minWidth: "34px",
+      textAlign: "right",
       display: "flex",
       flexDirection: "column",
       justifyContent: "flex-start",
       alignItems: "stretch",
       fontSize: "11px",
       fontFamily: "'JetBrains Mono', Consolas, monospace",
-      color: "var(--text-muted, #9ca3af)",
-      opacity: "0.55",
+      color: "var(--text-muted, #94a3b8)",
+      opacity: "0.45",
       boxSizing: "border-box"
     },
     ".cm-activeLineGutter": {
       backgroundColor: "transparent",
-      color: "var(--accent-color)",
+      color: "var(--brand-primary, #116ACC)",
       opacity: "1 !important",
       fontWeight: "700"
     },
@@ -1174,7 +1175,7 @@ function initCodeMirror() {
       textAlign: "center"
     },
     ".cm-activeLine": {
-      backgroundColor: "transparent"
+      backgroundColor: "rgba(17, 106, 204, 0.025)"
     },
     ".cm-line": {
       padding: "0 16px",
@@ -1648,17 +1649,17 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
 
 
 .line-gutter {
-  padding: 16px 0;
-  width: 40px;
+  padding: 16px 0 16px 6px;
+  width: 42px;
   background: transparent;
-  border-right: 1px solid var(--border-color);
+  border-right: none;
   text-align: center;
   user-select: none;
   font-family: 'JetBrains Mono', Consolas, monospace;
   font-size: 11px;
   font-weight: 500;
   color: var(--text-muted);
-  opacity: 0.55;
+  opacity: 0.45;
   overflow-y: hidden;
   box-sizing: border-box;
   flex-shrink: 0;
@@ -1766,13 +1767,18 @@ textarea::placeholder {
 
 .editor-footer {
   display: flex;
+  align-items: center;
   justify-content: flex-end;
-  gap: 16px;
-  padding: 8px 16px;
-  border-top: 1px solid var(--border-color);
-  background: rgba(0, 0, 0, 0.01);
-  font-size: 12px;
-  color: var(--text-muted);
+  gap: 14px;
+  height: 28px;
+  padding: 0 16px;
+  border-top: 1px solid var(--border-color, #E2E8F0);
+  background: var(--bg-toolbar, #FAFBFC);
+  font-size: 11.5px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted, #64748B);
+  flex-shrink: 0;
 }
 
 /* ── Inline Find Bar (Responsive & Compact rem sizing) ── */

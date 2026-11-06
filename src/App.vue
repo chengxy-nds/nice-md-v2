@@ -95,6 +95,19 @@ const markdownContent = computed({
     const doc = documents.value.find(d => d.id === activeDocId.value);
     if (doc) {
       doc.content = val;
+      if ((!doc.title || doc.title === '未命名文档') && val) {
+        const h1Match = val.match(/^#\s+(.+)$/m);
+        if (h1Match && h1Match[1]) {
+          const cleanTitle = h1Match[1]
+            .replace(/<[^>]+>/g, '')
+            .replace(/[*`~_#>]/g, '')
+            .trim()
+            .slice(0, 40);
+          if (cleanTitle) {
+            doc.title = cleanTitle;
+          }
+        }
+      }
       doc.updatedAt = Date.now();
       saveDocuments(documents.value);
       realtimeSyncDoc(doc);
@@ -208,11 +221,51 @@ function handleCreateDoc(groupId = null) {
     id, title: '未命名文档', content: '', groupId, createdAt: now, updatedAt: now,
     customStyles: {}
   };
-  documents.value.push(newDoc);
+  documents.value.unshift(newDoc);
   activeDocId.value = id;
   saveDocuments(documents.value);
   saveActiveDocId(id);
   realtimeSyncDoc(newDoc);
+}
+
+function handleDuplicateDoc(doc) {
+  if (!doc) return;
+  soundEngine.playChime();
+  const id = generateId();
+  const now = Date.now();
+  const newDoc = {
+    id,
+    title: `${doc.title || '未命名文档'} (副本)`,
+    content: doc.content || '',
+    groupId: doc.groupId || null,
+    isPinned: false,
+    createdAt: now,
+    updatedAt: now,
+    customStyles: doc.customStyles ? JSON.parse(JSON.stringify(doc.customStyles)) : {}
+  };
+  const idx = documents.value.findIndex(d => d.id === doc.id);
+  if (idx !== -1) {
+    documents.value.splice(idx + 1, 0, newDoc);
+  } else {
+    documents.value.unshift(newDoc);
+  }
+  activeDocId.value = id;
+  saveDocuments(documents.value);
+  saveActiveDocId(id);
+  realtimeSyncDoc(newDoc);
+  triggerAppToast('✨ 已创建文档副本');
+}
+
+function handleTogglePinDoc(doc) {
+  if (!doc) return;
+  soundEngine.playClick();
+  const target = documents.value.find(d => d.id === doc.id);
+  if (target) {
+    target.isPinned = !target.isPinned;
+    target.updatedAt = Date.now();
+    saveDocuments(documents.value);
+    realtimeSyncDoc(target);
+  }
 }
 
 function handleApplyTemplate(template) {
@@ -236,7 +289,7 @@ function handleApplyTemplate(template) {
       id, title, content, groupId: null, createdAt: now, updatedAt: now,
       customStyles: JSON.parse(JSON.stringify(tmplCustomStyles))
     };
-    documents.value.push(newDoc);
+    documents.value.unshift(newDoc);
     activeDocId.value = id;
     saveDocuments(documents.value);
     saveActiveDocId(id);
@@ -1538,68 +1591,40 @@ watch(customStyles, () => {
       <header class="app-header">
         <div class="header-left">
           <div class="wandor-brand-box" @click="currentView = 'home'">
-            <BrandLogo :size="32" />
+            <BrandLogo :size="28" />
             <span class="wandor-wordmark">EASY MD</span>
+            <span class="brand-studio-badge">STUDIO</span>
           </div>
           <button class="btn-menu-toggle" @click="toggleMobileSidebar" title="文档列表">
             <Menu size="18" />
           </button>
         </div>
 
-        <!-- Center Floating Pill Toolbar (AI 润色 / 智能排版 / 插入图片 / 生成封面 / 更多工具) -->
+        <!-- Center Floating Pill Toolbar (AI 润色 / 智能排版 / 插入图片 / 生成封面) -->
         <div class="header-center">
           <div class="header-capsule-bar">
             <button class="capsule-btn is-ai" @click="handleAiPolish" title="AI 智能润色与优化">
-              <Sparkles size="14" class="capsule-icon ai-sparkle-icon" />
+              <Sparkles size="13.5" class="capsule-icon ai-sparkle-icon" />
               <span>AI 润色</span>
             </button>
+            <span class="capsule-divider"></span>
             <button class="capsule-btn" @click="handleAutoFormat" title="智能中英文排版与规范">
-              <Wand2 size="14" class="capsule-icon" />
+              <Wand2 size="13.5" class="capsule-icon" />
               <span>智能排版</span>
             </button>
             <button class="capsule-btn" @click="editorPanelRef?.handleImageUpload()" title="插入图片">
-              <Image size="14" class="capsule-icon" />
+              <Image size="13.5" class="capsule-icon" />
               <span>插入图片</span>
             </button>
             <button class="capsule-btn" @click="handleCoverGenerate" title="生成与更换文章封面">
-              <Palette size="14" class="capsule-icon" />
+              <Palette size="13.5" class="capsule-icon" />
               <span>生成封面</span>
             </button>
-
-            <!-- More Tools Dropdown -->
-            <div class="capsule-dropdown-wrapper">
-              <button class="capsule-btn" :class="{ 'is-active': showMoreTools }" @click="showMoreTools = !showMoreTools" title="更多常用工具">
-                <LayoutGrid size="14" class="capsule-icon" />
-                <span>更多工具</span>
-              </button>
-              <div class="header-popout-panel capsule-popout" v-if="showMoreTools" @mouseleave="showMoreTools = false">
-                <button class="popout-item" @click="editorPanelRef?.openFindReplace(); showMoreTools = false">
-                  <Search size="14" />
-                  <span>查找与替换</span>
-                </button>
-                <button class="popout-item" @click="editorPanelRef?.toggleUrlImport(); showMoreTools = false">
-                  <Link size="14" />
-                  <span>URL 文章抓取导入</span>
-                </button>
-                <button class="popout-item" @click="editorPanelRef?.insertSample(); showMoreTools = false">
-                  <HelpCircle size="14" />
-                  <span>插入示例模板</span>
-                </button>
-                <button class="popout-item" @click="editorPanelRef?.clearContent(); showMoreTools = false">
-                  <Trash2 size="14" />
-                  <span>清空编辑器内容</span>
-                </button>
-                <button class="popout-item" @click="openSettings(); showMoreTools = false">
-                  <Settings size="14" />
-                  <span>系统偏好设置</span>
-                </button>
-              </div>
-            </div>
           </div>
 
-          <!-- Publish Button moved next to the capsule bar -->
+          <!-- Publish Button next to the capsule bar -->
           <button class="btn-header-publish" @click="openLaunchpad" title="一键多渠道分发发布">
-            <Send size="13" class="publish-send-icon" />
+            <Send size="12.5" class="publish-send-icon" />
             <span>发布</span>
           </button>
 
@@ -1675,6 +1700,8 @@ watch(customStyles, () => {
             @move-doc="handleMoveDoc"
             @reorder-docs="handleReorderDocs"
             @reorder-groups="handleReorderGroups"
+            @duplicate-doc="handleDuplicateDoc"
+            @toggle-pin="handleTogglePinDoc"
           />
 
           <!-- 1. 模板中心 -->
@@ -1731,12 +1758,10 @@ watch(customStyles, () => {
 
               <!-- Content Editing & Import Group -->
               <div class="toolbar-btn-group">
-                <button @click="editorPanelRef?.openFindReplace()" class="btn-icon" title="查找与替换"><Search size="15" /></button>
-                <button @click="editorPanelRef?.handleImageUpload()" class="btn-icon" title="插入图片"><Image size="15" /></button>
-                <button @click="editorPanelRef?.insertSample()" class="btn-icon" title="插入示例模板"><HelpCircle size="15" /></button>
-                <button @click="editorPanelRef?.toggleUrlImport()" class="btn-icon" title="URL 文章抓取导入"><Link size="15" /></button>
+                <button @click="editorPanelRef?.openFindReplace()" class="btn-icon" title="查找与替换"><Search size="14.5" /></button>
+                <button @click="editorPanelRef?.toggleUrlImport()" class="btn-icon" title="URL 文章抓取导入"><Link size="14.5" /></button>
                 <div class="export-trigger-container">
-                  <button @click="showImportMenu = !showImportMenu" class="btn-icon" :class="{ 'is-active': showImportMenu }" title="导入文件"><Upload size="15" /></button>
+                  <button @click="showImportMenu = !showImportMenu" class="btn-icon" :class="{ 'is-active': showImportMenu }" title="导入本地文档"><Upload size="14.5" /></button>
                   <div class="header-popout-panel" v-if="showImportMenu" @mouseleave="showImportMenu = false">
                     <button class="popout-item" @click="editorPanelRef?.triggerFileInput('.md,.markdown'); showImportMenu = false"><FileCode size="14" /><span>Markdown (.md)</span></button>
                     <button class="popout-item" @click="editorPanelRef?.triggerFileInput('.docx,.doc'); showImportMenu = false"><FileText size="14" /><span>Word (.docx)</span></button>
@@ -1744,15 +1769,16 @@ watch(customStyles, () => {
                     <button class="popout-item" @click="editorPanelRef?.triggerFileInput('.txt'); showImportMenu = false"><FileCode size="14" /><span>纯文本 (.txt)</span></button>
                   </div>
                 </div>
+                <button @click="editorPanelRef?.insertSample()" class="btn-icon" title="插入示例模板"><HelpCircle size="14.5" /></button>
               </div>
 
               <span class="toolbar-sep"></span>
 
               <!-- History & Undo/Redo Group -->
               <div class="toolbar-btn-group">
-                <button @click="editorPanelRef?.handleUndo()" class="btn-icon" title="撤销 (Ctrl+Z)"><Undo2 size="15" /></button>
-                <button @click="editorPanelRef?.handleRedo()" class="btn-icon" title="重做 (Ctrl+Y)"><Redo2 size="15" /></button>
-                <button @click="openDocHistory(activeDocument)" class="btn-icon" title="历史版本与内容比对"><History size="15" /></button>
+                <button @click="editorPanelRef?.handleUndo()" class="btn-icon" title="撤销 (Ctrl+Z)"><Undo2 size="14.5" /></button>
+                <button @click="editorPanelRef?.handleRedo()" class="btn-icon" title="重做 (Ctrl+Y)"><Redo2 size="14.5" /></button>
+                <button @click="openDocHistory(activeDocument)" class="btn-icon" title="历史版本与内容比对"><History size="14.5" /></button>
               </div>
 
               <span class="toolbar-sep"></span>
@@ -1760,7 +1786,7 @@ watch(customStyles, () => {
               <!-- Export & Clean Group -->
               <div class="toolbar-btn-group">
                 <div class="export-trigger-container">
-                  <button class="btn-icon" @click="showExportMenu = !showExportMenu" title="导出文件"><Download size="15" /></button>
+                  <button class="btn-icon" @click="showExportMenu = !showExportMenu" title="导出文件"><Download size="14.5" /></button>
                   <div class="header-popout-panel" v-if="showExportMenu" @mouseleave="showExportMenu = false">
                     <button class="popout-item" @click="exportMD(); showExportMenu = false"><FileCode size="14" /><span>Markdown</span></button>
                     <button class="popout-item" @click="exportHTML(); showExportMenu = false"><Globe size="14" /><span>HTML</span></button>
@@ -1770,14 +1796,14 @@ watch(customStyles, () => {
                     <button class="popout-item" @click="exportPNG(); showExportMenu = false"><Image size="14" /><span>PNG 长图</span></button>
                   </div>
                 </div>
-                <button @click="editorPanelRef?.clearContent()" class="btn-icon btn-danger" title="清空内容"><Trash2 size="15" /></button>
+                <button @click="editorPanelRef?.clearContent()" class="btn-icon btn-danger" title="清空内容"><Trash2 size="14.5" /></button>
               </div>
 
               <span class="toolbar-sep"></span>
 
               <!-- View & Sync Group -->
               <div class="toolbar-btn-group">
-                <button @click="toggleSyncScroll" class="btn-icon" :class="{ 'is-active': syncScrollEnabled }" title="双栏同步滚动"><Link2 v-if="syncScrollEnabled" size="15" /><Link2Off v-else size="15" /></button>
+                <button @click="toggleSyncScroll" class="btn-icon" :class="{ 'is-active': syncScrollEnabled }" title="双栏同步滚动"><Link2 v-if="syncScrollEnabled" size="14.5" /><Link2Off v-else size="14.5" /></button>
               </div>
 
               <!-- Spacer pushing Theme & Code style dropdowns to the far right -->
@@ -1789,11 +1815,15 @@ watch(customStyles, () => {
                   class="btn-toolbar-dropdown"
                   :class="{ 'is-active': showDocThemeMenu }"
                   @click="showDocThemeMenu = !showDocThemeMenu; showCodeThemeMenu = false"
-                  title="排版主题"
+                  title="切换文章排版主题"
                 >
-                  <Palette size="13" />
-                  <span>{{ activeThemeObj?.name || '山海' }}</span>
-                  <ChevronDown size="11" />
+                  <span
+                    class="theme-swatch-dot"
+                    :style="{ backgroundColor: activeThemeObj?.styles?.['--accent-color'] || '#116ACC' }"
+                  ></span>
+                  <span class="dropdown-label-prefix">主题</span>
+                  <span class="dropdown-label-val">{{ activeThemeObj?.name || '山海' }}</span>
+                  <ChevronDown size="12" class="dropdown-chevron" />
                 </button>
                 <div class="header-popout-panel" v-if="showDocThemeMenu" @mouseleave="showDocThemeMenu = false">
                   <button
@@ -1803,6 +1833,10 @@ watch(customStyles, () => {
                     :class="{ 'is-active': t.id === currentTheme }"
                     @click="changeTheme(t.id); showDocThemeMenu = false"
                   >
+                    <span
+                      class="theme-swatch-dot"
+                      :style="{ backgroundColor: t.styles?.['--accent-color'] || '#116ACC' }"
+                    ></span>
                     <span>{{ t.name }}</span>
                   </button>
                 </div>
@@ -1814,11 +1848,12 @@ watch(customStyles, () => {
                   class="btn-toolbar-dropdown"
                   :class="{ 'is-active': showCodeThemeMenu }"
                   @click="showCodeThemeMenu = !showCodeThemeMenu; showDocThemeMenu = false"
-                  title="代码高亮主题"
+                  title="切换代码块高亮主题"
                 >
-                  <Code2 size="13" />
-                  <span>代码: {{ activeCodeThemeObj?.name || 'Atom One Dark' }}</span>
-                  <ChevronDown size="11" />
+                  <Code2 size="13" class="dropdown-code-icon" />
+                  <span class="dropdown-label-prefix">代码</span>
+                  <span class="dropdown-label-val">{{ activeCodeThemeObj?.name || 'Atom One Dark' }}</span>
+                  <ChevronDown size="12" class="dropdown-chevron" />
                 </button>
                 <div class="header-popout-panel" v-if="showCodeThemeMenu" @mouseleave="showCodeThemeMenu = false">
                   <button
@@ -2005,14 +2040,17 @@ html.dark .app-container.is-standalone-home {
 }
 
 .app-header {
-  height: 4.5rem;
+  height: 54px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 20px;
+  padding: 0 18px;
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-header);
-  z-index: 10;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-header);
+  z-index: 20;
   flex-shrink: 0;
   transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
@@ -2020,13 +2058,14 @@ html.dark .app-container.is-standalone-home {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  min-width: 180px;
 }
 
 .wandor-brand-box {
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  gap: 8px;
   cursor: pointer;
   user-select: none;
   padding: 4px 6px;
@@ -2035,13 +2074,13 @@ html.dark .app-container.is-standalone-home {
 }
 
 .wandor-brand-box:hover {
-  opacity: 0.82;
+  opacity: 0.85;
 }
 
 .brand-logo-wrapper {
   position: relative;
-  width: 32px;
-  height: 32px;
+  width: 28px;
+  height: 28px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2052,14 +2091,14 @@ html.dark .app-container.is-standalone-home {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  border-radius: 8px;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
-  border: 1px solid rgba(0, 0, 0, 0.04);
+  border-radius: 7px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+  border: 1px solid rgba(15, 23, 42, 0.06);
   transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .wandor-brand-box:hover .brand-logo-img {
-  transform: scale(1.08) rotate(-2deg);
+  transform: scale(1.06) rotate(-2deg);
 }
 
 .logo-light {
@@ -2078,10 +2117,10 @@ html.dark .logo-dark {
 
 .wandor-wordmark {
   font-family: 'Inter Tight', 'Outfit', sans-serif;
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: var(--text-main, #222222);
-  letter-spacing: -0.03em;
+  font-size: 16.5px;
+  font-weight: 800;
+  color: var(--text-main, #0F172A);
+  letter-spacing: -0.025em;
   line-height: 1;
 }
 
@@ -2089,12 +2128,24 @@ html.dark .wandor-wordmark {
   color: #ffffff;
 }
 
+.brand-studio-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--brand-primary, #116ACC);
+  background: var(--brand-primary-subtle, rgba(17, 106, 204, 0.08));
+  border: 1px solid rgba(17, 106, 204, 0.18);
+  padding: 2px 6px;
+  border-radius: 5px;
+  line-height: 1;
+}
+
 /* Center Floating Capsule Toolbar */
 .header-center {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 12px;
+  gap: 10px;
   flex: 1;
   position: relative;
 }
@@ -2103,25 +2154,33 @@ html.dark .wandor-wordmark {
   display: flex;
   align-items: center;
   gap: 2px;
-  background: var(--bg-capsule);
-  border: 1px solid var(--border-color);
+  background: var(--bg-capsule, #F1F5F9);
+  border: 1px solid var(--border-color, #E2E8F0);
   border-radius: 9999px;
-  padding: 4px 6px;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+  padding: 3px 4px;
+  box-shadow: var(--shadow-capsule);
   position: relative;
   user-select: none;
-  transition: all 0.3s ease;
+  transition: all 0.25s ease;
+}
+
+.capsule-divider {
+  width: 1px;
+  height: 14px;
+  background: var(--border-color, #E2E8F0);
+  margin: 0 2px;
+  flex-shrink: 0;
 }
 
 .capsule-btn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 5px 12px;
+  gap: 5px;
+  padding: 4px 12px;
   border: none;
   background: transparent;
-  color: var(--text-main);
-  font-size: 13px;
+  color: var(--text-secondary, #334155);
+  font-size: 12.5px;
   font-weight: 500;
   border-radius: 9999px;
   cursor: pointer;
@@ -2130,26 +2189,34 @@ html.dark .wandor-wordmark {
 }
 
 .capsule-btn:hover {
-  background: var(--bg-capsule-btn-hover);
-  color: var(--text-main);
+  background: var(--bg-capsule-btn-hover, #FFFFFF);
+  color: var(--text-main, #0F172A);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
 }
 
 .capsule-btn.is-ai {
-  color: var(--accent-coral, #ff7a59);
+  color: var(--brand-primary, #116ACC);
   font-weight: 600;
+  background: rgba(17, 106, 204, 0.06);
 }
 
 .capsule-btn.is-ai:hover {
-  background: rgba(255, 122, 89, 0.12);
-  color: var(--accent-coral, #ff7a59);
+  background: #FFFFFF;
+  color: var(--brand-primary-hover, #0C4A8F);
+  box-shadow: 0 1px 4px rgba(17, 106, 204, 0.14);
 }
 
 .capsule-btn.is-ai .ai-sparkle-icon {
-  color: var(--accent-coral, #ff7a59);
+  color: var(--brand-primary, #116ACC);
 }
 
 .capsule-btn .capsule-icon {
   flex-shrink: 0;
+  opacity: 0.85;
+}
+
+.capsule-btn:hover .capsule-icon {
+  opacity: 1;
 }
 
 .capsule-dropdown-wrapper {
@@ -2174,20 +2241,22 @@ html.dark .wandor-wordmark {
 .header-right {
   display: flex;
   align-items: center;
-  min-width: 140px;
+  justify-content: flex-end;
+  min-width: 180px;
 }
 
 .btn-header-publish {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 18px;
+  gap: 5px;
+  height: 32px;
+  padding: 0 16px;
   border: 1px solid var(--btn-primary-border);
-  border-radius: var(--btn-primary-radius, 9999px);
+  border-radius: 9999px;
   background: var(--btn-primary-bg);
   color: var(--btn-primary-text);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
   box-shadow: var(--btn-primary-shadow);
@@ -2669,12 +2738,12 @@ html.dark .btn-header-publish:hover {
 }
 
 .workspace-toolbar {
-  height: 42px;
+  height: 40px;
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 14px;
   border-bottom: 1px solid var(--border-color);
-  background: var(--bg-toolbar);
+  background: var(--bg-toolbar, #FAFBFC);
   box-shadow: var(--shadow-toolbar);
   flex-shrink: 0;
   width: 100%;
@@ -2695,14 +2764,9 @@ html.dark .btn-header-publish:hover {
   align-items: center;
   gap: 2px;
   padding: 2px;
-  border-radius: 8px;
-  background: var(--bg-hover-subtle, rgba(0, 0, 0, 0.02));
-  border: 1px solid var(--border-color-subtle, transparent);
+  border-radius: 7px;
+  background: transparent;
   transition: all 0.2s ease;
-}
-
-[data-color-mode="dark"] .toolbar-btn-group {
-  background: rgba(255, 255, 255, 0.03);
 }
 
 .toolbar-doc-title-box {
@@ -2710,8 +2774,8 @@ html.dark .btn-header-publish:hover {
   align-items: center;
   gap: 6px;
   padding: 4px 8px;
-  border-radius: 6px;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  border-radius: 7px;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
   max-width: 260px;
   min-width: 0;
@@ -2724,7 +2788,9 @@ html.dark .btn-header-publish:hover {
 }
 
 .toolbar-doc-title-box:hover:not(.is-editing) {
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--bg-card, #FFFFFF);
+  border-color: var(--border-color, #E2E8F0);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 [data-color-mode="dark"] .toolbar-doc-title-box:hover:not(.is-editing) {
@@ -2732,23 +2798,23 @@ html.dark .btn-header-publish:hover {
 }
 
 .toolbar-doc-icon {
-  color: var(--accent-color);
-  opacity: 0.85;
+  color: var(--brand-primary, #116ACC);
+  opacity: 0.9;
   flex-shrink: 0;
   transition: transform 0.2s ease, opacity 0.2s ease;
 }
 
 .toolbar-doc-title-box:hover:not(.is-editing) .toolbar-doc-icon {
   opacity: 1;
-  transform: scale(1.08);
+  transform: scale(1.06);
 }
 
 .toolbar-doc-name {
   flex: 1;
   min-width: 0;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--text-main);
+  color: var(--text-main, #0F172A);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2772,8 +2838,8 @@ html.dark .btn-header-publish:hover {
 
 .toolbar-doc-title-box.is-editing {
   background: var(--bg-card);
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 2px rgba(91, 108, 143, 0.15);
+  border-color: var(--brand-primary, #116ACC);
+  box-shadow: 0 0 0 2px rgba(17, 106, 204, 0.14);
   padding: 2px 8px;
 }
 
@@ -2794,11 +2860,11 @@ html.dark .btn-header-publish:hover {
 
 .toolbar-sep {
   width: 1px;
-  height: 16px;
+  height: 14px;
   background: var(--border-color);
   display: inline-block;
-  margin: 0 1px;
-  opacity: 0.7;
+  margin: 0 2px;
+  opacity: 0.85;
 }
 
 .toolbar-spacer {
@@ -2807,8 +2873,8 @@ html.dark .btn-header-publish:hover {
 
 .btn-icon {
   background: transparent;
-  border: none;
-  color: var(--text-muted);
+  border: 1px solid transparent;
+  color: var(--text-muted, #64748B);
   border-radius: 6px;
   width: 28px;
   height: 28px;
@@ -2820,21 +2886,25 @@ html.dark .btn-header-publish:hover {
 }
 
 .btn-icon:hover {
-  color: var(--accent-color);
-  background: var(--accent-bg);
+  color: var(--text-main, #0F172A);
+  background: var(--bg-card, #FFFFFF);
+  border-color: var(--border-color, #E2E8F0);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 .btn-icon.is-active {
-  color: var(--accent-color);
-  background: var(--accent-bg);
+  color: var(--brand-primary, #116ACC);
+  background: var(--brand-primary-subtle, rgba(17, 106, 204, 0.08));
+  border-color: rgba(17, 106, 204, 0.2);
 }
 
 .btn-icon.btn-danger {
-  color: #ef4444;
+  color: var(--text-muted, #64748B);
 }
 
 .btn-icon.btn-danger:hover {
-  background: rgba(239, 68, 68, 0.1);
+  background: rgba(239, 68, 68, 0.08);
+  border-color: rgba(239, 68, 68, 0.2);
   color: #dc2626;
 }
 
@@ -2846,38 +2916,33 @@ html.dark .btn-header-publish:hover {
   position: absolute;
   top: 100%;
   right: 0;
-  margin-top: 0.375rem;
-  background: var(--glass-bg, rgba(255, 255, 255, 0.85));
-  backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
-  -webkit-backdrop-filter: var(--glass-blur, blur(24px) saturate(180%));
-  border: 1.5px solid var(--glass-border, rgba(255, 255, 255, 0.8));
-  border-radius: 0.875rem;
-  box-shadow: 
-    0 1rem 2.5rem rgba(0, 0, 0, 0.1),
-    0 0.125rem 0.5rem rgba(0, 0, 0, 0.04),
-    inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  padding: 0.375rem;
+  margin-top: 6px;
+  background: var(--bg-popover, #FFFFFF);
+  border: 1px solid var(--border-color, #E2E8F0);
+  border-radius: 10px;
+  box-shadow: var(--shadow-popover);
+  padding: 5px;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 2px;
   z-index: 200;
-  min-width: 9.5rem;
+  min-width: 164px;
   font-family: var(--font-sans);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .popout-item {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.375rem 0.625rem;
+  gap: 8px;
+  padding: 6px 10px;
   border: none;
   background: transparent;
-  color: var(--wandor-text, #1a1a1a);
-  font-size: 0.75rem;
+  color: var(--text-secondary, #334155);
+  font-size: 12.5px;
   font-weight: 500;
   cursor: pointer;
-  border-radius: 0.5rem;
+  border-radius: 6px;
   transition: all 0.12s ease;
   width: 100%;
   text-align: left;
@@ -2885,8 +2950,8 @@ html.dark .btn-header-publish:hover {
 }
 
 .popout-item:hover {
-  background: rgba(0, 0, 0, 0.04);
-  color: var(--accent-color);
+  background: var(--bg-capsule, #F1F5F9);
+  color: var(--text-main, #0F172A);
 }
 
 html.dark .popout-item:hover {
@@ -2894,8 +2959,8 @@ html.dark .popout-item:hover {
 }
 
 .popout-item.is-active {
-  background: rgba(0, 0, 0, 0.06);
-  color: var(--accent-color);
+  background: var(--brand-primary-subtle, rgba(17, 106, 204, 0.08));
+  color: var(--brand-primary, #116ACC);
   font-weight: 600;
 }
 
@@ -2903,28 +2968,59 @@ html.dark .popout-item.is-active {
   background: rgba(255, 255, 255, 0.1);
 }
 
+.theme-swatch-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+}
+
 .btn-toolbar-dropdown {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 0.3125rem;
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  color: var(--wandor-text, #1a1a1a);
-  padding: 0.25rem 0.625rem;
-  border-radius: 9999px;
-  font-size: 0.6875rem;
-  font-weight: 600;
+  gap: 6px;
+  height: 28px;
+  background: var(--bg-card, #FFFFFF);
+  border: 1px solid var(--border-color, #E2E8F0);
+  color: var(--text-main, #0F172A);
+  padding: 0 10px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
   transition: all 0.15s ease;
   white-space: nowrap;
   font-family: var(--font-sans);
 }
 
+.dropdown-label-prefix {
+  color: var(--text-muted, #64748B);
+  font-weight: 500;
+}
+
+.dropdown-label-val {
+  color: var(--text-main, #0F172A);
+  font-weight: 600;
+}
+
+.dropdown-code-icon {
+  color: var(--brand-primary, #116ACC);
+  opacity: 0.85;
+}
+
+.dropdown-chevron {
+  color: var(--text-muted, #64748B);
+  opacity: 0.75;
+  margin-left: 1px;
+}
+
 .btn-toolbar-dropdown:hover,
 .btn-toolbar-dropdown.is-active {
-  background: var(--accent-bg);
-  border-color: var(--accent-color);
-  color: var(--accent-color);
+  background: var(--bg-card, #FFFFFF);
+  border-color: var(--brand-primary, #116ACC);
+  box-shadow: 0 0 0 2px rgba(17, 106, 204, 0.1);
 }
 
 .workspace-columns {
@@ -2932,7 +3028,7 @@ html.dark .popout-item.is-active {
   display: grid;
   grid-template-columns: 1fr 1fr;
   min-height: 0;
-  height: calc(100% - 42px);
+  height: calc(100% - 40px);
   width: 100%;
   overflow: hidden;
 }

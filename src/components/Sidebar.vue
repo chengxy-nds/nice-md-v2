@@ -15,7 +15,8 @@ import {
   X,
   Cloud,
   RotateCcw,
-  FileText
+  FileText,
+  ArrowUpDown
 } from '@lucide/vue';
 import { showConfirm } from '../utils/confirmDialog';
 import SidebarDocItem from './SidebarDocItem.vue';
@@ -61,12 +62,51 @@ const emit = defineEmits([
   'restore-doc', 'permanent-delete-doc', 'empty-recycle-bin',
   'create-group', 'rename-group', 'delete-group',
   'move-doc', 'reorder-docs', 'reorder-groups', 'toggle-collapse',
-  'open-templates', 'open-materials', 'open-doc-history'
+  'open-templates', 'open-materials', 'open-doc-history',
+  'duplicate-doc', 'toggle-pin'
 ]);
 
-// ── Search & Filter State ──
+// ── Search, Filter & Sort State ──
 const searchQuery = ref('');
 const showSearchInput = ref(false);
+const sortModes = [
+  { id: 'updatedAt', label: '按修改时间排序' },
+  { id: 'createdAt', label: '按创建时间排序' },
+  { id: 'title', label: '按标题名称排序' },
+  { id: 'manual', label: '按手动拖拽排序' }
+];
+const sortBy = ref(localStorage.getItem('nicemd_doc_sort') || 'updatedAt');
+
+const currentSortLabel = computed(() => {
+  const mode = sortModes.find(m => m.id === sortBy.value) || sortModes[0];
+  return mode.label;
+});
+
+function cycleSortMode() {
+  const idx = sortModes.findIndex(m => m.id === sortBy.value);
+  const next = sortModes[(idx + 1) % sortModes.length];
+  sortBy.value = next.id;
+  localStorage.setItem('nicemd_doc_sort', next.id);
+}
+
+function sortDocList(list) {
+  return [...list].sort((a, b) => {
+    const pinA = a.isPinned ? 1 : 0;
+    const pinB = b.isPinned ? 1 : 0;
+    if (pinA !== pinB) return pinB - pinA;
+
+    if (sortBy.value === 'updatedAt') {
+      return (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0);
+    }
+    if (sortBy.value === 'createdAt') {
+      return (b.createdAt || 0) - (a.createdAt || 0);
+    }
+    if (sortBy.value === 'title') {
+      return (a.title || '').localeCompare(b.title || '', 'zh-CN');
+    }
+    return 0;
+  });
+}
 
 function toggleSearch() {
   showSearchInput.value = !showSearchInput.value;
@@ -86,18 +126,20 @@ function handleCreateGroupClick() {
   newGroupName.value = '';
   nextTick(() => {
     newGroupInputRef.value?.focus();
-    if (sidebarBodyRef.value) {
-      sidebarBodyRef.value.scrollTo({
-        top: sidebarBodyRef.value.scrollHeight,
-        behavior: 'smooth'
-      });
-    }
   });
 }
 
 function handleSaveNewGroup() {
-  const name = newGroupName.value.trim() || '未命名分组';
-  emit('create-group', name);
+  if (!isCreatingGroup.value) return;
+  const name = newGroupName.value.trim();
+  if (name) {
+    emit('create-group', name);
+  }
+  isCreatingGroup.value = false;
+  newGroupName.value = '';
+}
+
+function handleCancelNewGroup() {
   isCreatingGroup.value = false;
   newGroupName.value = '';
 }
@@ -153,6 +195,12 @@ function toggleGroup(groupId) {
 }
 
 function isGroupExpanded(groupId) {
+  const q = searchQuery.value.trim();
+  if (q) {
+    if (groupId === '__default__') return filteredUngroupedDocs.value.length > 0;
+    if (groupId === '__trash__') return filteredDeletedDocs.value.length > 0;
+    return docsInGroup(groupId).length > 0;
+  }
   return expandedGroups.value.has(groupId);
 }
 
@@ -205,27 +253,46 @@ function isDocDeleted(d) {
   );
 }
 
+function matchesSearch(doc, q) {
+  if (!q) return true;
+  const titleMatch = (doc.title || '').toLowerCase().includes(q);
+  const contentMatch = (doc.content || '').toLowerCase().includes(q);
+  return titleMatch || contentMatch;
+}
+
 // ── Computed Filtered Lists ──
 const filteredUngroupedDocs = computed(() => {
   const all = props.documents.filter(d => !isDocDeleted(d) && (!d.groupId || d.groupId === null));
   const q = searchQuery.value.trim().toLowerCase();
-  if (!q) return all;
-  return all.filter(d => (d.title || '').toLowerCase().includes(q));
+  const matched = q ? all.filter(d => matchesSearch(d, q)) : all;
+  return sortDocList(matched);
 });
 
 function docsInGroup(groupId) {
   const all = props.documents.filter(d => !isDocDeleted(d) && d.groupId === groupId);
   const q = searchQuery.value.trim().toLowerCase();
-  if (!q) return all;
-  return all.filter(d => (d.title || '').toLowerCase().includes(q));
+  const matched = q ? all.filter(d => matchesSearch(d, q)) : all;
+  return sortDocList(matched);
 }
 
 const filteredDeletedDocs = computed(() => {
   const all = props.documents.filter(d => isDocDeleted(d));
   const q = searchQuery.value.trim().toLowerCase();
-  if (!q) return all;
-  return all.filter(d => (d.title || '').toLowerCase().includes(q));
+  const matched = q ? all.filter(d => matchesSearch(d, q)) : all;
+  return sortDocList(matched);
 });
+
+async function handleSelectTrashDoc(doc) {
+  const ok = await showConfirm({
+    title: '恢复文档',
+    message: `「${doc.title || '未命名文档'}」当前位于回收站中，是否立即恢复并打开编辑？`,
+    confirmText: '恢复并打开',
+    danger: false
+  });
+  if (ok) {
+    emit('restore-doc', doc.id);
+  }
+}
 
 function handleRestoreDoc(doc) {
   emit('restore-doc', doc.id);
@@ -329,11 +396,11 @@ function onGroupDragStart(e, groupId) {
 
 <template>
   <aside class="sidebar-container select-none">
-    <!-- Wandor Style Primary Action: Black Pill New Document Button -->
-    <!-- <button class="btn-create-doc-primary" @click="handleCreateDoc(null)" title="新建文档">
+    <!-- Primary Action: New Document Button -->
+    <button class="btn-create-doc-primary" @click="handleCreateDoc(null)" title="新建文档">
       <Plus size="15" stroke-width="2.5" />
       <span>新建文档</span>
-    </button> -->
+    </button>
 
     <!-- Section Header: 我的文档 -->
     <div class="section-title-row">
@@ -345,8 +412,8 @@ function onGroupDragStart(e, groupId) {
         </span>
       </div>
       <div class="section-icons">
-        <button class="title-icon-btn" @click="handleCreateDoc(null)" title="新建文档">
-          <Plus size="16" stroke-width="2" />
+        <button class="title-icon-btn" @click="cycleSortMode" :title="currentSortLabel">
+          <ArrowUpDown size="14" stroke-width="1.8" />
         </button>
         <button class="title-icon-btn" @click="handleCreateGroupClick" title="新建分组">
           <FolderPlus size="15" stroke-width="1.8" />
@@ -360,7 +427,7 @@ function onGroupDragStart(e, groupId) {
       <input
         v-model="searchQuery"
         type="text"
-        placeholder="搜索文档名称..."
+        placeholder="搜索文档标题或正文内容..."
         class="search-input"
       />
       <button 
@@ -413,17 +480,43 @@ function onGroupDragStart(e, groupId) {
             :key="doc.id"
             :doc="doc"
             :isActive="doc.id === activeDocId"
+            :searchQuery="searchQuery"
             @select="id => $emit('select-doc', id)"
             @rename="payload => $emit('rename-doc', payload)"
             @delete="id => $emit('delete-doc', id)"
             @move-doc="handleDocMove"
             @history="doc => $emit('open-doc-history', doc)"
+            @duplicate="doc => $emit('duplicate-doc', doc)"
+            @toggle-pin="doc => $emit('toggle-pin', doc)"
           />
           <div v-if="filteredUngroupedDocs.length === 0" class="empty-group-drop-hint">
-            <span>暂无文档，可拖拽至此</span>
+            <span>{{ searchQuery ? '无匹配文档' : '暂无文档，可拖拽至此' }}</span>
           </div>
         </div>
       </section>
+
+      <!-- Group Creation Inline Row (Right above custom groups) -->
+      <div v-if="isCreatingGroup" class="create-group-row">
+        <Folder size="14" stroke-width="1.6" class="create-icon" />
+        <input
+          v-model="newGroupName"
+          ref="newGroupInputRef"
+          type="text"
+          placeholder="输入分组名称回车新建..."
+          class="create-group-input"
+          @blur="handleSaveNewGroup"
+          @keyup.enter="handleSaveNewGroup"
+          @keyup.escape="handleCancelNewGroup"
+        />
+        <div class="create-group-actions">
+          <button class="action-btn confirm-btn" @mousedown.prevent="handleSaveNewGroup" title="确认新建">
+            <Check size="13" stroke-width="2" />
+          </button>
+          <button class="action-btn cancel-btn" @mousedown.prevent="handleCancelNewGroup" title="取消">
+            <X size="13" stroke-width="2" />
+          </button>
+        </div>
+      </div>
 
       <!-- ── 自定义分组 ── -->
       <section
@@ -500,19 +593,24 @@ function onGroupDragStart(e, groupId) {
             :key="doc.id"
             :doc="doc"
             :isActive="doc.id === activeDocId"
+            :searchQuery="searchQuery"
             @select="id => $emit('select-doc', id)"
             @rename="payload => $emit('rename-doc', payload)"
             @delete="id => $emit('delete-doc', id)"
             @move-doc="handleDocMove"
             @history="doc => $emit('open-doc-history', doc)"
+            @duplicate="doc => $emit('duplicate-doc', doc)"
+            @toggle-pin="doc => $emit('toggle-pin', doc)"
           />
           <div v-if="docsInGroup(group.id).length === 0" class="empty-group-drop-hint">
-            <span>暂无文档，可拖拽至此</span>
+            <span>{{ searchQuery ? '无匹配文档' : '暂无文档，可拖拽至此' }}</span>
           </div>
         </div>
       </section>
+    </div>
 
-      <!-- ── 回收站 ♻️ ── -->
+    <!-- ── 底部固定回收站 ♻️ ── -->
+    <div class="sidebar-footer">
       <section class="group-section trash-section">
         <div
           class="group-header trash-header"
@@ -543,7 +641,7 @@ function onGroupDragStart(e, groupId) {
             :key="doc.id"
             class="trash-doc-item"
             :class="{ 'is-active': doc.id === activeDocId }"
-            @click="$emit('select-doc', doc.id)"
+            @click="handleSelectTrashDoc(doc)"
           >
             <div class="trash-item-left">
               <FileText size="13" class="trash-doc-icon" />
@@ -564,43 +662,21 @@ function onGroupDragStart(e, groupId) {
           </div>
         </div>
       </section>
-
-      <!-- Group Creation Inline Row (at bottom of list) -->
-      <div v-if="isCreatingGroup" class="create-group-row">
-        <Folder size="14" stroke-width="1.6" class="create-icon" />
-        <input
-          v-model="newGroupName"
-          ref="newGroupInputRef"
-          type="text"
-          placeholder="分组名称..."
-          class="create-group-input"
-          @keyup.enter="handleSaveNewGroup"
-          @keyup.escape="isCreatingGroup = false"
-        />
-        <div class="create-group-actions">
-          <button class="action-btn confirm-btn" @click="handleSaveNewGroup" title="确认新建">
-            <Check size="13" stroke-width="2" />
-          </button>
-          <button class="action-btn cancel-btn" @click="isCreatingGroup = false" title="取消">
-            <X size="13" stroke-width="2" />
-          </button>
-        </div>
-      </div>
     </div>
   </aside>
 </template>
 
 <style scoped>
 .sidebar-container {
-  width: 18rem;
+  width: 16.5rem;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--bg-sidebar, #F8F8F8);
-  border-right: 1px solid var(--border-color, #EDEDED);
+  background: var(--bg-sidebar, #F7F9FC);
+  border-right: 1px solid var(--border-color, #E2E8F0);
   box-shadow: var(--shadow-sidebar-left);
-  padding: 10px;
+  padding: 12px 10px;
   overflow: hidden;
   z-index: 4;
   transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
@@ -612,19 +688,19 @@ function onGroupDragStart(e, groupId) {
   justify-content: center;
   gap: 6px;
   width: 100%;
-  height: 38px;
+  height: 34px;
   border: 1px solid var(--btn-primary-border);
-  border-radius: var(--btn-primary-radius, 9999px);
+  border-radius: var(--btn-primary-radius, 8px);
   background: var(--btn-primary-bg);
   color: var(--btn-primary-text);
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 600;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   cursor: pointer;
   box-shadow: var(--btn-primary-shadow);
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  margin-bottom: 12px;
+  margin-bottom: 10px;
   user-select: none;
   flex-shrink: 0;
 }
@@ -756,21 +832,22 @@ html.dark .title-icon-btn:hover {
 
 .search-input {
   width: 100%;
-  height: 34px;
+  height: 32px;
   padding: 0 28px 0 32px;
   font-size: 12.5px;
-  border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
-  border-radius: 17px;
+  border: 1px solid var(--border-color, #E2E8F0);
+  border-radius: 8px;
   background: var(--bg-editor, #ffffff);
-  color: var(--text-main, #18181b);
+  color: var(--text-main, #0F172A);
   outline: none;
   box-sizing: border-box;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
   transition: all 0.15s ease;
 }
 
 .search-input:focus {
-  border-color: var(--accent-color, #6366f1);
-  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
+  border-color: var(--brand-primary, #116ACC);
+  box-shadow: 0 0 0 3px rgba(17, 106, 204, 0.12);
 }
 
 .search-clear-btn {
@@ -943,9 +1020,9 @@ html.dark .title-icon-btn:hover {
 .group-name {
   flex: 1;
   min-width: 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-main, #2c2c2c);
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary, #334155);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -982,13 +1059,18 @@ html.dark .title-icon-btn:hover {
 
 .group-count {
   font-size: 11px;
-  font-weight: 500;
-  color: var(--text-muted, #737373);
-  background: rgba(0, 0, 0, 0.06);
-  padding: 1px 7px;
-  border-radius: 12px;
+  font-weight: 600;
+  color: var(--text-muted, #64748B);
+  background: rgba(15, 23, 42, 0.05);
+  min-width: 20px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 999px;
   border: none;
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
 }
 
 html.dark .group-count {
@@ -1059,11 +1141,21 @@ html.dark .mini-btn:hover {
   background: var(--accent-bg, rgba(99, 102, 241, 0.04));
 }
 
-/* ── Recycle Bin (回收站) Styles ── */
+/* ── Recycle Bin (回收站) Sticky Footer Styles ── */
+.sidebar-footer {
+  flex-shrink: 0;
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed var(--border-color, rgba(0, 0, 0, 0.1));
+}
+
 .trash-section {
-  margin-top: 12px;
-  padding-top: 8px;
-  border-top: 1px dashed var(--border-color, rgba(0, 0, 0, 0.08));
+  margin-top: 0;
+}
+
+.trash-doc-list {
+  max-height: 180px;
+  overflow-y: auto;
 }
 
 .trash-header .trash-icon {

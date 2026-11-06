@@ -91,6 +91,65 @@ marked.use({
       renderer(token) {
         return `<span class="math-inline">$${token.text}$</span>`;
       }
+    },
+    {
+      name: 'highlight',
+      level: 'inline',
+      start(src) { return src.indexOf('=='); },
+      tokenizer(src) {
+        const match = src.match(/^==([^=\n]+?)==/);
+        if (match) {
+          return {
+            type: 'highlight',
+            raw: match[0],
+            text: match[1]
+          };
+        }
+      },
+      renderer(token) {
+        return `<mark>${token.text}</mark>`;
+      }
+    },
+    {
+      name: 'superscript',
+      level: 'inline',
+      start(src) { return src.indexOf('^'); },
+      tokenizer(src) {
+        const match = src.match(/^\^([^\^\n\s]+?)\^/);
+        if (match) {
+          return {
+            type: 'superscript',
+            raw: match[0],
+            text: match[1]
+          };
+        }
+      },
+      renderer(token) {
+        return `<sup>${token.text}</sup>`;
+      }
+    },
+    {
+      name: 'subscript',
+      level: 'inline',
+      start(src) {
+        const idx = src.indexOf('~');
+        if (idx === -1) return -1;
+        if (src[idx + 1] === '~') return -1;
+        return idx;
+      },
+      tokenizer(src) {
+        const match = src.match(/^~([^~\n\s]+?)~(?!~)/);
+        if (match) {
+          return {
+            type: 'subscript',
+            raw: match[0],
+            text: match[1]
+          };
+        }
+      },
+      renderer(token) {
+        return `<sub>${token.text}</sub>`;
+      }
     }
   ]
 });
@@ -435,7 +494,9 @@ onMounted(() => {
     mermaid.initialize({
       startOnLoad: false,
       theme: 'default',
-      securityLevel: 'loose'
+      securityLevel: 'loose',
+      flowchart: { htmlLabels: false },
+      sequence: { useMaxWidth: true }
     });
   } catch (err) {
     console.error('[ArticlePreview] Mermaid init error:', err);
@@ -806,31 +867,50 @@ function handlePopupClose() {
   background: rgba(0, 0, 0, 0.25);
 }
 
-/* Standard Markdown Styles */
+/* Standard Markdown Styles — Floating Paper Canvas (Craft / Feishu / Notion style) */
 .preview-body:not(.is-wechat-wrapper) {
   display: block;
-  padding: 0;
-  background-color: var(--bg-preview);
+  padding: 16px 24px 28px;
+  background-color: var(--bg-preview-canvas, #F1F4F9);
   background-image: none;
+  box-sizing: border-box;
 }
 
 .markdown-body {
   width: 100%;
-  max-width: 750px;
-  margin: 0 auto;
   box-sizing: border-box;
   color: var(--ct-body-color, var(--text-main));
-  background: transparent;
   line-height: var(--ct-body-lineheight, 1.8);
   font-size: var(--ct-body-size, 16px);
   letter-spacing: var(--ct-body-spacing, 0.05em);
   font-family: var(--ct-body-font, inherit);
-  padding: 24px 28px;
-  border-radius: 0;
-  border: none;
-  box-shadow: none;
   word-break: break-word;
   overflow-wrap: break-word;
+}
+
+.preview-body:not(.is-wechat-wrapper) .markdown-body {
+  max-width: 720px;
+  min-height: calc(100vh - 130px);
+  margin: 0 auto;
+  padding: 0 !important;
+  background: var(--ct-body-bg, var(--bg-preview, #ffffff));
+  border-radius: 12px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  box-shadow: var(--shadow-paper, 0 2px 6px rgba(15, 23, 42, 0.03), 0 12px 36px rgba(15, 23, 42, 0.05));
+  overflow: hidden;
+  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.preview-body:not(.is-wechat-wrapper) .markdown-body :deep(#nice) {
+  min-height: calc(100vh - 130px);
+  padding: 20px 32px 32px !important;
+  box-sizing: border-box;
+  border-radius: 12px;
+}
+
+:global(html.dark) .preview-body:not(.is-wechat-wrapper) .markdown-body,
+:global(html[data-color-mode="dark"]) .preview-body:not(.is-wechat-wrapper) .markdown-body {
+  border-color: rgba(255, 255, 255, 0.07);
 }
 
 /* Deep dark mode support for standard preview surface */
@@ -1182,11 +1262,19 @@ function handlePopupClose() {
 }
 
 .wechat-phone-frame .markdown-body {
+  max-width: 100% !important;
+  min-height: 0 !important;
   padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
 }
 
 .wechat-body :deep(#nice) {
-  padding-top: 0 !important;
+  padding: 10px 12px !important;
+  border-radius: 8px;
+  box-sizing: border-box;
 }
 
 .wechat-body :deep(#nice > :first-child),

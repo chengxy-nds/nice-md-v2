@@ -407,7 +407,7 @@ function getStyle(category) {
   return effectiveStyles.value[category] || {};
 }
 
-const knownProps = ['color', 'backgroundColor', 'borderLeftColor', 'borderColor', 'textColor', 'headerBg', 'fontSize', 'fontWeight', 'lineHeight', 'margin', 'borderRadius', 'maxWidth', 'boxShadow', 'border', 'display', 'materialTemplateId', 'materialPrefix', 'materialTitle', 'codeThemeId', 'macStyle', 'showLang', 'letterSpacing', 'fontFamily', 'padding', 'backgroundTexture'];
+const knownProps = ['color', 'backgroundColor', 'borderLeftColor', 'borderColor', 'textColor', 'headerBg', 'fontSize', 'fontWeight', 'lineHeight', 'textAlign', 'paddingLeft', 'borderLeft', 'margin', 'borderRadius', 'maxWidth', 'boxShadow', 'border', 'display', 'materialTemplateId', 'materialPrefix', 'materialTitle', 'codeThemeId', 'macStyle', 'showLang', 'letterSpacing', 'fontFamily', 'padding', 'backgroundTexture'];
 
 function clearMaterial(key) {
   updateStyle(key, 'materialTemplateId', 'none');
@@ -442,7 +442,13 @@ const propLabels = {
   marginTop: '上边距',
   marginBottom: '下边距',
   boxShadow: '阴影',
-  listStyleType: '列表标记类型'
+  listStyleType: '列表标记类型',
+  textAlign: '对齐方式',
+  paddingLeft: '左内边距',
+  borderLeft: '左边框',
+  borderBottom: '底边框',
+  paddingBottom: '底内边距',
+  textIndent: '首行缩进'
 };
 
 function propLabel(prop) {
@@ -1990,6 +1996,20 @@ const cssLineCount = computed(() => {
               </select>
             </label>
 
+            <!-- Text alignment (for headings or elements with textAlign) -->
+            <label class="style-field" v-if="getStyle(el.key).textAlign !== undefined || /^h[1-6]$/.test(el.key)">
+              <span class="field-label">对齐方式</span>
+              <select
+                :value="getStyle(el.key).textAlign || 'left'"
+                @change="updateStyle(el.key, 'textAlign', $event.target.value)"
+                class="style-select"
+              >
+                <option value="left">左对齐</option>
+                <option value="center">居中对齐</option>
+                <option value="right">右对齐</option>
+              </select>
+            </label>
+
             <!-- Image controls (for img element) -->
             <template v-if="el.key === 'img'">
               <!-- Image alignment -->
@@ -2278,10 +2298,12 @@ const cssLineCount = computed(() => {
 /* Mode Switcher Bar */
 .customizer-mode-bar {
   display: flex;
-  padding: 0.375rem 0.75rem;
-  gap: 0.375rem;
-  background: var(--bg-sidebar);
-  border-bottom: 1px solid var(--border-color);
+  margin: 8px 12px 4px;
+  padding: 3px;
+  gap: 4px;
+  background: var(--bg-capsule, #F1F5F9);
+  border: 1px solid var(--border-color, #E2E8F0);
+  border-radius: 8px;
   flex-shrink: 0;
   transition: background 0.3s ease, border-color 0.3s ease;
 }
@@ -2291,29 +2313,29 @@ const cssLineCount = computed(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.625rem;
-  border-radius: 0.375rem;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 6px;
   border: 1px solid transparent;
   background: transparent;
-  color: var(--text-muted);
-  font-size: 0.75rem;
+  color: var(--text-muted, #64748B);
+  font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.mode-tab-btn:hover {
-  background: var(--border-color);
-  color: var(--text-main);
+.mode-tab-btn:hover:not(.is-active) {
+  color: var(--text-main, #0F172A);
+  background: rgba(15, 23, 42, 0.03);
 }
 
 .mode-tab-btn.is-active {
-  background: var(--bg-editor);
-  color: var(--accent-color);
-  border-color: var(--border-color);
-  box-shadow: var(--shadow-sm);
-  font-weight: 700;
+  background: var(--bg-card, #ffffff);
+  color: var(--brand-primary, #116ACC);
+  border-color: rgba(15, 23, 42, 0.06);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  font-weight: 600;
 }
 
 /* Form View */
@@ -2321,10 +2343,10 @@ const cssLineCount = computed(() => {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  padding: 0.625rem 0.75rem;
+  padding: 8px 12px 12px;
   display: flex;
   flex-direction: column;
-  gap: 0.625rem;
+  gap: 10px;
 }
 
 .customizer-body::-webkit-scrollbar {
@@ -2337,11 +2359,11 @@ const cssLineCount = computed(() => {
 }
 
 .style-section {
-  padding: 0.75rem 0.875rem;
-  background: var(--bg-editor, #ffffff);
-  border: 1px solid var(--border-color, #EDEDED);
-  border-radius: 6px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+  padding: 12px 14px;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #E2E8F0);
+  border-radius: 10px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
   transition: all 0.2s ease;
 }
 
@@ -2894,38 +2916,36 @@ const cssLineCount = computed(() => {
   justify-content: center;
   height: 22px;
   padding: 0 8px;
-  background: linear-gradient(135deg, #ff784e 0%, #ff784e 100%);
-  border: none;
-  border-radius: 4px;
-  color: #ffffff;
+  background: rgba(17, 106, 204, 0.08);
+  border: 1px solid rgba(17, 106, 204, 0.22);
+  border-radius: 6px;
+  color: var(--brand-primary, #116ACC);
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: all 0.16s ease;
   user-select: none;
   white-space: nowrap;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(255, 120, 78, 0.28);
 }
 
 .replace-material-btn:hover {
-  opacity: 0.92;
-  transform: translateY(-0.5px);
-  box-shadow: 0 4px 10px rgba(255, 120, 78, 0.38);
+  background: var(--brand-primary, #116ACC);
+  border-color: var(--brand-primary, #116ACC);
   color: #ffffff;
+  box-shadow: 0 2px 6px rgba(17, 106, 204, 0.22);
 }
 
 .replace-material-btn:active {
   transform: translateY(0);
-  box-shadow: 0 1px 3px rgba(255, 120, 78, 0.3);
 }
 
 .active-material-banner {
   margin: 6px 0 10px;
   padding: 6px 10px;
-  background: #fff8f5;
-  border: 1px solid rgba(255, 120, 78, 0.25);
-  border-radius: 4px;
+  background: #F0F7FF;
+  border: 1px solid rgba(17, 106, 204, 0.2);
+  border-radius: 6px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -2933,8 +2953,8 @@ const cssLineCount = computed(() => {
 
 :deep(.dark) .active-material-banner,
 .active-material-banner:where(.dark *) {
-  background: rgba(255, 120, 78, 0.08);
-  border-color: rgba(255, 120, 78, 0.25);
+  background: rgba(17, 106, 204, 0.12);
+  border-color: rgba(56, 189, 248, 0.25);
 }
 
 .active-material-header {
@@ -2956,20 +2976,20 @@ const cssLineCount = computed(() => {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #ff784e;
-  box-shadow: 0 0 0 2px rgba(255, 120, 78, 0.2);
+  background: var(--brand-primary, #116ACC);
+  box-shadow: 0 0 0 2px rgba(17, 106, 204, 0.18);
   flex-shrink: 0;
 }
 
 .banner-tag {
-  color: #ff784e;
+  color: var(--brand-primary, #116ACC);
   font-weight: 600;
   font-size: 11px;
   white-space: nowrap;
 }
 
 .banner-name {
-  color: #d94b1f;
+  color: #0C4A6E;
   font-weight: 600;
   font-size: 11.5px;
   white-space: nowrap;
@@ -2979,7 +2999,7 @@ const cssLineCount = computed(() => {
 
 :deep(.dark) .banner-name,
 .banner-name:where(.dark *) {
-  color: #ffab91;
+  color: #7DD3FC;
 }
 
 .clear-material-btn {
@@ -2988,9 +3008,9 @@ const cssLineCount = computed(() => {
   gap: 3px;
   padding: 2px 6px;
   background: #FFFFFF;
-  border: 1px solid rgba(255, 120, 78, 0.25);
-  border-radius: 3px;
-  color: #ff784e;
+  border: 1px solid rgba(17, 106, 204, 0.22);
+  border-radius: 4px;
+  color: var(--brand-primary, #116ACC);
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -2999,23 +3019,23 @@ const cssLineCount = computed(() => {
 }
 
 .clear-material-btn:hover {
-  background: #fff0eb;
-  border-color: #ff784e;
-  color: #e65100;
+  background: #E0F2FE;
+  border-color: var(--brand-primary, #116ACC);
+  color: #0369A1;
 }
 
 :deep(.dark) .clear-material-btn,
 .clear-material-btn:where(.dark *) {
-  background: #1e1e1e;
-  border-color: rgba(255, 120, 78, 0.3);
-  color: #ffab91;
+  background: #1e293b;
+  border-color: rgba(56, 189, 248, 0.3);
+  color: #7DD3FC;
 }
 
 :deep(.dark) .clear-material-btn:hover,
 .clear-material-btn:hover:where(.dark *) {
-  background: #3e1b10;
-  border-color: #ff784e;
-  color: #ffccbc;
+  background: #0c4a6e;
+  border-color: #38bdf8;
+  color: #e0f2fe;
 }
 
 .material-prefix-row {
@@ -3135,35 +3155,35 @@ const cssLineCount = computed(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: #fff8f5;
-  border: 1px solid rgba(255, 120, 78, 0.25);
+  background: #F0F7FF;
+  border: 1px solid rgba(17, 106, 204, 0.2);
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: 6px;
   margin-top: 6px;
 }
 
 :deep(.dark) .active-widget-banner,
 .active-widget-banner:where(.dark *) {
-  background: rgba(255, 120, 78, 0.08);
-  border-color: rgba(255, 120, 78, 0.25);
+  background: rgba(17, 106, 204, 0.12);
+  border-color: rgba(56, 189, 248, 0.25);
 }
 
 .widget-active-name {
   font-size: 11.5px;
   font-weight: 600;
-  color: #d94b1f;
+  color: #0C4A6E;
 }
 
 :deep(.dark) .widget-active-name,
 .widget-active-name:where(.dark *) {
-  color: #ffab91;
+  color: #7DD3FC;
 }
 
 .clear-widget-btn {
   background: #FFFFFF;
-  border: 1px solid rgba(255, 120, 78, 0.25);
-  border-radius: 3px;
-  color: #ff784e;
+  border: 1px solid rgba(17, 106, 204, 0.22);
+  border-radius: 4px;
+  color: var(--brand-primary, #116ACC);
   cursor: pointer;
   padding: 2px 6px;
   display: inline-flex;
@@ -3174,23 +3194,23 @@ const cssLineCount = computed(() => {
 }
 
 .clear-widget-btn:hover {
-  background: #fff0eb;
-  border-color: #ff784e;
-  color: #e65100;
+  background: #E0F2FE;
+  border-color: var(--brand-primary, #116ACC);
+  color: #0369A1;
 }
 
 :deep(.dark) .clear-widget-btn,
 .clear-widget-btn:where(.dark *) {
-  background: #1e1e1e;
-  border-color: rgba(255, 120, 78, 0.3);
-  color: #ffab91;
+  background: #1e293b;
+  border-color: rgba(56, 189, 248, 0.3);
+  color: #7DD3FC;
 }
 
 :deep(.dark) .clear-widget-btn:hover,
 .clear-widget-btn:hover:where(.dark *) {
-  background: #3e1b10;
-  border-color: #ff784e;
-  color: #ffccbc;
+  background: #0c4a6e;
+  border-color: #38bdf8;
+  color: #e0f2fe;
 }
 
 .modal-feature-guide {

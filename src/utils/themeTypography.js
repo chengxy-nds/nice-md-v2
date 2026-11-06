@@ -65,7 +65,7 @@ function headingDecl(spec, theme, ctPrefix, tag) {
       // The icon sits at the top-center; text is pushed below it via padding-top.
       d.push(`display: block;`);
       d.push(`text-align: center;`);
-      d.push(`background-image: url('${spec.iconUrl || 'https://files.mdnice.com/mountain_2.png'}');`);
+      d.push(`background-image: url("${spec.iconUrl || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 32' fill='none'%3E%3Cpath d='M4 28L18 8L28 22L34 14L44 28H4Z' fill='%232775b6' fill-opacity='0.18' stroke='%232775b6' stroke-width='2.5' stroke-linejoin='round'/%3E%3Ccircle cx='36' cy='8' r='3' fill='%232775b6' fill-opacity='0.45'/%3E%3C/svg%3E"}");`);
       d.push(`background-position: center 0;`);
       d.push(`background-repeat: no-repeat;`);
       d.push(`background-size: ${spec.iconSize || '30px'} ${spec.iconSize || '30px'};`);
@@ -296,7 +296,7 @@ export function buildWechatTypo(theme, colors) {
         s.push(`text-align: center`);
         s.push(`line-height: ${spec.lineHeight || '2.4em'}`);
         s.push(`color: ${spec.color ? fill(spec.color, colors) : '{text}'}`);
-        s.push(`background-image: url('${spec.iconUrl || 'https://files.mdnice.com/mountain_2.png'}')`);
+        s.push(`background-image: url("${spec.iconUrl || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 32' fill='none'%3E%3Cpath d='M4 28L18 8L28 22L34 14L44 28H4Z' fill='%232775b6' fill-opacity='0.18' stroke='%232775b6' stroke-width='2.5' stroke-linejoin='round'/%3E%3Ccircle cx='36' cy='8' r='3' fill='%232775b6' fill-opacity='0.45'/%3E%3C/svg%3E"}")`);
         s.push(`background-position: center top`);
         s.push(`background-repeat: no-repeat`);
         s.push(`background-size: ${spec.iconSize || '30px'} ${spec.iconSize || '30px'}`);

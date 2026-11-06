@@ -147,15 +147,15 @@ export const materials = [
     title: '青绿指路牌TOP标牌',
     description: '青绿倾斜指路牌标牌 + TOP序号 + 极简黑字与星芒点缀',
     tags: ['路标', 'TOP', '箭头', '指路牌', '青绿', '爆款'],
-    html: `<section style="margin: 32px 0 24px; clear: both; box-sizing: border-box; text-align: center;" data-material="true">
-  <section style="display: inline-flex; align-items: flex-end; position: relative; max-width: 100%; vertical-align: bottom; margin: 0 auto; text-align: left;">
-    <svg width="78" height="66" viewBox="0 0 78 66" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: bottom; flex-shrink: 0; margin-right: -42px; overflow: visible;">
+    html: `<section style="margin: 28px 0 22px; clear: both; box-sizing: border-box; text-align: center;" data-material="true">
+  <section style="display: inline-flex; align-items: flex-start; position: relative; max-width: 100%; vertical-align: bottom; margin: 0 auto; text-align: left;">
+    <svg width="78" height="66" viewBox="0 0 78 66" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: top; flex-shrink: 0; margin-right: -35px; overflow: visible;">
       <rect x="23" y="24" width="7" height="40" fill="#FFFFFF" stroke="#000000" stroke-width="2.2" rx="0.5"/>
       <g transform="rotate(-6 27 15)">
         <path d="M 2 2 H 58 L 72 15 L 58 28 H 2 Z" fill="#00FFA6" stroke="#000000" stroke-width="2.2" stroke-linejoin="round"/>
         <text x="30" y="20.5" font-family="-apple-system, BlinkMacSystemFont, Arial, sans-serif" font-weight="900" font-size="14.5" fill="#000000" text-anchor="middle" letter-spacing="0.5">TOP 1</text>
       </g>
-    </svg><section style="display: inline-flex; align-items: flex-start; padding-left: 0px; padding-bottom: 2px; min-width: 0; word-break: break-word;"><span style="font-size: 19px; font-weight: 900; color: #000000; letter-spacing: 0.5px; line-height: 1.35; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;">以简为序享从容</span><svg viewBox="0 0 14 14" width="18" height="18" fill="#000000" style="margin-left: 3px; margin-top: -3px; flex-shrink: 0; display: inline-block;"><path d="M 6.5 0 Q 6.5 6.5 13 6.5 Q 6.5 6.5 6.5 13 Q 6.5 6.5 0 6.5 Q 6.5 6.5 6.5 0 Z"/></svg></section>
+    </svg><section style="display: inline-block; padding-top: 34px; padding-left: 0px; min-width: 0; word-break: break-word; text-align: left; line-height: 1.38;"><span style="display: inline; font-size: 19px; font-weight: 900; color: #000000; letter-spacing: 0.5px; line-height: 1.38; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;">以简为序享从容</span><svg viewBox="0 0 14 14" width="16" height="16" fill="#000000" style="margin-left: 4px; margin-bottom: 2px; vertical-align: baseline; display: inline-block;"><path d="M 6.5 0 Q 6.5 6.5 13 6.5 Q 6.5 6.5 6.5 13 Q 6.5 6.5 0 6.5 Q 6.5 6.5 6.5 0 Z"/></svg></section>
   </section>
 </section>`
   },
@@ -667,17 +667,21 @@ export const materials = [
     title: '纵向里程碑时间轴',
     description: '带有连接线与圆点标记的纵向流程卡片',
     tags: ['时间轴', '里程碑', '流程'],
-    html: `<section style="margin: 20px 0; padding-left: 8px; border-left: 2px solid #3b82f6;" data-material="true">
-  <div style="position: relative; padding-left: 18px; margin-bottom: 16px;">
-    <div style="position: absolute; left: -24px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: #3b82f6; border: 2px solid #ffffff;"></div>
-    <div style="font-size: 14px; font-weight: 700; color: #1e293b; word-break: break-word;">阶段一：架构重构与模块解耦</div>
-    <div style="font-size: 13px; color: #64748b; margin-top: 2px; word-break: break-word;">清理历史冗余代码，统一接口定义规范</div>
-  </div>
-  <div style="position: relative; padding-left: 18px;">
-    <div style="position: absolute; left: -24px; top: 4px; width: 10px; height: 10px; border-radius: 50%; background: #10b981; border: 2px solid #ffffff;"></div>
-    <div style="font-size: 14px; font-weight: 700; color: #1e293b; word-break: break-word;">阶段二：性能调优与容量提升</div>
-    <div style="font-size: 13px; color: #64748b; margin-top: 2px; word-break: break-word;">引入二级缓存机制，QPS 提升 300%</div>
-  </div>
+    html: `<section style="margin: 20px 0 20px 8px; border-left: 2px solid #3b82f6;" data-material="true">
+  <section style="display: flex; align-items: flex-start; margin-bottom: 16px;">
+    <svg width="14" height="14" viewBox="0 0 14 14" style="margin-left: -8px; margin-top: 3px; margin-right: 12px; flex-shrink: 0; display: block;"><circle cx="7" cy="7" r="5" fill="#3b82f6" stroke="#ffffff" stroke-width="2"/></svg>
+    <section style="flex: 1; min-width: 0;">
+      <section style="font-size: 14px; font-weight: 700; color: #1e293b; word-break: break-word;">阶段一：架构重构与模块解耦</section>
+      <section style="font-size: 13px; color: #64748b; margin-top: 2px; word-break: break-word;">清理历史冗余代码，统一接口定义规范</section>
+    </section>
+  </section>
+  <section style="display: flex; align-items: flex-start;">
+    <svg width="14" height="14" viewBox="0 0 14 14" style="margin-left: -8px; margin-top: 3px; margin-right: 12px; flex-shrink: 0; display: block;"><circle cx="7" cy="7" r="5" fill="#10b981" stroke="#ffffff" stroke-width="2"/></svg>
+    <section style="flex: 1; min-width: 0;">
+      <section style="font-size: 14px; font-weight: 700; color: #1e293b; word-break: break-word;">阶段二：性能调优与容量提升</section>
+      <section style="font-size: 13px; color: #64748b; margin-top: 2px; word-break: break-word;">引入二级缓存机制，QPS 提升 300%</section>
+    </section>
+  </section>
 </section>`
   },
   {
@@ -836,7 +840,7 @@ export const materials = [
     title: "终端命令输出引用框",
     description: "macOS 红黄绿三色原生按钮 + 暗色磨砂背景 + 极客哲学金句",
     tags: ["极客", "终端", "macOS", "代码", "金句"],
-    html: "<section style=\"margin: 24px 0; background: #0f172a; border-radius: 10px; overflow: hidden; border: 1px solid #1e293b; box-shadow: 0 8px 24px rgba(0,0,0,0.15);\" data-material=\"true\">\n  <div style=\"display: flex; align-items: center; padding: 10px 14px; background: #1e293b; border-bottom: 1px solid #334155;\">\n    <div style=\"display: flex; gap: 6px;\">\n      <span style=\"width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block;\"></span>\n      <span style=\"width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; display: inline-block;\"></span>\n      <span style=\"width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;\"></span>\n    </div>\n    <span style=\"margin: 0 auto; color: #94a3b8; font-size: 11px; font-family: monospace;\">bash — 80x24</span>\n  </div>\n  <div style=\"padding: 16px 20px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13.5px; line-height: 1.7; color: #e2e8f0;\">\n    <p style=\"color: #38bdf8; margin: 0 0 6px 0;\">$ cat core_philosophy.txt</p>\n    <p style=\"margin: 0; color: #f1f5f9; font-style: italic;\">“软件工程的本质不是制造复杂，而是在极度混乱的现实世界中建立清晰的抽象与秩序。”</p>\n    <p style=\"color: #64748b; font-size: 12px; margin: 8px 0 0 0; text-align: right;\">— 《Clean Code 架构思考》</p>\n  </div>\n</section>"
+    html: "<section style=\"margin: 24px 0; background: #0f172a; border-radius: 10px; overflow: hidden; border: 1px solid #1e293b; box-shadow: 0 8px 24px rgba(0,0,0,0.15);\" data-material=\"true\">\n  <div style=\"display: flex; align-items: center; padding: 10px 14px; background: #1e293b; border-bottom: 1px solid #334155;\">\n    <svg width=\"46\" height=\"12\" viewBox=\"0 0 46 12\" style=\"display: block; flex-shrink: 0;\"><circle cx=\"6\" cy=\"6\" r=\"5\" fill=\"#ef4444\"/><circle cx=\"22\" cy=\"6\" r=\"5\" fill=\"#f59e0b\"/><circle cx=\"38\" cy=\"6\" r=\"5\" fill=\"#10b981\"/></svg>\n    <span style=\"margin: 0 auto; color: #94a3b8; font-size: 11px; font-family: monospace;\">bash — 80x24</span>\n  </div>\n  <div style=\"padding: 16px 20px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13.5px; line-height: 1.7; color: #e2e8f0;\">\n    <p style=\"color: #38bdf8; margin: 0 0 6px 0;\">$ cat core_philosophy.txt</p>\n    <p style=\"margin: 0; color: #f1f5f9; font-style: italic;\">“软件工程的本质不是制造复杂，而是在极度混乱的现实世界中建立清晰的抽象与秩序。”</p>\n    <p style=\"color: #64748b; font-size: 12px; margin: 8px 0 0 0; text-align: right;\">— 《Clean Code 架构思考》</p>\n  </div>\n</section>"
   },
   {
     id: "q-ancient-scroll",
@@ -846,7 +850,7 @@ export const materials = [
     title: "古风典籍·宣纸朱砂双线古卷引用",
     description: "宣纸米黄底色 + 典雅回纹边框 + 朱砂红篆刻印章 + 典雅竖排风韵",
     tags: ["古风", "宣纸", "水墨", "金句", "国风"],
-    html: "<section style=\"margin: 24px 0; padding: 22px 24px; background: #faf7f0; border: 2px solid #e7dfd1; border-radius: 8px; position: relative; box-shadow: inset 0 0 12px rgba(217, 201, 179, 0.25);\" data-material=\"true\">\n  <div style=\"border: 1px dashed #c4b5a0; padding: 16px 20px; text-align: center;\">\n    <p style=\"font-family: 'Songti SC', 'Source Han Serif SC', serif; font-size: 15.5px; line-height: 1.85; color: #451a03; margin: 0; letter-spacing: 1.5px; font-weight: 500;\">\n      “博学之，审问之，慎思之，明辨之，笃行之。天下之事，闻之不若见之，见之不若知之，知之不若行之。”\n    </p>\n    <div style=\"margin-top: 12px; font-size: 12px; color: #b91c1c; font-weight: 700; letter-spacing: 2px;\">\n      【 儒林·礼记中庸 】\n    </div>\n  </div>\n</section>"
+    html: "<section style=\"margin: 24px 0; padding: 22px 24px; background: #faf7f0; border: 2px solid #e7dfd1; border-radius: 8px; box-shadow: inset 0 0 12px rgba(217, 201, 179, 0.25);\" data-material=\"true\">\n  <div style=\"border: 1px dashed #c4b5a0; padding: 16px 20px; text-align: center;\">\n    <p style=\"font-family: 'Songti SC', 'Source Han Serif SC', serif; font-size: 15.5px; line-height: 1.85; color: #451a03; margin: 0; letter-spacing: 1.5px; font-weight: 500;\">\n      “博学之，审问之，慎思之，明辨之，笃行之。天下之事，闻之不若见之，见之不若知之，知之不若行之。”\n    </p>\n    <div style=\"margin-top: 12px; font-size: 12px; color: #b91c1c; font-weight: 700; letter-spacing: 2px;\">\n      【 儒林·礼记中庸 】\n    </div>\n  </div>\n</section>"
   },
   {
     id: "q-magazine-bigquote",
@@ -856,7 +860,7 @@ export const materials = [
     title: "大刊双引号·巨型流光大字符金句",
     description: "左上角 72px 浅蓝半透立体大双引号 + 斜体精致社论观点排版",
     tags: ["大刊", "双引号", "名言", "杂志", "高级"],
-    html: "<section style=\"margin: 28px 0; padding: 24px 28px; background: #f8fafc; border-left: 4px solid #0f172a; border-radius: 0 12px 12px 0; position: relative;\" data-material=\"true\">\n  <section style=\"font-family: Georgia, serif; font-size: 64px; color: #cbd5e1; position: absolute; top: -12px; left: 14px; line-height: 1; opacity: 0.6;\">\n    “\n  </section>\n  <p style=\"position: relative; z-index: 1; margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', serif; font-size: 15.5px; font-weight: 600; line-height: 1.75; color: #1e293b; font-style: italic;\">\n    真正优秀的设计不是把所有东西堆砌完整，而是直到没有任何一件多余的东西可以再被拿走。\n  </p>\n  <div style=\"margin-top: 10px; text-align: right; font-size: 12.5px; color: #64748b; font-weight: 700;\">\n    — 安托万·德·圣-埃克苏佩里\n  </div>\n</section>"
+    html: "<section style=\"margin: 28px 0; padding: 18px 28px 22px; background: #f8fafc; border-left: 4px solid #0f172a; border-radius: 0 12px 12px 0; box-sizing: border-box;\" data-material=\"true\">\n  <section style=\"line-height: 1; margin-bottom: -24px; margin-left: -4px;\">\n    <svg width=\"42\" height=\"34\" viewBox=\"0 0 42 34\" style=\"display: block; overflow: visible;\"><text x=\"0\" y=\"36\" fill=\"#cbd5e1\" fill-opacity=\"0.65\" font-family=\"Georgia, serif\" font-size=\"60\" font-weight=\"900\">“</text></svg>\n  </section>\n  <p style=\"position: relative; z-index: 2; margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', serif; font-size: 15.5px; font-weight: 600; line-height: 1.75; color: #1e293b; font-style: italic;\">\n    真正优秀的设计不是把所有东西堆砌完整，而是直到没有任何一件多余的东西可以再被拿走。\n  </p>\n  <div style=\"margin-top: 10px; text-align: right; font-size: 12.5px; color: #64748b; font-weight: 700;\">\n    — 安托万·德·圣-埃克苏佩里\n  </div>\n</section>"
   },
   {
     id: "q-highlighter-marker",
@@ -866,7 +870,7 @@ export const materials = [
     title: "手绘荧光·胶带纸荧光笔涂抹金句",
     description: "荧光黄手绘高亮背景 + 倾斜半透胶带纸固定 + 亲和力手写便签感",
     tags: ["荧光笔", "胶带", "手绘", "便签", "金句"],
-    html: "<section style=\"margin: 26px 0; padding: 20px 22px; background: #fffdf5; border: 1px solid #fef08a; border-radius: 6px; position: relative; box-shadow: 2px 4px 12px rgba(234, 179, 8, 0.08);\" data-material=\"true\">\n  <div style=\"width: 60px; height: 16px; background: rgba(253, 224, 71, 0.6); position: absolute; top: -8px; left: 50%; transform: translateX(-50%) rotate(-1deg); border-radius: 2px;\"></div>\n  <p style=\"margin: 0; font-size: 15px; line-height: 1.8; color: #713f12; font-weight: 600;\">\n    <span style=\"background: linear-gradient(180deg, transparent 60%, #fef08a 60%); padding: 0 4px;\">\n      保持对未知的好奇，把每一次挑战当成认知的升级。做长期有价值的事，时间会成为最坚固的盟友。\n    </span>\n  </p>\n</section>"
+    html: "<section style=\"margin: 26px 0; padding: 20px 22px; background: #fffdf5; border: 1px solid #fef08a; border-radius: 6px; box-shadow: 2px 4px 12px rgba(234, 179, 8, 0.08); box-sizing: border-box;\" data-material=\"true\">\n  <section style=\"text-align: center; line-height: 1; margin-top: -28px; margin-bottom: 10px;\">\n    <svg width=\"68\" height=\"20\" viewBox=\"0 0 68 20\" style=\"display: inline-block; vertical-align: top; overflow: visible;\"><g transform=\"rotate(-1.5 34 10)\"><rect x=\"2\" y=\"2\" width=\"64\" height=\"16\" rx=\"2\" fill=\"#fde047\" fill-opacity=\"0.65\"/></g></svg>\n  </section>\n  <p style=\"margin: 0; font-size: 15px; line-height: 1.8; color: #713f12; font-weight: 600;\">\n    <span style=\"background: linear-gradient(180deg, transparent 60%, #fef08a 60%); padding: 0 4px;\">\n      保持对未知的好奇，把每一次挑战当成认知的升级。做长期有价值的事，时间会成为最坚固的盟友。\n    </span>\n  </p>\n</section>"
   },
   {
     id: "c-notion-info",
@@ -916,7 +920,7 @@ export const materials = [
     title: "立体·右上折角便签贴",
     description: "右上角立体折角阴影 + 浅鹅黄温馨底色 + 纸张微浮动质感",
     tags: ["便签", "折角", "3D", "手账", "卡片"],
-    html: "<section style=\"margin: 24px 0; padding: 18px 22px; background: #fef9c3; border-radius: 8px 0 8px 8px; border: 1px solid #fde047; position: relative; box-shadow: 3px 5px 15px rgba(0,0,0,0.06);\" data-material=\"true\">\n  <div style=\"position: absolute; top: -1px; right: -1px; width: 0; height: 0; border-style: solid; border-width: 0 20px 20px 0; border-color: transparent #facc15 transparent transparent; box-shadow: -1px 1px 3px rgba(0,0,0,0.12);\"></div>\n  <div style=\"font-size: 14px; font-weight: 700; color: #854d0e; margin-bottom: 4px;\">📝 备忘速记 / Quick Memo</div>\n  <div style=\"font-size: 13.5px; color: #713f12; line-height: 1.65;\">\n    记得在文章结尾附上互动问答与投票组件，可大幅提升粉丝在公众号底部的留言互动率与在看转化。\n  </div>\n</section>"
+    html: "<section style=\"margin: 24px 0; padding: 18px 22px; background: #fef9c3; border-radius: 8px 0 8px 8px; border: 1px solid #fde047; box-shadow: 3px 5px 15px rgba(0,0,0,0.06); box-sizing: border-box;\" data-material=\"true\">\n  <section style=\"display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;\">\n    <span style=\"font-size: 14px; font-weight: 700; color: #854d0e;\">📝 备忘速记 / Quick Memo</span>\n    <svg width=\"22\" height=\"22\" viewBox=\"0 0 22 22\" style=\"margin-top: -19px; margin-right: -23px; flex-shrink: 0; display: block;\"><polygon points=\"0,0 22,22 0,22\" fill=\"#facc15\"/><polygon points=\"0,0 22,0 22,22\" fill=\"#ffffff\"/></svg>\n  </section>\n  <div style=\"font-size: 13.5px; color: #713f12; line-height: 1.65;\">\n    记得在文章结尾附上互动问答与投票组件，可大幅提升粉丝在公众号底部的留言互动率与在看转化。\n  </div>\n</section>"
   },
   {
     id: "c-metric-kpi-card",
@@ -926,7 +930,7 @@ export const materials = [
     title: "核心指标·大厂成果数据看板卡",
     description: "3 列核心业务指标大数字 + 增长百分比 + 结构化对比",
     tags: ["数据", "看板", "指标", "KPI", "增长"],
-    html: "<section style=\"margin: 24px 0; padding: 18px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; text-align: center;\" data-material=\"true\">\n  <div style=\"padding: 10px; background: #ffffff; border-radius: 8px; border: 1px solid #f1f5f9; box-shadow: 0 1px 3px rgba(0,0,0,0.02);\">\n    <div style=\"font-size: 11px; color: #64748b; font-weight: 600;\">全网总阅读</div>\n    <div style=\"font-size: 20px; font-weight: 800; color: #2563eb; margin: 4px 0;\">120W+</div>\n    <div style=\"font-size: 10px; color: #16a34a; font-weight: 600;\">↑ 35% 同比增长</div>\n  </div>\n  <div style=\"padding: 10px; background: #ffffff; border-radius: 8px; border: 1px solid #f1f5f9; box-shadow: 0 1px 3px rgba(0,0,0,0.02);\">\n    <div style=\"font-size: 11px; color: #64748b; font-weight: 600;\">分发耗时</div>\n    <div style=\"font-size: 20px; font-weight: 800; color: #0f172a; margin: 4px 0;\">3.2s</div>\n    <div style=\"font-size: 10px; color: #16a34a; font-weight: 600;\">⚡ 效率提升 10x</div>\n  </div>\n  <div style=\"padding: 10px; background: #ffffff; border-radius: 8px; border: 1px solid #f1f5f9; box-shadow: 0 1px 3px rgba(0,0,0,0.02);\">\n    <div style=\"font-size: 11px; color: #64748b; font-weight: 600;\">粉丝留存率</div>\n    <div style=\"font-size: 20px; font-weight: 800; color: #7c3aed; margin: 4px 0;\">94.8%</div>\n    <div style=\"font-size: 10px; color: #16a34a; font-weight: 600;\">★ 行业顶尖</div>\n  </div>\n</section>"
+    html: "<section style=\"margin: 24px 0; padding: 18px 14px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; display: flex; gap: 10px; text-align: center; box-sizing: border-box;\" data-material=\"true\">\n  <section style=\"flex: 1; min-width: 0; padding: 10px 6px; background: #ffffff; border-radius: 8px; border: 1px solid #f1f5f9; box-shadow: 0 1px 3px rgba(0,0,0,0.02);\">\n    <div style=\"font-size: 11px; color: #64748b; font-weight: 600;\">全网总阅读</div>\n    <div style=\"font-size: 19px; font-weight: 800; color: #2563eb; margin: 4px 0;\">120W+</div>\n    <div style=\"font-size: 10px; color: #16a34a; font-weight: 600;\">↑ 35% 同比增长</div>\n  </section>\n  <section style=\"flex: 1; min-width: 0; padding: 10px 6px; background: #ffffff; border-radius: 8px; border: 1px solid #f1f5f9; box-shadow: 0 1px 3px rgba(0,0,0,0.02);\">\n    <div style=\"font-size: 11px; color: #64748b; font-weight: 600;\">分发耗时</div>\n    <div style=\"font-size: 19px; font-weight: 800; color: #0f172a; margin: 4px 0;\">3.2s</div>\n    <div style=\"font-size: 10px; color: #16a34a; font-weight: 600;\">⚡ 效率提升 10x</div>\n  </section>\n  <section style=\"flex: 1; min-width: 0; padding: 10px 6px; background: #ffffff; border-radius: 8px; border: 1px solid #f1f5f9; box-shadow: 0 1px 3px rgba(0,0,0,0.02);\">\n    <div style=\"font-size: 11px; color: #64748b; font-weight: 600;\">粉丝留存率</div>\n    <div style=\"font-size: 19px; font-weight: 800; color: #7c3aed; margin: 4px 0;\">94.8%</div>\n    <div style=\"font-size: 10px; color: #16a34a; font-weight: 600;\">★ 行业顶尖</div>\n  </section>\n</section>"
   },
   {
     id: "l-timeline-milestone",
@@ -936,7 +940,7 @@ export const materials = [
     title: "彩色时间轴·大事记里程碑流程",
     description: "纵向连线时间轴 + 彩色阶梯节点 + 卡片式事件演进",
     tags: ["时间轴", "里程碑", "步骤", "发展历程", "节点"],
-    html: "<section style=\"margin: 26px 0; padding: 10px 4px;\" data-material=\"true\">\n  <div style=\"position: relative; padding-left: 24px; border-left: 2px dashed #93c5fd; margin-bottom: 20px;\">\n    <span style=\"position: absolute; left: -8px; top: 0; width: 14px; height: 14px; border-radius: 50%; background: #2563eb; border: 3px solid #ffffff; box-shadow: 0 0 0 2px #93c5fd;\"></span>\n    <div style=\"font-size: 12px; font-weight: 800; color: #2563eb; text-transform: uppercase;\">阶段一 · 需求洞察与立项</div>\n    <div style=\"font-size: 13.5px; color: #334155; line-height: 1.6; margin-top: 4px;\">完成行业竞品深度调研与用户痛点画像建模，确定核心功能矩阵。</div>\n  </div>\n  <div style=\"position: relative; padding-left: 24px; border-left: 2px dashed #93c5fd; margin-bottom: 20px;\">\n    <span style=\"position: absolute; left: -8px; top: 0; width: 14px; height: 14px; border-radius: 50%; background: #0284c7; border: 3px solid #ffffff; box-shadow: 0 0 0 2px #7dd3fc;\"></span>\n    <div style=\"font-size: 12px; font-weight: 800; color: #0284c7; text-transform: uppercase;\">阶段二 · 核心引擎敏捷迭代</div>\n    <div style=\"font-size: 13.5px; color: #334155; line-height: 1.6; margin-top: 4px;\">搭建自研 AST 语法树解析器与微信专用富文本样式渲染引擎。</div>\n  </div>\n  <div style=\"position: relative; padding-left: 24px;\">\n    <span style=\"position: absolute; left: -8px; top: 0; width: 14px; height: 14px; border-radius: 50%; background: #16a34a; border: 3px solid #ffffff; box-shadow: 0 0 0 2px #86efac;\"></span>\n    <div style=\"font-size: 12px; font-weight: 800; color: #16a34a; text-transform: uppercase;\">阶段三 · 全网公测与商业化发布</div>\n    <div style=\"font-size: 13.5px; color: #334155; line-height: 1.6; margin-top: 4px;\">接入微信公众号、知乎、掘金一键多渠道分发网关，服务 10w+ 创作者。</div>\n  </div>\n</section>"
+    html: "<section style=\"margin: 26px 0; padding: 10px 4px 10px 10px;\" data-material=\"true\">\n  <section style=\"display: flex; align-items: flex-start; border-left: 2px dashed #93c5fd; padding-bottom: 20px;\">\n    <svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" style=\"margin-left: -9px; margin-top: 1px; margin-right: 14px; flex-shrink: 0; display: block;\"><circle cx=\"8\" cy=\"8\" r=\"6\" fill=\"#2563eb\" stroke=\"#ffffff\" stroke-width=\"2\"/></svg>\n    <section style=\"flex: 1; min-width: 0;\">\n      <div style=\"font-size: 12px; font-weight: 800; color: #2563eb; text-transform: uppercase;\">阶段一 · 需求洞察与立项</div>\n      <div style=\"font-size: 13.5px; color: #334155; line-height: 1.6; margin-top: 4px;\">完成行业竞品深度调研与用户痛点画像建模，确定核心功能矩阵。</div>\n    </section>\n  </section>\n  <section style=\"display: flex; align-items: flex-start; border-left: 2px dashed #93c5fd; padding-bottom: 20px;\">\n    <svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" style=\"margin-left: -9px; margin-top: 1px; margin-right: 14px; flex-shrink: 0; display: block;\"><circle cx=\"8\" cy=\"8\" r=\"6\" fill=\"#0284c7\" stroke=\"#ffffff\" stroke-width=\"2\"/></svg>\n    <section style=\"flex: 1; min-width: 0;\">\n      <div style=\"font-size: 12px; font-weight: 800; color: #0284c7; text-transform: uppercase;\">阶段二 · 核心引擎敏捷迭代</div>\n      <div style=\"font-size: 13.5px; color: #334155; line-height: 1.6; margin-top: 4px;\">搭建自研 AST 语法树解析器与微信专用富文本样式渲染引擎。</div>\n    </section>\n  </section>\n  <section style=\"display: flex; align-items: flex-start;\">\n    <svg width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" style=\"margin-left: -7px; margin-top: 1px; margin-right: 14px; flex-shrink: 0; display: block;\"><circle cx=\"8\" cy=\"8\" r=\"6\" fill=\"#16a34a\" stroke=\"#ffffff\" stroke-width=\"2\"/></svg>\n    <section style=\"flex: 1; min-width: 0;\">\n      <div style=\"font-size: 12px; font-weight: 800; color: #16a34a; text-transform: uppercase;\">阶段三 · 全网公测与商业化发布</div>\n      <div style=\"font-size: 13.5px; color: #334155; line-height: 1.6; margin-top: 4px;\">接入微信公众号、知乎、掘金一键多渠道分发网关，服务 10w+ 创作者。</div>\n    </section>\n  </section>\n</section>"
   },
   {
     id: "l-task-checklist",
@@ -946,7 +950,7 @@ export const materials = [
     title: "极简方格·任务待办清单",
     description: "Notion 风格方形复选框 + 已完成与未完成对照清单",
     tags: ["清单", "Checklist", "待办", "Notion", "任务"],
-    html: "<section style=\"margin: 22px 0; padding: 18px 20px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);\" data-material=\"true\">\n  <div style=\"font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 12px;\">📋 发布前自查清单 (Pre-flight Checklist)</div>\n  <div style=\"display: flex; align-items: center; gap: 10px; margin-bottom: 8px;\">\n    <span style=\"width: 18px; height: 18px; background: #10b981; color: #ffffff; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800;\">✓</span>\n    <span style=\"font-size: 13.5px; color: #64748b; text-decoration: line-through;\">检查文章首图与封面比例是否为 2.35:1 官方规范</span>\n  </div>\n  <div style=\"display: flex; align-items: center; gap: 10px; margin-bottom: 8px;\">\n    <span style=\"width: 18px; height: 18px; background: #10b981; color: #ffffff; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800;\">✓</span>\n    <span style=\"font-size: 13.5px; color: #64748b; text-decoration: line-through;\">校对代码块中关键字高亮与中英文空格规范</span>\n  </div>\n  <div style=\"display: flex; align-items: center; gap: 10px;\">\n    <span style=\"width: 18px; height: 18px; border: 2px solid #cbd5e1; border-radius: 4px; display: inline-block;\"></span>\n    <span style=\"font-size: 13.5px; color: #1e293b; font-weight: 600;\">一键同步多平台分发并配置原创声明标签</span>\n  </div>\n</section>"
+    html: "<section style=\"margin: 22px 0; padding: 18px 20px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);\" data-material=\"true\">\n  <div style=\"font-size: 14px; font-weight: 800; color: #0f172a; margin-bottom: 12px;\">📋 发布前自查清单 (Pre-flight Checklist)</div>\n  <div style=\"display: flex; align-items: center; gap: 10px; margin-bottom: 8px;\">\n    <span style=\"width: 18px; height: 18px; background: #10b981; color: #ffffff; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0;\">✓</span>\n    <span style=\"font-size: 13.5px; color: #64748b; text-decoration: line-through;\">检查文章首图与封面比例是否为 2.35:1 官方规范</span>\n  </div>\n  <div style=\"display: flex; align-items: center; gap: 10px; margin-bottom: 8px;\">\n    <span style=\"width: 18px; height: 18px; background: #10b981; color: #ffffff; border-radius: 4px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; flex-shrink: 0;\">✓</span>\n    <span style=\"font-size: 13.5px; color: #64748b; text-decoration: line-through;\">校对代码块中关键字高亮与中英文空格规范</span>\n  </div>\n  <div style=\"display: flex; align-items: center; gap: 10px;\">\n    <svg width=\"18\" height=\"18\" viewBox=\"0 0 18 18\" style=\"flex-shrink: 0; display: inline-block;\"><rect x=\"1\" y=\"1\" width=\"16\" height=\"16\" rx=\"4\" fill=\"none\" stroke=\"#cbd5e1\" stroke-width=\"2\"/></svg>\n    <span style=\"font-size: 13.5px; color: #1e293b; font-weight: 600;\">一键同步多平台分发并配置原创声明标签</span>\n  </div>\n</section>"
   },
   {
     id: "l-pros-cons-grid",
@@ -956,7 +960,7 @@ export const materials = [
     title: "红蓝对比·优缺点左右卡",
     description: "左侧翠绿优势清单 vs 右侧珊瑚红劣势清单对比",
     tags: ["对比", "优缺点", "Pros", "Cons", "选型"],
-    html: "<section style=\"margin: 24px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 12px;\" data-material=\"true\">\n  <div style=\"padding: 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;\">\n    <div style=\"font-size: 13.5px; font-weight: 800; color: #166534; margin-bottom: 8px;\">✅ 核心优势 (Pros)</div>\n    <ul style=\"margin: 0; padding-left: 16px; font-size: 12.5px; color: #14532d; line-height: 1.7;\">\n      <li>毫秒级热重载排版渲染</li>\n      <li>全自动同步至微信公众号</li>\n      <li>支持自定义 CSS 深度定制</li>\n    </ul>\n  </div>\n  <div style=\"padding: 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px;\">\n    <div style=\"font-size: 13.5px; font-weight: 800; color: #991b1b; margin-bottom: 8px;\">⚠️ 潜在局限 (Cons)</div>\n    <ul style=\"margin: 0; padding-left: 16px; font-size: 12.5px; color: #7f1d1d; line-height: 1.7;\">\n      <li>需要一定 Markdown 语法基础</li>\n      <li>部分小众平台授权有效期受限</li>\n    </ul>\n  </div>\n</section>"
+    html: "<section style=\"margin: 24px 0; display: flex; gap: 12px; box-sizing: border-box;\" data-material=\"true\">\n  <section style=\"flex: 1; min-width: 0; padding: 16px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; box-sizing: border-box;\">\n    <div style=\"font-size: 13.5px; font-weight: 800; color: #166534; margin-bottom: 8px;\">✅ 核心优势 (Pros)</div>\n    <ul style=\"margin: 0; padding-left: 16px; font-size: 12.5px; color: #14532d; line-height: 1.7;\">\n      <li>毫秒级热重载排版渲染</li>\n      <li>全自动同步至微信公众号</li>\n      <li>支持自定义 CSS 深度定制</li>\n    </ul>\n  </section>\n  <section style=\"flex: 1; min-width: 0; padding: 16px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; box-sizing: border-box;\">\n    <div style=\"font-size: 13.5px; font-weight: 800; color: #991b1b; margin-bottom: 8px;\">⚠️ 潜在局限 (Cons)</div>\n    <ul style=\"margin: 0; padding-left: 16px; font-size: 12.5px; color: #7f1d1d; line-height: 1.7;\">\n      <li>需要一定 Markdown 语法基础</li>\n      <li>部分小众平台授权有效期受限</li>\n    </ul>\n  </section>\n</section>"
   },
   {
     id: "tech-macos-window",
@@ -966,7 +970,7 @@ export const materials = [
     title: "系统终端·代码展示窗口",
     description: "macOS 经典红黄绿三色控制圆点 + 深曜石代码框",
     tags: ["代码", "macOS", "终端", "开发", "极客"],
-    html: "<section style=\"margin: 24px 0; background: #1e1e24; border-radius: 10px; overflow: hidden; border: 1px solid #2d2d38; box-shadow: 0 8px 24px rgba(0,0,0,0.18);\" data-material=\"true\">\n  <div style=\"display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #26262e;\">\n    <div style=\"display: flex; gap: 6px;\">\n      <span style=\"width: 10px; height: 10px; border-radius: 50%; background: #ff5f56; display: inline-block;\"></span>\n      <span style=\"width: 10px; height: 10px; border-radius: 50%; background: #ffbd2e; display: inline-block;\"></span>\n      <span style=\"width: 10px; height: 10px; border-radius: 50%; background: #27c93f; display: inline-block;\"></span>\n    </div>\n    <span style=\"color: #94a3b8; font-size: 11px; font-family: monospace;\">ServerEngine.ts</span>\n    <span style=\"color: #64748b; font-size: 11px; font-family: monospace;\">TypeScript</span>\n  </div>\n  <pre style=\"margin: 0; padding: 16px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; line-height: 1.6; color: #f8fafc; overflow-x: auto; background: transparent;\"><code style=\"color:#f8fafc;\"><span style=\"color:#c678dd;\">export async function</span> <span style=\"color:#61afef;\">publishArticle</span>(doc: <span style=\"color:#e5c07b;\">ArticlePayload</span>) {\n  <span style=\"color:#5c6370;font-style:italic;\">// 一键并行分发至全渠道</span>\n  <span style=\"color:#c678dd;\">const</span> res = <span style=\"color:#c678dd;\">await</span> <span style=\"color:#e5c07b;\">Promise</span>.<span style=\"color:#61afef;\">all</span>([\n    <span style=\"color:#61afef;\">syncToWeChat</span>(doc),\n    <span style=\"color:#61afef;\">syncToZhihu</span>(doc)\n  ]);\n  <span style=\"color:#c678dd;\">return</span> { <span style=\"color:#e06c75;\">success</span>: <span style=\"color:#d19a66;\">true</span>, <span style=\"color:#e06c75;\">data</span>: res };\n}</code></pre>\n</section>"
+    html: "<section style=\"margin: 24px 0; background: #1e1e24; border-radius: 10px; overflow: hidden; border: 1px solid #2d2d38; box-shadow: 0 8px 24px rgba(0,0,0,0.18);\" data-material=\"true\">\n  <div style=\"display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; background: #26262e;\">\n    <svg width=\"46\" height=\"12\" viewBox=\"0 0 46 12\" style=\"display: block; flex-shrink: 0;\"><circle cx=\"6\" cy=\"6\" r=\"5\" fill=\"#ff5f56\"/><circle cx=\"22\" cy=\"6\" r=\"5\" fill=\"#ffbd2e\"/><circle cx=\"38\" cy=\"6\" r=\"5\" fill=\"#27c93f\"/></svg>\n    <span style=\"color: #94a3b8; font-size: 11px; font-family: monospace;\">ServerEngine.ts</span>\n    <span style=\"color: #64748b; font-size: 11px; font-family: monospace;\">TypeScript</span>\n  </div>\n  <pre style=\"margin: 0; padding: 16px; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; line-height: 1.6; color: #f8fafc; overflow-x: auto; background: transparent;\"><code style=\"color:#f8fafc;\"><span style=\"color:#c678dd;\">export async function</span> <span style=\"color:#61afef;\">publishArticle</span>(doc: <span style=\"color:#e5c07b;\">ArticlePayload</span>) {\n  <span style=\"color:#5c6370;font-style:italic;\">// 一键并行分发至全渠道</span>\n  <span style=\"color:#c678dd;\">const</span> res = <span style=\"color:#c678dd;\">await</span> <span style=\"color:#e5c07b;\">Promise</span>.<span style=\"color:#61afef;\">all</span>([\n    <span style=\"color:#61afef;\">syncToWeChat</span>(doc),\n    <span style=\"color:#61afef;\">syncToZhihu</span>(doc)\n  ]);\n  <span style=\"color:#c678dd;\">return</span> { <span style=\"color:#e06c75;\">success</span>: <span style=\"color:#d19a66;\">true</span>, <span style=\"color:#e06c75;\">data</span>: res };\n}</code></pre>\n</section>"
   },
   {
     id: "tech-api-endpoint",
@@ -2010,20 +2014,20 @@ export const headingTemplates = [
     hasAutoNumber: true,
     hasCustomPrefix: true,
     defaultPrefix: 'TOP',
-    previewHtml: `<div style="display:flex;justify-content:center;align-items:flex-end;gap:0px;width:100%;text-align:center;"><svg width="48" height="40" viewBox="0 0 78 66" fill="none" style="display:inline-block;vertical-align:bottom;flex-shrink:0;margin-right:-26px;overflow:visible;"><rect x="23" y="24" width="7" height="40" fill="#FFFFFF" stroke="#000000" stroke-width="2.2" rx="0.5"/><g transform="rotate(-6 27 15)"><path d="M 2 2 H 58 L 72 15 L 58 28 H 2 Z" fill="#00FFA6" stroke="#000000" stroke-width="2.2" stroke-linejoin="round"/><text x="30" y="20.5" font-family="-apple-system, BlinkMacSystemFont, Arial, sans-serif" font-weight="900" font-size="14.5" fill="#000000" text-anchor="middle">TOP 1</text></g></svg><div style="display:inline-flex;align-items:flex-start;padding-left:0px;padding-bottom:2px;text-align:left;"><span style="font-size:14px;font-weight:900;color:#000;">以简为序享从容</span><svg viewBox="0 0 14 14" width="13" height="13" fill="#000000" style="margin-left:3px;margin-top:-2px;"><path d="M 6.5 0 Q 6.5 6.5 13 6.5 Q 6.5 6.5 6.5 13 Q 6.5 6.5 0 6.5 Q 6.5 6.5 6.5 0 Z"/></svg></div></div>`,
+    previewHtml: `<div style="display:flex;justify-content:center;align-items:flex-start;gap:0px;width:100%;text-align:center;"><svg width="48" height="40" viewBox="0 0 78 66" fill="none" style="display:inline-block;vertical-align:top;flex-shrink:0;margin-right:-21px;overflow:visible;"><rect x="23" y="24" width="7" height="40" fill="#FFFFFF" stroke="#000000" stroke-width="2.2" rx="0.5"/><g transform="rotate(-6 27 15)"><path d="M 2 2 H 58 L 72 15 L 58 28 H 2 Z" fill="#00FFA6" stroke="#000000" stroke-width="2.2" stroke-linejoin="round"/><text x="30" y="20.5" font-family="-apple-system, BlinkMacSystemFont, Arial, sans-serif" font-weight="900" font-size="14.5" fill="#000000" text-anchor="middle">TOP 1</text></g></svg><div style="display:inline-block;padding-top:20px;padding-left:0px;text-align:left;line-height:1.35;"><span style="font-size:14px;font-weight:900;color:#000;">以简为序享从容</span><svg viewBox="0 0 14 14" width="12" height="12" fill="#000000" style="margin-left:3px;margin-bottom:1px;vertical-align:baseline;display:inline-block;"><path d="M 6.5 0 Q 6.5 6.5 13 6.5 Q 6.5 6.5 6.5 13 Q 6.5 6.5 0 6.5 Q 6.5 6.5 6.5 0 Z"/></svg></div></div>`,
     render: (title, index, options = {}) => {
       const prefix = options.prefix || 'TOP';
       const num = index !== undefined ? index : 1;
       const cleanTitle = (title || '').trim();
-      return `<section style="margin: 32px 0 24px; clear: both; box-sizing: border-box; text-align: center;" data-material="true">
-  <section style="display: inline-flex; align-items: flex-end; position: relative; max-width: 100%; vertical-align: bottom; margin: 0 auto; text-align: left;">
-    <svg width="78" height="66" viewBox="0 0 78 66" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: bottom; flex-shrink: 0; margin-right: -42px; overflow: visible;">
+      return `<section style="margin: 28px 0 22px; clear: both; box-sizing: border-box; text-align: center;" data-material="true">
+  <section style="display: inline-flex; align-items: flex-start; position: relative; max-width: 100%; vertical-align: bottom; margin: 0 auto; text-align: left;">
+    <svg width="78" height="66" viewBox="0 0 78 66" fill="none" xmlns="http://www.w3.org/2000/svg" style="display: inline-block; vertical-align: top; flex-shrink: 0; margin-right: -35px; overflow: visible;">
       <rect x="23" y="24" width="7" height="40" fill="#FFFFFF" stroke="#000000" stroke-width="2.2" rx="0.5"/>
       <g transform="rotate(-6 27 15)">
         <path d="M 2 2 H 58 L 72 15 L 58 28 H 2 Z" fill="#00FFA6" stroke="#000000" stroke-width="2.2" stroke-linejoin="round"/>
         <text x="30" y="20.5" font-family="-apple-system, BlinkMacSystemFont, Arial, sans-serif" font-weight="900" font-size="14.5" fill="#000000" text-anchor="middle" letter-spacing="0.5">${prefix} ${num}</text>
       </g>
-    </svg><section style="display: inline-flex; align-items: flex-start; padding-left: 0px; padding-bottom: 2px; min-width: 0; word-break: break-word;"><span style="font-size: 19px; font-weight: 900; color: #000000; letter-spacing: 0.5px; line-height: 1.35; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;">${cleanTitle}</span><svg viewBox="0 0 14 14" width="18" height="18" fill="#000000" style="margin-left: 3px; margin-top: -3px; flex-shrink: 0; display: inline-block;"><path d="M 6.5 0 Q 6.5 6.5 13 6.5 Q 6.5 6.5 6.5 13 Q 6.5 6.5 0 6.5 Q 6.5 6.5 6.5 0 Z"/></svg></section>
+    </svg><section style="display: inline-block; padding-top: 34px; padding-left: 0px; min-width: 0; word-break: break-word; text-align: left; line-height: 1.38;"><span style="display: inline; font-size: 19px; font-weight: 900; color: #000000; letter-spacing: 0.5px; line-height: 1.38; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;">${cleanTitle}</span><svg viewBox="0 0 14 14" width="16" height="16" fill="#000000" style="margin-left: 4px; margin-bottom: 2px; vertical-align: baseline; display: inline-block;"><path d="M 6.5 0 Q 6.5 6.5 13 6.5 Q 6.5 6.5 6.5 13 Q 6.5 6.5 0 6.5 Q 6.5 6.5 6.5 0 Z"/></svg></section>
   </section>
 </section>`;
     }
@@ -2544,17 +2548,19 @@ export const headingTemplates = [
     styleCategory: 'minimal',
     hasAutoNumber: true,
     hasCustomPrefix: false,
-    previewHtml: `<div style="display:inline-block;position:relative;text-align:left;"><div style="line-height:1;margin-bottom:-12px;margin-left:1px;"><span style="font-family:'Times New Roman',Georgia,serif;font-size:26px;font-weight:900;color:#cbd5e1;line-height:1;opacity:0.85;">01.</span></div><div style="position:relative;z-index:2;border-bottom:2px solid #0a0a0a;padding-bottom:3px;"><span style="font-size:13.5px;font-weight:900;color:#0a0a0a;">范式转移与核心增长飞轮</span></div></div>`,
+    previewHtml: `<div style="display:inline-block;position:relative;text-align:left;"><div style="line-height:1;margin-bottom:-11px;margin-left:-1px;"><svg width="54" height="28" viewBox="0 0 88 46" style="display:block;overflow:visible;"><text x="0" y="43" fill="#cbd5e1" font-family="Georgia,'Times New Roman',serif" font-size="58" font-weight="900" letter-spacing="-1">01</text></svg></div><div style="position:relative;z-index:2;border-bottom:2px solid #0f172a;padding:0 2px 3px 4px;"><span style="font-size:13.5px;font-weight:900;color:#0f172a;text-shadow:-1px -1px 0 #fff,1px -1px 0 #fff,-1px 1px 0 #fff,1px 1px 0 #fff;">范式转移与核心增长飞轮</span></div></div>`,
     render: (title, index) => {
       const indexPadded = String(index).padStart(2, '0');
       const cleanTitle = String(title || '').trim();
       return `<section style="margin: 36px 0 22px; clear: both; text-align: left;" data-material="true">
   <section style="display: inline-block; position: relative; text-align: left; max-width: 100%; box-sizing: border-box;">
-    <section style="line-height: 1; margin-bottom: -14px; margin-left: 2px;">
-      <span style="font-family: 'Times New Roman', Georgia, 'Songti SC', serif; font-size: 40px; font-weight: 900; color: #cbd5e1; letter-spacing: 1px; line-height: 1; display: inline-block;">${indexPadded}.</span>
+    <section style="line-height: 1; margin-bottom: -17px; margin-left: -1px;">
+      <svg width="88" height="46" viewBox="0 0 88 46" style="display: block; overflow: visible;">
+        <text x="0" y="43" fill="#cbd5e1" font-family="Georgia, 'Times New Roman', 'Songti SC', serif" font-size="58" font-weight="900" letter-spacing="-1">${indexPadded}</text>
+      </svg>
     </section>
-    <section style="position: relative; z-index: 2; border-bottom: 2.5px solid #0a0a0a; padding-bottom: 5px; line-height: 1.4;">
-      <span style="font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 19px; font-weight: 900; color: #0a0a0a; letter-spacing: 0.3px; line-height: 1.4; display: inline-block;">${cleanTitle}</span>
+    <section style="position: relative; z-index: 2; border-bottom: 2.5px solid #0f172a; padding: 0 2px 6px 6px; line-height: 1.35;">
+      <span style="font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif; font-size: 19.5px; font-weight: 900; color: #0f172a; letter-spacing: 0.5px; line-height: 1.35; display: inline-block; text-shadow: -1.5px -1.5px 0 #ffffff, 1.5px -1.5px 0 #ffffff, -1.5px 1.5px 0 #ffffff, 1.5px 1.5px 0 #ffffff, 0 -2px 5px rgba(255,255,255,0.95);">${cleanTitle}</span>
     </section>
   </section>
 </section>`;
@@ -2719,9 +2725,11 @@ export const quoteTemplates = [
     tag: '大刊金句',
     styleCategory: 'minimal',
     previewHtml: `<blockquote style="margin: 0; position: relative; padding: 12px 14px; background: #f8fafc; border-left: 3px solid #0f172a; border-radius: 0 8px 8px 0; overflow: hidden;"><span style="position: absolute; top: -8px; left: 6px; font-family: Georgia, serif; font-size: 40px; font-weight: 900; color: rgba(15, 23, 42, 0.1); line-height: 1; user-select: none;">“</span><p style="margin: 0; position: relative; z-index: 1; font-size: 11.5px; font-weight: 600; line-height: 1.6; color: #1e293b;">真正优秀的设计不是把所有东西堆砌完整，而是直到没有多余的东西可以拿走。</p></blockquote>`,
-    render: (content) => `<section style="margin: 28px 0; padding: 24px 28px; background: #f8fafc; border-left: 4px solid #0f172a; border-radius: 0 12px 12px 0; position: relative;" data-material="true">
-  <section style="font-family: Georgia, serif; font-size: 64px; color: #cbd5e1; position: absolute; top: -12px; left: 14px; line-height: 1; opacity: 0.6;">“</section>
-  <p style="position: relative; z-index: 1; margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', serif; font-size: 15.5px; font-weight: 600; line-height: 1.75; color: #1e293b; font-style: italic;">
+    render: (content) => `<section style="margin: 28px 0; padding: 18px 28px 22px; background: #f8fafc; border-left: 4px solid #0f172a; border-radius: 0 12px 12px 0; box-sizing: border-box;" data-material="true">
+  <section style="line-height: 1; margin-bottom: -24px; margin-left: -4px;">
+    <svg width="42" height="34" viewBox="0 0 42 34" style="display: block; overflow: visible;"><text x="0" y="36" fill="#cbd5e1" fill-opacity="0.65" font-family="Georgia, serif" font-size="60" font-weight="900">“</text></svg>
+  </section>
+  <p style="position: relative; z-index: 2; margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', serif; font-size: 15.5px; font-weight: 600; line-height: 1.75; color: #1e293b; font-style: italic;">
     ${content}
   </p>
 </section>`
@@ -2733,8 +2741,10 @@ export const quoteTemplates = [
     tag: '荧光涂抹',
     styleCategory: 'fresh',
     previewHtml: `<div style="position: relative; background: #fffdf5; border: 1px solid #fef08a; border-radius: 4px; padding: 10px 12px;"><div style="width: 44px; height: 12px; background: rgba(253, 224, 71, 0.6); position: absolute; top: -6px; left: 50%; transform: translateX(-50%) rotate(-1deg); border-radius: 2px;"></div><p style="margin: 0; font-size: 11.5px; line-height: 1.6; color: #713f12; font-weight: 600;"><span style="background: linear-gradient(180deg, transparent 60%, #fef08a 60%); padding: 0 3px;">保持对未知的好奇，把每一次挑战当成认知的升级。</span></p></div>`,
-    render: (content) => `<section style="margin: 26px 0; padding: 20px 22px; background: #fffdf5; border: 1px solid #fef08a; border-radius: 6px; position: relative; box-shadow: 2px 4px 12px rgba(234, 179, 8, 0.08);" data-material="true">
-  <div style="width: 60px; height: 16px; background: rgba(253, 224, 71, 0.6); position: absolute; top: -8px; left: 50%; transform: translateX(-50%) rotate(-1deg); border-radius: 2px;"></div>
+    render: (content) => `<section style="margin: 26px 0; padding: 20px 22px; background: #fffdf5; border: 1px solid #fef08a; border-radius: 6px; box-shadow: 2px 4px 12px rgba(234, 179, 8, 0.08); box-sizing: border-box;" data-material="true">
+  <section style="text-align: center; line-height: 1; margin-top: -28px; margin-bottom: 10px;">
+    <svg width="68" height="20" viewBox="0 0 68 20" style="display: inline-block; vertical-align: top; overflow: visible;"><g transform="rotate(-1.5 34 10)"><rect x="2" y="2" width="64" height="16" rx="2" fill="#fde047" fill-opacity="0.65"/></g></svg>
+  </section>
   <p style="margin: 0; font-size: 15px; line-height: 1.8; color: #713f12; font-weight: 600;">
     <span style="background: linear-gradient(180deg, transparent 60%, #fef08a 60%); padding: 0 4px;">
       ${content}
@@ -2909,8 +2919,8 @@ export const underlineTemplates = [
     description: '壹伴同款低饱和炭灰手绘波浪线，不突兀，轻盈灵动',
     tag: '手绘波浪',
     styleCategory: 'minimal',
-    previewHtml: `<span style="text-decoration: underline wavy rgba(71, 85, 105, 0.75); text-underline-offset: 4px; text-decoration-thickness: 1.2px; font-weight: 600; color: inherit;">炭灰手绘波浪</span>`,
-    render: (text) => `<u style="text-decoration: underline wavy rgba(71, 85, 105, 0.75); text-underline-offset: 4px; text-decoration-thickness: 1.2px; color: inherit; font-weight: 600; display: inline;" data-material="true">${text}</u>`
+    previewHtml: `<span style="background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='4' viewBox='0 0 10 4'%3E%3Cpath d='M0 2.5 Q 2.5 0.5, 5 2.5 T 10 2.5' fill='none' stroke='%23475569' stroke-opacity='0.75' stroke-width='1.3'/%3E%3C/svg%3E&quot;); background-repeat: repeat-x; background-position: 0 100%; background-size: 10px 4px; padding-bottom: 4px; font-weight: 600; color: inherit;">炭灰手绘波浪</span>`,
+    render: (text) => `<u style="text-decoration: none; background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='4' viewBox='0 0 10 4'%3E%3Cpath d='M0 2.5 Q 2.5 0.5, 5 2.5 T 10 2.5' fill='none' stroke='%23475569' stroke-opacity='0.75' stroke-width='1.3'/%3E%3C/svg%3E&quot;); background-repeat: repeat-x; background-position: 0 100%; background-size: 10px 4px; padding-bottom: 4px; color: inherit; font-weight: 600; display: inline;" data-material="true">${text}</u>`
   },
   {
     id: 'u-apricot-wavy',
@@ -2919,8 +2929,8 @@ export const underlineTemplates = [
     description: '暖杏橙黄波浪细线，温暖亲切，小红书与情感文首选',
     tag: '温润暖杏',
     styleCategory: 'fresh',
-    previewHtml: `<span style="text-decoration: underline wavy #f97316; text-underline-offset: 4px; text-decoration-thickness: 1.2px; font-weight: 600; color: inherit;">暖杏手绘波浪</span>`,
-    render: (text) => `<u style="text-decoration: underline wavy #f97316; text-underline-offset: 4px; text-decoration-thickness: 1.2px; color: inherit; font-weight: 600; display: inline;" data-material="true">${text}</u>`
+    previewHtml: `<span style="background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='4' viewBox='0 0 10 4'%3E%3Cpath d='M0 2.5 Q 2.5 0.5, 5 2.5 T 10 2.5' fill='none' stroke='%23f97316' stroke-width='1.3'/%3E%3C/svg%3E&quot;); background-repeat: repeat-x; background-position: 0 100%; background-size: 10px 4px; padding-bottom: 4px; font-weight: 600; color: inherit;">暖杏手绘波浪</span>`,
+    render: (text) => `<u style="text-decoration: none; background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='4' viewBox='0 0 10 4'%3E%3Cpath d='M0 2.5 Q 2.5 0.5, 5 2.5 T 10 2.5' fill='none' stroke='%23f97316' stroke-width='1.3'/%3E%3C/svg%3E&quot;); background-repeat: repeat-x; background-position: 0 100%; background-size: 10px 4px; padding-bottom: 4px; color: inherit; font-weight: 600; display: inline;" data-material="true">${text}</u>`
   },
   {
     id: 'u-green-wavy',
@@ -2929,8 +2939,8 @@ export const underlineTemplates = [
     description: '135/壹伴爆款清新大波浪绿色细线，舒展灵动，护眼活泼',
     tag: '翠绿大波浪',
     styleCategory: 'fresh',
-    previewHtml: `<span style="text-decoration: underline wavy #10b981; text-underline-offset: 5px; text-decoration-thickness: 1.5px; font-weight: 600; color: inherit;">翠绿大波浪细线</span>`,
-    render: (text) => `<u style="text-decoration: underline wavy #10b981; text-underline-offset: 5px; text-decoration-thickness: 1.5px; color: inherit; font-weight: 600; display: inline;" data-material="true">${text}</u>`
+    previewHtml: `<span style="background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='5' viewBox='0 0 12 5'%3E%3Cpath d='M0 3 Q 3 0.5, 6 3 T 12 3' fill='none' stroke='%2310b981' stroke-width='1.5'/%3E%3C/svg%3E&quot;); background-repeat: repeat-x; background-position: 0 100%; background-size: 12px 5px; padding-bottom: 5px; font-weight: 600; color: inherit;">翠绿大波浪细线</span>`,
+    render: (text) => `<u style="text-decoration: none; background-image: url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='5' viewBox='0 0 12 5'%3E%3Cpath d='M0 3 Q 3 0.5, 6 3 T 12 3' fill='none' stroke='%2310b981' stroke-width='1.5'/%3E%3C/svg%3E&quot;); background-repeat: repeat-x; background-position: 0 100%; background-size: 12px 5px; padding-bottom: 5px; color: inherit; font-weight: 600; display: inline;" data-material="true">${text}</u>`
   },
   {
     id: 'u-editorial-minimal',
@@ -3192,9 +3202,9 @@ export const dividerTemplates = [
     styleCategory: 'fresh',
     previewHtml: `<div style="display:flex;align-items:center;gap:4px;"><span style="width:6px;height:6px;border-radius:50%;background:#cbd5e1;"></span><div style="flex:1;border-top:1.5px dashed #cbd5e1;"></div><span style="width:6px;height:6px;border-radius:50%;background:#cbd5e1;"></span></div>`,
     render: () => `<section style="margin: 28px auto; width: 100%; display: flex; align-items: center; gap: 6px; clear: both;" data-material="true">
-  <span style="width: 8px; height: 8px; border-radius: 50%; background: #cbd5e1; display: inline-block; flex-shrink: 0;"></span>
-  <div style="flex: 1; border-top: 1.5px dashed #cbd5e1; height: 0;"></div>
-  <span style="width: 8px; height: 8px; border-radius: 50%; background: #cbd5e1; display: inline-block; flex-shrink: 0;"></span>
+  <svg width="8" height="8" viewBox="0 0 8 8" style="display: block; flex-shrink: 0;"><circle cx="4" cy="4" r="4" fill="#cbd5e1"/></svg>
+  <section style="flex: 1; border-top: 1.5px dashed #cbd5e1; height: 0;"></section>
+  <svg width="8" height="8" viewBox="0 0 8 8" style="display: block; flex-shrink: 0;"><circle cx="4" cy="4" r="4" fill="#cbd5e1"/></svg>
 </section>`
   },
   {
@@ -3250,9 +3260,9 @@ export const listTemplates = [
     styleCategory: 'business',
     hasAutoNumber: true,
     previewHtml: `<div style="border-left:2px solid #3b82f6;padding-left:8px;font-size:12px;color:#1e40af;">● 节点一：方案评审<br/>● 节点二：开发上线</div>`,
-    render: (itemHtml, index) => `<li style="list-style: none; margin-bottom: 12px; padding-left: 20px; border-left: 2px solid #3b82f6; position: relative;" data-material="true">
-  <span style="position: absolute; left: -7px; top: 3px; width: 12px; height: 12px; border-radius: 50%; background: #2563eb; border: 2px solid #ffffff; box-shadow: 0 0 0 2px #3b82f6;"></span>
-  <div style="font-size: 14.5px; color: #1e293b; line-height: 1.7;">${itemHtml}</div>
+    render: (itemHtml, index) => `<li style="list-style: none; margin: 0 0 0 8px; padding-bottom: 12px; border-left: 2px solid #3b82f6; display: flex; align-items: flex-start;" data-material="true">
+  <svg width="14" height="14" viewBox="0 0 14 14" style="margin-left: -8px; margin-top: 4px; margin-right: 12px; flex-shrink: 0; display: block;"><circle cx="7" cy="7" r="5" fill="#2563eb" stroke="#ffffff" stroke-width="2"/></svg>
+  <section style="flex: 1; min-width: 0; font-size: 14.5px; color: #1e293b; line-height: 1.7; word-break: break-word;">${itemHtml}</section>
 </li>`
   },
   {
@@ -3722,11 +3732,7 @@ export const tableTemplates = [
     previewHtml: `<div style="background:#0f172a;border:1px solid #334155;border-radius:6px;overflow:hidden;font-size:10px;"><div style="background:#1e293b;padding:2px 4px;display:flex;gap:3px;"><span style="width:5px;height:5px;border-radius:50%;background:#ef4444;"></span><span style="width:5px;height:5px;border-radius:50%;background:#f59e0b;"></span><span style="width:5px;height:5px;border-radius:50%;background:#10b981;"></span></div><div style="padding:3px;color:#38bdf8;font-family:monospace;">NODE_01: 14.2% CPU</div></div>`,
     render: () => `<section style="margin: 24px 0; border: 1.5px solid #334155; border-radius: 10px; overflow: hidden; background: #0f172a; clear: both;" data-material="true">
   <div style="display: flex; align-items: center; justify-content: space-between; padding: 9px 14px; background: #1e293b; border-bottom: 1px solid #334155;">
-    <div style="display: flex; align-items: center; gap: 6px;">
-      <span style="width: 10px; height: 10px; border-radius: 50%; background: #ef4444; display: inline-block;"></span>
-      <span style="width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span>
-      <span style="width: 10px; height: 10px; border-radius: 50%; background: #10b981; display: inline-block;"></span>
-    </div>
+    <svg width="46" height="12" viewBox="0 0 46 12" style="display: block; flex-shrink: 0;"><circle cx="6" cy="6" r="5" fill="#ef4444"/><circle cx="22" cy="6" r="5" fill="#f59e0b"/><circle cx="38" cy="6" r="5" fill="#10b981"/></svg>
     <span style="font-family: monospace; font-size: 11px; color: #94a3b8; font-weight: 700;">cluster_metrics.log</span>
   </div>
   <table style="width: 100%; border-collapse: collapse; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 13px; text-align: left; margin: 0; box-sizing: border-box;">

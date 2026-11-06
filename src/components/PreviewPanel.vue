@@ -584,15 +584,15 @@ const handleCopyMarkdownText = async () => {
 
 /* Right-side slider / bar styling — independent, pinned to the right edge, matching left sidebar */
 .preview-right-bar {
-  width: 56px;
+  width: 50px;
   flex-shrink: 0;
-  background: var(--bg-sidebar, #f0f0ee);
-  border-left: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
+  background: var(--bg-rail, #EEF2F6);
+  border-left: 1px solid var(--border-color, #E2E8F0);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  padding: 16px 0 16px;
+  padding: 12px 0;
   box-sizing: border-box;
   z-index: 7;
   transition: background 0.3s ease, border-color 0.3s ease;
@@ -603,7 +603,7 @@ const handleCopyMarkdownText = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   width: 100%;
 }
 
@@ -613,18 +613,19 @@ const handleCopyMarkdownText = async () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 8px;
+  border-radius: 9px;
   background: transparent;
   border: none;
   color: var(--text-muted, #64748b);
   cursor: pointer;
-  transition: background-color 0.15s ease, color 0.15s ease;
+  transition: all 0.15s ease;
   padding: 0;
+  position: relative;
 }
 
 .bar-action-btn:hover {
   color: var(--text-main, #0f172a);
-  background: #ebebeb;
+  background: rgba(15, 23, 42, 0.05);
 }
 
 html.dark .bar-action-btn:hover {
@@ -637,16 +638,27 @@ html.dark .bar-action-btn:hover {
 }
 
 .bar-action-btn.is-active {
-  color: var(--wandor-dark, #0a0a0a);
-  background: rgba(0, 0, 0, 0.07);
-  border-radius: 8px;
-  box-shadow: none;
+  color: var(--brand-primary, #116ACC);
+  background: var(--bg-card, #ffffff);
+  border-radius: 9px;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.05);
+}
+
+.bar-action-btn.is-active::after {
+  content: '';
+  position: absolute;
+  right: -7px;
+  top: 9px;
+  bottom: 9px;
+  width: 3px;
+  border-radius: 3px 0 0 3px;
+  background: var(--brand-primary, #116ACC);
 }
 
 html.dark .bar-action-btn.is-active {
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.14);
-  box-shadow: none;
+  color: #38bdf8;
+  background: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .slider-trigger-container {
