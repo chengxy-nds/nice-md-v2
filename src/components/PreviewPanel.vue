@@ -916,7 +916,8 @@ html.dark .toast-deck-card {
   color: var(--ct-p-color, var(--text-main));
   font-size: var(--ct-p-size, 16px);
   line-height: var(--ct-p-lineheight, 1.9);
-  margin-bottom: 0;
+  margin-top: 0;
+  margin-bottom: var(--ct-p-margin-bottom, 16px);
   padding-top: 8px;
   padding-bottom: 8px;
 }

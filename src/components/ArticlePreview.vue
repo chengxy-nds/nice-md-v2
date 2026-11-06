@@ -892,7 +892,8 @@ function handlePopupClose() {
   letter-spacing: var(--ct-p-spacing, normal);
   text-indent: var(--ct-p-indent, 0);
   text-align: var(--ct-p-align, left);
-  margin-bottom: var(--ct-p-margin-bottom, 0);
+  margin-top: 0;
+  margin-bottom: var(--ct-p-margin-bottom, 16px);
   padding-top: 8px;
   padding-bottom: 8px;
 }

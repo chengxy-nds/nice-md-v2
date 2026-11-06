@@ -1216,28 +1216,35 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     margin-bottom: 8px;
   `);
 
-  // 3. Paragraphs & Text Elements (preserve explicit alignment if present)
-  const pCustomColor = customStyles?.p?.color || customStyles?.body?.color;
+  // 3. Paragraphs & Text Elements (preserve explicit alignment & paragraph spacing for WeChat MP Editor)
+  const pCustom = customStyles?.p || {};
+  const pCustomColor = pCustom.color || customStyles?.body?.color;
   root.querySelectorAll('p').forEach(p => {
     if (isMaterialEl(p)) return;
-    const existingAlign = p.getAttribute('align') || p.style.textAlign;
+    const existingAlign = p.getAttribute('align') || p.style.textAlign || pCustom.textAlign;
     const baseStyle = cleanCss(wechatTypo.p || `
       font-size: 16px;
       line-height: 2em;
       letter-spacing: 0.08em;
       color: ${colors.text};
-      margin-top: 0;
-      margin-bottom: 0;
-      padding: 6px 0;
+      margin-top: 0px;
+      margin-bottom: 16px;
+      padding-top: 8px;
+      padding-bottom: 8px;
       text-align: justify;
     `);
     p.setAttribute('style', baseStyle);
-    if (pCustomColor) {
-      p.style.color = pCustomColor;
-    }
-    if (existingAlign) {
-      p.style.textAlign = existingAlign;
-    }
+    if (!p.style.marginTop) p.style.marginTop = '0px';
+    if (!p.style.marginBottom) p.style.marginBottom = pCustom.marginBottom || '16px';
+    if (!p.style.paddingTop && !p.style.padding) p.style.paddingTop = '8px';
+    if (!p.style.paddingBottom && !p.style.padding) p.style.paddingBottom = '8px';
+    if (pCustomColor) p.style.color = pCustomColor;
+    if (pCustom.fontSize) p.style.fontSize = pCustom.fontSize;
+    if (pCustom.lineHeight) p.style.lineHeight = pCustom.lineHeight;
+    if (pCustom.letterSpacing) p.style.letterSpacing = pCustom.letterSpacing;
+    if (pCustom.textIndent) p.style.textIndent = pCustom.textIndent;
+    if (pCustom.marginBottom) p.style.marginBottom = pCustom.marginBottom;
+    if (existingAlign) p.style.textAlign = existingAlign;
   });
 
   styleEl('strong', (wechatTypo.strong ? wechatTypo.strong + '; display: inline;' : `
@@ -1308,7 +1315,10 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
   styleEl('blockquote', wechatTypo.blockquote ? wechatTypo.blockquote : defaultBqStyle);
   
   styleEl('blockquote p', wechatTypo.blockquoteP || `
-    margin-bottom: 0;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    padding-top: 0px;
+    padding-bottom: 0px;
     line-height: 1.6;
     color: ${bqCustomColor || colors.text};
   `);
@@ -2277,6 +2287,40 @@ function convertNonStandardInlineTagsToSpans(root) {
       }
     };
     li.childNodes.forEach(cleanNode);
+  });
+
+  // 1b. Clean template formatting indentation (leading/trailing newlines + spaces) inside material blocks
+  // so WeChat's paste parser does not preserve template source indentation as visible inline spaces.
+  root.querySelectorAll('[data-material="true"]:not([data-code-block="true"])').forEach(mat => {
+    const cleanMaterialText = (node) => {
+      if (node.nodeType === 3 /* Text Node */ && node.nodeValue) {
+        if (/^[\r\n\s]+$/.test(node.nodeValue) && /[\r\n]/.test(node.nodeValue)) {
+          node.nodeValue = '';
+        } else {
+          node.nodeValue = node.nodeValue
+            .replace(/^[\r\n]+\s*/g, '')
+            .replace(/\s*[\r\n]+\s*$/g, '');
+        }
+      } else if (node.nodeType === 1 /* Element Node */ && node.tagName.toLowerCase() !== 'pre' && node.tagName.toLowerCase() !== 'code') {
+        Array.from(node.childNodes).forEach(cleanMaterialText);
+      }
+    };
+    cleanMaterialText(mat);
+
+    // Normalize legacy raw-inserted h-cyan-signpost-top spacing (margin-right: -42px paired with padding-left: 1rem)
+    const signpostSvg = mat.querySelector('svg[style*="margin-right: -42px"], svg[style*="margin-right:-42px"]');
+    if (signpostSvg && signpostSvg.nextElementSibling) {
+      const textWrap = signpostSvg.nextElementSibling;
+      const wrapStyle = textWrap.getAttribute('style') || '';
+      if (/padding-left:\s*1rem/i.test(wrapStyle)) {
+        textWrap.setAttribute('style', wrapStyle.replace(/padding-left:\s*1rem/gi, 'padding-left: 0px'));
+      }
+      const starSvg = textWrap.querySelector('svg[style*="margin-left: 9px"], svg[style*="margin-left:9px"]');
+      if (starSvg) {
+        const starStyle = starSvg.getAttribute('style') || '';
+        starSvg.setAttribute('style', starStyle.replace(/margin-left:\s*9px/gi, 'margin-left: 3px'));
+      }
+    }
   });
 
   // 2. Ensure native inline formatting tags carry explicit inline styles for WeChat compatibility

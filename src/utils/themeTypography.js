@@ -325,7 +325,14 @@ export function buildWechatTypo(theme, colors) {
     if (T.p.letterSpacing) s.push(`letter-spacing: ${T.p.letterSpacing}`);
     if (T.p.justify) s.push(`text-align: justify`);
     if (T.p.color) s.push(`color: ${fill(T.p.color, colors)}`);
-    if (T.p.padding) s.push(`padding: ${T.p.padding}`);
+    s.push(`margin-top: ${T.p.marginTop || '0px'}`);
+    s.push(`margin-bottom: ${T.p.marginBottom || '16px'}`);
+    if (T.p.padding) {
+      s.push(`padding: ${T.p.padding}`);
+    } else {
+      s.push(`padding-top: 8px`);
+      s.push(`padding-bottom: 8px`);
+    }
     if (s.length) out['p'] = fill(s.join('; '), colors);
   }
 
@@ -358,9 +365,7 @@ export function buildWechatTypo(theme, colors) {
     s.push(`color: ${T.blockquote.textColor ? fill(T.blockquote.textColor, colors) : '{muted}'}`);
     s.push(`padding: 14px 20px`);
     out['blockquote'] = fill(s.join('; '), colors);
-    if (T.blockquote.textColor) {
-      out['blockquoteP'] = `margin-bottom: 0; color: ${fill(T.blockquote.textColor, colors)};`;
-    }
+    out['blockquoteP'] = `margin-top: 0px; margin-bottom: 0px; padding-top: 0px; padding-bottom: 0px; color: ${fill(T.blockquote.textColor || '{muted}', colors)};`;
   }
 
   if (T.code) {

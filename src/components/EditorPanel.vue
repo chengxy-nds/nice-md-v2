@@ -1119,7 +1119,7 @@ function initCodeMirror() {
       caretColor: "var(--accent-color)"
     },
     ".cm-content": {
-      padding: "16px",
+      padding: "16px 0",
       lineHeight: "24px",
       caretColor: "var(--accent-color)"
     },
@@ -1152,6 +1152,12 @@ function initCodeMirror() {
       opacity: "0.55",
       boxSizing: "border-box"
     },
+    ".cm-activeLineGutter": {
+      backgroundColor: "transparent",
+      color: "var(--accent-color)",
+      opacity: "1 !important",
+      fontWeight: "700"
+    },
     ".cm-visual-line-numbers": {
       display: "flex",
       flexDirection: "column",
@@ -1171,7 +1177,7 @@ function initCodeMirror() {
       backgroundColor: "transparent"
     },
     ".cm-line": {
-      padding: "0",
+      padding: "0 16px",
       lineHeight: "24px"
     },
     /* Pure Minimal Markdown Syntax Styling inside editor */
