@@ -1928,6 +1928,17 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     } else if (!isMaterialEl(img)) {
       img.setAttribute('loading', 'lazy');
       img.setAttribute('decoding', 'async');
+
+      // Auto-optimize Aliyun OSS large images to WebP speed mode (1200px width, webp format)
+      const src = img.getAttribute('src') || '';
+      if (src && !src.includes('x-oss-process')) {
+        const isOss = src.includes('.aliyuncs.com') || src.includes('oss-cn-') || src.includes('oss-ap-') || src.includes('oss-us-');
+        if (isOss) {
+          const delimiter = src.includes('?') ? '&' : '?';
+          img.setAttribute('src', `${src}${delimiter}x-oss-process=image/resize,w_1200/format,webp`);
+        }
+      }
+
       img.setAttribute('style', cleanCss(`
         max-width: 100% !important;
         height: auto !important;

@@ -160,9 +160,12 @@ export async function uploadToOSS(file, options = {}) {
   const domain = (rawDomain.startsWith('http://') || rawDomain.startsWith('https://') ? rawDomain : `https://${rawDomain}`).replace(/\/+$/, '');
   let basePath = config.basePath.replace(/^\/+/, '').replace(/\/+$/, '');
   
-  return basePath
+  const fileUrl = basePath
     ? `${domain}/${basePath}/${objectName}`
     : `${domain}/${objectName}`;
+
+  // Default to WebP high-performance mode (1200px width, lossless-like WebP compression)
+  return `${fileUrl}?x-oss-process=image/resize,w_1200/format,webp`;
 }
 
 // ── Test OSS connectivity ──
