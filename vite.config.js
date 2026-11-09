@@ -1,19 +1,72 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
 import fs from 'node:fs'
 import path from 'node:path'
 
+function resolveLocalDefaultTidbConfig() {
+  const env = { ...process.env, ...loadEnv('development', process.cwd(), '') };
+  const envUrl = env.TIDB_DATABASE_URL || env.TIDB_URI || env.DATABASE_URL;
+  if (!envUrl) return null;
+  try {
+    const parsed = new URL(envUrl);
+    const user = decodeURIComponent(parsed.username || '');
+    const pass = decodeURIComponent(parsed.password || '');
+    const host = parsed.hostname;
+    if (!host) return null;
+    return {
+      targetUrl: `https://${host}/v1alpha1/sql`,
+      authorization: 'Basic ' + Buffer.from(`${user}:${pass}`).toString('base64'),
+      host
+    };
+  } catch {
+    return null;
+  }
+}
+
 function createTidbProxyMiddleware() {
   return async (req, res, next) => {
     const url = (req.url || '').split('?')[0];
     if (url === '/api/tidb-proxy') {
-      const targetUrl = req.headers['x-tidb-target-url'];
-      if (!targetUrl) {
-        res.statusCode = 400;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ error: 'Missing x-tidb-target-url header' }));
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', '*');
+
+      if (req.method === 'OPTIONS') {
+        res.statusCode = 204;
+        res.end();
         return;
+      }
+
+      if (req.method === 'GET') {
+        const defaultCfg = resolveLocalDefaultTidbConfig();
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({
+          status: 'ok',
+          hasDefault: Boolean(defaultCfg)
+        }));
+        return;
+      }
+
+      const rawTargetUrl = req.headers['x-tidb-target-url'];
+      const useDefault = req.headers['x-tidb-use-default'] === '1' || rawTargetUrl === '__DEFAULT__' || !rawTargetUrl;
+
+      let targetUrl = rawTargetUrl;
+      let defaultAuth = null;
+
+      if (useDefault) {
+        const defaultCfg = resolveLocalDefaultTidbConfig();
+        if (!defaultCfg) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({
+            error: '本地或服务端未配置 TIDB_DATABASE_URL 环境变量。请在 .env.local 或 Vercel 控制台配置环境变量，或在网页端填写自定义 TiDB 连接串。'
+          }));
+          return;
+        }
+        targetUrl = defaultCfg.targetUrl;
+        defaultAuth = defaultCfg.authorization;
       }
 
       const chunks = [];
@@ -34,6 +87,10 @@ function createTidbProxyMiddleware() {
             ) {
               fetchHeaders[k] = v;
             }
+          }
+
+          if (defaultAuth) {
+            fetchHeaders['authorization'] = defaultAuth;
           }
 
           const response = await fetch(targetUrl, {

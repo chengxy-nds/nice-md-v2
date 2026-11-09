@@ -472,7 +472,8 @@ async function handleTestTidb() {
   try {
     const info = await testTidbConnection(tidbConfig.value.connectionString);
     tidbTestResult.value = 'success';
-    tidbTestMsg.value = `连接成功！TiDB 版本: ${info.dbVersion.split(' ')[0]}，当前数据库: ${info.currentDb}。云端已有 ${info.docCount} 篇文档，${info.groupCount} 个分组，${info.historyCount} 个历史快照，${info.themeCount} 个自定义主题。`;
+    const sourceLabel = info.isDefault ? '（Vercel 服务端托管数据库）' : '（自定义数据库）';
+    tidbTestMsg.value = `连接成功 ${sourceLabel}！TiDB 版本: ${info.dbVersion.split(' ')[0]}，当前数据库: ${info.currentDb}。云端已有 ${info.docCount} 篇文档，${info.groupCount} 个分组，${info.historyCount} 个历史快照，${info.themeCount} 个自定义主题。`;
     tidbDbInfo.value = info;
     soundEngine.playChime();
   } catch (err) {
@@ -490,11 +491,6 @@ function handleSaveTidb() {
 }
 
 async function handlePushToTidb() {
-  if (!tidbConfig.value.connectionString) {
-    tidbSyncResult.value = 'error';
-    tidbSyncMsg.value = '请先填写 TiDB 数据库连接串';
-    return;
-  }
   const ok = await showConfirm({
     title: '全量备份到 TiDB 云端',
     message: '确认将本地全部文档、分组、历史版本和自定义主题完整备份至 TiDB Cloud 吗？云端已有记录将被更新。',
@@ -532,11 +528,6 @@ async function handlePushToTidb() {
 }
 
 async function handlePullFromTidb() {
-  if (!tidbConfig.value.connectionString) {
-    tidbSyncResult.value = 'error';
-    tidbSyncMsg.value = '请先填写 TiDB 数据库连接串';
-    return;
-  }
   const ok = await showConfirm({
     title: '从 TiDB 云端还原数据',
     message: '⚠️ 此操作将从 TiDB Cloud 拉取所有云端文档、分组、历史版本及自定义主题并合并更新本地，确定继续吗？',
@@ -568,12 +559,6 @@ async function handlePullFromTidb() {
 }
 
 async function handleTwoWaySyncTidb() {
-  if (!tidbConfig.value.connectionString) {
-    tidbSyncResult.value = 'error';
-    tidbSyncMsg.value = '请先填写 TiDB 数据库连接串';
-    return;
-  }
-
   tidbSyncResult.value = 'syncing';
   tidbSyncMsg.value = '正在执行 TiDB 双向时间戳增量同步...';
   try {
@@ -1237,9 +1222,9 @@ const supportsSilent = (id) => {
                   <span class="tab-name">TiDB Cloud</span>
                   <span class="tab-sub">MySQL Serverless</span>
                 </div>
-                <div class="tab-status-pill" :class="{ 'is-active': isTidbActive, 'is-ready': !isTidbActive && tidbConfig.connectionString }">
+                <div class="tab-status-pill" :class="{ 'is-active': isTidbActive, 'is-ready': !isTidbActive }">
                   <span class="pill-dot"></span>
-                  <span>{{ isTidbActive ? '主库运行中' : (tidbConfig.connectionString ? '已就绪' : '未配置') }}</span>
+                  <span>{{ isTidbActive ? '主库运行中' : (tidbConfig.connectionString ? '自定义就绪' : '默认托管就绪') }}</span>
                 </div>
               </button>
 
@@ -1287,8 +1272,8 @@ const supportsSilent = (id) => {
                     {{ isTidbActive 
                       ? '系统已激活 TiDB 作为唯一主库，文档、分组、版本快照和自定义主题均会自动同步至此。' 
                       : (tidbConfig.connectionString 
-                          ? 'TiDB 连接串已就绪。点击右侧设为主库后，所有同步将自动定向至 TiDB。' 
-                          : '尚未配置或未激活 TiDB 数据库，请在下方填入连接串并设为主库。') }}
+                          ? '自定义 TiDB 连接串已就绪。点击右侧设为主库后，所有同步将自动定向至您的 TiDB。' 
+                          : '未配置私有连接串时，系统默认走 Vercel 服务端托管数据库（安全防泄露）。点击右侧设为主库即可启用。') }}
                   </p>
                 </div>
               </div>
@@ -1313,6 +1298,11 @@ const supportsSilent = (id) => {
                   <Database size="14" class="text-accent" />
                   <span class="config-title">TiDB 数据库连接串 (Connection URI)</span>
                 </div>
+                <div v-if="tidbConfig.connectionString" class="header-action-wrap">
+                  <button type="button" class="btn-text-subtle" @click="tidbConfig.connectionString = ''; handleSaveTidb()">
+                    恢复为 Vercel 默认
+                  </button>
+                </div>
               </div>
 
               <div class="modern-input-group">
@@ -1320,7 +1310,7 @@ const supportsSilent = (id) => {
                 <input
                   type="text"
                   v-model="tidbConfig.connectionString"
-                  placeholder="mysql://username:password@gateway01.ap-northeast-1.prod.aws.tidbcloud.com:4000/easymd?ssl=true"
+                  placeholder="留空即走 Vercel 默认（或填写自定义 mysql://user:pass@host:4000/db?ssl=true）"
                   class="modern-code-input"
                   spellcheck="false"
                   autocomplete="off"
@@ -1328,7 +1318,14 @@ const supportsSilent = (id) => {
               </div>
               
               <div class="config-helper-row">
-                <span class="helper-syntax">格式示例：<code>mysql://user:pass@host:port/dbname?ssl=true</code></span>
+                <span class="helper-syntax">
+                  <template v-if="!tidbConfig.connectionString">
+                    🟢 <strong>默认模式生效中：</strong>当前使用 Vercel 服务端环境变量 <code>TIDB_DATABASE_URL</code>，无前端泄露风险。
+                  </template>
+                  <template v-else>
+                    🔵 <strong>自定义模式生效中：</strong>当前连接至您填写的私有 TiDB Cloud 实例。
+                  </template>
+                </span>
                 <span class="helper-info">在 TiDB Cloud 控制台点击 <strong>Connect</strong> 复制即可，支持 Serverless 25GiB 免费存储。</span>
               </div>
             </div>
@@ -1351,7 +1348,7 @@ const supportsSilent = (id) => {
                 @click="handleTestTidb" 
                 class="btn-cloud-test" 
                 :class="tidbTestResult" 
-                :disabled="tidbTestResult === 'testing' || !tidbConfig.connectionString"
+                :disabled="tidbTestResult === 'testing'"
               >
                 <RefreshCw v-if="tidbTestResult === 'testing'" size="14" class="animate-spin" />
                 <Wifi v-else size="14" />
@@ -1393,7 +1390,7 @@ const supportsSilent = (id) => {
                   <button 
                     @click="handleTwoWaySyncTidb" 
                     class="ops-action-btn btn-blue"
-                    :disabled="tidbSyncResult === 'syncing' || !tidbConfig.connectionString"
+                    :disabled="tidbSyncResult === 'syncing'"
                   >
                     <RefreshCw size="13" :class="{ 'animate-spin': tidbSyncResult === 'syncing' }" />
                     <span>立即双向同步</span>
@@ -1412,7 +1409,7 @@ const supportsSilent = (id) => {
                   <button 
                     @click="handlePushToTidb" 
                     class="ops-action-btn btn-green"
-                    :disabled="tidbSyncResult === 'syncing' || !tidbConfig.connectionString"
+                    :disabled="tidbSyncResult === 'syncing'"
                   >
                     <FolderUp size="13" />
                     <span>覆盖备份到云端</span>
@@ -1431,7 +1428,7 @@ const supportsSilent = (id) => {
                   <button 
                     @click="handlePullFromTidb" 
                     class="ops-action-btn btn-purple"
-                    :disabled="tidbSyncResult === 'syncing' || !tidbConfig.connectionString"
+                    :disabled="tidbSyncResult === 'syncing'"
                   >
                     <FolderDown size="13" />
                     <span>从云端拉取还原</span>

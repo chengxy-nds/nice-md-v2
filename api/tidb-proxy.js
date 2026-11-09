@@ -4,15 +4,39 @@ export const config = {
 
 /**
  * Universal TiDB Cloud Serverless CORS Proxy for Vercel
- * Supports both Vercel Edge Runtime and Node.js Serverless runtime
+ * Supports both Vercel Edge Runtime and Node.js Serverless runtime.
+ * Supports:
+ * 1. Default Vercel Database: Reads TIDB_DATABASE_URL from server environment variables.
+ * 2. Custom User Database: Securely proxies to user's *.tidbcloud.com host.
  */
 export default async function handler(req, res) {
-  // If executed in Node.js serverless environment (res object present)
   if (res && (typeof res.setHeader === 'function' || typeof res.status === 'function')) {
     return handleNode(req, res);
   }
-  // Standard Web API / Vercel Edge Runtime
   return handleEdge(req);
+}
+
+function resolveDefaultTidbConfig() {
+  const envUrl = process.env.TIDB_DATABASE_URL || process.env.TIDB_URI || process.env.DATABASE_URL;
+  if (!envUrl) return null;
+  try {
+    const parsed = new URL(envUrl);
+    const user = decodeURIComponent(parsed.username || '');
+    const pass = decodeURIComponent(parsed.password || '');
+    const host = parsed.hostname;
+    if (!host) return null;
+    const authString = `${user}:${pass}`;
+    const base64Auth = typeof btoa !== 'undefined'
+      ? btoa(authString)
+      : Buffer.from(authString).toString('base64');
+    return {
+      targetUrl: `https://${host}/v1alpha1/sql`,
+      authorization: `Basic ${base64Auth}`,
+      host
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -32,13 +56,16 @@ async function handleEdge(req) {
     });
   }
 
-  // 2. Extract target URL
-  const targetUrl = req.headers.get('x-tidb-target-url');
-  if (!targetUrl) {
+  // 2. Health & Status Check (GET)
+  if (req.method === 'GET') {
+    const defaultCfg = resolveDefaultTidbConfig();
     return new Response(
-      JSON.stringify({ error: 'Missing x-tidb-target-url header' }),
+      JSON.stringify({
+        status: 'ok',
+        hasDefault: Boolean(defaultCfg)
+      }),
       {
-        status: 400,
+        status: 200,
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
@@ -47,7 +74,34 @@ async function handleEdge(req) {
     );
   }
 
-  // 3. Security validation: only proxy to tidbcloud.com
+  // 3. Extract target URL & handle default Vercel database fallback
+  const rawTargetUrl = req.headers.get('x-tidb-target-url');
+  const useDefault = req.headers.get('x-tidb-use-default') === '1' || rawTargetUrl === '__DEFAULT__' || !rawTargetUrl;
+
+  let targetUrl = rawTargetUrl;
+  let defaultAuth = null;
+
+  if (useDefault) {
+    const defaultCfg = resolveDefaultTidbConfig();
+    if (!defaultCfg) {
+      return new Response(
+        JSON.stringify({
+          error: 'Vercel 服务端未配置 TIDB_DATABASE_URL 环境变量。请在 Vercel 控制台配置环境变量，或在网页端填写自定义 TiDB 连接串。'
+        }),
+        {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        }
+      );
+    }
+    targetUrl = defaultCfg.targetUrl;
+    defaultAuth = defaultCfg.authorization;
+  }
+
+  // 4. Security validation: only proxy to tidbcloud.com
   try {
     const parsed = new URL(targetUrl);
     if (!parsed.hostname.endsWith('.tidbcloud.com')) {
@@ -75,7 +129,7 @@ async function handleEdge(req) {
     );
   }
 
-  // 4. Forward headers
+  // 5. Forward headers
   const fetchHeaders = new Headers();
   for (const [k, v] of req.headers.entries()) {
     const lower = k.toLowerCase();
@@ -91,7 +145,11 @@ async function handleEdge(req) {
     }
   }
 
-  // 5. Read body
+  if (defaultAuth) {
+    fetchHeaders.set('authorization', defaultAuth);
+  }
+
+  // 6. Read body
   let bodyBuffer = undefined;
   if (req.method !== 'GET' && req.method !== 'HEAD') {
     const rawBody = await req.arrayBuffer();
@@ -100,7 +158,7 @@ async function handleEdge(req) {
     }
   }
 
-  // 6. Proxy request
+  // 7. Proxy request to TiDB Cloud
   try {
     const upstreamResponse = await fetch(targetUrl, {
       method: req.method || 'POST',
@@ -150,12 +208,35 @@ async function handleNode(req, res) {
     return;
   }
 
-  const targetUrl = req.headers['x-tidb-target-url'];
-  if (!targetUrl) {
-    res.statusCode = 400;
+  if (req.method === 'GET') {
+    const defaultCfg = resolveDefaultTidbConfig();
+    res.statusCode = 200;
     res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({ error: 'Missing x-tidb-target-url header' }));
+    res.end(JSON.stringify({
+      status: 'ok',
+      hasDefault: Boolean(defaultCfg)
+    }));
     return;
+  }
+
+  const rawTargetUrl = req.headers['x-tidb-target-url'];
+  const useDefault = req.headers['x-tidb-use-default'] === '1' || rawTargetUrl === '__DEFAULT__' || !rawTargetUrl;
+
+  let targetUrl = rawTargetUrl;
+  let defaultAuth = null;
+
+  if (useDefault) {
+    const defaultCfg = resolveDefaultTidbConfig();
+    if (!defaultCfg) {
+      res.statusCode = 400;
+      res.setHeader('Content-Type', 'application/json');
+      res.end(JSON.stringify({
+        error: 'Vercel 服务端未配置 TIDB_DATABASE_URL 环境变量。请在 Vercel 控制台配置环境变量，或在网页端填写自定义 TiDB 连接串。'
+      }));
+      return;
+    }
+    targetUrl = defaultCfg.targetUrl;
+    defaultAuth = defaultCfg.authorization;
   }
 
   try {
@@ -173,46 +254,65 @@ async function handleNode(req, res) {
     return;
   }
 
-  const chunks = [];
-  req.on('data', chunk => chunks.push(chunk));
-  req.on('end', async () => {
-    try {
-      const bodyBuffer = Buffer.concat(chunks);
-      const fetchHeaders = {};
-      for (const [k, v] of Object.entries(req.headers)) {
-        const lower = k.toLowerCase();
-        if (
-          lower.startsWith('tidb-') ||
-          lower === 'authorization' ||
-          lower === 'content-type' ||
-          lower === 'accept-encoding' ||
-          lower === 'user-agent' ||
-          lower.startsWith('x-')
-        ) {
-          fetchHeaders[k] = v;
+  let bodyBuffer = undefined;
+  if (req.method !== 'GET' && req.method !== 'HEAD') {
+    if (req.body) {
+      bodyBuffer = typeof req.body === 'string' || Buffer.isBuffer(req.body)
+        ? req.body
+        : JSON.stringify(req.body);
+    } else {
+      const chunks = [];
+      try {
+        for await (const chunk of req) {
+          chunks.push(chunk);
         }
+        if (chunks.length > 0) {
+          bodyBuffer = Buffer.concat(chunks);
+        }
+      } catch {
+        // Stream read error or already consumed
       }
-
-      const response = await fetch(targetUrl, {
-        method: req.method || 'POST',
-        headers: fetchHeaders,
-        body: bodyBuffer.length > 0 ? bodyBuffer : undefined,
-      });
-
-      res.statusCode = response.status;
-      response.headers.forEach((v, k) => {
-        const lower = k.toLowerCase();
-        if (lower !== 'content-encoding' && lower !== 'content-length' && lower !== 'transfer-encoding') {
-          res.setHeader(k, v);
-        }
-      });
-      const data = await response.arrayBuffer();
-      res.end(Buffer.from(data));
-    } catch (err) {
-      res.statusCode = 502;
-      res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({ message: err.message || 'TiDB Proxy Gateway Error' }));
     }
-  });
-}
+  }
 
+  try {
+    const fetchHeaders = {};
+    for (const [k, v] of Object.entries(req.headers)) {
+      const lower = k.toLowerCase();
+      if (
+        lower.startsWith('tidb-') ||
+        lower === 'authorization' ||
+        lower === 'content-type' ||
+        lower === 'accept-encoding' ||
+        lower === 'user-agent' ||
+        lower.startsWith('x-')
+      ) {
+        fetchHeaders[k] = v;
+      }
+    }
+
+    if (defaultAuth) {
+      fetchHeaders['authorization'] = defaultAuth;
+    }
+
+    const response = await fetch(targetUrl, {
+      method: req.method || 'POST',
+      headers: fetchHeaders,
+      body: bodyBuffer,
+    });
+
+    res.statusCode = response.status;
+    response.headers.forEach((v, k) => {
+      const lower = k.toLowerCase();
+      if (lower !== 'content-encoding' && lower !== 'content-length' && lower !== 'transfer-encoding') {
+        res.setHeader(k, v);
+      }
+    });
+    const data = await response.arrayBuffer();
+    res.end(Buffer.from(data));
+  } catch (err) {
+    res.statusCode = 502;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ message: err.message || 'TiDB Proxy Gateway Error' }));
+  }
+}

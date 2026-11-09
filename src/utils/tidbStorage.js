@@ -5,6 +5,36 @@ const TIDB_CONFIG_KEY = 'nicemd_tidb_sync_config_v1';
 const TIDB_LAST_SYNC_KEY = 'nicemd_tidb_last_sync_timestamp';
 
 export const DEFAULT_TIDB_URI = '';
+export const DEFAULT_TIDB_SENTINEL = '__DEFAULT__';
+
+let cachedServerDefaultStatus = null;
+
+/**
+ * Check if Vercel server or local proxy has default TIDB_DATABASE_URL configured
+ */
+export async function checkServerDefaultAvailable() {
+  if (cachedServerDefaultStatus !== null) return cachedServerDefaultStatus;
+  try {
+    const res = await fetch('/api/tidb-proxy', { method: 'GET' });
+    if (res.ok) {
+      const data = await res.json();
+      cachedServerDefaultStatus = Boolean(data.hasDefault);
+      return cachedServerDefaultStatus;
+    }
+  } catch {
+    // ignore
+  }
+  cachedServerDefaultStatus = false;
+  return false;
+}
+
+export function getEffectiveTidbUri(connectionString) {
+  const trimmed = (connectionString || '').trim();
+  if (trimmed && trimmed.length > 10 && trimmed !== DEFAULT_TIDB_SENTINEL) {
+    return trimmed;
+  }
+  return DEFAULT_TIDB_SENTINEL;
+}
 
 /**
  * Get TiDB Cloud Sync configuration from localStorage
@@ -35,8 +65,7 @@ export function getTidbConfig() {
 let tablesEnsuredFor = null;
 
 export async function ensureTidbTables(connectionString) {
-  if (!connectionString) return;
-  const conn = connectionString.trim();
+  const conn = getEffectiveTidbUri(connectionString || getTidbConfig().connectionString);
   if (tablesEnsuredFor === conn) return;
   try {
     await initTidbTables(conn);
@@ -49,7 +78,7 @@ export async function ensureTidbTables(connectionString) {
 export function saveTidbConfig(config) {
   try {
     localStorage.setItem(TIDB_CONFIG_KEY, JSON.stringify(config));
-    if (config.enabled && config.connectionString) {
+    if (config.enabled) {
       ensureTidbTables(config.connectionString);
     }
     window.dispatchEvent(new CustomEvent('nicemd-tidb-config-updated', { detail: config }));
@@ -60,7 +89,8 @@ export function saveTidbConfig(config) {
 
 export function isTidbSyncEnabled() {
   const config = getTidbConfig();
-  return Boolean(config.enabled && config.connectionString && config.connectionString.trim().length > 10);
+  // Enabled if sync toggle is ON (uses custom URI if entered, otherwise falls back to Vercel default)
+  return Boolean(config.enabled);
 }
 
 export function getTidbLastSyncTime() {
@@ -84,14 +114,21 @@ export function setTidbLastSyncTime(timestamp = Date.now()) {
  * 2. If running with Chrome Extension, routes via Extension Background Service Worker (which has host_permissions).
  * 3. If in Node/Electron or direct support, uses native fetch.
  */
-async function smartFetch(url, options = {}) {
+async function smartFetch(url, options = {}, isDefault = false) {
   const urlStr = url.toString();
 
   // 1. Try local dev server proxy if in browser environment
   if (typeof window !== 'undefined' && window.location) {
     try {
       const headers = new Headers(options.headers || {});
-      headers.set('x-tidb-target-url', urlStr);
+      if (isDefault) {
+        headers.set('x-tidb-use-default', '1');
+        headers.set('x-tidb-target-url', DEFAULT_TIDB_SENTINEL);
+        headers.delete('authorization');
+      } else {
+        headers.set('x-tidb-use-default', '0');
+        headers.set('x-tidb-target-url', urlStr);
+      }
 
       const proxyResp = await fetch('/api/tidb-proxy', {
         method: options.method || 'POST',
@@ -109,8 +146,8 @@ async function smartFetch(url, options = {}) {
     }
   }
 
-  // 2. Try Chrome Extension Background Bridge
-  if (typeof window !== 'undefined' && typeof window.postMessage === 'function') {
+  // 2. Try Chrome Extension Background Bridge (for custom user URLs)
+  if (!isDefault && typeof window !== 'undefined' && typeof window.postMessage === 'function') {
     try {
       const extResp = await fetchViaExtensionBridge(urlStr, options);
       if (extResp) {
@@ -182,14 +219,19 @@ function fetchViaExtensionBridge(url, options, timeoutMs = 2500) {
   });
 }
 
+const PLACEHOLDER_DEFAULT_URI = 'mysql://vercel:default@gateway01.ap-northeast-1.prod.aws.tidbcloud.com:4000/easymd';
+
 /**
  * Helper to get TiDB Serverless client
  */
 function getClient(connectionString) {
-  if (!connectionString) throw new Error('TiDB 数据库连接串不能为空');
+  const effective = getEffectiveTidbUri(connectionString || getTidbConfig().connectionString);
+  const isDefault = effective === DEFAULT_TIDB_SENTINEL;
+  const urlToUse = isDefault ? PLACEHOLDER_DEFAULT_URI : effective;
+
   return connect({
-    url: connectionString.trim(),
-    fetch: smartFetch
+    url: urlToUse,
+    fetch: (url, options) => smartFetch(url, options, isDefault)
   });
 }
 
@@ -295,12 +337,13 @@ export async function initTidbTables(connectionString) {
  * Test TiDB connection and fetch stats
  */
 export async function testTidbConnection(connectionString) {
-  if (!connectionString) throw new Error('请填写 TiDB 数据库连接串');
-  const client = getClient(connectionString);
+  const conn = getEffectiveTidbUri(connectionString);
+  const isDefault = conn === DEFAULT_TIDB_SENTINEL;
+  const client = getClient(conn);
 
   // 1. Ensure tables exist
-  await initTidbTables(connectionString);
-  tablesEnsuredFor = connectionString.trim();
+  await initTidbTables(conn);
+  tablesEnsuredFor = conn;
 
   // 2. Query Version and Table Counts
   const versionRes = await client.execute('SELECT VERSION() as ver, DATABASE() as db;');
@@ -323,6 +366,7 @@ export async function testTidbConnection(connectionString) {
 
   return {
     success: true,
+    isDefault,
     dbVersion,
     currentDb,
     docCount: parseInt(docCountRes[0]?.cnt || 0, 10),
@@ -336,9 +380,9 @@ export async function testTidbConnection(connectionString) {
  * Full Push to TiDB (Overwrite / Upsert all local records)
  */
 export async function pushAllToTidb(connectionString, docs = [], groups = [], histories = [], customThemes = []) {
-  if (!connectionString) throw new Error('数据库连接串不能为空');
-  await ensureTidbTables(connectionString);
-  const client = getClient(connectionString);
+  const conn = getEffectiveTidbUri(connectionString);
+  await ensureTidbTables(conn);
+  const client = getClient(conn);
 
   const now = Date.now();
 
@@ -504,9 +548,9 @@ export async function pushAllToTidb(connectionString, docs = [], groups = [], hi
  * Full Pull from TiDB (Fetch non-deleted cloud records)
  */
 export async function pullFromTidb(connectionString) {
-  if (!connectionString) throw new Error('数据库连接串不能为空');
-  await ensureTidbTables(connectionString);
-  const client = getClient(connectionString);
+  const conn = getEffectiveTidbUri(connectionString);
+  await ensureTidbTables(conn);
+  const client = getClient(conn);
 
   // 1. Pull Groups
   const groupRows = await client.execute(`
@@ -622,12 +666,12 @@ export async function pullFromTidb(connectionString) {
  * Bi-directional Sync with TiDB
  */
 export async function syncTidbBidirectional(connectionString, localDocs = [], localGroups = [], localHistories = [], localThemes = []) {
-  if (!connectionString) throw new Error('数据库连接串不能为空');
-  await ensureTidbTables(connectionString);
-  const client = getClient(connectionString);
+  const conn = getEffectiveTidbUri(connectionString);
+  await ensureTidbTables(conn);
+  const client = getClient(conn);
 
   // 1. Pull all remote records
-  const { docs: cloudDocs, groups: cloudGroups, histories: cloudHistories, customThemes: cloudThemes } = await pullFromTidb(connectionString);
+  const { docs: cloudDocs, groups: cloudGroups, histories: cloudHistories, customThemes: cloudThemes } = await pullFromTidb(conn);
 
   // ── Reconcile Groups ──
   const localGroupsMap = new Map(localGroups.map(g => [g.id, g]));
@@ -891,8 +935,8 @@ const docSyncDebounceMap = new Map();
  * Fast Single Document Upsert to TiDB (with debouncing to prevent high-frequency write collisions)
  */
 export async function syncSingleDocToTidb(connectionString, doc, debounceMs = 500) {
-  if (!connectionString || !doc || !doc.id) return;
-  const conn = connectionString.trim();
+  if (!doc || !doc.id) return;
+  const conn = getEffectiveTidbUri(connectionString);
 
   if (docSyncDebounceMap.has(doc.id)) {
     clearTimeout(docSyncDebounceMap.get(doc.id));
@@ -973,8 +1017,8 @@ export async function syncSingleDocToTidb(connectionString, doc, debounceMs = 50
  * Fast Single Group Upsert to TiDB
  */
 export async function syncSingleGroupToTidb(connectionString, group) {
-  if (!connectionString || !group) return;
-  const conn = connectionString.trim();
+  if (!group) return;
+  const conn = getEffectiveTidbUri(connectionString);
   const executeInsert = async () => {
     const client = getClient(conn);
     await client.execute(
@@ -1016,8 +1060,8 @@ export async function syncSingleGroupToTidb(connectionString, group) {
  * Fast Single History Upsert to TiDB
  */
 export async function syncSingleHistoryToTidb(connectionString, history) {
-  if (!connectionString || !history) return;
-  const conn = connectionString.trim();
+  if (!history) return;
+  const conn = getEffectiveTidbUri(connectionString);
   const executeInsert = async () => {
     const client = getClient(conn);
     const customStylesJson = JSON.stringify(history.customStyles || {});
@@ -1074,8 +1118,8 @@ export async function syncSingleHistoryToTidb(connectionString, history) {
  * Fast Single Custom Theme Upsert to TiDB
  */
 export async function syncSingleCustomThemeToTidb(connectionString, theme) {
-  if (!connectionString || !theme || !theme.id || builtInThemeIds.has(theme.id) || (!theme.isCustom && !theme.id.startsWith('custom-'))) return;
-  const conn = connectionString.trim();
+  if (!theme || !theme.id || builtInThemeIds.has(theme.id) || (!theme.isCustom && !theme.id.startsWith('custom-'))) return;
+  const conn = getEffectiveTidbUri(connectionString);
   const executeInsert = async () => {
     const client = getClient(conn);
     const customStylesJson = JSON.stringify(theme.customStyles || {});
@@ -1132,8 +1176,8 @@ export async function syncSingleCustomThemeToTidb(connectionString, theme) {
  * Soft Deletions on TiDB Cloud
  */
 export async function deleteDocInTidb(connectionString, docId) {
-  if (!connectionString || !docId) return;
-  const conn = connectionString.trim();
+  if (!docId) return;
+  const conn = getEffectiveTidbUri(connectionString);
 
   // Cancel any pending debounced sync for this doc
   if (docSyncDebounceMap.has(docId)) {
@@ -1168,8 +1212,8 @@ export async function deleteDocInTidb(connectionString, docId) {
  * Permanent Hard Deletions on TiDB Cloud
  */
 export async function permanentDeleteDocInTidb(connectionString, docId) {
-  if (!connectionString || !docId) return;
-  const conn = connectionString.trim();
+  if (!docId) return;
+  const conn = getEffectiveTidbUri(connectionString);
 
   if (docSyncDebounceMap.has(docId)) {
     clearTimeout(docSyncDebounceMap.get(docId));
@@ -1200,8 +1244,8 @@ export async function permanentDeleteDocInTidb(connectionString, docId) {
 }
 
 export async function deleteGroupInTidb(connectionString, groupId) {
-  if (!connectionString || !groupId) return;
-  const conn = connectionString.trim();
+  if (!groupId) return;
+  const conn = getEffectiveTidbUri(connectionString);
   const executeDelete = async () => {
     const client = getClient(conn);
     // Hard delete group
@@ -1232,8 +1276,8 @@ export async function deleteGroupInTidb(connectionString, groupId) {
 }
 
 export async function deleteHistoryInTidb(connectionString, historyId) {
-  if (!connectionString || !historyId) return;
-  const conn = connectionString.trim();
+  if (!historyId) return;
+  const conn = getEffectiveTidbUri(connectionString);
   const executeDelete = async () => {
     const client = getClient(conn);
     await client.execute(
@@ -1258,8 +1302,8 @@ export async function deleteHistoryInTidb(connectionString, historyId) {
 }
 
 export async function clearDocHistoriesInTidb(connectionString, docId) {
-  if (!connectionString || !docId) return;
-  const conn = connectionString.trim();
+  if (!docId) return;
+  const conn = getEffectiveTidbUri(connectionString);
   const executeDelete = async () => {
     const client = getClient(conn);
     await client.execute(
@@ -1284,8 +1328,8 @@ export async function clearDocHistoriesInTidb(connectionString, docId) {
 }
 
 export async function deleteCustomThemeInTidb(connectionString, themeId) {
-  if (!connectionString || !themeId) return;
-  const conn = connectionString.trim();
+  if (!themeId) return;
+  const conn = getEffectiveTidbUri(connectionString);
   const executeDelete = async () => {
     const client = getClient(conn);
     await client.execute(
