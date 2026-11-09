@@ -164,8 +164,8 @@ export async function uploadToOSS(file, options = {}) {
     ? `${domain}/${basePath}/${objectName}`
     : `${domain}/${objectName}`;
 
-  // Default to WebP high-performance mode (1200px width, lossless-like WebP compression)
-  return `${fileUrl}?x-oss-process=image/resize,w_1200/format,webp`;
+  // Return clean original image URL without query parameters
+  return fileUrl;
 }
 
 // ── Test OSS connectivity ──

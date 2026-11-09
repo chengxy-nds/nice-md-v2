@@ -1252,7 +1252,7 @@ const handleLaunch = async () => {
       return;
     }
 
-    const targetHtml = compileToWeChatHtml(props.html, props.themeId, props.codeThemeId);
+    const targetHtml = compileToWeChatHtml(props.html, props.themeId, props.codeThemeId, '', null, null, { isExport: true });
 
     // Dynamic Image Conversion Steps if images exist
     if (imgCount > 0) {
@@ -1302,7 +1302,7 @@ const handleLaunch = async () => {
 
   // Write fully styled HTML & Markdown to clipboard for instant pasting anywhere
   try {
-    const finalHtml = compileToWeChatHtml(props.html, props.themeId, props.codeThemeId);
+    const finalHtml = compileToWeChatHtml(props.html, props.themeId, props.codeThemeId, '', null, null, { isExport: true });
     const htmlBlob = new Blob([finalHtml], { type: 'text/html' });
     const textBlob = new Blob([props.markdown], { type: 'text/plain' });
     const item = new ClipboardItem({
@@ -1339,7 +1339,7 @@ const copyPlatformContent = async (platform) => {
     }
     
     if (platform.format === 'html') {
-      const finalHtml = compileToWeChatHtml(props.html, props.themeId, props.codeThemeId);
+      const finalHtml = compileToWeChatHtml(props.html, props.themeId, props.codeThemeId, '', null, null, { isExport: true });
       const htmlBlob = new Blob([finalHtml], { type: 'text/html' });
       const textBlob = new Blob([props.markdown], { type: 'text/plain' });
       const item = new ClipboardItem({

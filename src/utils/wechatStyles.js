@@ -52,7 +52,50 @@ export function cleanCss(css) {
   return (css || '').replace(/;+/g, ';').replace(/\s+/g, ' ').trim();
 }
 
-export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', codeThemeId = 'mdnice-classic', customCss = '', customStyles = null, livePreviewEl = null) {
+/**
+ * Strips Aliyun OSS processing query parameters (e.g. ?x-oss-process=image/resize...)
+ * to ensure pristine original image URLs are used on export, copy, or storage.
+ */
+export function stripOssProcessParam(url) {
+  if (!url || typeof url !== 'string') return url;
+  try {
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      const u = new URL(url);
+      if (u.searchParams.has('x-oss-process')) {
+        u.searchParams.delete('x-oss-process');
+        return u.toString();
+      }
+      return url;
+    }
+  } catch (e) {}
+
+  return url
+    .replace(/([?&])x-oss-process=[^&#]*(&|$)/gi, (match, prefix, suffix) => {
+      if (prefix === '?' && suffix === '&') return '?';
+      return '';
+    })
+    .replace(/[?&]$/, '');
+}
+
+/**
+ * Strips Aliyun OSS processing query parameters from all <img> tags in an HTML string.
+ */
+export function stripOssProcessFromHtml(html) {
+  if (!html || typeof html !== 'string') return html;
+  return html.replace(/(<img\b[^>]*?\bsrc=["'])([^"']+)(["'][^>]*>)/gi, (m, p1, src, p3) => {
+    return `${p1}${stripOssProcessParam(src)}${p3}`;
+  });
+}
+
+/**
+ * Strips Aliyun OSS processing query parameters from markdown image links (![alt](url)).
+ */
+export function stripOssProcessFromMarkdown(md) {
+  if (!md || typeof md !== 'string') return md;
+  return md.replace(/(!\[[^\]]*\]\([^)\s]+)\?x-oss-process=[^)\s]+/g, '$1');
+}
+
+export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', codeThemeId = 'mdnice-classic', customCss = '', customStyles = null, livePreviewEl = null, options = {}) {
   const effectiveCodeThemeId = customStyles?.code?.codeThemeId || codeThemeId || 'mdnice-classic';
   const codeTheme = codeThemes.find(t => t.id === effectiveCodeThemeId) || codeThemes.find(t => t.id === codeThemeId) || codeThemes[0];
   const codeStyles = (codeTheme && codeTheme.styles) ? codeTheme.styles : {};
@@ -1929,13 +1972,20 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
       img.setAttribute('loading', 'lazy');
       img.setAttribute('decoding', 'async');
 
-      // Auto-optimize Aliyun OSS large images to WebP speed mode (1200px width, webp format)
       const src = img.getAttribute('src') || '';
-      if (src && !src.includes('x-oss-process')) {
-        const isOss = src.includes('.aliyuncs.com') || src.includes('oss-cn-') || src.includes('oss-ap-') || src.includes('oss-us-');
-        if (isOss) {
-          const delimiter = src.includes('?') ? '&' : '?';
-          img.setAttribute('src', `${src}${delimiter}x-oss-process=image/resize,w_1200/format,webp`);
+      if (options?.isExport) {
+        // Export/Copy mode: Strip OSS process parameters so platforms fetch pristine images
+        if (src.includes('x-oss-process')) {
+          img.setAttribute('src', stripOssProcessParam(src));
+        }
+      } else {
+        // Preview mode: Accelerate Aliyun OSS large images via WebP (1200px width)
+        if (src && !src.includes('x-oss-process')) {
+          const isOss = src.includes('.aliyuncs.com') || src.includes('oss-cn-') || src.includes('oss-ap-') || src.includes('oss-us-');
+          if (isOss) {
+            const delimiter = src.includes('?') ? '&' : '?';
+            img.setAttribute('src', `${src}${delimiter}x-oss-process=image/resize,w_1200/format,webp`);
+          }
         }
       }
 
@@ -2073,6 +2123,16 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
 
   // Resolve all CSS variables (var(--...)) into explicit color values so WeChat MP UEditor never strips styles
   resolveAllCssVariables(root, themeStyles);
+
+  // When exporting or copying, ensure all image URLs are clean of OSS processing parameters
+  if (options?.isExport) {
+    root.querySelectorAll('img').forEach(img => {
+      const src = img.getAttribute('src');
+      if (src && src.includes('x-oss-process')) {
+        img.setAttribute('src', stripOssProcessParam(src));
+      }
+    });
+  }
 
   let finalHtml = root.outerHTML;
   // Clean all whitespace (spaces/tabs/newlines) between list tags so WeChat's parser doesn't create empty list items
@@ -2821,12 +2881,16 @@ export function previewDomToWechatHtml(previewEl, primaryColor) {
     inlineComputedStyle(origAll[i], cloneAll[i]);
   }
 
-  // 3. Fix image src — strip localhost origin (relative paths get resolved by the browser)
+  // 3. Fix image src — strip localhost origin and strip OSS process query parameters
   clone.querySelectorAll('img').forEach(img => {
-    const src = img.getAttribute('src') || '';
+    let src = img.getAttribute('src') || '';
     if (src.startsWith(location.origin)) {
-      img.setAttribute('src', src.slice(location.origin.length));
+      src = src.slice(location.origin.length);
     }
+    if (src.includes('x-oss-process')) {
+      src = stripOssProcessParam(src);
+    }
+    img.setAttribute('src', src);
   });
 
   // 4. WeChat structural transforms (order matters)
@@ -2862,14 +2926,18 @@ export function previewDomToWechatHtml(previewEl, primaryColor) {
  * Copies styled HTML + fallback plain text to user clipboard.
  * When `previewEl` is provided, uses WYSIWYG computed-style path.
  */
-export async function copyToWeChat(htmlContent, plainText, themeId = 'classic-indigo', codeThemeId = 'mdnice-classic', customCss = '', customStyles = null, livePreviewEl = null) {
+export async function copyToWeChat(htmlContent, plainText, themeId = 'classic-indigo', codeThemeId = 'mdnice-classic', customCss = '', customStyles = null, livePreviewEl = null, options = {}) {
   // Always use the bulletproof compileToWeChatHtml engine to ensure zero negative margins,
   // zero floats, zero layout collisions, and 100% WeChat MP Editor compatibility.
   const effectiveCodeThemeId = customStyles?.code?.codeThemeId || codeThemeId || 'mdnice-classic';
-  const finalHtml = compileToWeChatHtml(htmlContent, themeId, effectiveCodeThemeId, customCss, customStyles, livePreviewEl);
+  const finalHtml = compileToWeChatHtml(htmlContent, themeId, effectiveCodeThemeId, customCss, customStyles, livePreviewEl, {
+    isExport: true,
+    ...options
+  });
 
+  const cleanPlainText = stripOssProcessFromMarkdown(plainText || '');
   const htmlBlob = new Blob([finalHtml], { type: 'text/html' });
-  const textBlob = new Blob([plainText], { type: 'text/plain' });
+  const textBlob = new Blob([cleanPlainText], { type: 'text/plain' });
 
   try {
     const item = new ClipboardItem({
@@ -2880,7 +2948,7 @@ export async function copyToWeChat(htmlContent, plainText, themeId = 'classic-in
     return true;
   } catch (err) {
     console.error('Clipboard copy failed:', err);
-    await navigator.clipboard.writeText(plainText);
+    await navigator.clipboard.writeText(cleanPlainText);
     return false;
   }
 }

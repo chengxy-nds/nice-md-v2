@@ -12,7 +12,12 @@ import {
   Sparkles,
   Palette
 } from '@lucide/vue';
-import { copyToWeChat, compileToWeChatHtml } from '../utils/wechatStyles';
+import {
+  copyToWeChat,
+  compileToWeChatHtml,
+  stripOssProcessFromHtml,
+  stripOssProcessFromMarkdown
+} from '../utils/wechatStyles';
 import { soundEngine } from '../utils/synthAudio';
 import ThemeCustomizer from './ThemeCustomizer.vue';
 import ArticlePreview from './ArticlePreview.vue';
@@ -325,8 +330,10 @@ const handleCopyWeChat = async () => {
 const handleCopyZhihu = async () => {
   soundEngine.playChime();
   const rawHtml = marked.parse(props.markdown || '');
-  const htmlBlob = new Blob([rawHtml], { type: 'text/html' });
-  const textBlob = new Blob([props.markdown || ''], { type: 'text/plain' });
+  const cleanHtml = stripOssProcessFromHtml(rawHtml);
+  const cleanMarkdown = stripOssProcessFromMarkdown(props.markdown || '');
+  const htmlBlob = new Blob([cleanHtml], { type: 'text/html' });
+  const textBlob = new Blob([cleanMarkdown], { type: 'text/plain' });
   try {
     const item = new ClipboardItem({
       'text/html': htmlBlob,
@@ -336,7 +343,7 @@ const handleCopyZhihu = async () => {
     showToast('已复制知乎专栏排版');
   } catch (err) {
     console.error('[NiceMD] Zhihu copy failed, falling back to text copy:', err);
-    await navigator.clipboard.writeText(props.markdown || '');
+    await navigator.clipboard.writeText(cleanMarkdown);
     showToast('已复制 Markdown 源码 (备用)');
   }
 };
@@ -345,8 +352,10 @@ const handleCopyZhihu = async () => {
 const handleCopyToutiao = async () => {
   soundEngine.playChime();
   const rawHtml = marked.parse(props.markdown || '');
-  const htmlBlob = new Blob([rawHtml], { type: 'text/html' });
-  const textBlob = new Blob([props.markdown || ''], { type: 'text/plain' });
+  const cleanHtml = stripOssProcessFromHtml(rawHtml);
+  const cleanMarkdown = stripOssProcessFromMarkdown(props.markdown || '');
+  const htmlBlob = new Blob([cleanHtml], { type: 'text/html' });
+  const textBlob = new Blob([cleanMarkdown], { type: 'text/plain' });
   try {
     const item = new ClipboardItem({
       'text/html': htmlBlob,
@@ -356,7 +365,7 @@ const handleCopyToutiao = async () => {
     showToast('已复制今日头条排版');
   } catch (err) {
     console.error('[NiceMD] Toutiao copy failed, falling back to text copy:', err);
-    await navigator.clipboard.writeText(props.markdown || '');
+    await navigator.clipboard.writeText(cleanMarkdown);
     showToast('已复制 Markdown 源码 (备用)');
   }
 };
@@ -365,7 +374,8 @@ const handleCopyToutiao = async () => {
 const handleCopyMarkdownText = async () => {
   soundEngine.playChime();
   try {
-    await navigator.clipboard.writeText(props.markdown || '');
+    const cleanMarkdown = stripOssProcessFromMarkdown(props.markdown || '');
+    await navigator.clipboard.writeText(cleanMarkdown);
     showToast('已复制 Markdown 源码');
   } catch (err) {
     console.error('[NiceMD] Markdown text copy failed:', err);
