@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
-import { Palette, X, Save, Sliders, Code2, RotateCcw, Check, Sparkles, Hash, FileType } from 'lucide-vue-next';
+import { Palette, FileText, X, Save, Sliders, Code2, RotateCcw, Check, Sparkles, Hash, FileType } from 'lucide-vue-next';
 import { getThemeDefaultStyles, getThemeSavedStyles, isBuiltInTheme } from '../utils/themePresets';
 import { allMaterialTemplatesMap, getMaterialTemplatesForKey, backgroundTemplates, underlineTemplates } from '../utils/materialLibrary';
 import MaterialPopup from './MaterialPopup.vue';
@@ -324,8 +324,8 @@ const elements = [
   { key: 'li', label: '列表项 ( li )', icon: '—' },
   { key: 'table', label: '表格样式设置 ( table / th / td )', icon: '田' },
   { key: 'hr', label: '分割线 ( --- )', icon: '―' },
-  { key: 'a', label: '超链接 ( [link](url) )', icon: '🔗' },
-  { key: 'img', label: '图片 ( ![img](url) )', icon: '🖼' }
+  { key: 'a', label: '超链接 ( [link](url) )', icon: '↗' },
+  { key: 'img', label: '图片 ( ![img](url) )', icon: '▧' }
 ];
 
 // Merge theme base defaults with material template defaults and user document overrides
@@ -1100,13 +1100,13 @@ function initCodeMirror() {
       color: "#24292e"
     },
     ".cm-content": {
-      padding: "12px 0"
+      padding: "8px 0"
     },
     ".cm-gutters": {
-      backgroundColor: "#f6f8fa",
-      color: "#6e7781",
-      borderRight: "1px solid #e1e4e8",
-      paddingRight: "6px"
+      backgroundColor: "#f8fafc",
+      color: "#94a3b8",
+      borderRight: "1px solid #edf1f5",
+      paddingRight: "3px"
     },
     ".cm-activeLineGutter": {
       backgroundColor: "#eaeef2",
@@ -1330,18 +1330,22 @@ const cssLineCount = computed(() => {
     </div>
 
     <!-- Mode Switcher Tabs -->
-    <div class="customizer-mode-bar">
+    <div class="customizer-mode-bar" role="tablist" aria-label="主题编辑模式">
       <button
+        role="tab"
         class="mode-tab-btn"
         :class="{ 'is-active': activeTab === 'form' }"
+        :aria-selected="activeTab === 'form'"
         @click="activeTab = 'form'"
       >
         <Sliders size="13" />
         <span>可视化配置</span>
       </button>
       <button
+        role="tab"
         class="mode-tab-btn"
         :class="{ 'is-active': activeTab === 'code' }"
+        :aria-selected="activeTab === 'code'"
         @click="activeTab = 'code'"
       >
         <Code2 size="13" />
@@ -1354,7 +1358,7 @@ const cssLineCount = computed(() => {
       <!-- 0. Global Header & Footer Widgets Card (文章头尾挂件预设) -->
       <div class="style-section global-widgets-card" data-section="global-widgets">
         <div class="section-label">
-          <span class="section-icon">🎴</span>
+          <span class="section-icon section-icon-component"><FileText size="13" /></span>
           <span class="section-title-text">文章头尾挂件 (全局预设)</span>
           <div class="header-action-group">
             <span class="global-badge">自动注入头尾</span>
@@ -1368,7 +1372,6 @@ const cssLineCount = computed(() => {
         <div class="widget-row-box">
           <div class="widget-row-header">
             <div class="widget-title">
-              <Sparkles class="w-3.5 h-3.5 text-emerald-500 inline" />
               <span>文章头部引导关注 / 导读卡片</span>
             </div>
             <button class="widget-choose-btn" @click="openMaterialModal('header_widget')">
@@ -1387,7 +1390,6 @@ const cssLineCount = computed(() => {
         <div class="widget-row-box">
           <div class="widget-row-header">
             <div class="widget-title">
-              <Sparkles class="w-3.5 h-3.5 text-amber-500 inline" />
               <span>文末三连 / 作者名片 / 二维码关注</span>
             </div>
             <button class="widget-choose-btn" @click="openMaterialModal('footer_widget')">
@@ -1765,7 +1767,7 @@ const cssLineCount = computed(() => {
             <div class="table-customizer-grid">
               <!-- Subsection 1: 表头样式 (th) -->
               <div class="table-sub-group">
-                <span class="table-sub-title">📌 表头样式 ( th )</span>
+                <span class="table-sub-title">表头样式 ( th )</span>
                 <div class="table-sub-fields">
                   <label class="style-field">
                     <span class="field-label">表头背景</span>
@@ -1818,7 +1820,7 @@ const cssLineCount = computed(() => {
 
               <!-- Subsection 2: 内容单元格 (td) 与边框 -->
               <div class="table-sub-group">
-                <span class="table-sub-title">📄 内容单元格与边框 ( td / table )</span>
+                <span class="table-sub-title">内容单元格与边框 ( td / table )</span>
                 <div class="table-sub-fields">
                   <label class="style-field">
                     <span class="field-label">单元格文字</span>
@@ -2207,7 +2209,7 @@ const cssLineCount = computed(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0.75rem 0.875rem;
+  padding: 0.625rem 0.875rem;
   border-bottom: 1px solid var(--border-color);
   flex-shrink: 0;
   background: var(--bg-sidebar);
@@ -2298,44 +2300,54 @@ const cssLineCount = computed(() => {
 /* Mode Switcher Bar */
 .customizer-mode-bar {
   display: flex;
-  margin: 8px 12px 4px;
-  padding: 3px;
-  gap: 4px;
-  background: var(--bg-capsule, #F1F5F9);
-  border: 1px solid var(--border-color, #E2E8F0);
-  border-radius: 8px;
+  margin: 2px 12px 0;
+  padding: 0;
+  gap: 8px;
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--border-subtle, #e7edf5);
+  border-radius: 0;
   flex-shrink: 0;
-  transition: background 0.3s ease, border-color 0.3s ease;
+  transition: border-color 0.3s ease;
 }
 
 .mode-tab-btn {
   flex: 1;
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 5px 10px;
-  border-radius: 6px;
-  border: 1px solid transparent;
+  gap: 6px;
+  min-height: 38px;
+  padding: 7px 10px 8px;
+  border: 0;
   background: transparent;
   color: var(--text-muted, #64748B);
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: color 0.15s ease, background 0.15s ease;
 }
 
 .mode-tab-btn:hover:not(.is-active) {
   color: var(--text-main, #0F172A);
-  background: rgba(15, 23, 42, 0.03);
+  background: var(--accent-bg, rgba(39, 117, 182, 0.05));
 }
 
 .mode-tab-btn.is-active {
-  background: var(--bg-card, #ffffff);
   color: var(--brand-primary, #116ACC);
-  border-color: rgba(15, 23, 42, 0.06);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
   font-weight: 600;
+}
+
+.mode-tab-btn.is-active::after {
+  content: '';
+  position: absolute;
+  left: 24%;
+  right: 24%;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--brand-primary, #116ACC);
 }
 
 /* Form View */
@@ -2361,10 +2373,10 @@ const cssLineCount = computed(() => {
 .style-section {
   padding: 12px 14px;
   background: var(--bg-card, #ffffff);
-  border: 1px solid var(--border-color, #E2E8F0);
+  border: 1px solid var(--border-subtle, #e7edf5);
   border-radius: 10px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
-  transition: all 0.2s ease;
+  box-shadow: none;
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
 .style-section.is-highlighted {
@@ -2411,6 +2423,17 @@ const cssLineCount = computed(() => {
   color: #18181B;
   text-align: center;
   min-width: 1.25rem;
+}
+
+.section-icon-component {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  padding: 0;
+  color: var(--accent-color, #2775b6);
+  background: var(--accent-bg, #eff6ff);
 }
 
 .section-title-text {
@@ -2614,7 +2637,7 @@ const cssLineCount = computed(() => {
 }
 
 .css-anchors-rail {
-  width: 74px;
+  width: 82px;
   flex-shrink: 0;
   height: 100%;
   background: var(--bg-sidebar, #f7f8fa);
@@ -2631,19 +2654,19 @@ const cssLineCount = computed(() => {
   font-weight: 700;
   color: var(--text-muted, #8c8c8c);
   letter-spacing: 0.04em;
-  padding: 8px 4px 6px;
+  padding: 9px 4px 7px;
   text-align: center;
   border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.06));
-  background: rgba(0, 0, 0, 0.02);
+  background: transparent;
 }
 
 .rail-insert-material-btn {
-  margin: 6px 5px 4px;
-  padding: 4px 6px;
-  border-radius: 5px;
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border: 1px solid #f59e0b;
-  color: #92400e;
+  margin: 6px 6px 5px;
+  padding: 5px 6px;
+  border-radius: 6px;
+  background: var(--accent-bg, rgba(39, 117, 182, 0.06));
+  border: 1px solid var(--border-color, #e2e8f0);
+  color: var(--accent-color, #2775b6);
   font-size: 10px;
   font-weight: 700;
   display: flex;
@@ -2651,23 +2674,23 @@ const cssLineCount = computed(() => {
   justify-content: center;
   gap: 3px;
   cursor: pointer;
-  box-shadow: 0 1px 3px rgba(245, 158, 11, 0.15);
-  transition: all 0.15s ease;
+  box-shadow: none;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .rail-insert-material-btn:hover {
-  background: linear-gradient(135deg, #fde68a 0%, #fcd34d 100%);
-  transform: translateY(-1px);
-  box-shadow: 0 2px 6px rgba(245, 158, 11, 0.25);
+  background: var(--accent-color, #2775b6);
+  border-color: var(--accent-color, #2775b6);
+  color: #ffffff;
 }
 
 .anchors-list {
   flex: 1;
   overflow-y: auto;
-  padding: 4px 4px;
+  padding: 5px 5px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .anchors-list::-webkit-scrollbar {
@@ -2675,7 +2698,7 @@ const cssLineCount = computed(() => {
 }
 
 .anchors-list::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.15);
+  background: rgba(100, 116, 139, 0.22);
   border-radius: 3px;
 }
 
@@ -2684,8 +2707,8 @@ const cssLineCount = computed(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 4px 2px;
-  border-radius: 6px;
+  padding: 5px 2px;
+  border-radius: 7px;
   background: transparent;
   border: 1px solid transparent;
   cursor: pointer;
@@ -2695,13 +2718,14 @@ const cssLineCount = computed(() => {
 }
 
 .anchor-item-btn:hover {
-  background: rgba(39, 117, 182, 0.08);
-  border-color: rgba(39, 117, 182, 0.2);
+  background: var(--accent-bg, rgba(39, 117, 182, 0.08));
+  border-color: var(--border-color, rgba(39, 117, 182, 0.2));
 }
 
 .anchor-item-btn.active {
-  background: var(--accent-color, #2775b6);
+  background: var(--accent-bg, rgba(39, 117, 182, 0.08));
   border-color: var(--accent-color, #2775b6);
+  box-shadow: inset 2px 0 0 var(--accent-color, #2775b6);
 }
 
 .anchor-label {
@@ -2712,19 +2736,37 @@ const cssLineCount = computed(() => {
 }
 
 .anchor-item-btn.active .anchor-label {
-  color: #ffffff;
+  color: var(--accent-color, #2775b6);
 }
 
 .anchor-sub {
-  font-size: 9px;
+  font-size: 10px;
   color: var(--text-muted, #8c8c8c);
-  margin-top: 1px;
-  transform: scale(0.9);
+  margin-top: 3px;
   white-space: nowrap;
 }
 
 .anchor-item-btn.active .anchor-sub {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-muted, #64748b);
+}
+
+.codemirror-editor-wrapper :deep(.tok-comment) {
+  color: #8793a3;
+  font-style: italic;
+}
+
+.codemirror-editor-wrapper :deep(.cm-scroller::-webkit-scrollbar) {
+  width: 6px;
+  height: 6px;
+}
+
+.codemirror-editor-wrapper :deep(.cm-scroller::-webkit-scrollbar-thumb) {
+  background: rgba(100, 116, 139, 0.2);
+  border-radius: 6px;
+}
+
+.codemirror-editor-wrapper :deep(.cm-scroller::-webkit-scrollbar-thumb:hover) {
+  background: rgba(100, 116, 139, 0.36);
 }
 
 .codemirror-editor-wrapper :deep(.cm-editor) {
@@ -3085,33 +3127,34 @@ const cssLineCount = computed(() => {
 
 /* Global Widgets Card & Feature Guide Styles */
 .global-widgets-card {
-  background: #FAFAFA !important;
-  border: 1px solid #EDEDED !important;
-  border-radius: 6px !important;
+  background: var(--bg-card, #ffffff) !important;
+  border-color: var(--border-subtle, #e7edf5) !important;
+  border-radius: 10px !important;
 }
 
 .global-badge {
   font-size: 0.625rem;
   font-weight: 600;
-  color: #3d3939;
-  background: #F4F4F5;
+  color: var(--text-muted, #64748b);
+  background: var(--bg-preview, #f8fafc);
   padding: 0.125rem 0.375rem;
   border-radius: 3px;
 }
 
 .global-widget-subtext {
   font-size: 0.72rem;
-  color: #71717A;
+  color: var(--text-muted, #64748b);
   line-height: 1.4;
   margin: 0 0 0.625rem 0;
 }
 
 .widget-row-box {
-  background: #ffffff;
-  border: 1px solid #EDEDED;
-  border-radius: 4px;
-  padding: 0.5rem 0.625rem;
-  margin-bottom: 0.5rem;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--border-color, #E2E8F0);
+  border-radius: 0;
+  padding: 0.625rem 0;
+  margin: 0;
 }
 
 .widget-row-header {
@@ -3124,7 +3167,7 @@ const cssLineCount = computed(() => {
 .widget-title {
   font-size: 0.75rem;
   font-weight: 600;
-  color: #18181B;
+  color: var(--text-main, #1e293b);
   display: flex;
   align-items: center;
   gap: 0.3125rem;
@@ -3136,9 +3179,9 @@ const cssLineCount = computed(() => {
   gap: 3px;
   font-size: 0.6875rem;
   font-weight: 500;
-  color: #3d3939;
-  background: #F4F4F5;
-  border: 1px solid #EDEDED;
+  color: var(--text-main, #334155);
+  background: var(--bg-preview, #f8fafc);
+  border: 1px solid var(--border-color, #E2E8F0);
   padding: 0.1875rem 0.5rem;
   border-radius: 3px;
   cursor: pointer;
@@ -3146,8 +3189,8 @@ const cssLineCount = computed(() => {
 }
 
 .widget-choose-btn:hover {
-  background: #3d3939;
-  border-color: #3d3939;
+  background: var(--accent-color, #2775b6);
+  border-color: var(--accent-color, #2775b6);
   color: #FFFFFF;
 }
 
@@ -3288,7 +3331,7 @@ const cssLineCount = computed(() => {
 .body-row-two-col {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
+  gap: 0.25rem 0.75rem;
   width: 100%;
   box-sizing: border-box;
 }
@@ -3297,10 +3340,10 @@ const cssLineCount = computed(() => {
   display: flex;
   flex-direction: column;
   gap: 0.375rem;
-  background: var(--bg-preview, #ffffff);
-  border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 0.5rem;
-  padding: 0.5rem 0.625rem;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding: 0.25rem 0.125rem;
   box-sizing: border-box;
   min-width: 0;
 }
@@ -3310,8 +3353,8 @@ const cssLineCount = computed(() => {
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.375rem 0.625rem;
-  min-height: 2.375rem;
+  padding: 0.375rem 0.125rem;
+  min-height: 2.5rem;
   min-width: 0;
 }
 
@@ -3438,13 +3481,6 @@ const cssLineCount = computed(() => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-:deep(.dark) .rail-insert-material-btn,
-.rail-insert-material-btn:where(.dark *) {
-  background: #382504;
-  border-color: #b45309;
-  color: #fbbf24;
 }
 
 :deep(.dark) .header-reset-btn,

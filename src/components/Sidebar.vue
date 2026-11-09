@@ -16,7 +16,8 @@ import {
   Cloud,
   RotateCcw,
   FileText,
-  ArrowUpDown
+  ArrowUpDown,
+  ChevronsUpDown
 } from '@lucide/vue';
 import { showConfirm } from '../utils/confirmDialog';
 import SidebarDocItem from './SidebarDocItem.vue';
@@ -69,27 +70,44 @@ const emit = defineEmits([
 // ── Search, Filter & Sort State ──
 const searchQuery = ref('');
 const showSearchInput = ref(false);
-const sortModes = [
-  { id: 'updatedAt', label: '按修改时间排序' },
-  { id: 'createdAt', label: '按创建时间排序' },
-  { id: 'title', label: '按标题名称排序' },
-  { id: 'manual', label: '按手动拖拽排序' }
-];
 // Opening a document must never change its position. Start with persisted order;
 // explicit sort modes are only applied after the user chooses them.
 const SORT_STORAGE_KEY = 'nicemd_doc_sort_v2';
 const sortBy = ref(localStorage.getItem(SORT_STORAGE_KEY) || 'manual');
+const lastSortMode = ref(sortBy.value === 'manual' ? 'updatedAt' : sortBy.value);
 
-const currentSortLabel = computed(() => {
-  const mode = sortModes.find(m => m.id === sortBy.value) || sortModes[0];
-  return mode.label;
+function toggleSorting() {
+  if (sortBy.value === 'manual') {
+    sortBy.value = lastSortMode.value;
+    localStorage.setItem(SORT_STORAGE_KEY, lastSortMode.value);
+    return;
+  }
+  lastSortMode.value = sortBy.value;
+  sortBy.value = 'manual';
+  localStorage.setItem(SORT_STORAGE_KEY, 'manual');
+}
+
+const expandableGroupIds = computed(() => {
+  if (props.groups.length === 0) return [];
+  const ids = props.groups.map(group => group.id);
+  if (filteredUngroupedDocs.value.length > 0) ids.push('__ungrouped__');
+  return ids;
 });
 
-function cycleSortMode() {
-  const idx = sortModes.findIndex(m => m.id === sortBy.value);
-  const next = sortModes[(idx + 1) % sortModes.length];
-  sortBy.value = next.id;
-  localStorage.setItem(SORT_STORAGE_KEY, next.id);
+const areAllGroupsExpanded = computed(() =>
+  expandableGroupIds.value.length > 0 && expandableGroupIds.value.every(id => expandedGroups.value.has(id))
+);
+
+function toggleAllGroups() {
+  if (searchQuery.value.trim()) return;
+  const next = new Set(expandedGroups.value);
+  if (areAllGroupsExpanded.value) {
+    expandableGroupIds.value.forEach(id => next.delete(id));
+  } else {
+    expandableGroupIds.value.forEach(id => next.add(id));
+  }
+  expandedGroups.value = next;
+  saveExpandedGroups();
 }
 
 function sortDocList(list) {
@@ -435,7 +453,25 @@ function onGroupDragStart(e, groupId) {
       <button class="create-action" @click="handleCreateDoc(null)" title="新建文档" aria-label="新建文档">
         <Plus size="16" stroke-width="2.2" />
       </button>
-      <button class="icon-btn" @click="cycleSortMode" :title="currentSortLabel">
+      <button
+        v-if="groups.length > 0"
+        class="icon-btn"
+        :class="{ 'is-active': areAllGroupsExpanded }"
+        @click="toggleAllGroups"
+        :title="areAllGroupsExpanded ? '折叠全部文件夹' : '展开全部文件夹'"
+        :aria-label="areAllGroupsExpanded ? '折叠全部文件夹' : '展开全部文件夹'"
+        :disabled="Boolean(searchQuery.trim())"
+      >
+        <ChevronsUpDown size="15" stroke-width="2" />
+      </button>
+      <button
+        class="icon-btn"
+        :class="{ 'is-active': sortBy !== 'manual' }"
+        @click="toggleSorting"
+        :title="sortBy === 'manual' ? '启用按修改时间排序' : '取消排序，恢复手动顺序'"
+        :aria-label="sortBy === 'manual' ? '启用排序' : '取消排序'"
+        :aria-pressed="sortBy !== 'manual'"
+      >
         <ArrowUpDown size="15" stroke-width="2" />
       </button>
       <button class="icon-btn" @click="handleCreateGroupClick" title="新建文件夹">
@@ -717,8 +753,8 @@ function onGroupDragStart(e, groupId) {
 
 <style scoped>
 .sidebar-container {
-  width: clamp(17rem, 22vw, 24rem);
-  min-width: 17rem;
+  width: clamp(16.5rem, 21vw, 22.5rem);
+  min-width: 16.5rem;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -844,8 +880,28 @@ html.dark .heading {
   color: #2678e8;
 }
 
+.icon-btn.is-active {
+  background: #edf5ff;
+  color: #2678e8;
+}
+
+.icon-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.icon-btn:disabled:hover {
+  background: transparent;
+  color: #71839d;
+}
+
 html.dark .icon-btn:hover {
   background: rgba(255, 255, 255, 0.08);
+  color: #60a5fa;
+}
+
+html.dark .icon-btn.is-active {
+  background: rgba(59, 130, 246, 0.14);
   color: #60a5fa;
 }
 

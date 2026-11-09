@@ -390,7 +390,7 @@ html.dark .file-row.selected .file-icon:after {
 
 .file-name {
   font-size: 13px;
-  font-weight: 600;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -486,21 +486,40 @@ html.dark .meta {
 
 /* Inline rename input */
 .rename-input {
+  display: block;
   width: 100%;
+  height: 22px;
+  min-width: 0;
+  font: inherit;
   font-size: 12.5px;
   font-weight: 600;
-  padding: 1px 5px;
-  border: 1px solid #2678e8;
-  border-radius: 4px;
-  background: #ffffff;
+  line-height: 20px;
+  padding: 0 6px;
+  border: 1px solid #c8d8ed;
+  border-radius: 6px;
+  background: #fff;
   color: #1e293b;
   outline: none;
   box-sizing: border-box;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.rename-input:focus {
+  border-color: #8bb7ee;
+  box-shadow: 0 0 0 2px rgba(38, 120, 232, 0.1);
 }
 
 html.dark .rename-input {
-  background: #1e1e24;
+  border-color: #46566b;
+  background: #202733;
   color: #f1f5f9;
+  box-shadow: none;
+}
+
+html.dark .rename-input:focus {
+  border-color: #679be0;
+  box-shadow: 0 0 0 2px rgba(96, 165, 250, 0.14);
 }
 
 /* Floating Dropdown Context Menu */

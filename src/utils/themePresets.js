@@ -21,10 +21,6 @@ export const themes = [
       '--shadow-sm': '0 2px 8px rgba(0,0,0,0.02)',
       '--shadow-md': '0 8px 24px rgba(0,0,0,0.04)'
     },
-    previewTexture: {
-      bgImage: 'linear-gradient(90deg, rgba(39, 117, 182, 0.015) 0%, rgba(255, 255, 255, 0) 11.49%), linear-gradient(360deg, rgba(39, 117, 182, 0.02) 0%, rgba(255, 255, 255, 0) 12.16%)',
-      bgSize: '20px 20px, 20px 20px'
-    },
     typography: {
       h1: { variant: 'pill', size: '1.25em', weight: 700, align: 'center', bg: '#2775b6', color: '#ffffff', radius: '9999px', padding: '6px 24px', letterSpacing: '0.02em', marginTop: '1.6em', marginBottom: '1.2em' },
       h2: { variant: 'bar', size: '1.35em', weight: 700, borderColor: '#2775b6', padding: '0.3em 0.6em', letterSpacing: '-0.2px' },

@@ -388,6 +388,12 @@ const effectiveCodeThemeId = computed(() => {
 });
 
 const codeThemeStyles = computed(() => getCodeThemeStyles(effectiveCodeThemeId.value));
+const markdownBodyStyles = computed(() => ({
+  ...codeThemeStyles.value,
+  ...(activeCustomStyles.value?.body?.backgroundTexture === 'clean'
+    ? { backgroundImage: 'none' }
+    : {})
+}));
 
 const compiledHtml = computed(() => {
   if (!props.markdown) return '';
@@ -796,7 +802,7 @@ function handlePopupClose() {
           <div
             v-if="wechatStyledHtml"
             class="markdown-body wechat-body"
-            :style="codeThemeStyles"
+            :style="markdownBodyStyles"
             v-html="wechatStyledHtml"
           ></div>
           <div
@@ -810,7 +816,7 @@ function handlePopupClose() {
           <div
             v-else
             class="markdown-body wechat-body"
-            :style="codeThemeStyles"
+            :style="markdownBodyStyles"
             v-html="wechatStyledHtml"
           ></div>
 

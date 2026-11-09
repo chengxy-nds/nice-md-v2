@@ -221,7 +221,9 @@ function handleCreateDoc(groupId = null) {
   const now = Date.now();
   const newDoc = {
     id, title: '未命名文档', content: '', groupId, createdAt: now, updatedAt: now,
-    customStyles: {}
+    customStyles: {
+      body: { backgroundTexture: 'clean', materialTemplateId: 'none' }
+    }
   };
   documents.value.unshift(newDoc);
   activeDocId.value = id;
@@ -1624,12 +1626,6 @@ watch(customStyles, () => {
             </button>
           </div>
 
-          <!-- Publish Button next to the capsule bar -->
-          <button class="btn-header-publish" @click="openLaunchpad" title="一键多渠道分发发布">
-            <Send size="12.5" class="publish-send-icon" />
-            <span>发布</span>
-          </button>
-
           <!-- Segmented View Switcher on Mobile/Tablet -->
           <div class="mobile-view-tabs">
             <button 
@@ -1649,8 +1645,13 @@ watch(customStyles, () => {
           </div>
         </div>
 
-        <!-- Right Header Area -->
-        <div class="header-right"></div>
+        <!-- Primary action is anchored to the far right, apart from editing tools -->
+        <div class="header-right">
+          <button class="btn-header-publish" @click="openLaunchpad" title="一键多渠道分发发布">
+            <Send size="12.5" class="publish-send-icon" />
+            <span>发布</span>
+          </button>
+        </div>
       </header>
 
       <!-- App Body: Left IconBar + Main Content -->
@@ -2176,8 +2177,7 @@ html.dark .wandor-wordmark {
   transition: all 0.25s ease;
 }
 
-.header-center .btn-header-publish {
-  margin-left: 4px;
+.header-right .btn-header-publish {
   box-shadow: 0 2px 6px rgba(17, 106, 204, 0.16);
 }
 
@@ -2794,10 +2794,10 @@ html.dark .btn-header-publish:hover {
   border-radius: 7px;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
+  width: min(300px, 30vw);
   max-width: 300px;
-  min-width: 0;
-  width: auto;
-  flex-shrink: 0;
+  min-width: 180px;
+  flex: 0 1 300px;
   box-sizing: border-box;
   cursor: pointer;
   border: 1px solid transparent;
@@ -2854,10 +2854,16 @@ html.dark .btn-header-publish:hover {
 }
 
 .toolbar-doc-title-box.is-editing {
-  background: var(--bg-card);
-  border-color: var(--brand-primary, #116ACC);
-  box-shadow: 0 0 0 2px rgba(17, 106, 204, 0.14);
-  padding: 2px 8px;
+  background: var(--bg-card, #FFFFFF);
+  border-color: rgba(17, 106, 204, 0.42);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+  padding: 4px 8px;
+}
+
+[data-color-mode="dark"] .toolbar-doc-title-box.is-editing {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(96, 165, 250, 0.48);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 .toolbar-doc-input {

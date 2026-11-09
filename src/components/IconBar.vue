@@ -134,26 +134,14 @@ html.dark .icon-btn:hover {
 
 .icon-btn.is-active {
   color: var(--brand-primary, #116ACC);
-  background: var(--bg-card, #ffffff);
+  background: rgba(17, 106, 204, 0.09);
   border-radius: 9px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 0 0 1px rgba(15, 23, 42, 0.035);
-}
-
-.icon-btn.is-active::before {
-  content: '';
-  position: absolute;
-  left: -7px;
-  top: 9px;
-  bottom: 9px;
-  width: 3px;
-  border-radius: 0 3px 3px 0;
-  background: var(--brand-primary, #116ACC);
+  box-shadow: none;
 }
 
 html.dark .icon-btn.is-active {
-  color: #38bdf8;
-  background: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  color: #93c5fd;
+  background: rgba(96, 165, 250, 0.15);
 }
 
 .icon-btn-subtle {
