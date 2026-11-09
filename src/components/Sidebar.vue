@@ -320,10 +320,11 @@ function docsInGroup(groupId) {
   return sortDocList(matched);
 }
 
+const deletedDocs = computed(() => props.documents.filter(d => isDocDeleted(d)));
+
 const filteredDeletedDocs = computed(() => {
-  const all = props.documents.filter(d => isDocDeleted(d));
   const q = searchQuery.value.trim().toLowerCase();
-  const matched = q ? all.filter(d => matchesSearch(d, q)) : all;
+  const matched = q ? deletedDocs.value.filter(d => matchesSearch(d, q)) : deletedDocs.value;
   return sortDocList(matched);
 });
 
@@ -358,7 +359,7 @@ async function handlePermanentDeleteDoc(doc) {
 async function handleEmptyTrashClick() {
   const ok = await showConfirm({
     title: '清空回收站',
-    message: `确定要永久清空回收站中的 ${filteredDeletedDocs.value.length} 篇文档吗？此操作无法撤销！`,
+    message: `确定要永久清空回收站中的 ${deletedDocs.value.length} 篇文档吗？此操作无法撤销！`,
     confirmText: '清空回收站',
     danger: true
   });
@@ -443,40 +444,43 @@ function onGroupDragStart(e, groupId) {
   <aside class="sidebar-container select-none">
     <!-- Toolbar: 我的文档 -->
     <div class="toolbar">
-      <div class="heading">我的文档</div>
-      <div v-if="isCloudSyncActive" class="sync" :title="cloudSyncTitle" aria-label="云端同步已开启">
-        <RotateCcw size="11" class="sync-icon" />
-        <span class="sync-label">已同步</span>
-        <span class="dot"></span>
+      <div class="toolbar-meta">
+        <div class="heading">我的文档</div>
+        <div v-if="isCloudSyncActive" class="sync" :title="cloudSyncTitle" aria-label="云端同步已开启">
+          <RotateCcw size="11" class="sync-icon" />
+          <span class="sync-label">已同步</span>
+          <span class="dot"></span>
+        </div>
       </div>
-      <div class="spacer"></div>
-      <button class="create-action" @click="handleCreateDoc(null)" title="新建文档" aria-label="新建文档">
-        <Plus size="16" stroke-width="2.2" />
-      </button>
-      <button
-        v-if="groups.length > 0"
-        class="icon-btn"
-        :class="{ 'is-active': areAllGroupsExpanded }"
-        @click="toggleAllGroups"
-        :title="areAllGroupsExpanded ? '折叠全部文件夹' : '展开全部文件夹'"
-        :aria-label="areAllGroupsExpanded ? '折叠全部文件夹' : '展开全部文件夹'"
-        :disabled="Boolean(searchQuery.trim())"
-      >
-        <ChevronsUpDown size="15" stroke-width="2" />
-      </button>
-      <button
-        class="icon-btn"
-        :class="{ 'is-active': sortBy !== 'manual' }"
-        @click="toggleSorting"
-        :title="sortBy === 'manual' ? '启用按修改时间排序' : '取消排序，恢复手动顺序'"
-        :aria-label="sortBy === 'manual' ? '启用排序' : '取消排序'"
-        :aria-pressed="sortBy !== 'manual'"
-      >
-        <ArrowUpDown size="15" stroke-width="2" />
-      </button>
-      <button class="icon-btn" @click="handleCreateGroupClick" title="新建文件夹">
-        <FolderPlus size="16" stroke-width="2" />
-      </button>
+      <div class="toolbar-actions">
+        <button class="create-action" @click="handleCreateDoc(null)" title="新建文档" aria-label="新建文档">
+          <Plus size="16" stroke-width="2.2" />
+        </button>
+        <button
+          v-if="groups.length > 0"
+          class="icon-btn"
+          :class="{ 'is-active': areAllGroupsExpanded }"
+          @click="toggleAllGroups"
+          :title="areAllGroupsExpanded ? '折叠全部文件夹' : '展开全部文件夹'"
+          :aria-label="areAllGroupsExpanded ? '折叠全部文件夹' : '展开全部文件夹'"
+          :disabled="Boolean(searchQuery.trim())"
+        >
+          <ChevronsUpDown size="15" stroke-width="2" />
+        </button>
+        <button
+          class="icon-btn"
+          :class="{ 'is-active': sortBy !== 'manual' }"
+          @click="toggleSorting"
+          :title="sortBy === 'manual' ? '启用按修改时间排序' : '取消排序，恢复手动顺序'"
+          :aria-label="sortBy === 'manual' ? '启用排序' : '取消排序'"
+          :aria-pressed="sortBy !== 'manual'"
+        >
+          <ArrowUpDown size="15" stroke-width="2" />
+        </button>
+        <button class="icon-btn" @click="handleCreateGroupClick" title="新建文件夹" aria-label="新建文件夹">
+          <FolderPlus size="16" stroke-width="2" />
+        </button>
+      </div>
     </div>
 
     <!-- Search Bar -->
@@ -710,12 +714,17 @@ function onGroupDragStart(e, groupId) {
         </span>
         <Trash2 size="16" stroke-width="1.8" class="trash-icon" />
         <span class="trash-name">回收站</span>
-        <span class="count">{{ filteredDeletedDocs.length }}</span>
-        <div class="folder-actions" @click.stop v-if="filteredDeletedDocs.length > 0">
-          <button class="mini-btn text-danger" @click="handleEmptyTrashClick" title="清空回收站">
-            <Trash2 size="12" />
-          </button>
-        </div>
+        <span class="count">{{ deletedDocs.length }}</span>
+        <button
+          v-if="deletedDocs.length > 0"
+          type="button"
+          class="trash-clear-btn"
+          @click.stop="handleEmptyTrashClick"
+          title="永久删除回收站中的全部文档"
+        >
+          <Trash2 size="12" />
+          <span>清空</span>
+        </button>
       </div>
 
       <div
@@ -744,7 +753,7 @@ function onGroupDragStart(e, groupId) {
           </div>
         </div>
         <div v-if="filteredDeletedDocs.length === 0" class="empty-group-drop-hint">
-          <span>回收站为空</span>
+          <span>{{ searchQuery.trim() ? '没有匹配的文档' : '回收站为空' }}</span>
         </div>
       </div>
     </div>
@@ -755,6 +764,7 @@ function onGroupDragStart(e, groupId) {
 .sidebar-container {
   width: clamp(16.5rem, 21vw, 22.5rem);
   min-width: 16.5rem;
+  container: docs-sidebar / inline-size;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -809,9 +819,24 @@ html.dark .create-action:hover {
 .toolbar {
   display: flex;
   align-items: center;
-  gap: 7px;
+  gap: 10px;
   margin: 16px 2px 10px;
   flex-shrink: 0;
+}
+
+.toolbar-meta {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  flex: 0 0 auto;
 }
 
 .heading {
@@ -819,6 +844,7 @@ html.dark .create-action:hover {
   font-weight: 750;
   letter-spacing: 0.2px;
   color: #1e293b;
+  white-space: nowrap;
 }
 
 html.dark .heading {
@@ -855,10 +881,6 @@ html.dark .heading {
 @keyframes pulse-dot {
   0%, 100% { opacity: 0.4; transform: scale(0.85); }
   50% { opacity: 1; transform: scale(1.15); }
-}
-
-.spacer {
-  flex: 1;
 }
 
 .icon-btn {
@@ -939,7 +961,9 @@ html.dark .search {
 }
 
 .search input {
-  width: 100%;
+  width: 0;
+  min-width: 0;
+  flex: 1 1 auto;
   border: 0;
   outline: 0;
   background: transparent;
@@ -1361,18 +1385,53 @@ html.dark .trash:hover {
 
 .trash-name {
   flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .trash .count {
   margin-left: auto;
 }
 
-.trash:hover .count {
-  display: none;
+.trash-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  flex: 0 0 auto;
+  min-height: 26px;
+  padding: 0 8px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: #d45454;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease;
 }
 
-.trash:hover .folder-actions {
-  display: flex;
+.trash-clear-btn:hover {
+  background: #fff1f1;
+  border-color: #f6d4d4;
+}
+
+.trash-clear-btn:focus-visible {
+  outline: 2px solid #dc6464;
+  outline-offset: 1px;
+}
+
+html.dark .trash-clear-btn {
+  color: #f28b8b;
+}
+
+html.dark .trash-clear-btn:hover {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.2);
 }
 
 .trash-doc-list {
@@ -1383,12 +1442,14 @@ html.dark .trash:hover {
 .trash-doc-item {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   padding: 6px 8px;
   border-radius: 8px;
   cursor: pointer;
   margin: 2px 0;
   transition: 0.15s background;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .trash-doc-item:hover {
@@ -1400,8 +1461,60 @@ html.dark .trash-doc-item:hover {
 }
 
 .trash-doc-item .file-name {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: #1e293b;
   text-decoration: line-through;
   opacity: 0.75;
+}
+
+html.dark .trash-doc-item .file-name {
+  color: #f1f5f9;
+}
+
+.trash-doc-item .file-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.trash-doc-item .file-icon {
+  width: 17px;
+  height: 20px;
+  flex: 0 0 17px;
+  border: 1.5px solid #a0aec0;
+  border-radius: 3px;
+  background: #f8fafc;
+  position: relative;
+  box-sizing: border-box;
+}
+
+.trash-doc-item .file-icon::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  right: 2px;
+  top: 5px;
+  height: 1px;
+  background: #a0aec0;
+  box-shadow: 0 4px #a0aec0, 0 8px #a0aec0;
+}
+
+html.dark .trash-doc-item .file-icon {
+  border-color: #64748b;
+  background: #23252d;
+}
+
+html.dark .trash-doc-item .file-icon::after {
+  background: #64748b;
+  box-shadow: 0 4px #64748b, 0 8px #64748b;
 }
 
 .trash-item-actions {
@@ -1409,11 +1522,16 @@ html.dark .trash-doc-item:hover {
   align-items: center;
   gap: 4px;
   margin-left: auto;
+  flex: 0 0 auto;
   opacity: 0;
   transition: opacity 0.15s ease;
 }
 
 .trash-doc-item:hover .trash-item-actions {
+  opacity: 1;
+}
+
+.trash-doc-item:focus-within .trash-item-actions {
   opacity: 1;
 }
 
@@ -1428,11 +1546,14 @@ html.dark .trash-doc-item:hover {
   background: transparent;
   cursor: pointer;
   transition: all 0.15s ease;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 .trash-action-btn.restore-btn {
   color: #10b981;
   background: rgba(16, 185, 129, 0.08);
+  min-height: 24px;
 }
 
 .trash-action-btn.restore-btn:hover {
@@ -1454,5 +1575,81 @@ html.dark .trash-doc-item:hover {
 
 .text-danger:hover {
   background: rgba(239, 68, 68, 0.1) !important;
+}
+
+@container docs-sidebar (max-width: 330px) {
+  .toolbar {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 4px;
+    margin: 12px 0 8px;
+  }
+
+  .toolbar-meta {
+    min-height: 28px;
+  }
+
+  .toolbar-actions {
+    justify-self: end;
+    gap: 3px;
+  }
+
+  .create-action,
+  .icon-btn {
+    width: 28px;
+    height: 28px;
+  }
+
+  .search {
+    height: 36px;
+    margin-bottom: 8px;
+  }
+
+  .folder-row {
+    min-height: 38px;
+    padding-inline: 7px;
+    gap: 7px;
+  }
+
+  .children {
+    margin-left: 13px;
+    padding-left: 7px;
+  }
+
+  .trash {
+    gap: 6px;
+    padding: 7px 6px;
+  }
+
+  .trash-clear-btn {
+    min-height: 24px;
+    padding-inline: 6px;
+  }
+
+  .trash-doc-list {
+    max-height: 150px;
+  }
+
+  .trash-doc-item {
+    gap: 6px;
+    padding: 6px 4px;
+  }
+
+  .trash-item-actions {
+    gap: 2px;
+    opacity: 1;
+  }
+
+  .trash-action-btn {
+    padding-inline: 4px;
+    font-size: 10px;
+  }
+
+  .trash-action-btn.delete-btn {
+    width: 22px;
+    height: 24px;
+    justify-content: center;
+    padding: 3px 4px;
+  }
 }
 </style>

@@ -407,6 +407,21 @@ function getStyle(category) {
   return effectiveStyles.value[category] || {};
 }
 
+function hasEditableControls(category) {
+  if (['h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'code', 'pre', 'table', 'img'].includes(category)) return true;
+  const style = getStyle(category);
+  const editableProps = [
+    'color', 'backgroundColor', 'borderLeftColor', 'borderColor', 'headerBg',
+    'textColor', 'fontSize', 'fontWeight', 'lineHeight', 'textAlign',
+    'paddingLeft', 'borderLeft', 'margin'
+  ];
+  return editableProps.some(prop => style[prop] !== undefined) || otherProps(category).length > 0;
+}
+
+const visibleElements = computed(() =>
+  elements.filter(el => hasMaterialSupport(el.key) || hasEditableControls(el.key))
+);
+
 const knownProps = ['color', 'backgroundColor', 'borderLeftColor', 'borderColor', 'textColor', 'headerBg', 'fontSize', 'fontWeight', 'lineHeight', 'textAlign', 'paddingLeft', 'borderLeft', 'margin', 'borderRadius', 'maxWidth', 'boxShadow', 'border', 'display', 'materialTemplateId', 'materialPrefix', 'materialTitle', 'codeThemeId', 'macStyle', 'showLang', 'letterSpacing', 'fontFamily', 'padding', 'backgroundTexture'];
 
 function clearMaterial(key) {
@@ -1109,11 +1124,11 @@ function initCodeMirror() {
       paddingRight: "3px"
     },
     ".cm-activeLineGutter": {
-      backgroundColor: "#eaeef2",
-      color: "#24292e"
+      backgroundColor: "rgba(39, 117, 182, 0.08)",
+      color: "#2775b6"
     },
     ".cm-activeLine": {
-      backgroundColor: "rgba(0, 0, 0, 0.03)"
+      backgroundColor: "rgba(39, 117, 182, 0.055)"
     },
     ".cm-line": {
       lineHeight: "1.6"
@@ -1193,12 +1208,13 @@ function scrollToCssAnchor(anchor) {
   const match = docText.match(anchor.regex);
 
   if (match && typeof match.index === 'number') {
-    const from = match.index;
+    const leadingOffset = Math.max(0, match[0].search(/\S/));
+    const from = match.index + leadingOffset;
     const line = cmView.state.doc.lineAt(from);
     
-    // Position cursor at target line and scroll into view
+    // Move the caret to the matching line without selecting the selector text.
     cmView.dispatch({
-      selection: { anchor: from, head: from + match[0].length },
+      selection: { anchor: from },
       effects: EditorView.scrollIntoView(line.from, { y: 'center' }),
       scrollIntoView: true
     });
@@ -1406,7 +1422,7 @@ const cssLineCount = computed(() => {
       </div>
 
       <div
-        v-for="el in elements"
+        v-for="el in visibleElements"
         :key="el.key"
         class="style-section"
         :class="{ 'is-highlighted': highlightedKey === el.key }"
@@ -1611,12 +1627,19 @@ const cssLineCount = computed(() => {
           </div>
         </div>
 
-        <div v-else class="style-controls">
+        <div
+          v-else
+          class="style-controls"
+          :class="{
+            'table-style-controls': el.key === 'table',
+            'heading-style-controls': ['h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(el.key)
+          }"
+        >
           <!-- 1. Dedicated Code Block Customizer (只支持代码主题、Mac风格、字号、行高、字间距、字体族、行内代码配色) -->
           <template v-if="el.key === 'code' || el.key === 'pre'">
             <!-- Code Theme Selector -->
             <label class="style-field">
-              <span class="field-label">代码高亮主题</span>
+                <span class="field-label">高亮主题</span>
               <select
                 :value="localStyles.code?.codeThemeId || props.codeThemeId || 'mdnice-classic'"
                 @change="e => { updateStyle('code', 'codeThemeId', e.target.value); emit('update:codeThemeId', e.target.value); }"
@@ -1629,8 +1652,8 @@ const cssLineCount = computed(() => {
             </label>
 
             <!-- Mac Style Terminal Dots Toggle -->
-            <label class="style-field">
-              <span class="field-label">Mac 顶栏风格</span>
+            <label class="style-field style-field-wide">
+              <span class="field-label">Mac 顶栏</span>
               <div class="mac-style-toggle-row">
                 <button
                   type="button"
@@ -1643,14 +1666,14 @@ const cssLineCount = computed(() => {
                     <span class="mac-dot yellow"></span>
                     <span class="mac-dot green"></span>
                   </span>
-                  <span>{{ (localStyles.code?.macStyle !== false) ? '已启用 Mac 终端顶栏' : '已关闭 (简约代码块)' }}</span>
+                  <span>{{ (localStyles.code?.macStyle !== false) ? '启用' : '关闭' }}</span>
                 </button>
               </div>
             </label>
 
             <!-- Language Badge Toggle -->
-            <label class="style-field">
-              <span class="field-label">代码语言标识</span>
+            <label class="style-field style-field-wide">
+              <span class="field-label">语言标签</span>
               <div class="mac-style-toggle-row">
                 <button
                   type="button"
@@ -1659,14 +1682,14 @@ const cssLineCount = computed(() => {
                   @click="updateStyle('code', 'showLang', !(localStyles.code?.showLang === true))"
                 >
                   <span style="font-size: 11px; font-weight: 700; background: #e2e8f0; color: #475569; padding: 1px 6px; border-radius: 3px; margin-right: 8px;">JS</span>
-                  <span>{{ (localStyles.code?.showLang === true) ? '已显示语言标识 (右上角)' : '已隐藏语言标识 (默认纯净)' }}</span>
+                  <span>{{ (localStyles.code?.showLang === true) ? '显示语言标签' : '隐藏语言标签' }}</span>
                 </button>
               </div>
             </label>
 
             <!-- Code Font Size -->
             <label class="style-field">
-              <span class="field-label">代码字号</span>
+              <span class="field-label">字号</span>
               <input
                 type="text"
                 :value="getStyle('code').fontSize || '13px'"
@@ -1678,7 +1701,7 @@ const cssLineCount = computed(() => {
 
             <!-- Code Line Height -->
             <label class="style-field">
-              <span class="field-label">代码行高</span>
+              <span class="field-label">行高</span>
               <select
                 :value="getStyle('code').lineHeight || '1.6'"
                 @change="updateStyle('code', 'lineHeight', $event.target.value)"
@@ -1696,7 +1719,7 @@ const cssLineCount = computed(() => {
 
             <!-- Code Letter Spacing -->
             <label class="style-field">
-              <span class="field-label">字间距</span>
+              <span class="field-label">字距</span>
               <select
                 :value="getStyle('code').letterSpacing || '0px'"
                 @change="updateStyle('code', 'letterSpacing', $event.target.value)"
@@ -1711,7 +1734,7 @@ const cssLineCount = computed(() => {
 
             <!-- Code Font Family -->
             <label class="style-field">
-              <span class="field-label">字体族</span>
+              <span class="field-label">字体</span>
               <select
                 :value="getStyle('code').fontFamily || '&quot;SF Mono&quot;, Consolas, Monaco, monospace'"
                 @change="updateStyle('code', 'fontFamily', $event.target.value)"
@@ -1726,7 +1749,7 @@ const cssLineCount = computed(() => {
 
             <!-- Inline Code Colors -->
             <label class="style-field">
-              <span class="field-label">行内代码文字色</span>
+              <span class="field-label">行内字色</span>
               <div class="color-row">
                 <input
                   type="color"
@@ -1744,7 +1767,7 @@ const cssLineCount = computed(() => {
             </label>
 
             <label class="style-field">
-              <span class="field-label">行内代码背景色</span>
+              <span class="field-label">行内底色</span>
               <div class="color-row">
                 <input
                   type="color"
@@ -1865,18 +1888,18 @@ const cssLineCount = computed(() => {
           <!-- 3. Standard Element Controls (For other elements including u, strong, blockquote, etc.) -->
           <template v-else>
             <!-- Color (文字色) -->
-            <label class="style-field" v-if="getStyle(el.key).color !== undefined">
+            <label class="style-field" v-if="getStyle(el.key).color !== undefined || /^h[1-6]$/.test(el.key)">
               <span class="field-label">文字色</span>
               <div class="color-row">
                 <input
                   type="color"
-                  :value="getStyle(el.key).color"
+                  :value="getStyle(el.key).color || '#2775b6'"
                   @input="updateStyle(el.key, 'color', $event.target.value)"
                   class="color-picker"
                 />
                 <input
                   type="text"
-                  :value="getStyle(el.key).color"
+                  :value="getStyle(el.key).color || '#2775b6'"
                   @input="updateStyle(el.key, 'color', $event.target.value)"
                   class="value-input"
                 />
@@ -1960,11 +1983,11 @@ const cssLineCount = computed(() => {
             </label>
 
             <!-- Font size -->
-            <label class="style-field" v-if="getStyle(el.key).fontSize !== undefined">
+            <label class="style-field" v-if="getStyle(el.key).fontSize !== undefined || /^h[1-6]$/.test(el.key)">
               <span class="field-label">字号</span>
               <input
                 type="text"
-                :value="getStyle(el.key).fontSize"
+                :value="getStyle(el.key).fontSize || (el.key === 'h1' ? '22px' : el.key === 'h2' ? '18px' : el.key === 'h3' ? '16px' : el.key === 'h4' ? '15px' : '14px')"
                 @input="updateStyle(el.key, 'fontSize', $event.target.value)"
                 class="value-input"
                 :placeholder="el.key === 'h1' ? '22px' : el.key === 'h2' ? '18px' : el.key === 'h3' ? '16px' : el.key === 'h4' ? '15px' : '14px'"
@@ -1972,11 +1995,11 @@ const cssLineCount = computed(() => {
             </label>
 
             <!-- Font weight -->
-            <label class="style-field" v-if="getStyle(el.key).fontWeight !== undefined">
+            <label class="style-field" v-if="getStyle(el.key).fontWeight !== undefined || /^h[1-6]$/.test(el.key)">
               <span class="field-label">字重</span>
               <input
                 type="text"
-                :value="getStyle(el.key).fontWeight"
+                :value="getStyle(el.key).fontWeight || '700'"
                 @input="updateStyle(el.key, 'fontWeight', $event.target.value)"
                 class="value-input"
                 placeholder="700 / bold"
@@ -1984,10 +2007,10 @@ const cssLineCount = computed(() => {
             </label>
 
             <!-- Line height -->
-            <label class="style-field" v-if="getStyle(el.key).lineHeight !== undefined">
+            <label class="style-field" v-if="getStyle(el.key).lineHeight !== undefined || /^h[1-6]$/.test(el.key)">
               <span class="field-label">行高</span>
               <select
-                :value="getStyle(el.key).lineHeight"
+                :value="getStyle(el.key).lineHeight || '1.6'"
                 @change="updateStyle(el.key, 'lineHeight', $event.target.value)"
                 class="style-select"
               >
@@ -2466,10 +2489,20 @@ const cssLineCount = computed(() => {
 }
 
 .style-controls {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 1rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  max-width: 100%;
+  align-items: start;
+  gap: 0.5rem 0.625rem;
+}
+
+.style-controls.table-style-controls {
+  display: block;
+}
+
+.style-controls.heading-style-controls {
+  max-width: 100%;
+  row-gap: 0.5rem;
 }
 
 .style-field {
@@ -2480,11 +2513,70 @@ const cssLineCount = computed(() => {
   flex: 0 0 auto;
 }
 
+.style-controls:not(.table-style-controls) .style-field {
+  display: grid;
+  grid-template-columns: 3.25rem 4.5rem;
+  align-items: center;
+  gap: 0.375rem;
+  min-width: 0;
+  min-height: 1.75rem;
+  height: auto;
+  flex: none;
+}
+
+.style-controls:not(.table-style-controls) .style-field-wide {
+  grid-column: 1 / -1;
+  grid-template-columns: 4.25rem minmax(0, 1fr);
+}
+
+.style-controls.heading-style-controls .field-label {
+  white-space: nowrap;
+}
+
+.style-controls:not(.table-style-controls) .field-label {
+  width: 3.25rem;
+  text-align: right;
+  white-space: normal;
+  line-height: 1.15;
+}
+
+.style-controls:not(.table-style-controls) .style-field > :not(.field-label) {
+  width: 4.5rem;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.style-controls:not(.table-style-controls) .style-field .color-row {
+  width: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.style-controls:not(.table-style-controls) .style-field .value-input {
+  flex: none;
+  width: 4.5rem;
+  height: 1.5rem;
+  min-width: 0;
+}
+
+.style-controls:not(.table-style-controls) .style-field .style-select {
+  flex: none;
+  width: 4.5rem;
+  height: 1.5rem;
+  min-width: 0;
+}
+
+.style-controls:not(.table-style-controls) .style-field-wide > :not(.field-label) {
+  width: 100%;
+}
+
 .field-label {
   font-size: 0.75rem;
   font-weight: 500;
   color: var(--text-muted);
   white-space: nowrap;
+  line-height: 1.2;
 }
 
 .color-row {
@@ -3323,7 +3415,7 @@ const cssLineCount = computed(() => {
 .body-customizer-panel {
   display: flex;
   flex-direction: column;
-  gap: 0.625rem;
+  gap: 0.375rem;
   width: 100%;
   box-sizing: border-box;
 }
@@ -3331,7 +3423,7 @@ const cssLineCount = computed(() => {
 .body-row-two-col {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.25rem 0.75rem;
+  gap: 0.125rem 0.625rem;
   width: 100%;
   box-sizing: border-box;
 }
@@ -3352,16 +3444,17 @@ const cssLineCount = computed(() => {
   flex-direction: row;
   align-items: center;
   justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.375rem 0.125rem;
-  min-height: 2.5rem;
+  gap: 0.375rem;
+  padding: 0.2rem 0.125rem;
+  min-height: 2.1rem;
   min-width: 0;
 }
 
 .body-setting-card.is-row .style-select {
-  max-width: 65%;
+  width: 4.5rem;
+  max-width: 4.5rem;
   min-width: 0;
-  flex: 0 1 auto;
+  flex: 0 1 4.5rem;
 }
 
 .body-setting-card.is-row .value-input {
@@ -3371,11 +3464,13 @@ const cssLineCount = computed(() => {
 }
 
 .body-setting-title {
+  width: 3.25rem;
+  flex: 0 0 3.25rem;
   font-size: 0.72rem;
   font-weight: 600;
   color: var(--text-main, #334155);
   white-space: nowrap;
-  flex-shrink: 0;
+  text-align: right;
 }
 
 .body-setting-sub {
