@@ -25,14 +25,17 @@ function resolveDefaultTidbConfig() {
     const pass = decodeURIComponent(parsed.password || '');
     const host = parsed.hostname;
     if (!host) return null;
+    const db = (parsed.pathname || '').replace(/^\//, '');
+    const httpHost = host.startsWith('http-') ? host : `http-${host}`;
     const authString = `${user}:${pass}`;
     const base64Auth = typeof btoa !== 'undefined'
       ? btoa(authString)
       : Buffer.from(authString).toString('base64');
     return {
-      targetUrl: `https://${host}/v1alpha1/sql`,
+      targetUrl: `https://${httpHost}/v1beta/sql`,
       authorization: `Basic ${base64Auth}`,
-      host
+      database: db || 'easymd',
+      host: httpHost
     };
   } catch {
     return null;
@@ -80,6 +83,7 @@ async function handleEdge(req) {
 
   let targetUrl = rawTargetUrl;
   let defaultAuth = null;
+  let defaultDatabase = null;
 
   if (useDefault) {
     const defaultCfg = resolveDefaultTidbConfig();
@@ -99,6 +103,7 @@ async function handleEdge(req) {
     }
     targetUrl = defaultCfg.targetUrl;
     defaultAuth = defaultCfg.authorization;
+    defaultDatabase = defaultCfg.database;
   }
 
   // 4. Security validation: only proxy to tidbcloud.com
@@ -147,6 +152,9 @@ async function handleEdge(req) {
 
   if (defaultAuth) {
     fetchHeaders.set('authorization', defaultAuth);
+  }
+  if (defaultDatabase && !fetchHeaders.has('tidb-database')) {
+    fetchHeaders.set('tidb-database', defaultDatabase);
   }
 
   // 6. Read body
@@ -224,6 +232,7 @@ async function handleNode(req, res) {
 
   let targetUrl = rawTargetUrl;
   let defaultAuth = null;
+  let defaultDatabase = null;
 
   if (useDefault) {
     const defaultCfg = resolveDefaultTidbConfig();
@@ -237,6 +246,7 @@ async function handleNode(req, res) {
     }
     targetUrl = defaultCfg.targetUrl;
     defaultAuth = defaultCfg.authorization;
+    defaultDatabase = defaultCfg.database;
   }
 
   try {
@@ -293,6 +303,9 @@ async function handleNode(req, res) {
 
     if (defaultAuth) {
       fetchHeaders['authorization'] = defaultAuth;
+    }
+    if (defaultDatabase && !fetchHeaders['tidb-database']) {
+      fetchHeaders['tidb-database'] = defaultDatabase;
     }
 
     const response = await fetch(targetUrl, {

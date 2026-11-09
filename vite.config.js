@@ -14,10 +14,13 @@ function resolveLocalDefaultTidbConfig() {
     const pass = decodeURIComponent(parsed.password || '');
     const host = parsed.hostname;
     if (!host) return null;
+    const db = (parsed.pathname || '').replace(/^\//, '');
+    const httpHost = host.startsWith('http-') ? host : `http-${host}`;
     return {
-      targetUrl: `https://${host}/v1alpha1/sql`,
+      targetUrl: `https://${httpHost}/v1beta/sql`,
       authorization: 'Basic ' + Buffer.from(`${user}:${pass}`).toString('base64'),
-      host
+      database: db || 'easymd',
+      host: httpHost
     };
   } catch {
     return null;
@@ -54,6 +57,7 @@ function createTidbProxyMiddleware() {
 
       let targetUrl = rawTargetUrl;
       let defaultAuth = null;
+      let defaultDatabase = null;
 
       if (useDefault) {
         const defaultCfg = resolveLocalDefaultTidbConfig();
@@ -67,6 +71,7 @@ function createTidbProxyMiddleware() {
         }
         targetUrl = defaultCfg.targetUrl;
         defaultAuth = defaultCfg.authorization;
+        defaultDatabase = defaultCfg.database;
       }
 
       const chunks = [];
@@ -91,6 +96,9 @@ function createTidbProxyMiddleware() {
 
           if (defaultAuth) {
             fetchHeaders['authorization'] = defaultAuth;
+          }
+          if (defaultDatabase && !fetchHeaders['tidb-database']) {
+            fetchHeaders['tidb-database'] = defaultDatabase;
           }
 
           const response = await fetch(targetUrl, {
