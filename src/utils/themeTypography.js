@@ -326,12 +326,12 @@ export function buildWechatTypo(theme, colors) {
     if (T.p.justify) s.push(`text-align: justify`);
     if (T.p.color) s.push(`color: ${fill(T.p.color, colors)}`);
     s.push(`margin-top: ${T.p.marginTop || '0px'}`);
-    s.push(`margin-bottom: ${T.p.marginBottom || '16px'}`);
+    s.push(`margin-bottom: ${T.p.marginBottom || '12px'}`);
     if (T.p.padding) {
       s.push(`padding: ${T.p.padding}`);
     } else {
-      s.push(`padding-top: 8px`);
-      s.push(`padding-bottom: 8px`);
+      s.push(`padding-top: 0px`);
+      s.push(`padding-bottom: 0px`);
     }
     if (s.length) out['p'] = fill(s.join('; '), colors);
   }

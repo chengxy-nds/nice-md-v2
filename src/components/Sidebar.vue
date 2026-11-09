@@ -75,7 +75,10 @@ const sortModes = [
   { id: 'title', label: '按标题名称排序' },
   { id: 'manual', label: '按手动拖拽排序' }
 ];
-const sortBy = ref(localStorage.getItem('nicemd_doc_sort') || 'updatedAt');
+// Opening a document must never change its position. Start with persisted order;
+// explicit sort modes are only applied after the user chooses them.
+const SORT_STORAGE_KEY = 'nicemd_doc_sort_v2';
+const sortBy = ref(localStorage.getItem(SORT_STORAGE_KEY) || 'manual');
 
 const currentSortLabel = computed(() => {
   const mode = sortModes.find(m => m.id === sortBy.value) || sortModes[0];
@@ -86,15 +89,12 @@ function cycleSortMode() {
   const idx = sortModes.findIndex(m => m.id === sortBy.value);
   const next = sortModes[(idx + 1) % sortModes.length];
   sortBy.value = next.id;
-  localStorage.setItem('nicemd_doc_sort', next.id);
+  localStorage.setItem(SORT_STORAGE_KEY, next.id);
 }
 
 function sortDocList(list) {
+  if (sortBy.value === 'manual') return list;
   return [...list].sort((a, b) => {
-    const pinA = a.isPinned ? 1 : 0;
-    const pinB = b.isPinned ? 1 : 0;
-    if (pinA !== pinB) return pinB - pinA;
-
     if (sortBy.value === 'updatedAt') {
       return (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0);
     }
@@ -144,34 +144,60 @@ function handleCancelNewGroup() {
   newGroupName.value = '';
 }
 
-function handleCreateDoc(groupId) {
-  const targetGroupId = groupId || '__default__';
-  const s = new Set(expandedGroups.value);
-  if (!s.has(targetGroupId)) {
-    s.add(targetGroupId);
-    expandedGroups.value = s;
-  }
-  emit('create-doc', groupId);
+// ── Group Expansion Persistence ──
+const STORAGE_KEY_EXPANDED = 'nicemd_expanded_groups';
+function loadExpandedGroups() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_EXPANDED);
+    if (raw) return new Set(JSON.parse(raw));
+  } catch (e) {}
+  return new Set(['__ungrouped__', '__default__']);
 }
 
-// ── Group Expansion State ──
-const expandedGroups = ref(new Set());
+const expandedGroups = ref(loadExpandedGroups());
+
+function saveExpandedGroups() {
+  try {
+    localStorage.setItem(STORAGE_KEY_EXPANDED, JSON.stringify([...expandedGroups.value]));
+  } catch (e) {}
+}
+
+function handleCreateDoc(explicitGroupId = null) {
+  let targetGroupId = explicitGroupId;
+  // If no explicit group passed, intelligently default to the active document's group if one exists
+  if (!targetGroupId && props.activeDocId) {
+    const activeDoc = props.documents.find(d => d.id === props.activeDocId && !isDocDeleted(d));
+    if (activeDoc && activeDoc.groupId) {
+      targetGroupId = activeDoc.groupId;
+    }
+  }
+
+  const groupKey = targetGroupId || '__ungrouped__';
+  const s = new Set(expandedGroups.value);
+  if (!s.has(groupKey)) {
+    s.add(groupKey);
+    expandedGroups.value = s;
+    saveExpandedGroups();
+  }
+  emit('create-doc', targetGroupId);
+}
 
 function expandActiveGroup() {
   if (props.activeDocId) {
     const doc = props.documents.find(d => d.id === props.activeDocId);
-    const groupId = doc?.groupId || '__default__';
+    const groupId = doc?.groupId || '__ungrouped__';
     const s = new Set(expandedGroups.value);
     if (!s.has(groupId)) {
       s.add(groupId);
       expandedGroups.value = s;
-      nextTick(() => {
-        const activeEl = sidebarBodyRef.value?.querySelector('.sidebar-doc-item.is-active, .doc-item.active');
-        if (activeEl) {
-          activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-      });
+      saveExpandedGroups();
     }
+    nextTick(() => {
+      const activeEl = sidebarBodyRef.value?.querySelector('.sidebar-doc-item.is-active, .doc-item.is-active, .doc-item.active');
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    });
   }
 }
 
@@ -192,12 +218,13 @@ function toggleGroup(groupId) {
   const s = new Set(expandedGroups.value);
   if (s.has(groupId)) s.delete(groupId); else s.add(groupId);
   expandedGroups.value = s;
+  saveExpandedGroups();
 }
 
 function isGroupExpanded(groupId) {
   const q = searchQuery.value.trim();
   if (q) {
-    if (groupId === '__default__') return filteredUngroupedDocs.value.length > 0;
+    if (groupId === '__default__' || groupId === '__ungrouped__') return filteredUngroupedDocs.value.length > 0;
     if (groupId === '__trash__') return filteredDeletedDocs.value.length > 0;
     return docsInGroup(groupId).length > 0;
   }
@@ -232,7 +259,7 @@ function confirmRenameGroup() {
 async function handleDeleteGroup(group) {
   const ok = await showConfirm({
     title: '删除分组',
-    message: `确定要删除「${group.name}」吗？分组内的文档将移到「默认」分组。`,
+    message: `确定要删除「${group.name}」吗？分组内的文档将移到「未分类」。`,
     confirmText: '删除',
     danger: true
   });
@@ -396,39 +423,33 @@ function onGroupDragStart(e, groupId) {
 
 <template>
   <aside class="sidebar-container select-none">
-    <!-- Primary Action: New Document Button -->
-    <button class="btn-create-doc-primary" @click="handleCreateDoc(null)" title="新建文档">
-      <Plus size="15" stroke-width="2.5" />
-      <span>新建文档</span>
-    </button>
-
-    <!-- Section Header: 我的文档 -->
-    <div class="section-title-row">
-      <div class="section-title-group">
-        <span class="section-title">我的文档</span>
-        <span v-if="isCloudSyncActive" class="cloud-sync-badge" :title="cloudSyncTitle">
-          <Cloud size="12" class="cloud-sync-icon" />
-          <span class="cloud-sync-dot"></span>
-        </span>
+    <!-- Toolbar: 我的文档 -->
+    <div class="toolbar">
+      <div class="heading">我的文档</div>
+      <div v-if="isCloudSyncActive" class="sync" :title="cloudSyncTitle" aria-label="云端同步已开启">
+        <RotateCcw size="11" class="sync-icon" />
+        <span class="sync-label">已同步</span>
+        <span class="dot"></span>
       </div>
-      <div class="section-icons">
-        <button class="title-icon-btn" @click="cycleSortMode" :title="currentSortLabel">
-          <ArrowUpDown size="14" stroke-width="1.8" />
-        </button>
-        <button class="title-icon-btn" @click="handleCreateGroupClick" title="新建分组">
-          <FolderPlus size="15" stroke-width="1.8" />
-        </button>
-      </div>
+      <div class="spacer"></div>
+      <button class="create-action" @click="handleCreateDoc(null)" title="新建文档" aria-label="新建文档">
+        <Plus size="16" stroke-width="2.2" />
+      </button>
+      <button class="icon-btn" @click="cycleSortMode" :title="currentSortLabel">
+        <ArrowUpDown size="15" stroke-width="2" />
+      </button>
+      <button class="icon-btn" @click="handleCreateGroupClick" title="新建文件夹">
+        <FolderPlus size="16" stroke-width="2" />
+      </button>
     </div>
 
-    <!-- Always Visible Search Filter Input -->
-    <div class="search-input-wrap">
-      <Search size="14" class="search-icon-inside" />
+    <!-- Search Bar -->
+    <label class="search">
+      <Search size="16" class="search-icon-inside" />
       <input
         v-model="searchQuery"
         type="text"
         placeholder="搜索文档标题或正文内容..."
-        class="search-input"
       />
       <button 
         v-if="searchQuery" 
@@ -438,71 +459,18 @@ function onGroupDragStart(e, groupId) {
       >
         <X size="12" />
       </button>
-    </div>
+    </label>
 
     <!-- Sidebar Body / Document Tree -->
     <div class="sidebar-body" ref="sidebarBodyRef">
-      <!-- ── 默认分组 ── -->
-      <section class="group-section">
-        <div
-          class="group-header"
-          :class="{ 'is-drop-target': dragOverGroupId === '__default__' }"
-          @click="toggleGroup('__default__')"
-          @dragover="onGroupHeaderDragOver($event, '__default__')"
-          @dragenter.prevent="dragOverGroupId = '__default__'"
-          @dragleave="onGroupDragLeave"
-          @drop="onGroupHeaderDrop($event, '__default__')"
-        >
-          <span class="group-chevron">
-            <ChevronRight v-if="!isGroupExpanded('__default__')" size="12" stroke-width="1.6" />
-            <ChevronDown v-else size="12" stroke-width="1.6" />
-          </span>
-          <Folder v-if="!isGroupExpanded('__default__')" size="14" stroke-width="1.6" class="group-icon" />
-          <FolderOpen v-else size="14" stroke-width="1.6" class="group-icon" />
-          <span class="group-name">默认分组</span>
-          <div class="group-header-right">
-            <span class="group-count">{{ filteredUngroupedDocs.length }}</span>
-            <div class="group-actions" @click.stop>
-              <button class="mini-btn" @click="handleCreateDoc(null)" title="添加文档">
-                <Plus size="12" />
-              </button>
-            </div>
-          </div>
-        </div>
-        <div
-          v-show="isGroupExpanded('__default__')"
-          class="doc-list group-doc-list"
-          @dragover="onListDragOver($event, '__default__')"
-          @drop="onListDrop($event, '__default__')"
-        >
-          <SidebarDocItem
-            v-for="doc in filteredUngroupedDocs"
-            :key="doc.id"
-            :doc="doc"
-            :isActive="doc.id === activeDocId"
-            :searchQuery="searchQuery"
-            @select="id => $emit('select-doc', id)"
-            @rename="payload => $emit('rename-doc', payload)"
-            @delete="id => $emit('delete-doc', id)"
-            @move-doc="handleDocMove"
-            @history="doc => $emit('open-doc-history', doc)"
-            @duplicate="doc => $emit('duplicate-doc', doc)"
-            @toggle-pin="doc => $emit('toggle-pin', doc)"
-          />
-          <div v-if="filteredUngroupedDocs.length === 0" class="empty-group-drop-hint">
-            <span>{{ searchQuery ? '无匹配文档' : '暂无文档，可拖拽至此' }}</span>
-          </div>
-        </div>
-      </section>
-
-      <!-- Group Creation Inline Row (Right above custom groups) -->
+      <!-- Group Creation Inline Row (at top of list) -->
       <div v-if="isCreatingGroup" class="create-group-row">
-        <Folder size="14" stroke-width="1.6" class="create-icon" />
+        <span class="folder-icon create-icon"></span>
         <input
           v-model="newGroupName"
           ref="newGroupInputRef"
           type="text"
-          placeholder="输入分组名称回车新建..."
+          placeholder="输入文件夹名称回车新建..."
           class="create-group-input"
           @blur="handleSaveNewGroup"
           @keyup.enter="handleSaveNewGroup"
@@ -518,264 +486,332 @@ function onGroupDragStart(e, groupId) {
         </div>
       </div>
 
-      <!-- ── 自定义分组 ── -->
-      <section
-        v-for="group in groups"
-        :key="group.id"
-        class="group-section"
+      <!-- Mode A: Clean Flat List when no custom groups exist -->
+      <div
+        v-if="groups.length === 0"
+        class="doc-list flat-doc-list"
+        @dragover="onListDragOver($event, null)"
+        @drop="onListDrop($event, null)"
       >
-        <div
-          class="group-header"
-          :class="{ 
-            'is-drop-target': dragOverGroupId === group.id,
-            'is-renaming': renamingGroupId === group.id
-          }"
-          :draggable="renamingGroupId !== group.id"
-          @click="renamingGroupId === group.id ? null : toggleGroup(group.id)"
-          @dragstart="onGroupDragStart($event, group.id)"
-          @dragover="onGroupHeaderDragOver($event, group.id)"
-          @dragenter.prevent="dragOverGroupId = group.id"
-          @dragleave="onGroupDragLeave"
-          @drop="onGroupHeaderDrop($event, group.id)"
+        <SidebarDocItem
+          v-for="doc in filteredUngroupedDocs"
+          :key="doc.id"
+          :doc="doc"
+          :isActive="doc.id === activeDocId"
+          :searchQuery="searchQuery"
+          @select="id => $emit('select-doc', id)"
+          @rename="payload => $emit('rename-doc', payload)"
+          @delete="id => $emit('delete-doc', id)"
+          @move-doc="handleDocMove"
+          @history="doc => $emit('open-doc-history', doc)"
+          @duplicate="doc => $emit('duplicate-doc', doc)"
+          @toggle-pin="doc => $emit('toggle-pin', doc)"
+        />
+        <div v-if="filteredUngroupedDocs.length === 0" class="empty-group-drop-hint">
+          <span>{{ searchQuery ? '无匹配文档' : '暂无文档，点击上方「新建文档」开始写作' }}</span>
+        </div>
+      </div>
+
+      <!-- Mode B: Grouped Tree when custom groups exist -->
+      <template v-else>
+        <!-- ── 自定义分组列表 ── -->
+        <section
+          v-for="group in groups"
+          :key="group.id"
+          class="folder"
         >
-          <span class="group-chevron">
-            <ChevronRight v-if="!isGroupExpanded(group.id)" size="12" />
-            <ChevronDown v-else size="12" />
-          </span>
-          <Folder v-if="!isGroupExpanded(group.id)" size="14" class="group-icon" />
-          <FolderOpen v-else size="14" class="group-icon" />
+          <div
+            class="folder-row"
+            :class="{ 
+              'is-drop-target': dragOverGroupId === group.id,
+              'is-renaming': renamingGroupId === group.id
+            }"
+            :draggable="renamingGroupId !== group.id"
+            @click="renamingGroupId === group.id ? null : toggleGroup(group.id)"
+            @dragstart="onGroupDragStart($event, group.id)"
+            @dragover="onGroupHeaderDragOver($event, group.id)"
+            @dragenter.prevent="dragOverGroupId = group.id"
+            @dragleave="onGroupDragLeave"
+            @drop="onGroupHeaderDrop($event, group.id)"
+          >
+            <span class="chevron">
+              <ChevronRight v-if="!isGroupExpanded(group.id)" size="13" stroke-width="2.2" />
+              <ChevronDown v-else size="13" stroke-width="2.2" />
+            </span>
+            <span class="folder-icon"></span>
 
-          <!-- group name display -->
-          <span
-            v-if="renamingGroupId !== group.id"
-            class="group-name"
-            @dblclick.stop="startRenameGroup(group)"
-          >{{ group.name }}</span>
+            <!-- group name display -->
+            <span
+              v-if="renamingGroupId !== group.id"
+              class="folder-name"
+              @dblclick.stop="startRenameGroup(group)"
+              :title="group.name"
+            >{{ group.name }}</span>
 
-          <!-- group name edit -->
-          <input
-            v-else
-            v-model="renameGroupValue"
-            class="group-rename-input"
-            ref="renameGroupInputRef"
-            @blur="confirmRenameGroup"
-            @keyup.enter="confirmRenameGroup"
-            @keyup.escape="renamingGroupId = null"
-            @click.stop
-            @mousedown.stop
-            @dblclick.stop
-          />
+            <!-- group name edit -->
+            <input
+              v-else
+              v-model="renameGroupValue"
+              class="group-rename-input"
+              ref="renameGroupInputRef"
+              @blur="confirmRenameGroup"
+              @keyup.enter="confirmRenameGroup"
+              @keyup.escape="renamingGroupId = null"
+              @click.stop
+              @mousedown.stop
+              @dblclick.stop
+            />
 
-          <div v-show="renamingGroupId !== group.id" class="group-header-right">
-            <span class="group-count">{{ docsInGroup(group.id).length }}</span>
-            <div class="group-actions" @click.stop>
-              <button class="mini-btn" @click="handleCreateDoc(group.id)" title="添加文档">
-                <Plus size="12" />
-              </button>
-              <button class="mini-btn" @click="startRenameGroup(group)" title="重命名">
-                <Pencil size="12" />
-              </button>
-              <button class="mini-btn" @click="handleDeleteGroup(group)" title="删除分组">
-                <Trash2 size="12" />
-              </button>
+            <div v-show="renamingGroupId !== group.id" class="folder-right">
+              <span class="count">{{ docsInGroup(group.id).length }}</span>
+              <div class="folder-actions" @click.stop>
+                <button class="mini-btn" @click="handleCreateDoc(group.id)" title="在此分组新建文档">
+                  <Plus size="12" />
+                </button>
+                <button class="mini-btn" @click="startRenameGroup(group)" title="重命名分组">
+                  <Pencil size="12" />
+                </button>
+                <button class="mini-btn" @click="handleDeleteGroup(group)" title="删除分组">
+                  <Trash2 size="12" />
+                </button>
+              </div>
             </div>
           </div>
-        </div>
 
-        <div
-          v-show="isGroupExpanded(group.id)"
-          class="doc-list group-doc-list"
-          @dragover="onListDragOver($event, group.id)"
-          @drop="onListDrop($event, group.id)"
-        >
-          <SidebarDocItem
-            v-for="doc in docsInGroup(group.id)"
-            :key="doc.id"
-            :doc="doc"
-            :isActive="doc.id === activeDocId"
-            :searchQuery="searchQuery"
-            @select="id => $emit('select-doc', id)"
-            @rename="payload => $emit('rename-doc', payload)"
-            @delete="id => $emit('delete-doc', id)"
-            @move-doc="handleDocMove"
-            @history="doc => $emit('open-doc-history', doc)"
-            @duplicate="doc => $emit('duplicate-doc', doc)"
-            @toggle-pin="doc => $emit('toggle-pin', doc)"
-          />
-          <div v-if="docsInGroup(group.id).length === 0" class="empty-group-drop-hint">
-            <span>{{ searchQuery ? '无匹配文档' : '暂无文档，可拖拽至此' }}</span>
+          <div
+            v-show="isGroupExpanded(group.id)"
+            class="children"
+            @dragover="onListDragOver($event, group.id)"
+            @drop="onListDrop($event, group.id)"
+          >
+            <SidebarDocItem
+              v-for="doc in docsInGroup(group.id)"
+              :key="doc.id"
+              :doc="doc"
+              :isActive="doc.id === activeDocId"
+              :searchQuery="searchQuery"
+              @select="id => $emit('select-doc', id)"
+              @rename="payload => $emit('rename-doc', payload)"
+              @delete="id => $emit('delete-doc', id)"
+              @move-doc="handleDocMove"
+              @history="doc => $emit('open-doc-history', doc)"
+              @duplicate="doc => $emit('duplicate-doc', doc)"
+              @toggle-pin="doc => $emit('toggle-pin', doc)"
+            />
+            <div v-if="docsInGroup(group.id).length === 0" class="empty-group-drop-hint">
+              <span>{{ searchQuery ? '无匹配文档' : '暂无文档，可拖拽至此' }}</span>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
+
+        <!-- ── 未分类文档 ── -->
+        <section
+          v-if="filteredUngroupedDocs.length > 0 || dragOverGroupId === '__ungrouped__'"
+          class="folder ungrouped-folder"
+        >
+          <div
+            class="folder-row"
+            :class="{ 'is-drop-target': dragOverGroupId === '__ungrouped__' }"
+            @click="toggleGroup('__ungrouped__')"
+            @dragover="onGroupHeaderDragOver($event, '__ungrouped__')"
+            @dragenter.prevent="dragOverGroupId = '__ungrouped__'"
+            @dragleave="onGroupDragLeave"
+            @drop="onGroupHeaderDrop($event, '__ungrouped__')"
+          >
+            <span class="chevron">
+              <ChevronRight v-if="!isGroupExpanded('__ungrouped__')" size="13" stroke-width="2.2" />
+              <ChevronDown v-else size="13" stroke-width="2.2" />
+            </span>
+            <span class="folder-icon gray"></span>
+            <span class="folder-name">未分类</span>
+            <div class="folder-right">
+              <span class="count">{{ filteredUngroupedDocs.length }}</span>
+              <div class="folder-actions" @click.stop>
+                <button class="mini-btn" @click="handleCreateDoc(null)" title="新建未分类文档">
+                  <Plus size="12" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div
+            v-show="isGroupExpanded('__ungrouped__')"
+            class="children"
+            @dragover="onListDragOver($event, '__ungrouped__')"
+            @drop="onListDrop($event, '__ungrouped__')"
+          >
+            <SidebarDocItem
+              v-for="doc in filteredUngroupedDocs"
+              :key="doc.id"
+              :doc="doc"
+              :isActive="doc.id === activeDocId"
+              :searchQuery="searchQuery"
+              @select="id => $emit('select-doc', id)"
+              @rename="payload => $emit('rename-doc', payload)"
+              @delete="id => $emit('delete-doc', id)"
+              @move-doc="handleDocMove"
+              @history="doc => $emit('open-doc-history', doc)"
+              @duplicate="doc => $emit('duplicate-doc', doc)"
+              @toggle-pin="doc => $emit('toggle-pin', doc)"
+            />
+            <div v-if="filteredUngroupedDocs.length === 0" class="empty-group-drop-hint">
+              <span>{{ searchQuery ? '无匹配文档' : '暂无文档，可拖拽至此' }}</span>
+            </div>
+          </div>
+        </section>
+      </template>
     </div>
 
     <!-- ── 底部固定回收站 ♻️ ── -->
-    <div class="sidebar-footer">
-      <section class="group-section trash-section">
-        <div
-          class="group-header trash-header"
-          @click="toggleGroup('__trash__')"
-        >
-          <span class="group-chevron">
-            <ChevronRight v-if="!isGroupExpanded('__trash__')" size="12" stroke-width="1.6" />
-            <ChevronDown v-else size="12" stroke-width="1.6" />
-          </span>
-          <Trash2 size="14" stroke-width="1.6" class="group-icon trash-icon" />
-          <span class="group-name">回收站</span>
-          <div class="group-header-right">
-            <span class="group-count trash-count">{{ filteredDeletedDocs.length }}</span>
-            <div class="group-actions" @click.stop v-if="filteredDeletedDocs.length > 0">
-              <button class="mini-btn text-danger" @click="handleEmptyTrashClick" title="清空回收站">
-                <Trash2 size="12" />
-              </button>
-            </div>
-          </div>
+    <div class="bottom">
+      <div
+        class="trash"
+        @click="toggleGroup('__trash__')"
+      >
+        <span class="chevron">
+          <ChevronRight v-if="!isGroupExpanded('__trash__')" size="13" stroke-width="2.2" />
+          <ChevronDown v-else size="13" stroke-width="2.2" />
+        </span>
+        <Trash2 size="16" stroke-width="1.8" class="trash-icon" />
+        <span class="trash-name">回收站</span>
+        <span class="count">{{ filteredDeletedDocs.length }}</span>
+        <div class="folder-actions" @click.stop v-if="filteredDeletedDocs.length > 0">
+          <button class="mini-btn text-danger" @click="handleEmptyTrashClick" title="清空回收站">
+            <Trash2 size="12" />
+          </button>
         </div>
+      </div>
 
+      <div
+        v-show="isGroupExpanded('__trash__')"
+        class="children trash-doc-list"
+      >
         <div
-          v-show="isGroupExpanded('__trash__')"
-          class="doc-list group-doc-list trash-doc-list"
+          v-for="doc in filteredDeletedDocs"
+          :key="doc.id"
+          class="trash-doc-item"
+          :class="{ 'selected': doc.id === activeDocId }"
+          @click="handleSelectTrashDoc(doc)"
         >
-          <div
-            v-for="doc in filteredDeletedDocs"
-            :key="doc.id"
-            class="trash-doc-item"
-            :class="{ 'is-active': doc.id === activeDocId }"
-            @click="handleSelectTrashDoc(doc)"
-          >
-            <div class="trash-item-left">
-              <FileText size="13" class="trash-doc-icon" />
-              <span class="trash-doc-title" :title="doc.title || '未命名文档'">{{ doc.title || '未命名文档' }}</span>
-            </div>
-            <div class="trash-item-actions" @click.stop>
-              <button class="trash-action-btn restore-btn" @click="handleRestoreDoc(doc)" title="恢复文档">
-                <RotateCcw size="12" />
-                <span>恢复</span>
-              </button>
-              <button class="trash-action-btn delete-btn" @click="handlePermanentDeleteDoc(doc)" title="彻底删除">
-                <Trash2 size="12" />
-              </button>
-            </div>
+          <span class="file-icon"></span>
+          <div class="file-copy">
+            <span class="file-name" :title="doc.title || '未命名文档'">{{ doc.title || '未命名文档' }}</span>
           </div>
-          <div v-if="filteredDeletedDocs.length === 0" class="empty-group-drop-hint">
-            <span>回收站为空</span>
+          <div class="trash-item-actions" @click.stop>
+            <button class="trash-action-btn restore-btn" @click="handleRestoreDoc(doc)" title="恢复文档">
+              <RotateCcw size="12" />
+              <span>恢复</span>
+            </button>
+            <button class="trash-action-btn delete-btn" @click="handlePermanentDeleteDoc(doc)" title="彻底删除">
+              <Trash2 size="12" />
+            </button>
           </div>
         </div>
-      </section>
+        <div v-if="filteredDeletedDocs.length === 0" class="empty-group-drop-hint">
+          <span>回收站为空</span>
+        </div>
+      </div>
     </div>
   </aside>
 </template>
 
 <style scoped>
 .sidebar-container {
-  width: 16.5rem;
+  width: clamp(17rem, 22vw, 24rem);
+  min-width: 17rem;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--bg-sidebar, #F7F9FC);
-  border-right: 1px solid var(--border-color, #E2E8F0);
-  box-shadow: var(--shadow-sidebar-left);
-  padding: 12px 10px;
+  background: rgba(255, 255, 255, 0.88);
+  border-right: 1px solid #e7edf5;
+  padding: 16px 12px 10px;
   overflow: hidden;
   z-index: 4;
-  transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+  box-sizing: border-box;
+  backdrop-filter: blur(18px);
+  transition: background 0.2s ease, border-color 0.2s ease;
 }
 
-.btn-create-doc-primary {
+html.dark .sidebar-container {
+  background: #18191f;
+  border-right-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Compact document creation action in the toolbar */
+.create-action {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  border-radius: 8px;
+  color: #347fe5;
+  background: #edf4ff;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  width: 100%;
-  height: 34px;
-  border: 1px solid var(--btn-primary-border);
-  border-radius: var(--btn-primary-radius, 8px);
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-text);
-  font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  letter-spacing: 0.01em;
-  cursor: pointer;
-  box-shadow: var(--btn-primary-shadow);
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  margin-bottom: 10px;
-  user-select: none;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.create-action:hover {
+  color: #fff;
+  background: #347fe5;
+}
+
+html.dark .create-action {
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.14);
+}
+
+html.dark .create-action:hover {
+  color: #fff;
+  background: #347fe5;
+}
+
+/* ── 2. Toolbar (.toolbar) ── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 16px 2px 10px;
   flex-shrink: 0;
 }
 
-.btn-create-doc-primary:hover {
-  background: var(--btn-primary-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--btn-primary-hover-shadow);
+.heading {
+  font-size: 17px;
+  font-weight: 750;
+  letter-spacing: 0.2px;
+  color: #1e293b;
 }
 
-.btn-create-doc-primary:active {
-  background: var(--btn-primary-active);
-  transform: translateY(0);
+html.dark .heading {
+  color: #f1f5f9;
 }
 
-html.dark .btn-create-doc-primary {
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-text);
-  border-color: var(--btn-primary-border);
-}
-
-html.dark .btn-create-doc-primary:hover {
-  background: var(--btn-primary-hover);
-}
-
-/* ── 1. Action Buttons ── */
-.action-buttons-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-
-/* ── 2. Section Header: 我的文档 ── */
-.section-title-row {
+.sync {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 4px 2px 10px 4px;
+  gap: 5px;
+  padding: 3px 6px;
+  border-radius: 20px;
+  background: #e9faf4;
+  color: #0ca879;
+  font-size: 9px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.section-title-group {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+.sync-label { line-height: 1; }
+
+.sync-icon {
+  font-size: 11px;
 }
 
-.section-title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--text-main, #18181b);
-  letter-spacing: -0.01em;
-}
-
-.cloud-sync-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 2px 5px;
-  background: rgba(16, 185, 129, 0.08);
-  border: 1px solid rgba(16, 185, 129, 0.2);
-  border-radius: 9999px;
-  color: #10b981;
-  font-size: 10px;
-  line-height: 1;
-}
-
-.cloud-sync-icon {
-  color: #10b981;
-}
-
-.cloud-sync-dot {
-  width: 4px;
-  height: 4px;
-  background-color: #10b981;
+.dot {
+  width: 6px;
+  height: 6px;
+  background: #20bd8b;
   border-radius: 50%;
   animation: pulse-dot 2s infinite ease-in-out;
 }
@@ -785,90 +821,102 @@ html.dark .btn-create-doc-primary:hover {
   50% { opacity: 1; transform: scale(1.15); }
 }
 
-.section-icons {
-  display: flex;
-  align-items: center;
-  gap: 2px;
+.spacer {
+  flex: 1;
 }
 
-.title-icon-btn {
-  width: 28px;
-  height: 28px;
+.icon-btn {
+  width: 30px;
+  height: 30px;
+  border: 0;
+  background: transparent;
+  color: #71839d;
+  border-radius: 8px;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: none;
-  background: transparent;
-  color: var(--text-muted, #71717a);
-  border-radius: 6px;
-  cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.title-icon-btn:hover {
-  background: rgba(0, 0, 0, 0.05);
-  color: var(--text-main, #18181b);
+.icon-btn:hover {
+  background: #f0f5fb;
+  color: #2678e8;
 }
 
-html.dark .title-icon-btn:hover {
+html.dark .icon-btn:hover {
   background: rgba(255, 255, 255, 0.08);
-  color: #ffffff;
+  color: #60a5fa;
 }
 
-/* ── 3. Search Filter Input ── */
-.search-input-wrap {
-  position: relative;
+/* ── 3. Search Bar (.search) ── */
+.search {
+  height: 38px;
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
+  gap: 8px;
+  padding: 0 10px;
+  border: 1px solid #dfe7f1;
+  border-radius: 11px;
+  background: #ffffff;
+  box-shadow: none;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.search:focus-within {
+  border-color: #2678e8;
+  box-shadow: 0 0 0 3px rgba(38, 120, 232, 0.12);
+}
+
+html.dark .search {
+  background: #1e1e24;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
 }
 
 .search-icon-inside {
-  position: absolute;
-  left: 11px;
-  color: var(--text-muted, #94a3b8);
-  pointer-events: none;
+  color: #7488a5;
+  flex: none;
 }
 
-.search-input {
+.search input {
   width: 100%;
-  height: 32px;
-  padding: 0 28px 0 32px;
-  font-size: 12.5px;
-  border: 1px solid var(--border-color, #E2E8F0);
-  border-radius: 8px;
-  background: var(--bg-editor, #ffffff);
-  color: var(--text-main, #0F172A);
-  outline: none;
-  box-sizing: border-box;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
-  transition: all 0.15s ease;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font-size: 13px;
+  color: #1e293b;
+  font-family: inherit;
 }
 
-.search-input:focus {
-  border-color: var(--brand-primary, #116ACC);
-  box-shadow: 0 0 0 3px rgba(17, 106, 204, 0.12);
+html.dark .search input {
+  color: #f1f5f9;
+}
+
+.search input::placeholder {
+  color: #a1adbd;
 }
 
 .search-clear-btn {
-  position: absolute;
-  right: 8px;
   background: transparent;
   border: none;
-  color: var(--text-muted, #94a3b8);
+  color: #7488a5;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 20px;
-  height: 20px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
-  transition: all 0.15s ease;
+  flex-shrink: 0;
 }
 
 .search-clear-btn:hover {
-  background: rgba(0, 0, 0, 0.08);
-  color: var(--text-main);
+  background: rgba(0, 0, 0, 0.06);
+  color: #1e293b;
 }
 
 /* ── 4. Inline Create Group Row ── */
@@ -876,17 +924,20 @@ html.dark .title-icon-btn:hover {
   display: flex;
   align-items: center;
   gap: 6px;
-  height: 32px;
+  height: 34px;
   padding: 0 8px;
-  margin: 4px 0;
-  border: 1px solid var(--accent-color, #2775b6);
-  border-radius: 6px;
-  background: var(--bg-editor, #ffffff);
+  margin: 4px 0 6px;
+  border: 1px solid #2678e8;
+  border-radius: 8px;
+  background: #ffffff;
   box-sizing: border-box;
 }
 
+html.dark .create-group-row {
+  background: #1e1e24;
+}
+
 .create-icon {
-  color: var(--text-muted, #737373);
   flex-shrink: 0;
 }
 
@@ -898,13 +949,17 @@ html.dark .title-icon-btn:hover {
   font-weight: 500;
   border: none;
   background: transparent;
-  color: var(--text-main);
+  color: #1e293b;
   outline: none;
   font-family: inherit;
 }
 
+html.dark .create-group-input {
+  color: #f1f5f9;
+}
+
 .create-group-input::placeholder {
-  color: var(--text-muted, #999999);
+  color: #94a3b8;
   font-size: 12px;
 }
 
@@ -923,7 +978,7 @@ html.dark .title-icon-btn:hover {
   justify-content: center;
   border: none;
   background: transparent;
-  color: var(--text-muted);
+  color: #71839d;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -931,19 +986,20 @@ html.dark .title-icon-btn:hover {
 }
 
 .action-btn:hover {
-  background: var(--border-color);
-  color: var(--text-main);
+  background: #edf1f6;
+  color: #1e293b;
 }
 
 .action-btn.confirm-btn:hover {
-  background: var(--accent-bg, rgba(39, 117, 182, 0.1));
-  color: var(--accent-color, #2775b6);
+  background: #eaf3ff;
+  color: #2678e8;
 }
 
-/* ── 5. Sidebar Scroll Area ── */
+/* ── 5. Tree & Folders ── */
 .sidebar-body {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 2px;
   display: flex;
   flex-direction: column;
@@ -964,138 +1020,185 @@ html.dark .title-icon-btn:hover {
   background: rgba(0, 0, 0, 0.3);
 }
 
-.group-section {
-  margin-top: 0;
-  transition: background 0.2s ease, box-shadow 0.2s ease;
-  border-radius: 8px;
+.folder {
+  margin-top: 5px;
+  border-radius: 10px;
 }
 
-.group-section.is-drop-target {
-  background: var(--accent-bg);
-  box-shadow: inset 0 0 0 2px var(--accent-color);
-}
-
-.group-header {
+.folder-row {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 6px;
-  border-radius: 6px;
+  min-height: 40px;
+  padding: 0 8px;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1e293b;
+  border-radius: 10px;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: 0.15s background;
+  background: transparent;
   user-select: none;
-  min-height: 28px;
   box-sizing: border-box;
 }
 
-.group-header:not(.is-renaming) {
-  cursor: grab;
+.folder-row:focus-visible,
+.trash:focus-visible,
+.icon-btn:focus-visible {
+  outline: 2px solid #2678e8;
+  outline-offset: 1px;
 }
 
-.group-header:not(.is-renaming):active {
-  cursor: grabbing;
+.folder-row:hover {
+  background: #f5f8fc;
 }
 
-.group-header:hover {
-  background: rgba(0, 0, 0, 0.04);
+html.dark .folder-row {
+  color: #f1f5f9;
 }
 
-.group-header.is-drop-target {
-  background: var(--accent-bg);
-  box-shadow: inset 0 0 0 2px var(--accent-color);
+html.dark .folder-row:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.group-chevron {
-  color: var(--text-muted);
+.folder-row.is-drop-target {
+  background: #eaf3ff;
+  box-shadow: inset 0 0 0 1.5px #2678e8;
+}
+
+.chevron {
+  width: 14px;
+  color: #72849e;
   display: flex;
   align-items: center;
+  justify-content: center;
   flex-shrink: 0;
+  transition: transform 0.15s;
 }
 
-.group-icon {
-  color: var(--text-muted);
-  flex-shrink: 0;
+/* CSS Folder Icon from Demo */
+.folder-icon {
+  width: 17px;
+  height: 14px;
+  border: 1.6px solid #f0a13b;
+  border-radius: 3px;
+  position: relative;
+  flex: none;
+  background: #fff9ef;
+  box-sizing: border-box;
 }
 
-.group-name {
+.folder-icon:before {
+  content: "";
+  position: absolute;
+  left: 1px;
+  top: -5px;
+  width: 7px;
+  height: 4px;
+  border: 1.5px solid #f0a13b;
+  border-bottom: 0;
+  border-radius: 3px 3px 0 0;
+  background: #fff9ef;
+  box-sizing: border-box;
+}
+
+.folder-icon.gray {
+  border-color: #8ea0b8;
+  background: #f7f9fc;
+}
+
+.folder-icon.gray:before {
+  border-color: #8ea0b8;
+  background: #f7f9fc;
+}
+
+html.dark .folder-icon.gray {
+  border-color: #64748b;
+  background: #23252d;
+}
+
+html.dark .folder-icon.gray:before {
+  border-color: #64748b;
+  background: #23252d;
+}
+
+.folder-name {
   flex: 1;
   min-width: 0;
-  font-size: 12.5px;
-  font-weight: 600;
-  color: var(--text-secondary, #334155);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 20px;
-  padding: 1px 2px;
-  box-sizing: border-box;
 }
 
 .group-rename-input {
   flex: 1;
   min-width: 0;
-  height: 22px;
+  height: 24px;
   font-size: 13px;
-  font-weight: 500;
-  line-height: 20px;
-  padding: 0 4px;
-  margin: 0;
-  border: 1px solid var(--brand-primary, #116ACC);
+  font-weight: 600;
+  padding: 0 5px;
+  border: 1px solid #2678e8;
   border-radius: 4px;
-  background: var(--bg-editor, #ffffff);
-  color: var(--text-main);
+  background: #ffffff;
+  color: #1e293b;
   outline: none;
-  font-family: inherit;
   box-sizing: border-box;
-  box-shadow: 0 0 0 2px rgba(17, 106, 204, 0.15);
 }
 
-.group-header-right {
+html.dark .group-rename-input {
+  background: #1e1e24;
+  color: #f1f5f9;
+}
+
+.folder-right {
   margin-left: auto;
   display: flex;
   align-items: center;
   flex-shrink: 0;
 }
 
-.group-count {
+.count {
+  margin-left: auto;
+  min-width: 23px;
+  height: 23px;
+  padding: 0 7px;
+  display: grid;
+  place-items: center;
+  border-radius: 20px;
+  background: #edf1f6;
+  color: #78879b;
   font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted, #64748B);
-  background: rgba(15, 23, 42, 0.05);
-  min-width: 20px;
-  height: 18px;
-  padding: 0 6px;
-  border-radius: 999px;
-  border: none;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
+  font-weight: 700;
 }
 
-html.dark .group-count {
+.folder-right .count,
+.trash > .count {
+  margin-left: 0;
+}
+
+html.dark .count {
   background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.7);
 }
 
-.group-actions {
+.folder-actions {
   display: none;
   align-items: center;
   gap: 2px;
 }
 
-.group-header:hover .group-count {
+.folder-row:hover .count {
   display: none;
 }
 
-.group-header:hover .group-actions {
+.folder-row:hover .folder-actions {
   display: flex;
 }
 
 .mini-btn {
   background: transparent;
   border: none;
-  color: var(--text-muted, #737373);
+  color: #78879b;
   width: 22px;
   height: 22px;
   border-radius: 4px;
@@ -1108,8 +1211,8 @@ html.dark .group-count {
 }
 
 .mini-btn:hover {
-  background: var(--bg-capsule, rgba(0, 0, 0, 0.08));
-  color: var(--text-main, #111827);
+  background: #edf1f6;
+  color: #1e293b;
 }
 
 html.dark .mini-btn:hover {
@@ -1117,40 +1220,103 @@ html.dark .mini-btn:hover {
   color: #ffffff;
 }
 
-.group-doc-list {
-  padding-left: 10px;
-  min-height: 14px;
+/* Children tree indentation line */
+.children {
+  margin-left: 16px;
+  padding-left: 9px;
+  border-left: 1px solid #e4ebf4;
+  min-height: 10px;
   padding-bottom: 4px;
+  margin-top: 2px;
+  margin-bottom: 4px;
+}
+
+html.dark .children {
+  border-left-color: rgba(255, 255, 255, 0.1);
+}
+
+.flat-doc-list {
+  padding: 0;
+  min-height: 14px;
 }
 
 .empty-group-drop-hint {
-  padding: 6px 8px;
-  margin: 2px 0 4px;
-  font-size: 11px;
-  color: var(--text-muted, #94a3b8);
-  border: 1px dashed var(--border-color, rgba(0, 0, 0, 0.12));
-  border-radius: 6px;
+  padding: 8px 10px;
+  margin: 3px 0 5px;
+  font-size: 11.5px;
+  color: #94a3b8;
+  border: 1px solid #dfe7f1;
+  background: rgba(27, 55, 90, 0.02);
+  border-radius: 8px;
   text-align: center;
   user-select: none;
   transition: all 0.15s ease;
 }
 
-.empty-group-drop-hint:hover {
-  border-color: var(--accent-color, #6366f1);
-  color: var(--accent-color, #6366f1);
-  background: var(--accent-bg, rgba(99, 102, 241, 0.04));
+html.dark .empty-group-drop-hint {
+  background: rgba(255, 255, 255, 0.02);
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
-/* ── Recycle Bin (回收站) Sticky Footer Styles ── */
-.sidebar-footer {
+/* ── 6. Bottom / Recycle Bin (.bottom / .trash) ── */
+.bottom {
+  border-top: 1px solid #e7edf5;
+  padding-top: 10px;
+  margin-top: 10px;
   flex-shrink: 0;
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px dashed var(--border-color, rgba(0, 0, 0, 0.1));
 }
 
-.trash-section {
-  margin-top: 0;
+html.dark .bottom {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.trash {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 8px;
+  border-radius: 9px;
+  color: #52647d;
+  font-size: 14px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: 0.15s background;
+  user-select: none;
+}
+
+.trash:hover {
+  background: #f5f8fc;
+}
+
+html.dark .trash {
+  color: #94a3b8;
+}
+
+html.dark .trash:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.trash-icon {
+  color: #8798ae;
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.trash-name {
+  flex: 1;
+}
+
+.trash .count {
+  margin-left: auto;
+}
+
+.trash:hover .count {
+  display: none;
+}
+
+.trash:hover .folder-actions {
+  display: flex;
 }
 
 .trash-doc-list {
@@ -1158,72 +1324,35 @@ html.dark .mini-btn:hover {
   overflow-y: auto;
 }
 
-.trash-header .trash-icon {
-  color: var(--text-muted, #888);
-}
-
-.trash-count {
-  background: rgba(0, 0, 0, 0.04);
-  color: var(--text-muted, #888);
-}
-
-.text-danger {
-  color: #ef4444 !important;
-}
-
-.text-danger:hover {
-  background: rgba(239, 68, 68, 0.1) !important;
-}
-
 .trash-doc-item {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 10px;
   padding: 6px 8px;
-  margin: 2px 0;
-  border-radius: 6px;
-  font-size: 12px;
-  color: var(--text-muted, #737373);
+  border-radius: 8px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  margin: 2px 0;
+  transition: 0.15s background;
 }
 
 .trash-doc-item:hover {
-  background: var(--bg-capsule, rgba(0, 0, 0, 0.04));
-  color: var(--text-main, #111827);
+  background: #f5f8fc;
 }
 
-.trash-doc-item.is-active {
-  background: var(--bg-capsule, rgba(0, 0, 0, 0.06));
-  color: var(--text-main, #111827);
-  font-weight: 500;
+html.dark .trash-doc-item:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.trash-item-left {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-  flex: 1;
-}
-
-.trash-doc-icon {
-  flex-shrink: 0;
-  opacity: 0.6;
-}
-
-.trash-doc-title {
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+.trash-doc-item .file-name {
   text-decoration: line-through;
-  opacity: 0.85;
+  opacity: 0.75;
 }
 
 .trash-item-actions {
   display: flex;
   align-items: center;
   gap: 4px;
+  margin-left: auto;
   opacity: 0;
   transition: opacity 0.15s ease;
 }
@@ -1256,10 +1385,18 @@ html.dark .mini-btn:hover {
 
 .trash-action-btn.delete-btn {
   color: #ef4444;
-  padding: 3px 4px;
+  padding: 3px 5px;
 }
 
 .trash-action-btn.delete-btn:hover {
   background: rgba(239, 68, 68, 0.12);
+}
+
+.text-danger {
+  color: #ef4444 !important;
+}
+
+.text-danger:hover {
+  background: rgba(239, 68, 68, 0.1) !important;
 }
 </style>

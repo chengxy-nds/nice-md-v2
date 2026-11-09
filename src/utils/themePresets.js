@@ -29,7 +29,7 @@ export const themes = [
       h1: { variant: 'pill', size: '1.25em', weight: 700, align: 'center', bg: '#2775b6', color: '#ffffff', radius: '9999px', padding: '6px 24px', letterSpacing: '0.02em', marginTop: '1.6em', marginBottom: '1.2em' },
       h2: { variant: 'bar', size: '1.35em', weight: 700, borderColor: '#2775b6', padding: '0.3em 0.6em', letterSpacing: '-0.2px' },
       h3: { variant: 'icon', size: '18px', weight: 700, color: '#2b2b2b', iconUrl: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 32' fill='none'%3E%3Cpath d='M4 28L18 8L28 22L34 14L44 28H4Z' fill='%232775b6' fill-opacity='0.18' stroke='%232775b6' stroke-width='2.5' stroke-linejoin='round'/%3E%3Ccircle cx='36' cy='8' r='3' fill='%232775b6' fill-opacity='0.45'/%3E%3C/svg%3E", iconSize: '30px', iconMarginBottom: '8px', textMarginTop: '30px', lineHeight: '2.4em', marginTop: '15px', marginBottom: '15px', letterSpacing: '0em' },
-      p: { size: '16px', lineHeight: 2, letterSpacing: '0.08em', color: '#0d0d0d' },
+      p: { size: '16px', lineHeight: 1.75, letterSpacing: '0.08em', color: '#0d0d0d' },
       strong: { color: '#2775b6', weight: 700 },
       blockquote: { variant: 'bar', borderColor: '#2775b6', bg: 'var(--accent-bg)', radius: '0 8px 8px 0', padding: '14px 22px' },
       code: { bg: 'var(--code-bg)', color: 'var(--code-text)', radius: '4px', padding: '2px 4px', size: '0.9em' },

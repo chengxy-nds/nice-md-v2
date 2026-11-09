@@ -764,27 +764,33 @@ function handlePopupClose() {
         class="preview-content-frame"
         :class="{ 'wechat-phone-frame': props.isWeChatMode }"
       >
-        <div v-if="props.isWeChatMode" class="phone-dynamic-island"></div>
-        <div v-if="props.isWeChatMode" class="phone-status-bar">
-          <span class="phone-time">09:41</span>
-          <div class="phone-icons">
-            <span class="wifi">📶</span>
-            <span class="battery">🔋</span>
+        <Transition name="preview-chrome">
+          <div v-if="props.isWeChatMode" class="phone-dynamic-island"></div>
+        </Transition>
+        <Transition name="preview-chrome">
+          <div v-if="props.isWeChatMode" class="phone-status-bar">
+            <span class="phone-time">09:41</span>
+            <div class="phone-icons">
+              <span class="wifi">📶</span>
+              <span class="battery">🔋</span>
+            </div>
           </div>
-        </div>
+        </Transition>
         <div
           ref="wechatFrameRef"
           :class="{ 'phone-screen-scroll': props.isWeChatMode, 'standard-screen-scroll': !props.isWeChatMode }"
           @scroll="handleScroll"
         >
-          <div v-if="props.isWeChatMode" class="phone-article-header">
-            <div class="phone-title">{{ docTitle }}</div>
-            <div class="phone-meta">
-              <span class="phone-author">NiceMD 作者</span>
-              <span class="phone-date">刚刚</span>
-              <span class="phone-account">极简发布平台</span>
+          <Transition name="preview-chrome">
+            <div v-if="props.isWeChatMode" class="phone-article-header">
+              <div class="phone-title">{{ docTitle }}</div>
+              <div class="phone-meta">
+                <span class="phone-author">NiceMD 作者</span>
+                <span class="phone-date">刚刚</span>
+                <span class="phone-account">极简发布平台</span>
+              </div>
             </div>
-          </div>
+          </Transition>
 
           <!-- Single persistent content element for v-html to prevent Vue VNode unmount errors -->
           <div
@@ -808,12 +814,16 @@ function handlePopupClose() {
             v-html="wechatStyledHtml"
           ></div>
 
-          <div v-if="props.isWeChatMode" class="phone-article-footer">
-            <span class="read-more">阅读原文</span>
-            <span class="read-count">阅读 100k+</span>
-          </div>
+          <Transition name="preview-chrome">
+            <div v-if="props.isWeChatMode" class="phone-article-footer">
+              <span class="read-more">阅读原文</span>
+              <span class="read-count">阅读 100k+</span>
+            </div>
+          </Transition>
         </div>
-        <div v-if="props.isWeChatMode" class="phone-home-indicator"></div>
+        <Transition name="preview-chrome">
+          <div v-if="props.isWeChatMode" class="phone-home-indicator"></div>
+        </Transition>
       </div>
     </div>
 
@@ -845,33 +855,24 @@ function handlePopupClose() {
 .preview-body {
   flex: 1;
   overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: rgba(0, 0, 0, 0.12) transparent;
+  scrollbar-width: none;
   padding: 0;
   background-color: var(--bg-preview);
   color: var(--text-main);
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color 0.38s ease, color 0.3s ease, padding 0.42s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .preview-body::-webkit-scrollbar {
-  width: 4px;
-}
-.preview-body::-webkit-scrollbar-track {
-  background: transparent;
-}
-.preview-body::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.12);
-  border-radius: 4px;
-}
-.preview-body:hover::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.25);
+  display: none;
+  width: 0;
+  height: 0;
 }
 
-/* Standard Markdown Styles — Floating Paper Canvas (Craft / Feishu / Notion style) */
+/* Standard Markdown preview fills the workspace like the editor surface. */
 .preview-body:not(.is-wechat-wrapper) {
   display: block;
-  padding: 16px 24px 28px;
-  background-color: var(--bg-preview-canvas, #F1F4F9);
+  padding: 0;
+  background-color: var(--bg-editor, #ffffff);
   background-image: none;
   box-sizing: border-box;
 }
@@ -889,23 +890,24 @@ function handlePopupClose() {
 }
 
 .preview-body:not(.is-wechat-wrapper) .markdown-body {
-  max-width: 720px;
-  min-height: calc(100vh - 130px);
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  min-height: 100%;
+  margin: 0;
   padding: 0 !important;
   background: var(--ct-body-bg, var(--bg-preview, #ffffff));
-  border-radius: 12px;
-  border: 1px solid rgba(15, 23, 42, 0.06);
-  box-shadow: var(--shadow-paper, 0 2px 6px rgba(15, 23, 42, 0.03), 0 12px 36px rgba(15, 23, 42, 0.05));
+  border-radius: 0;
+  border: 0;
+  box-shadow: none;
   overflow: hidden;
   transition: background-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .preview-body:not(.is-wechat-wrapper) .markdown-body :deep(#nice) {
-  min-height: calc(100vh - 130px);
-  padding: 20px 32px 32px !important;
+  min-height: 100%;
+  padding: 24px 32px 40px !important;
   box-sizing: border-box;
-  border-radius: 12px;
+  border-radius: 0;
 }
 
 :global(html.dark) .preview-body:not(.is-wechat-wrapper) .markdown-body,
@@ -968,14 +970,12 @@ function handlePopupClose() {
 .markdown-body :deep(p) {
   color: var(--ct-p-color, var(--ct-body-color, var(--text-main)));
   font-size: var(--ct-p-size, 16px);
-  line-height: var(--ct-p-lineheight, 1.8);
+  line-height: var(--ct-p-lineheight, 1.75);
   letter-spacing: var(--ct-p-spacing, normal);
   text-indent: var(--ct-p-indent, 0);
   text-align: var(--ct-p-align, left);
   margin-top: 0;
-  margin-bottom: var(--ct-p-margin-bottom, 16px);
-  padding-top: 8px;
-  padding-bottom: 8px;
+  margin-bottom: var(--ct-p-margin-bottom, 12px);
 }
 
 .markdown-body :deep(blockquote) {
@@ -1129,7 +1129,36 @@ function handlePopupClose() {
 /* Preview Content Frame */
 .preview-content-frame {
   width: 100%;
-  transition: width 0.25s ease, background 0.25s ease, box-shadow 0.25s ease;
+  interpolate-size: allow-keywords;
+  transition:
+    width 0.46s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.46s cubic-bezier(0.22, 1, 0.36, 1),
+    min-height 0.46s cubic-bezier(0.22, 1, 0.36, 1),
+    margin 0.42s cubic-bezier(0.22, 1, 0.36, 1),
+    border-radius 0.4s ease,
+    border-color 0.3s ease,
+    background 0.3s ease,
+    box-shadow 0.4s ease;
+}
+
+.preview-chrome-enter-active,
+.preview-chrome-leave-active {
+  transition: opacity 0.2s ease, transform 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.preview-chrome-enter-from,
+.preview-chrome-leave-to {
+  opacity: 0;
+  transform: translateY(-5px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .preview-body,
+  .preview-content-frame,
+  .preview-chrome-enter-active,
+  .preview-chrome-leave-active {
+    transition-duration: 0.01ms !important;
+  }
 }
 
 /* WeChat Simulated Phone Frame */

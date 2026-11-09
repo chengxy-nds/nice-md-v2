@@ -38,6 +38,7 @@ import {
   lineNumbers as cmLineNumbers,
   highlightActiveLineGutter,
   highlightSpecialChars,
+  placeholder as cmPlaceholder,
   drawSelection,
   dropCursor,
   rectangularSelection,
@@ -50,8 +51,10 @@ import {
   indentOnInput,
   syntaxHighlighting,
   defaultHighlightStyle,
+  HighlightStyle,
   bracketMatching
 } from '@codemirror/language';
+import { tags } from '@lezer/highlight';
 import { history, defaultKeymap, historyKeymap, indentWithTab } from '@codemirror/commands';
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search';
 import { closeBrackets, autocompletion, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete';
@@ -117,12 +120,12 @@ const editorText = ref(props.modelValue);
 const isDragOver = ref(false);
 const jiggleActive = ref(false);
 const isMuted = ref(soundEngine.getMuteState());
-const editorFontSize = ref(localStorage.getItem('nicemd_font_size') || '14.5px');
+const editorFontSize = ref(localStorage.getItem('nicemd_font_size') || '15px');
 const showLineNumbers = ref(localStorage.getItem('nicemd_line_numbers') !== 'false');
 
 const loadPreferences = () => {
   isMuted.value = soundEngine.getMuteState();
-  editorFontSize.value = localStorage.getItem('nicemd_font_size') || '14.5px';
+  editorFontSize.value = localStorage.getItem('nicemd_font_size') || '15px';
   showLineNumbers.value = localStorage.getItem('nicemd_line_numbers') !== 'false';
   if (cmView) {
     const currentSelection = cmView.state.selection;
@@ -1106,21 +1109,38 @@ const cmContainerRef = ref(null);
 let cmView = null;
 let isUpdatingFromCodeMirror = false;
 
+const markdownHighlightStyle = HighlightStyle.define([
+  { tag: tags.heading, color: '#245b9e', fontWeight: '700' },
+  { tag: [tags.heading1, tags.heading2], color: '#174b83', fontWeight: '700' },
+  { tag: tags.strong, color: '#172b4d', fontWeight: '700' },
+  { tag: tags.emphasis, color: '#7654a6', fontStyle: 'italic' },
+  { tag: tags.strikethrough, textDecoration: 'line-through', color: '#718096' },
+  { tag: tags.link, color: '#167a72', textDecoration: 'underline' },
+  { tag: tags.url, color: '#28836f' },
+  { tag: tags.quote, color: '#697b91', fontStyle: 'italic' },
+  { tag: tags.list, color: '#b06a28', fontWeight: '600' },
+  { tag: tags.monospace, color: '#a04424', fontFamily: "'JetBrains Mono', Consolas, Monaco, monospace" },
+  { tag: tags.processingInstruction, color: '#8a98aa' },
+  { tag: tags.meta, color: '#8a98aa' }
+]);
+
 function initCodeMirror() {
   if (!cmContainerRef.value || cmView) return;
+
+  const editorLineHeight = Math.round(parseFloat(editorFontSize.value || '15px') * 1.72);
 
   const customMarkdownTheme = EditorView.theme({
     "&": {
       height: "100%",
-      fontSize: editorFontSize.value || "14.5px",
-      fontFamily: "'JetBrains Mono', Consolas, Monaco, 'Andale Mono', monospace",
+      fontSize: editorFontSize.value || "15px",
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif",
       backgroundColor: "transparent",
       color: "var(--text-main)",
       caretColor: "var(--accent-color)"
     },
     ".cm-content": {
-      padding: "16px 0",
-      lineHeight: "24px",
+      padding: "20px 0 32px",
+      lineHeight: "1.72",
       caretColor: "var(--accent-color)"
     },
     ".cm-cursor, .cm-dropCursor": {
@@ -1129,28 +1149,23 @@ function initCodeMirror() {
     ".cm-gutters": {
       display: showLineNumbers.value ? "flex" : "none",
       backgroundColor: "transparent",
-      borderRight: "none",
+      borderRight: "1px solid rgba(148, 163, 184, 0.16)",
       color: "var(--text-muted, #94a3b8)",
       minWidth: "42px",
       paddingLeft: "6px"
     },
     ".cm-lineNumbers": {
-      minWidth: "36px",
-      display: "flex",
-      flexDirection: "column"
+      minWidth: "36px"
     },
     ".cm-lineNumbers .cm-gutterElement": {
       padding: "0 4px",
       minWidth: "34px",
-      textAlign: "right",
-      display: "flex",
-      flexDirection: "column",
-      justifyContent: "flex-start",
-      alignItems: "stretch",
+      textAlign: "center",
       fontSize: "11px",
       fontFamily: "'JetBrains Mono', Consolas, monospace",
       color: "var(--text-muted, #94a3b8)",
       opacity: "0.45",
+      lineHeight: `${editorLineHeight}px`,
       boxSizing: "border-box"
     },
     ".cm-activeLineGutter": {
@@ -1159,60 +1174,18 @@ function initCodeMirror() {
       opacity: "1 !important",
       fontWeight: "700"
     },
-    ".cm-visual-line-numbers": {
-      display: "flex",
-      flexDirection: "column",
-      height: "100%",
-      width: "100%"
-    },
-    ".cm-visual-line-number": {
-      flex: "1",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      lineHeight: "24px",
-      minHeight: "24px",
-      textAlign: "center"
-    },
     ".cm-activeLine": {
-      backgroundColor: "rgba(17, 106, 204, 0.025)"
+      backgroundColor: "transparent"
+    },
+    ".cm-placeholder": {
+      color: "var(--text-muted, #64748b)",
+      opacity: "0.72",
+      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      fontStyle: "normal"
     },
     ".cm-line": {
       padding: "0 16px",
-      lineHeight: "24px"
-    },
-    /* Pure Minimal Markdown Syntax Styling inside editor */
-    ".cm-header": {
-      color: "var(--accent-color)",
-      fontWeight: "700"
-    },
-    ".cm-strong": {
-      fontWeight: "700",
-      color: "var(--text-main)"
-    },
-    ".cm-emphasis": {
-      fontStyle: "italic"
-    },
-    ".cm-strikethrough": {
-      textDecoration: "line-through",
-      opacity: "0.7"
-    },
-    ".cm-quote": {
-      color: "var(--text-muted)",
-      fontStyle: "italic"
-    },
-    ".cm-inline-code": {
-      backgroundColor: "var(--accent-bg)",
-      color: "var(--code-text, #ff7a59)",
-      padding: "1px 5px",
-      borderRadius: "4px"
-    },
-    ".cm-link": {
-      color: "var(--accent-color)",
-      textDecoration: "underline"
-    },
-    ".cm-url": {
-      opacity: "0.6"
+      lineHeight: "1.72"
     },
     /* Warm Yellow-Orange Search & Selection Match Highlighting */
     ".cm-selectionMatch": {
@@ -1233,7 +1206,7 @@ function initCodeMirror() {
       outline: "2px solid #d97706"
     },
     "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground": {
-      backgroundColor: "rgba(245, 158, 11, 0.3) !important"
+      backgroundColor: "rgba(59, 130, 246, 0.22) !important"
     }
   });
 
@@ -1258,6 +1231,7 @@ function initCodeMirror() {
       EditorState.allowMultipleSelections.of(true),
       indentOnInput(),
       syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
+      syntaxHighlighting(markdownHighlightStyle),
       bracketMatching(),
       closeBrackets(),
       autocompletion(),
@@ -1265,6 +1239,7 @@ function initCodeMirror() {
       crosshairCursor(),
       highlightActiveLine(),
       highlightSelectionMatches(),
+      cmPlaceholder("从这里开始写作… 支持 Markdown，也可以直接粘贴或拖入文件。"),
       markdown(),
       EditorView.lineWrapping,
       customMarkdownTheme,
@@ -1649,10 +1624,10 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
 
 
 .line-gutter {
-  padding: 16px 0 16px 6px;
+  padding: 20px 0 20px 6px;
   width: 42px;
   background: transparent;
-  border-right: none;
+  border-right: 1px solid rgba(148, 163, 184, 0.16);
   text-align: center;
   user-select: none;
   font-family: 'JetBrains Mono', Consolas, monospace;
@@ -1666,8 +1641,8 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
 }
 
 .line-number {
-  height: 24px;
-  line-height: 24px;
+  height: 26px;
+  line-height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1678,10 +1653,10 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
 textarea {
   position: absolute;
   top: 0; left: 0; width: 100%; height: 100%;
-  margin: 0; padding: 16px; box-sizing: border-box;
-  font-family: 'JetBrains Mono', Consolas, Monaco, "Andale Mono", monospace;
+  margin: 0; padding: 20px 16px 32px; box-sizing: border-box;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
   font-size: inherit; font-weight: 400; letter-spacing: -0.01em;
-  line-height: 24px; white-space: pre-wrap; overflow-wrap: break-word; word-break: break-word;
+  line-height: 1.72; white-space: pre-wrap; overflow-wrap: break-word; word-break: break-word;
   tab-size: 2; -moz-tab-size: 2;
   border: none; outline: none; overflow-y: scroll;
   background: var(--bg-editor);
@@ -1711,6 +1686,10 @@ textarea::placeholder {
 
 .codemirror-markdown-editor :deep(.cm-scroller) {
   overflow: auto;
+}
+
+.codemirror-markdown-editor :deep(.cm-line) {
+  max-width: 1000px;
 }
 
 /* Drag overlay styling */

@@ -380,7 +380,7 @@ const handleCopyMarkdownText = async () => {
     @mouseenter="emit('focusActive', 'preview')"
   >
     <!-- Left Area: Main Preview header and body -->
-    <div class="preview-main-content" v-show="previewVisible">
+    <div class="preview-main-content" :class="{ 'is-collapsed': !previewVisible }">
       <ArticlePreview
         :markdown="props.markdown"
         :docTitle="props.docTitle"
@@ -415,36 +415,51 @@ const handleCopyMarkdownText = async () => {
       />
     </div>
 
-    <!-- Right Area: Icon Slider / Sidebar (56px wide, matching left sidebar) -->
+    <!-- Preview tools -->
     <aside class="preview-right-bar" :class="{ 'is-standalone': !previewVisible }">
       <div class="bar-top">
-        <!-- 1. Mode Switcher: Web / Mobile (默认电脑模式并保持选中背景) -->
-        <button
-          class="bar-action-btn is-active"
-          @click="isWeChatMode = !isWeChatMode"
-          :title="isWeChatMode ? '当前为手机模拟，点击切换为网页标准预览' : '当前为电脑网页预览，点击切换为手机模拟预览'"
-        >
-          <Smartphone v-if="isWeChatMode" size="20" stroke-width="1.6" />
-          <Monitor v-else size="20" stroke-width="1.6" />
-        </button>
+        <div class="preview-mode-group" role="group" aria-label="预览设备">
+          <button
+            class="bar-action-btn"
+            :class="{ 'is-active': !isWeChatMode }"
+            :aria-pressed="!isWeChatMode"
+            @click="isWeChatMode = false"
+            title="电脑预览"
+          >
+            <Monitor size="19" stroke-width="1.7" />
+          </button>
+          <button
+            class="bar-action-btn"
+            :class="{ 'is-active': isWeChatMode }"
+            :aria-pressed="isWeChatMode"
+            @click="isWeChatMode = true"
+            title="手机模拟预览"
+          >
+            <Smartphone size="19" stroke-width="1.7" />
+          </button>
+        </div>
 
-        <!-- 2. Preview toggle (默认展示预览时保持选中状态) -->
+        <span class="bar-divider"></span>
+
         <button
           class="bar-action-btn"
           :class="{ 'is-active': previewVisible }"
+          :aria-pressed="previewVisible"
           @click="$emit('togglePreview')"
-          :title="previewVisible ? '隐藏预览区（仅编辑）' : '恢复双栏布局'"
+          :title="previewVisible ? '隐藏预览区' : '显示预览区'"
         >
           <Eye v-if="previewVisible" size="20" stroke-width="1.6" />
           <EyeOff v-else size="20" stroke-width="1.6" />
         </button>
+      </div>
 
-        <!-- 3. Copy Options with hover popout (no tooltip to avoid overlay clutter) -->
+      <div class="bar-bottom">
         <div class="slider-trigger-container" data-no-tooltip="true">
           <button
             class="bar-action-btn copy-main-btn"
             data-no-tooltip="true"
-            aria-label="一键复制"
+            aria-label="复制排版内容"
+            title="复制排版内容"
           >
             <Copy size="19" stroke-width="1.7" />
           </button>
@@ -486,13 +501,13 @@ const handleCopyMarkdownText = async () => {
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- 4. Theme Customizer button -->
-      <div class="bar-bottom">
+        <span class="bar-divider"></span>
+
         <button
           class="bar-action-btn"
           :class="{ 'is-active': themePanelVisible }"
+          :aria-pressed="themePanelVisible"
           @click="$emit('update:themePanelVisible', !themePanelVisible)"
           title="自定义主题"
         >
@@ -538,7 +553,15 @@ const handleCopyMarkdownText = async () => {
   height: 100%;
   overflow: hidden;
   background: var(--bg-preview);
-  transition: background 0.3s ease;
+  opacity: 1;
+  transform: translateX(0);
+  transition: background 0.3s ease, opacity 0.3s ease, transform 0.46s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.preview-main-content.is-collapsed {
+  opacity: 0;
+  transform: translateX(12px);
+  pointer-events: none;
 }
 
 .theme-sidebar-wrapper {
@@ -584,10 +607,10 @@ const handleCopyMarkdownText = async () => {
 
 /* Right-side slider / bar styling — independent, pinned to the right edge, matching left sidebar */
 .preview-right-bar {
-  width: 50px;
+  width: 46px;
   flex-shrink: 0;
-  background: var(--bg-rail, #EEF2F6);
-  border-left: 1px solid var(--border-color, #E2E8F0);
+  background: var(--bg-rail, #F8FAFC);
+  border-left: 1px solid var(--border-subtle, #EDF1F7);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -603,13 +626,29 @@ const handleCopyMarkdownText = async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
+  gap: 7px;
   width: 100%;
 }
 
+.preview-mode-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 10px;
+}
+
+.bar-divider {
+  width: 22px;
+  height: 1px;
+  flex: none;
+  background: var(--border-subtle, #EDF1F7);
+}
+
 .bar-action-btn {
-  width: 36px;
-  height: 36px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -624,13 +663,13 @@ const handleCopyMarkdownText = async () => {
 }
 
 .bar-action-btn:hover {
-  color: var(--text-main, #0f172a);
-  background: rgba(15, 23, 42, 0.05);
+  color: var(--brand-primary, #116ACC);
+  background: rgba(17, 106, 204, 0.055);
 }
 
 html.dark .bar-action-btn:hover {
-  background: rgba(255, 255, 255, 0.09);
-  color: #ffffff;
+  background: rgba(96, 165, 250, 0.1);
+  color: #93c5fd;
 }
 
 .bar-action-btn:active {
@@ -639,26 +678,14 @@ html.dark .bar-action-btn:hover {
 
 .bar-action-btn.is-active {
   color: var(--brand-primary, #116ACC);
-  background: var(--bg-card, #ffffff);
+  background: rgba(17, 106, 204, 0.09);
   border-radius: 9px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.05);
-}
-
-.bar-action-btn.is-active::after {
-  content: '';
-  position: absolute;
-  right: -7px;
-  top: 9px;
-  bottom: 9px;
-  width: 3px;
-  border-radius: 3px 0 0 3px;
-  background: var(--brand-primary, #116ACC);
+  box-shadow: none;
 }
 
 html.dark .bar-action-btn.is-active {
-  color: #38bdf8;
-  background: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  color: #93c5fd;
+  background: rgba(96, 165, 250, 0.15);
 }
 
 .slider-trigger-container {

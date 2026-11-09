@@ -52,7 +52,7 @@ html[data-color-mode="light"] {
 
   /* Layered Surface / Container Tokens (Craft / Linear Studio Hierarchy) */
   --bg-app: #F3F5F8;
-  --bg-rail: #EEF2F6;
+  --bg-rail: #F8FAFC;
   --bg-sidebar: #F7F9FC;
   --bg-card: #FFFFFF;
   --bg-header: rgba(255, 255, 255, 0.94);
@@ -160,7 +160,7 @@ body.dark {
 
   /* VS Code / Antigravity IDE Dark Studio Surfaces */
   --bg-app: #18181b !important;
-  --bg-rail: #1f1f23 !important;
+  --bg-rail: #1b1b1f !important;
   --bg-card: #242429 !important;
   --bg-header: rgba(32, 32, 36, 0.94) !important;
   --bg-sidebar: #202024 !important;

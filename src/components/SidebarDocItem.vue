@@ -1,6 +1,6 @@
 <script setup>
-import { ref, computed, nextTick, watch } from 'vue';
-import { FileText, Pencil, Trash2, History, Copy, Pin } from 'lucide-vue-next';
+import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue';
+import { FileText, Pencil, Trash2, History, Copy, Pin, MoreHorizontal } from 'lucide-vue-next';
 import { showConfirm } from '../utils/confirmDialog';
 
 const props = defineProps({
@@ -17,6 +17,9 @@ const renameInputRef = ref(null);
 const isDragOver = ref(false);
 const dragPosition = ref('before'); // 'before' | 'after'
 const elRef = ref(null);
+
+const isMenuOpen = ref(false);
+const menuRef = ref(null);
 
 watch(() => props.isActive, (newVal) => {
   if (newVal) {
@@ -98,7 +101,43 @@ function cancelRename() {
   isRenaming.value = false;
 }
 
+function toggleMenu(e) {
+  e?.stopPropagation();
+  isMenuOpen.value = !isMenuOpen.value;
+}
+
+function closeMenu() {
+  isMenuOpen.value = false;
+}
+
+function openContextMenu(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  isMenuOpen.value = true;
+}
+
+function handleTogglePin() {
+  closeMenu();
+  emit('toggle-pin', props.doc);
+}
+
+function startRenameFromMenu() {
+  closeMenu();
+  startRename();
+}
+
+function handleDuplicate() {
+  closeMenu();
+  emit('duplicate', props.doc);
+}
+
+function handleHistory() {
+  closeMenu();
+  emit('history', props.doc);
+}
+
 async function handleDelete() {
+  closeMenu();
   const ok = await showConfirm({
     title: '移至回收站',
     message: `确定要将「${props.doc.title || '未命名文档'}」移至回收站吗？您可随时在回收站中恢复。`,
@@ -142,341 +181,408 @@ function onDrop(e) {
   e.stopPropagation();
   emit('move-doc', { docId, targetDocId: props.doc.id, position: dragPosition.value });
 }
+
+onMounted(() => {
+  window.addEventListener('click', closeMenu);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('click', closeMenu);
+});
 </script>
 
 <template>
   <div
-    class="doc-item"
+    class="file-row"
     ref="elRef"
     :class="{ 
-      'is-active': isActive, 
+      'selected': isActive,
+      'is-menu-open': isMenuOpen,
       'is-dragging-before': isDragOver && dragPosition === 'before',
       'is-dragging-after': isDragOver && dragPosition === 'after'
     }"
     draggable="true"
     @click="$emit('select', props.doc.id)"
+    @contextmenu="openContextMenu"
     @dragstart="onDragStart"
     @dragover="onDragOver"
     @dragenter="onDragEnter"
     @dragleave="onDragLeave"
     @drop="onDrop"
   >
-    <!-- Left Icon Area: Aligned with the top title row -->
-    <div class="doc-leading">
-      <FileText size="15" class="doc-icon" />
-    </div>
+    <!-- Paper file icon from demo -->
+    <span class="file-icon"></span>
 
-    <!-- Right Content Column: Title Row + Time & Actions Row -->
-    <div class="doc-content-col">
-      <!-- Title Row -->
-      <div class="doc-title-row">
-        <span
-          v-if="!isRenaming"
-          class="doc-title"
-          @dblclick.stop="startRename"
-        >{{ doc.title }}</span>
-
-        <input
-          v-else
-          v-model="renameValue"
-          class="rename-input"
-          ref="renameInputRef"
-          @blur="confirmRename"
-          @keyup.enter="confirmRename"
-          @keyup.escape="cancelRename"
-          @click.stop
-        />
-
-        <!-- Pinned indicator -->
-        <span
-          v-if="doc.isPinned && !isRenaming"
-          class="pin-badge"
-          title="已置顶（点击取消置顶）"
-          @click.stop="$emit('toggle-pin', doc)"
-        >
-          <Pin size="11" />
-        </span>
+    <!-- Content column -->
+    <div class="file-copy">
+      <!-- Title -->
+      <div
+        v-if="!isRenaming"
+        class="file-name"
+        @dblclick.stop="startRename"
+        :title="doc.title || '未命名文档'"
+      >
+        <span>{{ doc.title }}</span>
+        <span v-if="doc.isPinned" class="pin-badge" title="已置顶">📌</span>
       </div>
+
+      <input
+        v-else
+        v-model="renameValue"
+        class="rename-input"
+        ref="renameInputRef"
+        @blur="confirmRename"
+        @keyup.enter="confirmRename"
+        @keyup.escape="cancelRename"
+        @click.stop
+      />
 
       <!-- Content Search Match Snippet -->
       <div v-if="searchSnippet && !isRenaming" class="doc-search-snippet">
         {{ searchSnippet }}
       </div>
 
-      <!-- Time, Word Count & Actions Row (Same line, actions aligned right) -->
-      <div class="doc-time-row">
-        <div class="doc-meta-left">
-          <span class="doc-time">{{ docTime }}</span>
-          <span class="doc-meta-sep">·</span>
-          <span class="doc-char-count">{{ docCharCount }}字</span>
-        </div>
-
-        <!-- hover actions: same line with time, aligned right -->
-        <div class="doc-actions" v-show="!isRenaming">
-          <button
-            class="action-btn"
-            :class="{ 'is-pinned': doc.isPinned }"
-            @click.stop="$emit('toggle-pin', doc)"
-            :title="doc.isPinned ? '取消置顶' : '置顶文档'"
-          >
-            <Pin size="12" />
-          </button>
-          <button class="action-btn" @click.stop="$emit('duplicate', doc)" title="创建副本">
-            <Copy size="12" />
-          </button>
-          <button class="action-btn" @click.stop="$emit('history', doc)" title="历史版本与比对">
-            <History size="12" />
-          </button>
-          <button class="action-btn" @click.stop="startRename" title="重命名">
-            <Pencil size="12" />
-          </button>
-          <button class="action-btn btn-trash" @click.stop="handleDelete" title="移至回收站">
-            <Trash2 size="12" />
-          </button>
-        </div>
+      <!-- Meta Row (Time · Word Count) -->
+      <div class="meta" :title="`${docTime} · ${docCharCount} 字`">
+        {{ docTime }} · {{ docCharCount }}字
       </div>
+    </div>
+
+    <!-- More button (···) -->
+    <button
+      class="more"
+      :class="{ 'is-active': isMenuOpen }"
+      @click.stop="toggleMenu"
+      title="更多操作（亦可右键）"
+    >
+      <MoreHorizontal size="15" />
+    </button>
+
+    <!-- Floating Context Dropdown Menu -->
+    <div v-if="isMenuOpen" class="doc-menu-dropdown" ref="menuRef" @click.stop>
+      <button class="menu-item" @click="handleTogglePin">
+        <Pin size="12" class="menu-item-icon" />
+        <span>{{ doc.isPinned ? '取消置顶' : '置顶文档' }}</span>
+      </button>
+      <button class="menu-item" @click="startRenameFromMenu">
+        <Pencil size="12" class="menu-item-icon" />
+        <span>重命名 (双击)</span>
+      </button>
+      <button class="menu-item" @click="handleDuplicate">
+        <Copy size="12" class="menu-item-icon" />
+        <span>创建副本</span>
+      </button>
+      <button class="menu-item" @click="handleHistory">
+        <History size="12" class="menu-item-icon" />
+        <span>历史版本与比对</span>
+      </button>
+      <div class="menu-divider"></div>
+      <button class="menu-item text-danger" @click="handleDelete">
+        <Trash2 size="12" class="menu-item-icon" />
+        <span>移至回收站</span>
+      </button>
     </div>
   </div>
 </template>
 
 <style scoped>
-.doc-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  min-height: 48px;
-  padding: 7px 10px;
-  margin-bottom: 3px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+.file-row {
   position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 9px;
+  min-height: 52px;
+  margin: 2px 0;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: 0.15s background, 0.15s box-shadow;
+  background: transparent;
   user-select: none;
   box-sizing: border-box;
 }
 
-.doc-item:hover:not(.is-active) {
-  background: rgba(15, 23, 42, 0.04);
+.file-row:hover {
+  background: #f5f8fc;
 }
 
-html.dark .doc-item:hover:not(.is-active) {
-  background: rgba(255, 255, 255, 0.06);
+html.dark .file-row:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
-.doc-item.is-active {
-  background: var(--bg-card, #ffffff);
-  border-color: rgba(17, 106, 204, 0.22);
-  box-shadow: 0 2px 6px rgba(17, 106, 204, 0.06), 0 1px 2px rgba(15, 23, 42, 0.04);
+.file-row.selected {
+  background: #f1f6fd;
+  box-shadow: inset 0 0 0 1px #e1eaf7;
 }
 
-.doc-item.is-active:hover {
-  background: var(--bg-card, #ffffff);
-  border-color: rgba(17, 106, 204, 0.32);
+html.dark .file-row.selected {
+  background: rgba(59, 130, 246, 0.09);
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.18);
 }
 
-html.dark .doc-item.is-active {
-  background: rgba(17, 106, 204, 0.18);
-  border-color: rgba(56, 189, 248, 0.25);
+.file-row.is-dragging-before {
+  background: #edf5ff;
+  box-shadow: inset 0 2px 0 #2678e8;
 }
 
-html.dark .doc-item.is-active:hover {
-  background: rgba(17, 106, 204, 0.24);
+.file-row.is-dragging-after {
+  background: #edf5ff;
+  box-shadow: inset 0 -2px 0 #2678e8;
 }
 
-.doc-item.is-dragging-before {
-  background: var(--accent-bg);
-  box-shadow: inset 0 2px 0 var(--brand-primary, #116ACC);
-}
-
-.doc-item.is-dragging-after {
-  background: var(--accent-bg);
-  box-shadow: inset 0 -2px 0 var(--brand-primary, #116ACC);
-}
-
-/* Leading Icon Area */
-.doc-leading {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+/* File Icon: 3-line document from demo */
+.file-icon {
+  width: 17px;
   height: 20px;
-  margin-top: 1px;
+  flex: none;
+  border: 1.5px solid #8193ad;
+  border-radius: 3px;
+  background: linear-gradient(135deg, #fff, #f0f4f9);
+  position: relative;
+  box-sizing: border-box;
 }
 
-.doc-icon {
-  color: var(--text-muted, #64748B);
-  flex-shrink: 0;
-  transition: color 0.15s ease;
+.file-icon:after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  right: 2px;
+  top: 5px;
+  height: 1px;
+  background: #9aa9bd;
+  box-shadow: 0 4px #9aa9bd, 0 8px #9aa9bd;
 }
 
-.doc-item.is-active .doc-icon {
-  color: var(--brand-primary, #116ACC);
+.file-row.selected .file-icon {
+  border-color: #7898c2;
+  background: #f5f9ff;
 }
 
-/* Content Column (Title + Time & Actions Row) */
-.doc-content-col {
-  flex: 1;
+.file-row.selected .file-icon:after {
+  background: #8da8cc;
+  box-shadow: 0 4px #8da8cc, 0 8px #8da8cc;
+}
+
+html.dark .file-icon {
+  background: linear-gradient(135deg, #2a2d36, #1f2128);
+  border-color: #52647d;
+}
+
+html.dark .file-icon:after {
+  background: #64748b;
+  box-shadow: 0 4px #64748b, 0 8px #64748b;
+}
+
+html.dark .file-row.selected .file-icon {
+  border-color: #3b82f6;
+  background: rgba(59, 130, 246, 0.2);
+}
+
+html.dark .file-row.selected .file-icon:after {
+  background: #60a5fa;
+  box-shadow: 0 4px #60a5fa, 0 8px #60a5fa;
+}
+
+.file-copy {
   min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.doc-title-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px;
-  min-width: 0;
-  height: 20px;
-}
-
-.doc-title {
   flex: 1;
+}
+
+.file-name {
   font-size: 13px;
-  font-weight: 500;
-  color: var(--text-main, #0F172A);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #1e293b;
+  line-height: 1.35;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.file-name > span:first-child {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  line-height: 1.35;
 }
 
-.doc-item.is-active .doc-title {
-  color: var(--brand-primary, #116ACC);
-  font-weight: 600;
+.file-row.selected .file-name {
+  color: #1e293b;
+}
+
+html.dark .file-name {
+  color: #f1f5f9;
+}
+
+html.dark .file-row.selected .file-name {
+  color: #f1f5f9;
 }
 
 .pin-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  color: #f59e0b;
-  flex-shrink: 0;
-  transform: rotate(35deg);
-  cursor: pointer;
+  font-size: 10px;
+  line-height: 1;
 }
 
+.meta {
+  margin-top: 3px;
+  color: #718198;
+  font-size: 11px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+}
+
+html.dark .meta {
+  color: #94a3b8;
+}
+
+.more {
+  opacity: 0.35;
+  color: #7d91ad;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 3px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.15s, background 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.file-row:hover .more,
+.file-row.selected .more,
+.more.is-active {
+  opacity: 1;
+}
+
+.file-row:focus-within .more {
+  opacity: 1;
+}
+
+.more:hover,
+.more.is-active {
+  background: rgba(38, 120, 232, 0.1);
+  color: #2678e8;
+}
+
+/* Search match snippet */
 .doc-search-snippet {
   font-size: 11px;
-  color: var(--brand-primary, #116ACC);
-  background: rgba(17, 106, 204, 0.06);
-  padding: 2px 6px;
+  color: #2678e8;
+  background: rgba(38, 120, 232, 0.08);
+  padding: 1px 5px;
   border-radius: 4px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   line-height: 1.3;
+  margin-top: 2px;
 }
 
-.doc-time-row {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 20px;
-  line-height: 1;
-}
-
-.doc-meta-left {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  min-width: 0;
-  width: 100%;
-  overflow: hidden;
-}
-
-.doc-time,
-.doc-char-count,
-.doc-meta-sep {
-  font-size: 11px;
-  color: var(--text-subtle, #94a3b8);
-  line-height: 1.2;
-  font-weight: 400;
-  flex-shrink: 0;
-  transition: opacity 0.12s ease;
-}
-
-.doc-item.is-active .doc-time,
-.doc-item.is-active .doc-char-count,
-.doc-item.is-active .doc-meta-sep {
-  color: var(--text-muted, #64748B);
-}
-
-.doc-item:hover .doc-char-count,
-.doc-item:hover .doc-meta-sep {
-  opacity: 0;
-}
-
+/* Inline rename input */
 .rename-input {
-  flex: 1;
-  min-width: 0;
-  width: 0;
+  width: 100%;
   font-size: 12.5px;
+  font-weight: 600;
   padding: 1px 5px;
-  border: 1px solid var(--brand-primary, #116ACC);
+  border: 1px solid #2678e8;
   border-radius: 4px;
-  background: var(--bg-editor, #ffffff);
-  color: var(--text-main, #0F172A);
+  background: #ffffff;
+  color: #1e293b;
   outline: none;
+  box-sizing: border-box;
 }
 
-.doc-actions {
+html.dark .rename-input {
+  background: #1e1e24;
+  color: #f1f5f9;
+}
+
+/* Floating Dropdown Context Menu */
+.doc-menu-dropdown {
   position: absolute;
-  right: -2px;
-  top: 50%;
-  transform: translateY(-50%);
+  right: 6px;
+  top: 32px;
+  z-index: 120;
+  min-width: 136px;
+  background: #ffffff;
+  border: 1px solid #dfe7f1;
+  border-radius: 9px;
+  padding: 4px;
+  box-shadow: 0 10px 25px rgba(27, 55, 90, 0.12), 0 2px 6px rgba(27, 55, 90, 0.04);
+  animation: menuFadeIn 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+@keyframes menuFadeIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.menu-item {
+  width: 100%;
   display: flex;
   align-items: center;
-  gap: 1px;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.15s ease;
-}
-
-.doc-item:hover .doc-actions {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.action-btn {
+  gap: 8px;
+  padding: 6px 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #334155;
   background: transparent;
   border: none;
-  color: var(--text-muted, #64748B);
-  width: 20px;
-  height: 20px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.15s ease;
-  padding: 0;
+  text-align: left;
+  transition: all 0.12s ease;
+  box-sizing: border-box;
 }
 
-.action-btn.is-pinned {
-  color: #f59e0b;
+.menu-item:hover {
+  background: #f0f5fb;
+  color: #2678e8;
 }
 
-.action-btn:hover {
-  background: rgba(0, 0, 0, 0.08);
-  color: var(--text-main, #1c1917);
-}
-
-.action-btn.btn-trash:hover {
-  background: #fee2e2;
+.menu-item.text-danger {
   color: #ef4444;
 }
 
-html.dark .action-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+.menu-item.text-danger:hover {
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+}
+
+.menu-item-icon {
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
+.menu-divider {
+  height: 1px;
+  background: #e7edf5;
+  margin: 3px 0;
+}
+
+html.dark .doc-menu-dropdown {
+  background: #1e1e24;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+}
+
+html.dark .menu-item {
+  color: #cbd5e1;
+}
+
+html.dark .menu-item:hover {
+  background: rgba(255, 255, 255, 0.08);
   color: #ffffff;
 }
 
-html.dark .action-btn.btn-trash:hover {
-  background: rgba(239, 68, 68, 0.25);
-  color: #fca5a5;
+html.dark .menu-divider {
+  background: rgba(255, 255, 255, 0.08);
 }
 </style>

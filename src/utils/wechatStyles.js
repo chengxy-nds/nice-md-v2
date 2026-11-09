@@ -1224,20 +1224,20 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     const existingAlign = p.getAttribute('align') || p.style.textAlign || pCustom.textAlign;
     const baseStyle = cleanCss(wechatTypo.p || `
       font-size: 16px;
-      line-height: 2em;
+      line-height: 1.75em;
       letter-spacing: 0.08em;
       color: ${colors.text};
       margin-top: 0px;
-      margin-bottom: 16px;
-      padding-top: 8px;
-      padding-bottom: 8px;
+      margin-bottom: 12px;
+      padding-top: 0px;
+      padding-bottom: 0px;
       text-align: justify;
     `);
     p.setAttribute('style', baseStyle);
     if (!p.style.marginTop) p.style.marginTop = '0px';
     if (!p.style.marginBottom) p.style.marginBottom = pCustom.marginBottom || '16px';
-    if (!p.style.paddingTop && !p.style.padding) p.style.paddingTop = '8px';
-    if (!p.style.paddingBottom && !p.style.padding) p.style.paddingBottom = '8px';
+    if (!p.style.paddingTop && !p.style.padding) p.style.paddingTop = '0px';
+    if (!p.style.paddingBottom && !p.style.padding) p.style.paddingBottom = '0px';
     if (pCustomColor) p.style.color = pCustomColor;
     if (pCustom.fontSize) p.style.fontSize = pCustom.fontSize;
     if (pCustom.lineHeight) p.style.lineHeight = pCustom.lineHeight;

@@ -90,7 +90,7 @@ defineEmits(['toggle-tab']);
   padding: 12px 0;
   z-index: 10;
   box-sizing: border-box;
-  border-right: 1px solid var(--border-color, #E2E8F0);
+  border-right: 1px solid var(--border-subtle, #EDF1F7);
   transition: background 0.3s ease, border-color 0.3s ease;
 }
 
@@ -136,7 +136,7 @@ html.dark .icon-btn:hover {
   color: var(--brand-primary, #116ACC);
   background: var(--bg-card, #ffffff);
   border-radius: 9px;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.05);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 0 0 1px rgba(15, 23, 42, 0.035);
 }
 
 .icon-btn.is-active::before {

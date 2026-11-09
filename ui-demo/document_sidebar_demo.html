@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的文档 · 文件管理器 Demo</title>
+<style>
+:root{
+  --blue:#2678e8;--blue-dark:#1764d2;--blue-soft:#eaf3ff;
+  --ink:#1e293b;--muted:#8a9ab2;--line:#e7edf5;--surface:#fff;
+  --canvas:#f4f7fb;--green:#20bd8b;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;min-height:100vh;display:grid;place-items:center;padding:28px;
+  background:radial-gradient(circle at 12% 12%,#e3efff 0,transparent 34%),
+             radial-gradient(circle at 88% 85%,#e8f1ff 0,transparent 30%),#f3f6fb;
+  color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei",sans-serif;
+}
+.sidebar{
+  width:min(360px,100%);min-height:760px;padding:18px 16px 14px;
+  display:flex;flex-direction:column;background:rgba(255,255,255,.88);
+  border:1px solid rgba(255,255,255,.9);border-radius:22px;
+  box-shadow:0 20px 60px rgba(44,82,139,.13),0 2px 8px rgba(40,70,110,.05);
+  backdrop-filter:blur(18px);
+}
+.create{
+  width:100%;height:48px;border:0;border-radius:12px;color:#fff;font-size:15px;
+  font-weight:700;letter-spacing:.2px;cursor:pointer;
+  background:linear-gradient(110deg,#3289f5,#176bd8);
+  box-shadow:0 6px 14px rgba(38,120,232,.23),inset 0 1px rgba(255,255,255,.3);
+  transition:.18s transform,.18s box-shadow;
+}
+.create:hover{transform:translateY(-1px);box-shadow:0 9px 18px rgba(38,120,232,.28)}
+.create:active{transform:translateY(0)}
+.toolbar{display:flex;align-items:center;gap:10px;margin:24px 4px 15px}
+.heading{font-size:18px;font-weight:750;letter-spacing:.2px}
+.sync{display:flex;align-items:center;gap:5px;padding:4px 8px;border-radius:20px;background:#e9faf4;color:#0ca879;font-size:11px}
+.dot{width:6px;height:6px;background:var(--green);border-radius:50%}
+.spacer{flex:1}
+.icon-btn{width:32px;height:32px;border:0;background:transparent;color:#71839d;border-radius:8px;cursor:pointer;font-size:18px}
+.icon-btn:hover{background:#f0f5fb;color:var(--blue)}
+.search{height:42px;display:flex;align-items:center;gap:9px;padding:0 12px;border:1px solid #dfe7f1;border-radius:11px;background:#fff;box-shadow:0 2px 5px rgba(27,55,90,.025)}
+.search svg{width:17px;color:#7488a5;flex:none}
+.search input{width:100%;border:0;outline:0;background:transparent;font-size:13px;color:var(--ink)}
+.search input::placeholder{color:#a1adbd}
+.tree{padding-top:14px;flex:1;overflow:auto}
+.folder-row,.file-row{display:flex;align-items:center;min-height:42px;border-radius:10px;cursor:pointer;transition:.15s;background:transparent}
+.folder-row{padding:0 8px;gap:9px;font-size:14px;font-weight:650}
+.folder-row:hover,.file-row:hover{background:#f5f8fc}
+.chevron{width:14px;color:#72849e;font-size:14px;text-align:center;transition:transform .15s}
+.folder-icon{width:17px;height:14px;border:1.6px solid #f0a13b;border-radius:3px;position:relative;flex:none;background:#fff9ef}
+.folder-icon:before{content:"";position:absolute;left:1px;top:-5px;width:7px;height:4px;border:1.5px solid #f0a13b;border-bottom:0;border-radius:3px 3px 0 0;background:#fff9ef}
+.folder-icon.gray{border-color:#8ea0b8;background:#f7f9fc}
+.folder-icon.gray:before{border-color:#8ea0b8;background:#f7f9fc}
+.count{margin-left:auto;min-width:23px;height:23px;padding:0 7px;display:grid;place-items:center;border-radius:20px;background:#edf1f6;color:#78879b;font-size:11px;font-weight:700}
+.children{margin-left:16px;padding-left:9px;border-left:1px solid #e4ebf4}
+.file-row{position:relative;gap:10px;padding:7px 9px;min-height:58px;margin:2px 0}
+.file-row.selected{background:linear-gradient(100deg,#edf5ff,#e8f2ff);box-shadow:inset 0 0 0 1px #d6e7ff}
+.file-icon{width:17px;height:20px;flex:none;border:1.5px solid #8193ad;border-radius:3px;background:linear-gradient(135deg,#fff,#f0f4f9);position:relative}
+.file-icon:after{content:"";position:absolute;left:4px;right:3px;top:7px;height:1px;background:#9aa9bd;box-shadow:0 4px #9aa9bd,0 8px #9aa9bd}
+.file-row.selected .file-icon{border-color:var(--blue);background:#e1efff}
+.file-row.selected .file-icon:after{background:#5b9af0;box-shadow:0 4px #5b9af0,0 8px #5b9af0}
+.file-copy{min-width:0;flex:1}
+.file-name{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-row.selected .file-name{color:var(--blue)}
+.meta{margin-top:4px;color:#91a0b5;font-size:11px}
+.more{opacity:0;color:#7d91ad;font-size:18px}
+.file-row:hover .more,.file-row.selected .more{opacity:1}
+.empty{padding:28px 10px;text-align:center;color:#97a5b8;font-size:13px}
+.bottom{border-top:1px solid var(--line);padding-top:10px;margin-top:12px}
+.trash{display:flex;align-items:center;gap:11px;padding:10px 9px;border-radius:9px;color:#52647d;font-size:14px;font-weight:650;cursor:pointer}
+.trash:hover{background:#f5f8fc}
+.trash-icon{font-size:17px;color:#8798ae}
+.trash .count{margin-left:auto}
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,12px);opacity:0;pointer-events:none;padding:10px 15px;border-radius:10px;background:#24344d;color:white;font-size:13px;box-shadow:0 8px 24px #1c355333;transition:.2s}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@media(max-width:430px){body{padding:12px}.sidebar{min-height:calc(100vh - 24px);border-radius:18px}}
+</style>
+</head>
+<body>
+<aside class="sidebar">
+  <button class="create" id="createBtn">＋ 新建文档</button>
+  <div class="toolbar">
+    <div class="heading">我的文档</div>
+    <div class="sync"><span>↻</span><span class="dot"></span></div>
+    <div class="spacer"></div>
+    <button class="icon-btn" id="sortBtn" title="切换排序">↕</button>
+    <button class="icon-btn" id="folderBtn" title="新建文件夹">▱＋</button>
+  </div>
+  <label class="search">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+    <input id="searchInput" placeholder="搜索文档标题或正文内容..." />
+  </label>
+  <div class="tree" id="tree">
+    <section class="folder">
+      <div class="folder-row" data-toggle><span class="chevron">›</span><span class="folder-icon"></span><span>辛如因</span><span class="count">2</span></div>
+      <div class="children" hidden>
+        <div class="file-row"><span class="file-icon"></span><div class="file-copy"><div class="file-name">灵感收集</div><div class="meta">昨天 16:20 · 1280字</div></div><span class="more">···</span></div>
+        <div class="file-row"><span class="file-icon"></span><div class="file-copy"><div class="file-name">项目备忘</div><div class="meta">周一 09:42 · 860字</div></div><span class="more">···</span></div>
+      </div>
+    </section>
+    <section class="folder">
+      <div class="folder-row" data-toggle><span class="chevron">⌄</span><span class="folder-icon"></span><span>十万个why</span><span class="count">2</span></div>
+      <div class="children">
+        <div class="file-row"><span class="file-icon"></span><div class="file-copy"><div class="file-name">十万个why：明明...</div><div class="meta">今天 10:52 · 2366字</div></div><span class="more">···</span></div>
+        <div class="file-row"><span class="file-icon"></span><div class="file-copy"><div class="file-name">十万个why：亿级...</div><div class="meta">今天 10:52 · 2223字</div></div><span class="more">···</span></div>
+      </div>
+    </section>
+    <section class="folder">
+      <div class="folder-row" data-toggle><span class="chevron">⌄</span><span class="folder-icon gray"></span><span>未分类</span><span class="count">2</span></div>
+      <div class="children">
+        <div class="file-row selected"><span class="file-icon"></span><div class="file-copy"><div class="file-name">未命名文档</div><div class="meta">今天 10:53 · 0字</div></div><span class="more">···</span></div>
+        <div class="file-row"><span class="file-icon"></span><div class="file-copy"><div class="file-name">未命名文档</div><div class="meta">今天 10:38 · 0字</div></div><span class="more">···</span></div>
+      </div>
+    </section>
+  </div>
+  <div class="bottom">
+    <div class="trash"><span class="chevron">›</span><span class="trash-icon">▤</span><span>回收站</span><span class="count">22</span></div>
+  </div>
+</aside>
+<div class="toast" id="toast"></div>
+<script>
+const tree=document.querySelector('#tree'), search=document.querySelector('#searchInput'), toast=document.querySelector('#toast');
+function notify(msg){toast.textContent=msg;toast.classList.add('show');clearTimeout(window.toastTimer);window.toastTimer=setTimeout(()=>toast.classList.remove('show'),1800)}
+tree.addEventListener('click',e=>{
+  const row=e.target.closest('.folder-row');
+  if(row){const children=row.nextElementSibling,open=!children.hidden;children.hidden=open;row.querySelector('.chevron').textContent=open?'›':'⌄';return}
+  const file=e.target.closest('.file-row');
+  if(file){document.querySelectorAll('.file-row').forEach(x=>x.classList.remove('selected'));file.classList.add('selected')}
+});
+search.addEventListener('input',()=>{
+  const q=search.value.trim().toLowerCase();
+  document.querySelectorAll('.folder').forEach(folder=>{
+    let visible=0;
+    folder.querySelectorAll('.file-row').forEach(file=>{
+      const show=file.textContent.toLowerCase().includes(q);file.style.display=show?'flex':'none';if(show)visible++;
+    });
+    const folderMatch=folder.querySelector('.folder-row').textContent.toLowerCase().includes(q);
+    folder.style.display=(!q||visible||folderMatch)?'':'none';
+    if(q&&visible)folder.querySelector('.children').hidden=false;
+  });
+});
+document.querySelector('#createBtn').onclick=()=>{
+  const section=[...document.querySelectorAll('.folder')].find(x=>x.querySelector('.folder-row span:nth-child(3)').textContent==='未分类');
+  const children=section.querySelector('.children');children.hidden=false;section.querySelector('.chevron').textContent='⌄';
+  const row=document.createElement('div');row.className='file-row selected';
+  row.innerHTML='<span class="file-icon"></span><div class="file-copy"><div class="file-name">未命名文档</div><div class="meta">刚刚 · 0字</div></div><span class="more">···</span>';
+  children.prepend(row);document.querySelectorAll('.file-row').forEach(x=>{if(x!==row)x.classList.remove('selected')});notify('已创建新文档');
+};
+document.querySelector('#folderBtn').onclick=()=>notify('新建文件夹：Demo 中暂用提示代替');
+document.querySelector('#sortBtn').onclick=()=>{const parent=document.querySelector('.folder:nth-child(3) .children');[...parent.children].reverse().forEach(n=>parent.appendChild(n));notify('已切换列表顺序')};
+</script>
+</body>
+</html>

@@ -94,6 +94,7 @@ const markdownContent = computed({
   set: (val) => {
     const doc = documents.value.find(d => d.id === activeDocId.value);
     if (doc) {
+      const contentChanged = doc.content !== val;
       doc.content = val;
       if ((!doc.title || doc.title === '未命名文档') && val) {
         const h1Match = val.match(/^#\s+(.+)$/m);
@@ -108,9 +109,9 @@ const markdownContent = computed({
           }
         }
       }
-      doc.updatedAt = Date.now();
+      if (contentChanged) doc.updatedAt = Date.now();
       saveDocuments(documents.value);
-      realtimeSyncDoc(doc);
+      if (contentChanged) realtimeSyncDoc(doc);
     }
   }
 });
@@ -120,10 +121,11 @@ const customStyles = computed({
   set: (val) => {
     const doc = documents.value.find(d => d.id === activeDocId.value);
     if (doc) {
+      const stylesChanged = JSON.stringify(doc.customStyles ?? {}) !== JSON.stringify(val ?? {});
       doc.customStyles = val;
-      doc.updatedAt = Date.now();
+      if (stylesChanged) doc.updatedAt = Date.now();
       saveDocuments(documents.value);
-      realtimeSyncDoc(doc);
+      if (stylesChanged) realtimeSyncDoc(doc);
     }
   }
 });
@@ -1601,7 +1603,7 @@ watch(customStyles, () => {
         </div>
 
         <!-- Center Floating Pill Toolbar (AI 润色 / 智能排版 / 插入图片 / 生成封面) -->
-        <div class="header-center">
+        <div class="header-center" :class="{ 'is-workspace-centered': sidebarVisible && currentView === 'editor' }">
           <div class="header-capsule-bar">
             <button class="capsule-btn is-ai" @click="handleAiPolish" title="AI 智能润色与优化">
               <Sparkles size="13.5" class="capsule-icon ai-sparkle-icon" />
@@ -2040,6 +2042,7 @@ html.dark .app-container.is-standalone-home {
 }
 
 .app-header {
+  position: relative;
   height: 54px;
   display: flex;
   justify-content: space-between;
@@ -2150,6 +2153,15 @@ html.dark .wandor-wordmark {
   position: relative;
 }
 
+.header-center.is-workspace-centered {
+  position: absolute;
+  left: calc(50% + clamp(8.5rem, 11vw, 12rem) + 25px);
+  top: 50%;
+  width: max-content;
+  flex: none;
+  transform: translate(-50%, -50%);
+}
+
 .header-capsule-bar {
   display: flex;
   align-items: center;
@@ -2162,6 +2174,11 @@ html.dark .wandor-wordmark {
   position: relative;
   user-select: none;
   transition: all 0.25s ease;
+}
+
+.header-center .btn-header-publish {
+  margin-left: 4px;
+  box-shadow: 0 2px 6px rgba(17, 106, 204, 0.16);
 }
 
 .capsule-divider {
@@ -2468,7 +2485,7 @@ html.dark .btn-header-publish:hover {
   height: 100%;
   min-width: 44px;
   background: var(--bg-app);
-  border-right: 1px solid var(--border-color);
+  border-right: 0;
 }
 
 .header-logo {
@@ -2754,7 +2771,7 @@ html.dark .btn-header-publish:hover {
 
 .header-actions {
   display: flex;
-  gap: 6px;
+  gap: 4px;
   align-items: center;
   width: 100%;
 }
@@ -2762,7 +2779,7 @@ html.dark .btn-header-publish:hover {
 .toolbar-btn-group {
   display: inline-flex;
   align-items: center;
-  gap: 2px;
+  gap: 1px;
   padding: 2px;
   border-radius: 7px;
   background: transparent;
@@ -2777,7 +2794,7 @@ html.dark .btn-header-publish:hover {
   border-radius: 7px;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
-  max-width: 260px;
+  max-width: 300px;
   min-width: 0;
   width: auto;
   flex-shrink: 0;
@@ -2860,11 +2877,11 @@ html.dark .btn-header-publish:hover {
 
 .toolbar-sep {
   width: 1px;
-  height: 14px;
-  background: var(--border-color);
+  height: 12px;
+  background: var(--border-subtle, #EDF1F7);
   display: inline-block;
-  margin: 0 2px;
-  opacity: 0.85;
+  margin: 0 1px;
+  opacity: 1;
 }
 
 .toolbar-spacer {
@@ -2876,8 +2893,8 @@ html.dark .btn-header-publish:hover {
   border: 1px solid transparent;
   color: var(--text-muted, #64748B);
   border-radius: 6px;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3026,16 +3043,18 @@ html.dark .popout-item.is-active {
 .workspace-columns {
   flex: 1;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   min-height: 0;
   height: calc(100% - 40px);
   width: 100%;
   overflow: hidden;
+  transition: grid-template-columns 0.48s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .workspace-column {
   position: relative;
   z-index: 1;
+  min-width: 0;
   height: 100%;
   overflow: hidden;
 }
@@ -3045,7 +3064,7 @@ html.dark .popout-item.is-active {
 }
 
 .workspace-grid.preview-hidden .workspace-columns {
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 46px);
 }
 
 .workspace-grid.preview-hidden .workspace-column.editor-column {
@@ -3057,7 +3076,13 @@ html.dark .popout-item.is-active {
 }
 
 .workspace-grid.theme-panel-open.preview-hidden .workspace-columns {
-  grid-template-columns: 1fr auto;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 46px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .workspace-columns {
+    transition-duration: 0.01ms !important;
+  }
 }
 
 .workspace-grid.theme-panel-open .preview-column {
@@ -3157,6 +3182,15 @@ html.dark .popout-item.is-active {
   .app-header {
     padding: 0 12px;
     height: 4rem;
+  }
+
+  .header-center.is-workspace-centered {
+    position: relative;
+    left: auto;
+    top: auto;
+    width: auto;
+    flex: 1;
+    transform: none;
   }
   
   .header-selects {
