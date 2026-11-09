@@ -99,7 +99,9 @@ async function smartFetch(url, options = {}) {
         body: options.body
       });
 
-      if (proxyResp.status !== 404 && proxyResp.status !== 502) {
+      const contentType = proxyResp.headers.get('content-type') || '';
+      // Valid proxy response from TiDB Cloud will be JSON, never HTML fallback from SPA rewrite
+      if (!contentType.includes('text/html') && proxyResp.status !== 404 && proxyResp.status !== 502) {
         return proxyResp;
       }
     } catch (e) {
@@ -123,7 +125,7 @@ async function smartFetch(url, options = {}) {
   return await fetch(url, options);
 }
 
-function fetchViaExtensionBridge(url, options, timeoutMs = 6000) {
+function fetchViaExtensionBridge(url, options, timeoutMs = 2500) {
   return new Promise((resolve, reject) => {
     const requestId = 'tidb_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
     let timer = null;
