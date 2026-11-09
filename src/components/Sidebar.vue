@@ -38,6 +38,7 @@ function refreshCloudSyncState() {
 
 onMounted(() => {
   refreshCloudSyncState();
+  loadSavedSidebarWidth();
   window.addEventListener('nicemd-cloud-provider-changed', refreshCloudSyncState);
   window.addEventListener('nicemd-tidb-config-updated', refreshCloudSyncState);
   window.addEventListener('nicemd-neon-config-updated', refreshCloudSyncState);
@@ -45,6 +46,10 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  if (cleanupResizeListeners) {
+    cleanupResizeListeners();
+    cleanupResizeListeners = null;
+  }
   window.removeEventListener('nicemd-cloud-provider-changed', refreshCloudSyncState);
   window.removeEventListener('nicemd-tidb-config-updated', refreshCloudSyncState);
   window.removeEventListener('nicemd-neon-config-updated', refreshCloudSyncState);
@@ -438,10 +443,98 @@ function onGroupDragStart(e, groupId) {
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('application/nicemd-group', groupId);
 }
+
+// ── Sidebar Resizing & Responsive Width ──
+const SIDEBAR_WIDTH_KEY = 'nicemd_sidebar_custom_width';
+const MIN_SIDEBAR_WIDTH = 220;
+const MAX_SIDEBAR_WIDTH = 640;
+
+const sidebarContainerRef = ref(null);
+const customSidebarWidth = ref(null);
+const isResizing = ref(false);
+
+function loadSavedSidebarWidth() {
+  try {
+    const saved = localStorage.getItem(SIDEBAR_WIDTH_KEY);
+    if (saved) {
+      const val = parseInt(saved, 10);
+      if (!isNaN(val) && val >= MIN_SIDEBAR_WIDTH && val <= MAX_SIDEBAR_WIDTH) {
+        customSidebarWidth.value = val;
+      }
+    }
+  } catch (err) {
+    // Ignore storage errors in restricted contexts
+  }
+}
+
+let cleanupResizeListeners = null;
+
+function startResizing(e) {
+  if (window.innerWidth <= 960) return;
+  isResizing.value = true;
+  const startX = e.clientX;
+  const initialWidth = customSidebarWidth.value || sidebarContainerRef.value?.offsetWidth || 280;
+
+  const onMouseMove = (moveEvent) => {
+    if (!isResizing.value) return;
+    const delta = moveEvent.clientX - startX;
+    const maxAllowed = Math.min(MAX_SIDEBAR_WIDTH, Math.round(window.innerWidth * 0.45));
+    const nextWidth = Math.min(Math.max(initialWidth + delta, MIN_SIDEBAR_WIDTH), maxAllowed);
+    customSidebarWidth.value = Math.round(nextWidth);
+  };
+
+  const onMouseUp = () => {
+    isResizing.value = false;
+    if (cleanupResizeListeners) {
+      cleanupResizeListeners();
+      cleanupResizeListeners = null;
+    }
+    if (customSidebarWidth.value) {
+      try {
+        localStorage.setItem(SIDEBAR_WIDTH_KEY, String(customSidebarWidth.value));
+      } catch (err) {
+        // Ignore storage errors
+      }
+    }
+  };
+
+  cleanupResizeListeners = () => {
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+    document.body.style.removeProperty('cursor');
+    document.body.style.removeProperty('user-select');
+  };
+
+  document.body.style.cursor = 'col-resize';
+  document.body.style.userSelect = 'none';
+  document.addEventListener('mousemove', onMouseMove);
+  document.addEventListener('mouseup', onMouseUp);
+}
+
+function resetSidebarWidth() {
+  customSidebarWidth.value = null;
+  try {
+    localStorage.removeItem(SIDEBAR_WIDTH_KEY);
+  } catch (err) {
+    // Ignore storage errors
+  }
+}
 </script>
 
 <template>
-  <aside class="sidebar-container select-none">
+  <aside
+    ref="sidebarContainerRef"
+    class="sidebar-container select-none"
+    :class="{ 'is-resizing': isResizing }"
+    :style="customSidebarWidth ? { width: `${customSidebarWidth}px`, flex: `0 0 ${customSidebarWidth}px` } : undefined"
+  >
+    <!-- Split Resizer Handle -->
+    <div
+      class="sidebar-resizer"
+      @mousedown.prevent="startResizing"
+      @dblclick="resetSidebarWidth"
+      title="拖拽调整侧边栏宽度，双击恢复默认"
+    ></div>
     <!-- Toolbar: 我的文档 -->
     <div class="toolbar">
       <div class="toolbar-meta">
@@ -738,7 +831,6 @@ function onGroupDragStart(e, groupId) {
           :class="{ 'selected': doc.id === activeDocId }"
           @click="handleSelectTrashDoc(doc)"
         >
-          <span class="file-icon"></span>
           <div class="file-copy">
             <span class="file-name" :title="doc.title || '未命名文档'">{{ doc.title || '未命名文档' }}</span>
           </div>
@@ -762,8 +854,9 @@ function onGroupDragStart(e, groupId) {
 
 <style scoped>
 .sidebar-container {
-  width: clamp(16.5rem, 21vw, 22.5rem);
-  min-width: 16.5rem;
+  position: relative;
+  width: clamp(17rem, 20vw, 24rem);
+  min-width: 13.75rem;
   container: docs-sidebar / inline-size;
   flex-shrink: 0;
   display: flex;
@@ -777,6 +870,44 @@ function onGroupDragStart(e, groupId) {
   box-sizing: border-box;
   backdrop-filter: blur(18px);
   transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.sidebar-container.is-resizing {
+  transition: none !important;
+  user-select: none !important;
+}
+
+.sidebar-resizer {
+  position: absolute;
+  top: 0;
+  right: -3px;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  z-index: 50;
+  background: transparent;
+}
+
+.sidebar-resizer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 2px;
+  width: 2px;
+  background: transparent;
+  transition: background 0.15s ease;
+}
+
+.sidebar-resizer:hover::after,
+.sidebar-container.is-resizing .sidebar-resizer::after {
+  background: #3289f5;
+}
+
+@media (max-width: 960px) {
+  .sidebar-resizer {
+    display: none !important;
+  }
 }
 
 html.dark .sidebar-container {
@@ -840,7 +971,7 @@ html.dark .create-action:hover {
 }
 
 .heading {
-  font-size: 17px;
+  font-size: 1.0625rem;
   font-weight: 750;
   letter-spacing: 0.2px;
   color: #1e293b;
@@ -859,7 +990,7 @@ html.dark .heading {
   border-radius: 20px;
   background: #e9faf4;
   color: #0ca879;
-  font-size: 9px;
+  font-size: 0.6875rem;
   font-weight: 600;
   white-space: nowrap;
 }
@@ -867,7 +998,7 @@ html.dark .heading {
 .sync-label { line-height: 1; }
 
 .sync-icon {
-  font-size: 11px;
+  font-size: 0.75rem;
 }
 
 .dot {
@@ -967,7 +1098,7 @@ html.dark .search {
   border: 0;
   outline: 0;
   background: transparent;
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: #1e293b;
   font-family: inherit;
 }
@@ -1025,7 +1156,7 @@ html.dark .create-group-row {
   flex: 1;
   min-width: 0;
   height: 100%;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 500;
   border: none;
   background: transparent;
@@ -1040,7 +1171,7 @@ html.dark .create-group-input {
 
 .create-group-input::placeholder {
   color: #94a3b8;
-  font-size: 12px;
+  font-size: 0.75rem;
 }
 
 .create-group-actions {
@@ -1111,8 +1242,7 @@ html.dark .create-group-input {
   min-height: 40px;
   padding: 0 8px;
   gap: 8px;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: 0.875rem;
   color: #1e293b;
   border-radius: 10px;
   cursor: pointer;
@@ -1214,7 +1344,7 @@ html.dark .folder-icon.gray:before {
   flex: 1;
   min-width: 0;
   height: 24px;
-  font-size: 13px;
+  font-size: 0.8125rem;
   font-weight: 600;
   padding: 0 5px;
   border: 1px solid #2678e8;
@@ -1247,7 +1377,7 @@ html.dark .group-rename-input {
   border-radius: 20px;
   background: #edf1f6;
   color: #78879b;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 700;
 }
 
@@ -1323,7 +1453,7 @@ html.dark .children {
 .empty-group-drop-hint {
   padding: 8px 10px;
   margin: 3px 0 5px;
-  font-size: 11.5px;
+  font-size: 0.75rem;
   color: #94a3b8;
   border: 1px solid #dfe7f1;
   background: rgba(27, 55, 90, 0.02);
@@ -1357,8 +1487,7 @@ html.dark .bottom {
   padding: 9px 8px;
   border-radius: 9px;
   color: #52647d;
-  font-size: 14px;
-  font-weight: 650;
+  font-size: 0.875rem;
   cursor: pointer;
   transition: 0.15s background;
   user-select: none;
@@ -1408,7 +1537,7 @@ html.dark .trash:hover {
   background: transparent;
   color: #d45454;
   font: inherit;
-  font-size: 11px;
+  font-size: 0.6875rem;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -1467,8 +1596,7 @@ html.dark .trash-doc-item:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 0.8125rem;
   line-height: 1.35;
   color: #1e293b;
   text-decoration: line-through;
@@ -1483,38 +1611,6 @@ html.dark .trash-doc-item .file-name {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
-}
-
-.trash-doc-item .file-icon {
-  width: 17px;
-  height: 20px;
-  flex: 0 0 17px;
-  border: 1.5px solid #a0aec0;
-  border-radius: 3px;
-  background: #f8fafc;
-  position: relative;
-  box-sizing: border-box;
-}
-
-.trash-doc-item .file-icon::after {
-  content: "";
-  position: absolute;
-  left: 3px;
-  right: 2px;
-  top: 5px;
-  height: 1px;
-  background: #a0aec0;
-  box-shadow: 0 4px #a0aec0, 0 8px #a0aec0;
-}
-
-html.dark .trash-doc-item .file-icon {
-  border-color: #64748b;
-  background: #23252d;
-}
-
-html.dark .trash-doc-item .file-icon::after {
-  background: #64748b;
-  box-shadow: 0 4px #64748b, 0 8px #64748b;
 }
 
 .trash-item-actions {
@@ -1540,7 +1636,7 @@ html.dark .trash-doc-item .file-icon::after {
   align-items: center;
   gap: 3px;
   padding: 2px 6px;
-  font-size: 11px;
+  font-size: 0.6875rem;
   border-radius: 4px;
   border: none;
   background: transparent;
@@ -1577,10 +1673,9 @@ html.dark .trash-doc-item .file-icon::after {
   background: rgba(239, 68, 68, 0.1) !important;
 }
 
-@container docs-sidebar (max-width: 330px) {
+@container docs-sidebar (max-width: 280px) {
   .toolbar {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
+    flex-wrap: wrap;
     gap: 4px;
     margin: 12px 0 8px;
   }
@@ -1590,7 +1685,7 @@ html.dark .trash-doc-item .file-icon::after {
   }
 
   .toolbar-actions {
-    justify-self: end;
+    margin-left: auto;
     gap: 3px;
   }
 
@@ -1642,7 +1737,7 @@ html.dark .trash-doc-item .file-icon::after {
 
   .trash-action-btn {
     padding-inline: 4px;
-    font-size: 10px;
+    font-size: 0.625rem;
   }
 
   .trash-action-btn.delete-btn {

@@ -3209,7 +3209,7 @@ html.dark .popout-item.is-active {
     top: 0 !important;
     left: 0 !important;
     bottom: 0 !important;
-    width: 280px !important;
+    width: min(300px, 86vw) !important;
     height: 100% !important;
     z-index: 100 !important;
     background: var(--bg-editor) !important;

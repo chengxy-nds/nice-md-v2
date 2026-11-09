@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue';
-import { FileText, Pencil, Trash2, History, Copy, Pin, MoreHorizontal } from 'lucide-vue-next';
+import { Pencil, Trash2, History, Copy, Pin, MoreHorizontal } from 'lucide-vue-next';
 import { showConfirm } from '../utils/confirmDialog';
 
 const props = defineProps({
@@ -210,9 +210,6 @@ onUnmounted(() => {
     @dragleave="onDragLeave"
     @drop="onDrop"
   >
-    <!-- Paper file icon from demo -->
-    <span class="file-icon"></span>
-
     <!-- Content column -->
     <div class="file-copy">
       <!-- Title -->
@@ -330,67 +327,13 @@ html.dark .file-row.selected {
   box-shadow: inset 0 -2px 0 #2678e8;
 }
 
-/* File Icon: 3-line document from demo */
-.file-icon {
-  width: 17px;
-  height: 20px;
-  flex: none;
-  border: 1.5px solid #8193ad;
-  border-radius: 3px;
-  background: linear-gradient(135deg, #fff, #f0f4f9);
-  position: relative;
-  box-sizing: border-box;
-}
-
-.file-icon:after {
-  content: "";
-  position: absolute;
-  left: 3px;
-  right: 2px;
-  top: 5px;
-  height: 1px;
-  background: #9aa9bd;
-  box-shadow: 0 4px #9aa9bd, 0 8px #9aa9bd;
-}
-
-.file-row.selected .file-icon {
-  border-color: #7898c2;
-  background: #f5f9ff;
-}
-
-.file-row.selected .file-icon:after {
-  background: #8da8cc;
-  box-shadow: 0 4px #8da8cc, 0 8px #8da8cc;
-}
-
-html.dark .file-icon {
-  background: linear-gradient(135deg, #2a2d36, #1f2128);
-  border-color: #52647d;
-}
-
-html.dark .file-icon:after {
-  background: #64748b;
-  box-shadow: 0 4px #64748b, 0 8px #64748b;
-}
-
-html.dark .file-row.selected .file-icon {
-  border-color: #3b82f6;
-  background: rgba(59, 130, 246, 0.2);
-}
-
-html.dark .file-row.selected .file-icon:after {
-  background: #60a5fa;
-  box-shadow: 0 4px #60a5fa, 0 8px #60a5fa;
-}
-
 .file-copy {
   min-width: 0;
   flex: 1;
 }
 
 .file-name {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: 0.8125rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -421,14 +364,14 @@ html.dark .file-row.selected .file-name {
 }
 
 .pin-badge {
-  font-size: 10px;
+  font-size: 0.625rem;
   line-height: 1;
 }
 
 .meta {
   margin-top: 3px;
   color: #718198;
-  font-size: 11px;
+  font-size: 0.6875rem;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -472,7 +415,7 @@ html.dark .meta {
 
 /* Search match snippet */
 .doc-search-snippet {
-  font-size: 11px;
+  font-size: 0.6875rem;
   color: #2678e8;
   background: rgba(38, 120, 232, 0.08);
   padding: 1px 5px;
@@ -491,7 +434,7 @@ html.dark .meta {
   height: 22px;
   min-width: 0;
   font: inherit;
-  font-size: 12.5px;
+  font-size: 0.78125rem;
   font-weight: 600;
   line-height: 20px;
   padding: 0 6px;
@@ -549,7 +492,7 @@ html.dark .rename-input:focus {
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  font-size: 12px;
+  font-size: 0.75rem;
   font-weight: 500;
   color: #334155;
   background: transparent;
