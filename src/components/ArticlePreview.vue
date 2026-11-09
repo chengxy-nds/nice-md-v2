@@ -395,14 +395,28 @@ const markdownBodyStyles = computed(() => ({
     : {})
 }));
 
+const debouncedMarkdown = ref(props.markdown || '');
+let mdDebounceTimer = null;
+
+watch(() => props.markdown, (newVal) => {
+  if (mdDebounceTimer) clearTimeout(mdDebounceTimer);
+  mdDebounceTimer = setTimeout(() => {
+    debouncedMarkdown.value = newVal || '';
+  }, 60);
+}, { immediate: true });
+
+onBeforeUnmount(() => {
+  if (mdDebounceTimer) clearTimeout(mdDebounceTimer);
+});
+
 const compiledHtml = computed(() => {
-  if (!props.markdown) return '';
-  const rawHtml = marked.parse(props.markdown);
+  if (!debouncedMarkdown.value) return '';
+  const rawHtml = marked.parse(debouncedMarkdown.value);
   return cleanEmptyListItems(rawHtml);
 });
 
 const wechatStyledHtml = computed(() => {
-  if (!props.markdown) return '';
+  if (!debouncedMarkdown.value) return '';
   return compileToWeChatHtml(
     compiledHtml.value,
     props.themeId,
@@ -478,7 +492,7 @@ const renderMathAndCharts = async () => {
   }
 };
 
-watch([() => props.markdown, () => props.themeId, () => props.codeThemeId, () => props.customStyles], () => {
+watch([debouncedMarkdown, () => props.themeId, () => props.codeThemeId, () => props.customStyles], () => {
   renderMathAndCharts();
 }, { immediate: true, deep: true });
 

@@ -1926,6 +1926,8 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         background: transparent !important;
       `));
     } else if (!isMaterialEl(img)) {
+      img.setAttribute('loading', 'lazy');
+      img.setAttribute('decoding', 'async');
       img.setAttribute('style', cleanCss(`
         max-width: 100% !important;
         height: auto !important;

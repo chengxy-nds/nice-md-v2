@@ -39,6 +39,7 @@ import {
 } from './utils/docStorage';
 import {
   triggerAutoSyncDebounced,
+  triggerAutoSyncImmediate,
   isCloudSyncEnabled,
   isNeonSyncEnabled,
   isTidbSyncEnabled,
@@ -1470,11 +1471,14 @@ onMounted(async () => {
   try { localStorage.removeItem('nicemd_color_mode'); } catch (e) {}
 
   // Auto-activate TiDB default if server has default TIDB_DATABASE_URL and user hasn't explicitly configured
-  await initTidbDefaultIfAvailable();
+  const activated = await initTidbDefaultIfAvailable();
+  if (activated) {
+    window.dispatchEvent(new CustomEvent('nicemd-cloud-provider-changed', { detail: { provider: 'tidb', enable: true } }));
+  }
 
-  // 5. Background Auto-sync on boot if enabled
+  // 5. Immediate Cloud Sync on boot if enabled
   if (isCloudSyncEnabled()) {
-    triggerAutoSyncDebounced(
+    triggerAutoSyncImmediate(
       documents.value,
       groups.value,
       getAllDocSnapshots(),
@@ -1484,6 +1488,11 @@ onMounted(async () => {
         if (!err && res?.docs) {
           documents.value = res.docs;
           groups.value = res.groups;
+          saveDocuments(res.docs);
+          saveGroups(res.groups);
+          if (res.docs.length > 0 && !res.docs.some(d => d.id === activeDocId.value)) {
+            activeDocId.value = res.docs[0].id;
+          }
         }
       }
     );

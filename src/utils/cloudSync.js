@@ -340,7 +340,8 @@ export function triggerAutoSyncDebounced(docs, groups, histories = [], customThe
   }
 
   const config = provider === 'tidb' ? getTidbConfig() : getNeonConfig();
-  if (!config.autoSync || !config.connectionString) return;
+  const hasConn = provider === 'tidb' || Boolean(config.connectionString);
+  if (!config.autoSync || !hasConn) return;
 
   if (cloudAutoSyncTimer) {
     clearTimeout(cloudAutoSyncTimer);
@@ -369,4 +370,26 @@ export function triggerAutoSyncDebounced(docs, groups, histories = [], customThe
       if (typeof onSyncEnd === 'function') onSyncEnd(err);
     }
   }, 2000);
+}
+
+/**
+ * Immediate bidirectional auto-sync (e.g. on application boot)
+ */
+export async function triggerAutoSyncImmediate(docs, groups, histories = [], customThemes = [], onSyncStart, onSyncEnd) {
+  if (!isCloudSyncEnabled()) return;
+  const provider = getActiveCloudProvider();
+  if (cloudAuthErrorProviders.has(provider)) return;
+
+  const config = provider === 'tidb' ? getTidbConfig() : getNeonConfig();
+  const hasConn = provider === 'tidb' || Boolean(config.connectionString);
+  if (!config.autoSync || !hasConn) return;
+
+  try {
+    if (typeof onSyncStart === 'function') onSyncStart();
+    const res = await syncCloudBidirectional(config.connectionString, docs, groups, histories, customThemes, provider);
+    if (typeof onSyncEnd === 'function') onSyncEnd(null, res);
+    return res;
+  } catch (err) {
+    if (typeof onSyncEnd === 'function') onSyncEnd(err);
+  }
 }
