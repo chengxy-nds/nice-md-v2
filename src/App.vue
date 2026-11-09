@@ -42,6 +42,7 @@ import {
   isCloudSyncEnabled,
   isNeonSyncEnabled,
   isTidbSyncEnabled,
+  initTidbDefaultIfAvailable,
   realtimeSyncDoc,
   realtimeSyncGroup,
   realtimeDeleteDoc,
@@ -1413,7 +1414,7 @@ const handleEditorClick = () => {
   sidebarRef.value?.expandActiveGroup();
 };
 
-onMounted(() => {
+onMounted(async () => {
   // 1. Load persisted state
   documents.value = loadDocuments();
   groups.value = loadGroups();
@@ -1467,6 +1468,9 @@ onMounted(() => {
   document.documentElement.classList.remove('dark');
   document.documentElement.setAttribute('data-color-mode', 'light');
   try { localStorage.removeItem('nicemd_color_mode'); } catch (e) {}
+
+  // Auto-activate TiDB default if server has default TIDB_DATABASE_URL and user hasn't explicitly configured
+  await initTidbDefaultIfAvailable();
 
   // 5. Background Auto-sync on boot if enabled
   if (isCloudSyncEnabled()) {

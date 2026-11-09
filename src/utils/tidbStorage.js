@@ -28,6 +28,31 @@ export async function checkServerDefaultAvailable() {
   return false;
 }
 
+/**
+ * Automatically enable TiDB sync using Vercel default database if available
+ * and user has not explicitly configured or disabled it yet.
+ */
+export async function initTidbDefaultIfAvailable() {
+  try {
+    const raw = localStorage.getItem(TIDB_CONFIG_KEY);
+    if (raw !== null) return false;
+
+    const hasDefault = await checkServerDefaultAvailable();
+    if (hasDefault) {
+      saveTidbConfig({
+        enabled: true,
+        connectionString: '',
+        autoSync: true,
+        lastSyncTime: 0
+      });
+      return true;
+    }
+  } catch {
+    // ignore
+  }
+  return false;
+}
+
 export function getEffectiveTidbUri(connectionString) {
   const trimmed = (connectionString || '').trim();
   if (trimmed && trimmed.length > 10 && trimmed !== DEFAULT_TIDB_SENTINEL) {
