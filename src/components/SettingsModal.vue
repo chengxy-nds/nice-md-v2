@@ -335,7 +335,6 @@ const serverOssStatus = ref(getServerDefaultOssStatus() || { hasDefault: false, 
 const isCustomOssConfigured = computed(() => hasCustomStorageConfig(storageConfig.value));
 const storageTestResult = ref(''); // '', 'testing', 'success', 'error'
 const storageTestMsg = ref('');
-const showSecretKey = ref(false);
 
 function loadStorageConfig() {
   storageConfig.value = getStorageConfig();
@@ -1237,12 +1236,7 @@ const supportsSilent = (id) => {
                 </div>
                 <div class="form-group">
                   <label>AccessKey Secret</label>
-                  <div class="input-with-icon secret-input-wrap">
-                    <input :type="showSecretKey ? 'text' : 'password'" v-model="storageConfig.secretKey" placeholder="输入 AccessKey Secret" class="secret-input" />
-                    <button class="secret-toggle-btn" @click="showSecretKey = !showSecretKey" type="button" aria-label="切换密钥显示">
-                      <Eye v-if="!showSecretKey" size="14" /><EyeOff v-else size="14" />
-                    </button>
-                  </div>
+                  <div class="input-with-icon"><input type="text" v-model="storageConfig.secretKey" placeholder="输入 AccessKey Secret" style="padding-left:12px;" /></div>
                 </div>
                 <div class="form-group">
                   <label>地域节点 Endpoint</label>
