@@ -917,6 +917,10 @@ const handleSave = () => {
   soundEngine.playClick();
   saveStatus.value = 'saving';
   
+  if (storageConfig.value) {
+    storageConfig.value.platform = 'aliyun-oss';
+    saveStorageConfig({ ...storageConfig.value });
+  }
   if (tidbConfig.value) saveTidbConfig({ ...tidbConfig.value });
   if (neonConfig.value) saveNeonConfig({ ...neonConfig.value });
 
@@ -949,6 +953,30 @@ const handleReset = async () => {
       syncScroll.value = true;
       editorFontSize.value = '14.5px';
       lineNumbers.value = true;
+    }
+    return;
+  }
+  if (activeTab.value === 'storage') {
+    const ok = await showConfirm({
+      title: '恢复默认图床设置',
+      message: '确认清空自定义图床配置并恢复默认吗？',
+      confirmText: '恢复默认',
+      danger: true
+    });
+    if (ok) {
+      storageConfig.value = {
+        platform: 'aliyun-oss',
+        domain: '',
+        bucketName: '',
+        accessKey: '',
+        secretKey: '',
+        endPoint: '',
+        basePath: '',
+        enableStorage: true
+      };
+      saveStorageConfig({ ...storageConfig.value });
+      storageTestResult.value = '';
+      storageTestMsg.value = '';
     }
     return;
   }
@@ -1234,7 +1262,6 @@ const supportsSilent = (id) => {
                   <span v-else-if="storageTestResult === 'success'">连接成功</span>
                   <span v-else-if="storageTestResult === 'error'">连接失败</span>
                 </button>
-                <button @click="handleStorageSave" class="btn-save-storage"><Save size="14" /><span>保存配置</span></button>
               </div>
               <div v-if="storageTestMsg" class="test-result-msg storage-test-result" :class="storageTestResult">{{ storageTestMsg }}</div>
             </section>
@@ -1715,8 +1742,8 @@ const supportsSilent = (id) => {
             <Save v-if="saveStatus !== 'success'" size="14" />
             <span v-if="saveStatus === ''">保存配置</span>
             <span v-else-if="saveStatus === 'saving'">保存中...</span>
-            <span v-else-if="saveStatus === 'success'">配置已同步到插件 ✨</span>
-            <span v-else-if="saveStatus === 'error'">同步失败</span>
+            <span v-else-if="saveStatus === 'success'">{{ activeTab === 'storage' ? '图床配置已保存 ✨' : (isExtensionConnected ? '配置已同步到插件 ✨' : '配置已保存 ✨') }}</span>
+            <span v-else-if="saveStatus === 'error'">保存失败</span>
           </button>
         </div>
       </div>
