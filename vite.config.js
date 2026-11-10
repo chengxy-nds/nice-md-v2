@@ -3,6 +3,127 @@ import vue from '@vitejs/plugin-vue'
 
 import fs from 'node:fs'
 import path from 'node:path'
+import crypto from 'node:crypto'
+
+function resolveLocalDefaultOssConfig() {
+  const env = { ...process.env, ...loadEnv('development', process.cwd(), '') };
+  const ak = (env.OSS_ACCESS_KEY_ID || env.ALIYUN_OSS_ACCESS_KEY_ID || env.OSS_AK || '').trim();
+  const sk = (env.OSS_ACCESS_KEY_SECRET || env.ALIYUN_OSS_ACCESS_KEY_SECRET || env.OSS_SK || '').trim();
+  const bucket = (env.OSS_BUCKET || env.ALIYUN_OSS_BUCKET || env.OSS_BUCKET_NAME || '').trim();
+  const endpoint = (env.OSS_ENDPOINT || env.ALIYUN_OSS_ENDPOINT || env.OSS_REGION || '').trim();
+  const domain = (env.OSS_DOMAIN || env.ALIYUN_OSS_DOMAIN || '').trim();
+  const basePath = (env.OSS_BASE_PATH || env.ALIYUN_OSS_BASE_PATH || '').trim();
+
+  if (!ak || !sk || !bucket || !endpoint) {
+    return null;
+  }
+
+  return { accessKeyId: ak, accessKeySecret: sk, bucket, endpoint, domain, basePath };
+}
+
+function createOssProxyMiddleware() {
+  return async (req, res, next) => {
+    const url = (req.url || '').split('?')[0];
+    if (url === '/api/oss-proxy') {
+      res.setHeader('Access-Control-Allow-Origin', '*');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+      res.setHeader('Access-Control-Allow-Headers', '*');
+
+      if (req.method === 'OPTIONS') {
+        res.statusCode = 204;
+        res.end();
+        return;
+      }
+
+      const ossConfig = resolveLocalDefaultOssConfig();
+
+      if (req.method === 'GET') {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({
+          status: 'ok',
+          hasDefault: Boolean(ossConfig),
+          bucket: ossConfig?.bucket || '',
+          endpoint: ossConfig?.endpoint || '',
+          domain: ossConfig?.domain || ''
+        }));
+        return;
+      }
+
+      if (req.method === 'POST') {
+        if (!ossConfig) {
+          res.statusCode = 400;
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify({
+            error: '本地或服务端未配置阿里云 OSS 环境变量 (OSS_ACCESS_KEY_ID / OSS_ACCESS_KEY_SECRET / OSS_BUCKET / OSS_ENDPOINT)。'
+          }));
+          return;
+        }
+
+        const chunks = [];
+        req.on('data', chunk => chunks.push(chunk));
+        req.on('end', async () => {
+          try {
+            const bodyStr = Buffer.concat(chunks).toString('utf8');
+            const body = bodyStr ? JSON.parse(bodyStr) : {};
+            const filename = body?.filename || 'image.png';
+
+            const ext = (filename.split('.').pop() || 'png').toLowerCase();
+            const now = new Date();
+            const pad2 = n => String(n).padStart(2, '0');
+            const uuid = crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 16) : Math.random().toString(36).substring(2, 18);
+            const datePath = `${now.getFullYear()}/${pad2(now.getMonth() + 1)}/${uuid}.${ext}`;
+            const cleanBase = ossConfig.basePath.replace(/^\/+/, '').replace(/\/+$/, '');
+            const objectName = cleanBase ? `${cleanBase}/${datePath}` : datePath;
+
+            let bucketHost = (ossConfig.endpoint || '').replace(/^https?:\/\//i, '').replace(/\/+$/, '').trim();
+            if (!bucketHost.startsWith(`${ossConfig.bucket}.`)) {
+              bucketHost = `${ossConfig.bucket}.${bucketHost}`;
+            }
+
+            const expiration = new Date(Date.now() + 3600 * 1000);
+            const policyObj = {
+              expiration: expiration.toISOString(),
+              conditions: [
+                { bucket: ossConfig.bucket },
+                ['starts-with', '$key', ''],
+                ['content-length-range', 0, 100 * 1024 * 1024]
+              ]
+            };
+            const policyBase64 = Buffer.from(JSON.stringify(policyObj)).toString('base64');
+            const signature = crypto.createHmac('sha1', ossConfig.accessKeySecret).update(policyBase64).digest('base64');
+
+            const rawDomain = ossConfig.domain || `https://${bucketHost}`;
+            const cleanDomain = (rawDomain.startsWith('http://') || rawDomain.startsWith('https://') ? rawDomain : `https://${rawDomain}`).replace(/\/+$/, '');
+            const fileUrl = `${cleanDomain}/${objectName}`;
+            const uploadUrl = `https://${bucketHost}/`;
+
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({
+              success: true,
+              uploadUrl,
+              fileUrl,
+              formData: {
+                key: objectName,
+                policy: policyBase64,
+                OSSAccessKeyId: ossConfig.accessKeyId,
+                success_action_status: '200',
+                Signature: signature
+              }
+            }));
+          } catch (err) {
+            res.statusCode = 500;
+            res.setHeader('Content-Type', 'application/json');
+            res.end(JSON.stringify({ error: '生成 OSS 上传凭证失败: ' + err.message }));
+          }
+        });
+        return;
+      }
+    }
+    next();
+  };
+}
 
 function resolveLocalDefaultTidbConfig() {
   const env = { ...process.env, ...loadEnv('development', process.cwd(), '') };
@@ -159,9 +280,11 @@ export default defineConfig({
     {
       name: 'serve-test-demo',
       configureServer(server) {
+        server.middlewares.use(createOssProxyMiddleware());
         server.middlewares.use(createTidbProxyMiddleware());
       },
       configurePreviewServer(server) {
+        server.middlewares.use(createOssProxyMiddleware());
         server.middlewares.use(createTidbProxyMiddleware());
       }
     }

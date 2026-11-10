@@ -54,6 +54,7 @@ import {
   realtimeSyncCustomTheme,
   realtimeDeleteCustomTheme
 } from './utils/cloudSync';
+import { initStorageDefaultIfAvailable } from './utils/fileStorage';
 
 // ── view & document state ──
 const currentView = ref('editor'); // 'home' | 'editor' | 'templates' | 'materials'
@@ -1475,6 +1476,9 @@ onMounted(async () => {
   if (activated) {
     window.dispatchEvent(new CustomEvent('nicemd-cloud-provider-changed', { detail: { provider: 'tidb', enable: true } }));
   }
+
+  // Probe server default OSS image storage if available
+  initStorageDefaultIfAvailable().catch(() => {});
 
   // 5. Immediate Cloud Sync on boot if enabled
   if (isCloudSyncEnabled()) {

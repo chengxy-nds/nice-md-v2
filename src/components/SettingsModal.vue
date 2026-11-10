@@ -31,7 +31,14 @@ import {
 } from '@lucide/vue';
 import { showConfirm } from '../utils/confirmDialog';
 import { soundEngine } from '../utils/synthAudio';
-import { getStorageConfig, saveStorageConfig, isStorageEnabled } from '../utils/fileStorage';
+import {
+  getStorageConfig,
+  saveStorageConfig,
+  isStorageEnabled,
+  hasCustomStorageConfig,
+  checkServerDefaultOssAvailable,
+  getServerDefaultOssStatus
+} from '../utils/fileStorage';
 import {
   getActiveCloudProvider,
   setActiveCloudProvider,
@@ -314,12 +321,17 @@ const saveStatus = ref(''); // '', 'saving', 'success', 'error'
 
 // ── File Storage (图床) state ──
 const storageConfig = ref(getStorageConfig());
+const serverOssStatus = ref(getServerDefaultOssStatus() || { hasDefault: false, bucket: '', endpoint: '', domain: '' });
+const isCustomOssConfigured = computed(() => hasCustomStorageConfig(storageConfig.value));
 const storageTestResult = ref(''); // '', 'testing', 'success', 'error'
 const storageTestMsg = ref('');
 const showSecretKey = ref(false);
 
 function loadStorageConfig() {
   storageConfig.value = getStorageConfig();
+  checkServerDefaultOssAvailable().then(status => {
+    if (status) serverOssStatus.value = status;
+  }).catch(() => {});
 }
 
 async function handleTestConnection() {
@@ -327,10 +339,18 @@ async function handleTestConnection() {
   storageTestMsg.value = '';
   try {
     const { testOSSConnection } = await import('../utils/fileStorage');
-    // Pass current form values so user doesn't need to save first
-    await testOSSConnection({ ...storageConfig.value });
-    storageTestResult.value = 'success';
-    storageTestMsg.value = '连接成功！图床配置正确。';
+    // If user entered custom configuration, test custom; otherwise test server default
+    if (isCustomOssConfigured.value) {
+      await testOSSConnection({ ...storageConfig.value });
+      storageTestResult.value = 'success';
+      storageTestMsg.value = '连接成功！自定义阿里云 OSS 图床配置正确。';
+    } else if (serverOssStatus.value.hasDefault) {
+      await testOSSConnection();
+      storageTestResult.value = 'success';
+      storageTestMsg.value = `连接成功！已连通服务器默认托管 OSS 图床 (Bucket: ${serverOssStatus.value.bucket || '默认'})。`;
+    } else {
+      throw new Error('未配置自定义图床参数，且服务器未检测到默认 OSS 环境变量');
+    }
     soundEngine.playChime();
   } catch (err) {
     storageTestResult.value = 'error';
@@ -1088,6 +1108,30 @@ const supportsSilent = (id) => {
             <h3>图床配置</h3>
           </div>
           <p class="storage-desc">配置图床后，在编辑器中粘贴图片即可自动上传并插入 Markdown 图片链接。</p>
+
+          <!-- Status Hero Card -->
+          <div class="provider-hero-card" :class="isCustomOssConfigured || serverOssStatus.hasDefault ? 'hero-active' : 'hero-standby'" style="margin-bottom: 16px;">
+            <div class="hero-left">
+              <div class="hero-avatar" :style="isCustomOssConfigured ? 'background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: #fff;' : (serverOssStatus.hasDefault ? 'background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff;' : 'background: #64748b; color: #fff;')">
+                <HardDrive size="20" />
+              </div>
+              <div class="hero-content">
+                <div class="hero-title-row">
+                  <h3 class="hero-title">阿里云 OSS 图床托管</h3>
+                  <span class="hero-state-badge" :class="isCustomOssConfigured || serverOssStatus.hasDefault ? 'badge-active' : 'badge-standby'">
+                    {{ isCustomOssConfigured ? '● 专属自定义 OSS (优先使用)' : (serverOssStatus.hasDefault ? '● Vercel 服务端默认托管中' : '○ 未配置图床') }}
+                  </span>
+                </div>
+                <p class="hero-desc">
+                  {{ isCustomOssConfigured
+                    ? '已配置您的专属阿里云 OSS 参数，粘贴或上传图片将优先上传至您的个人 Bucket。'
+                    : (serverOssStatus.hasDefault
+                        ? `当前未配置私有图床，系统已自动走 Vercel 服务端默认托管的阿里云 OSS（Bucket: ${serverOssStatus.bucket || '默认'}，安全防泄密）。若需使用个人专属 OSS，在下方填写即可优先覆盖。`
+                        : '本地未配置图床，且服务端未配置默认环境变量。编辑器粘贴图片将以 Base64 格式插入。在下方配置后即可启用自动上传。') }}
+                </p>
+              </div>
+            </div>
+          </div>
 
           <div class="form-grid">
             <!-- Enable Toggle -->
