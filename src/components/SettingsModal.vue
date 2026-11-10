@@ -37,6 +37,7 @@ import {
   saveStorageConfig,
   isStorageEnabled,
   hasCustomStorageConfig,
+  hasStorageProviderConfig,
   checkServerDefaultOssAvailable,
   getServerDefaultOssStatus
 } from '../utils/fileStorage';
@@ -323,18 +324,111 @@ const saveStatus = ref(''); // '', 'saving', 'success', 'error'
 // ── File Storage (图床) state ──
 const storageConfig = ref(getStorageConfig());
 const storageProviders = [
-  { id: 'aliyun-oss', name: '阿里云 OSS', detail: '对象存储服务', available: true },
-  { id: 'tencent-cos', name: '腾讯云 COS', detail: '暂未接入', available: false },
-  { id: 'qiniu-kodo', name: '七牛云 Kodo', detail: '暂未接入', available: false },
-  { id: 'upyun-uss', name: '又拍云 USS', detail: '暂未接入', available: false },
-  { id: 'huawei-obs', name: '华为云 OBS', detail: '暂未接入', available: false },
-  { id: 'github', name: 'GitHub', detail: '暂未接入', available: false },
-  { id: 'custom-s3', name: '兼容 S3 的存储', detail: '暂未接入', available: false },
+  { id: 'aliyun-oss', name: '阿里云 OSS', subtitle: '对象存储' },
+  { id: 'tencent-cos', name: '腾讯云 COS', subtitle: '对象存储' },
+  { id: 'qiniu-kodo', name: '七牛云 Kodo', subtitle: '对象存储' },
+  { id: 'upyun-uss', name: '又拍云 USS', subtitle: '云存储' },
+  { id: 'huawei-obs', name: '华为云 OBS', subtitle: '对象存储' },
+  { id: 'github', name: 'GitHub', subtitle: '代码仓库' },
+  { id: 'custom-s3', name: '兼容 S3 的存储', subtitle: 'S3 API' },
 ];
+const storageFieldDefinitions = {
+  'aliyun-oss': [
+    { key: 'accessKey', label: 'AccessKey ID', type: 'text', required: true, placeholder: '输入 AccessKey ID' },
+    { key: 'secretKey', label: 'AccessKey Secret', type: 'secret', required: true, placeholder: '输入 AccessKey Secret' },
+    { key: 'bucketName', label: 'Bucket 名称', type: 'text', required: true, placeholder: '例如：my-image-bucket' },
+    { key: 'endPoint', label: '地域节点 Endpoint', type: 'text', required: true, placeholder: 'oss-cn-hangzhou.aliyuncs.com' },
+    { key: 'domain', label: '访问域名', type: 'url', placeholder: 'Bucket 域名或 CDN 域名', help: '留空时使用 Bucket 默认访问域名' },
+    { key: 'basePath', label: '存储路径', type: 'text', placeholder: '例如：images/articles' },
+  ],
+  'tencent-cos': [
+    { key: 'secretId', label: 'SecretId', type: 'text', required: true, placeholder: '输入 SecretId' },
+    { key: 'secretKey', label: 'SecretKey', type: 'secret', required: true, placeholder: '输入 SecretKey' },
+    { key: 'bucketName', label: '存储桶名称', type: 'text', required: true, placeholder: 'bucket-appid' },
+    { key: 'region', label: '存储桶地域', type: 'text', required: true, placeholder: '例如：ap-shanghai' },
+    { key: 'domain', label: '访问域名', type: 'url', placeholder: 'COS 默认域名或 CDN 域名' },
+    { key: 'basePath', label: '存储路径', type: 'text', placeholder: '例如：images/articles' },
+  ],
+  'qiniu-kodo': [
+    { key: 'accessKey', label: 'AccessKey', type: 'text', required: true, placeholder: '输入 AccessKey' },
+    { key: 'secretKey', label: 'SecretKey', type: 'secret', required: true, placeholder: '输入 SecretKey' },
+    { key: 'bucketName', label: '空间名称', type: 'text', required: true, placeholder: '七牛云存储空间名称' },
+    { key: 'region', label: '存储区域', type: 'select', required: true, options: [
+      { value: 'z0', label: '华东（z0）' }, { value: 'z1', label: '华北（z1）' }, { value: 'z2', label: '华南（z2）' },
+      { value: 'na0', label: '北美（na0）' }, { value: 'as0', label: '东南亚（as0）' },
+    ] },
+    { key: 'domain', label: '绑定域名', type: 'url', required: true, placeholder: 'https://image.example.com' },
+    { key: 'basePath', label: '存储路径', type: 'text', placeholder: '例如：images/articles' },
+  ],
+  'upyun-uss': [
+    { key: 'operator', label: '操作员', type: 'text', required: true, placeholder: '输入又拍云操作员名称' },
+    { key: 'password', label: '操作员密码', type: 'secret', required: true, placeholder: '输入操作员密码' },
+    { key: 'bucketName', label: '服务名称', type: 'text', required: true, placeholder: '又拍云存储服务名称' },
+    { key: 'domain', label: '绑定域名', type: 'url', required: true, placeholder: 'https://image.example.com' },
+    { key: 'basePath', label: '存储路径', type: 'text', placeholder: '例如：images/articles' },
+  ],
+  'huawei-obs': [
+    { key: 'accessKey', label: 'Access Key ID', type: 'text', required: true, placeholder: '输入 Access Key ID' },
+    { key: 'secretKey', label: 'Secret Access Key', type: 'secret', required: true, placeholder: '输入 Secret Access Key' },
+    { key: 'bucketName', label: '桶名称', type: 'text', required: true, placeholder: '华为云 OBS 桶名称' },
+    { key: 'endPoint', label: 'Endpoint', type: 'text', required: true, placeholder: 'obs.cn-north-4.myhuaweicloud.com' },
+    { key: 'domain', label: '访问域名', type: 'url', placeholder: 'OBS 默认域名或 CDN 域名' },
+    { key: 'basePath', label: '存储路径', type: 'text', placeholder: '例如：images/articles' },
+  ],
+  github: [
+    { key: 'token', label: 'Fine-grained Token', type: 'secret', required: true, placeholder: '输入仓库内容写入权限的 Token' },
+    { key: 'owner', label: '仓库所有者', type: 'text', required: true, placeholder: '用户名或组织名' },
+    { key: 'repo', label: '仓库名称', type: 'text', required: true, placeholder: '公开仓库名称' },
+    { key: 'branch', label: '分支', type: 'text', placeholder: '留空使用默认分支' },
+    { key: 'basePath', label: '存储路径', type: 'text', placeholder: '例如：images/articles' },
+    { key: 'domain', label: '图片访问域名', type: 'url', placeholder: '留空使用 GitHub 文件地址' },
+  ],
+  'custom-s3': [
+    { key: 'accessKey', label: 'Access Key ID', type: 'text', required: true, placeholder: '输入 Access Key ID' },
+    { key: 'secretKey', label: 'Secret Access Key', type: 'secret', required: true, placeholder: '输入 Secret Access Key' },
+    { key: 'bucketName', label: 'Bucket 名称', type: 'text', required: true, placeholder: '输入 Bucket 名称' },
+    { key: 'endPoint', label: 'S3 Endpoint', type: 'url', required: true, placeholder: 'https://s3.example.com' },
+    { key: 'region', label: 'Region', type: 'text', placeholder: '默认 us-east-1' },
+    { key: 'domain', label: '公开访问域名', type: 'url', placeholder: 'CDN 或 Bucket 公开域名' },
+    { key: 'basePath', label: '存储路径', type: 'text', placeholder: '例如：images/articles' },
+  ],
+};
 const serverOssStatus = ref(getServerDefaultOssStatus() || { hasDefault: false, bucket: '', endpoint: '', domain: '' });
-const isCustomOssConfigured = computed(() => hasCustomStorageConfig(storageConfig.value));
+const activeStorageProviderConfig = computed(() => {
+  const providerId = storageConfig.value.platform || 'aliyun-oss';
+  if (providerId === 'aliyun-oss') return storageConfig.value;
+  const providers = storageConfig.value.providers || (storageConfig.value.providers = {});
+  return providers[providerId] || (providers[providerId] = {});
+});
+const activeStorageFields = computed(() => storageFieldDefinitions[storageConfig.value.platform] || storageFieldDefinitions['aliyun-oss']);
+const activeProviderMeta = computed(() => storageProviders.find(provider => provider.id === storageConfig.value.platform) || storageProviders[0]);
+const isCustomOssConfigured = computed(() => storageConfig.value.platform === 'aliyun-oss' && hasCustomStorageConfig(storageConfig.value));
+const activeProviderConfigured = computed(() => hasStorageProviderConfig(storageConfig.value));
+const canAutoUpload = computed(() => activeProviderConfigured.value || (storageConfig.value.platform === 'aliyun-oss' && serverOssStatus.value.hasDefault));
+const activeProviderNote = computed(() => ({
+  'aliyun-oss': '必填：AccessKey ID、AccessKey Secret、Bucket、Endpoint。访问域名和存储路径可选；请为 Bucket 配置浏览器跨域规则。',
+  'tencent-cos': 'Bucket 名称需包含 APPID（bucket-appid 格式）；请在 COS 控制台配置跨域规则并限制密钥权限。',
+  'qiniu-kodo': '请配置存储区域和已绑定的公开域名，并在空间设置中允许当前站点跨域上传。',
+  'upyun-uss': '使用操作员上传权限；请在服务或绑定域名上允许当前站点跨域请求。',
+  'huawei-obs': 'Endpoint 填写桶所在区域的 OBS 域名；请配置桶跨域规则和公开读取方式。',
+  github: '每张图片会在指定仓库创建一次提交。建议使用仅有 Contents 写入权限的 Fine-grained Token 和公开仓库。',
+  'custom-s3': '请填写 S3 API Endpoint 和 Region，并在桶上配置允许 PUT 的跨域规则及图片公开读取。',
+}[storageConfig.value.platform] || '请填写当前平台的上传配置信息。'));
+const autoUploadEnabled = computed(() => canAutoUpload.value && storageConfig.value.enableStorage !== false);
+const autoUploadStatusLabel = computed(() => {
+  if (!canAutoUpload.value) return '待配置图床';
+  return autoUploadEnabled.value ? '已启用' : '已关闭';
+});
 const storageTestResult = ref(''); // '', 'testing', 'success', 'error'
 const storageTestMsg = ref('');
+const showSecretKey = ref(false);
+
+function setStorageProvider(providerId) {
+  storageConfig.value.platform = providerId;
+  storageTestResult.value = '';
+  storageTestMsg.value = '';
+  showSecretKey.value = false;
+}
 
 function loadStorageConfig() {
   storageConfig.value = getStorageConfig();
@@ -348,18 +442,17 @@ async function handleTestConnection() {
   storageTestMsg.value = '';
   try {
     const { testOSSConnection } = await import('../utils/fileStorage');
-    // If user entered custom configuration, test custom; otherwise test server default
-    if (isCustomOssConfigured.value) {
-      await testOSSConnection({ ...storageConfig.value });
-      storageTestResult.value = 'success';
-      storageTestMsg.value = '连接成功！自定义阿里云 OSS 图床配置正确。';
-    } else if (serverOssStatus.value.hasDefault) {
+    if (storageConfig.value.platform === 'aliyun-oss' && !isCustomOssConfigured.value && serverOssStatus.value.hasDefault) {
       await testOSSConnection();
       storageTestResult.value = 'success';
-      storageTestMsg.value = `连接成功！已连通服务器默认托管 OSS 图床 (Bucket: ${serverOssStatus.value.bucket || '默认'})。`;
     } else {
-      throw new Error('未配置自定义图床参数，且服务器未检测到默认 OSS 环境变量');
+      if (!activeProviderConfigured.value) throw new Error('请先填写当前平台的必填配置');
+      await testOSSConnection({ ...storageConfig.value });
     }
+    storageTestResult.value = 'success';
+    storageTestMsg.value = storageConfig.value.platform === 'github'
+      ? '仓库可访问；实际上传还需要 Contents 写入权限。'
+      : `${activeProviderMeta.value.name}连接成功。`;
     soundEngine.playChime();
   } catch (err) {
     storageTestResult.value = 'error';
@@ -367,18 +460,11 @@ async function handleTestConnection() {
   }
 }
 
-function handleToggleAutoUpload() {
+function handleToggleAutoUpload(event) {
+  if (!canAutoUpload.value) return;
   soundEngine.playClick();
+  storageConfig.value.enableStorage = event.target.checked;
   saveStorageConfig({ ...storageConfig.value });
-}
-
-function handleStorageSave() {
-  soundEngine.playClick();
-  // Other entries are shown as unavailable until their upload adapters exist.
-  storageConfig.value.platform = 'aliyun-oss';
-  saveStorageConfig({ ...storageConfig.value });
-  saveStatus.value = 'success';
-  setTimeout(() => { saveStatus.value = ''; }, 2000);
 }
 
 // ── Unified Cloud Sync Provider ('tidb' | 'neon') ──
@@ -912,12 +998,16 @@ const selectPlatform = (id) => {
   activeTab.value = id;
 };
 
+const openPlatformManagement = () => {
+  const currentIsPlatform = platforms.value.some(platform => platform.id === activeTab.value);
+  selectPlatform(currentIsPlatform ? activeTab.value : (platforms.value[0]?.id || 'wechat'));
+};
+
 const handleSave = () => {
   soundEngine.playClick();
   saveStatus.value = 'saving';
   
   if (storageConfig.value) {
-    storageConfig.value.platform = 'aliyun-oss';
     saveStorageConfig({ ...storageConfig.value });
   }
   if (tidbConfig.value) saveTidbConfig({ ...tidbConfig.value });
@@ -1051,7 +1141,7 @@ const supportsSilent = (id) => {
       <div class="modal-header">
         <div class="title-area">
           <Settings class="settings-gear" size="18" />
-          <h2>多平台填装配置中心</h2>
+          <h2>配置中心</h2>
         </div>
         <button @click="emit('close')" class="btn-close">
           <X size="20" />
@@ -1059,9 +1149,9 @@ const supportsSilent = (id) => {
       </div>
 
       <div class="modal-body settings-body-container">
-        <!-- Sidebar Platform List -->
+        <!-- Main settings navigation -->
         <div class="settings-sidebar">
-          <div class="sidebar-title">系统与平台设置</div>
+          <div class="sidebar-title">系统设置</div>
           <div class="platform-list">
             <!-- General Settings Tab -->
             <button
@@ -1070,7 +1160,7 @@ const supportsSilent = (id) => {
               @click="selectPlatform('general')"
             >
               <Sliders size="14" class="general-indicator-icon" />
-              <span class="tab-label">系统通用设置</span>
+              <span class="tab-label">通用设置</span>
             </button>
 
             <!-- 图床设置 Tab -->
@@ -1095,33 +1185,22 @@ const supportsSilent = (id) => {
             </button>
 
             <div class="sidebar-divider"></div>
-            
+            <div class="sidebar-title platform-management-title">发布平台</div>
             <button
-              v-for="plat in platforms"
-              :key="plat.id"
-              class="platform-tab-btn"
-              :class="{ 'is-active': activeTab === plat.id }"
-              @click="selectPlatform(plat.id)"
+              class="platform-tab-btn platform-management-btn"
+              :class="{ 'is-active': !!activePlatform }"
+              @click="openPlatformManagement"
             >
-              <span class="color-indicator" :style="{ backgroundColor: plat.color }"></span>
-              <span class="tab-label">{{ plat.name }}</span>
-              <span class="tab-sublabel">{{ plat.id }}</span>
+              <Globe size="14" />
+              <span class="tab-label">平台管理</span>
             </button>
+
           </div>
-          
-          <button @click="addCustomPlatform" class="btn-add-platform">
-            <Plus size="14" />
-            <span>自建平台通道</span>
-          </button>
         </div>
 
         <!-- Main Form Panel -->
         <!-- General Settings View -->
-        <div class="settings-main-form" v-if="activeTab === 'general'">
-          <div class="form-section-header">
-            <h3>系统通用偏好设置</h3>
-          </div>
-
+        <div class="settings-main-form general-settings-form" v-if="activeTab === 'general'">
           <div class="form-grid">
             <!-- Typist Sound Toggle -->
             <div class="form-group span-2">
@@ -1178,19 +1257,23 @@ const supportsSilent = (id) => {
 
         <!-- File Storage (图床) Settings -->
         <div class="settings-main-form storage-main-form" v-else-if="activeTab === 'storage'">
-          <!-- 全局独立控制：剪贴板图片自动上传（脱离具体存储平台单独设计） -->
+          <!-- 全局自动上传控制 -->
           <div class="storage-global-banner">
             <div class="storage-global-info">
               <div class="storage-global-title-row">
                 <span class="storage-global-title">剪贴板图片自动上传</span>
-                <span class="storage-global-badge" :class="storageConfig.enableStorage !== false ? 'is-active' : ''">
-                  {{ storageConfig.enableStorage !== false ? '已启用' : '已关闭' }}
+                <span class="storage-global-badge" :class="autoUploadEnabled ? 'is-active' : ''">
+                  {{ autoUploadStatusLabel }}
                 </span>
               </div>
-              <div class="storage-global-desc">在编辑器中粘贴图片时自动上传至图床并插入 Markdown 图片链接</div>
+              <div class="storage-global-desc">
+                {{ canAutoUpload
+                  ? (autoUploadEnabled ? '全局设置：在编辑器粘贴图片时自动上传并插入 Markdown 图片链接' : '全局设置：关闭后，粘贴的图片不会自动上传')
+                  : '全局开关，与下方存储平台无关。填写完整配置后即可开启' }}
+              </div>
             </div>
-            <label class="modern-switch" title="切换剪贴板自动上传">
-              <input type="checkbox" v-model="storageConfig.enableStorage" @change="handleToggleAutoUpload" />
+            <label class="modern-switch" :class="{ 'is-disabled': !canAutoUpload }" :title="canAutoUpload ? '切换剪贴板自动上传' : '请先完成图床配置'">
+              <input type="checkbox" :checked="autoUploadEnabled" :disabled="!canAutoUpload" @change="handleToggleAutoUpload" />
               <span class="slider"></span>
             </label>
           </div>
@@ -1204,52 +1287,49 @@ const supportsSilent = (id) => {
                 :key="provider.id"
                 type="button"
                 class="storage-provider-option"
-                :class="{ 'is-selected': provider.id === 'aliyun-oss', 'is-unavailable': !provider.available }"
-                :disabled="!provider.available"
-                :aria-current="provider.id === 'aliyun-oss' ? 'page' : undefined"
+                :class="{ 'is-selected': provider.id === storageConfig.platform }"
+                :aria-current="provider.id === storageConfig.platform ? 'page' : undefined"
+                @click="setStorageProvider(provider.id)"
               >
-                <HardDrive size="15" />
                 <span class="storage-provider-copy">
                   <strong>{{ provider.name }}</strong>
-                  <small>{{ provider.detail }}</small>
+                  <small>{{ provider.subtitle }}</small>
                 </span>
-                <Check v-if="provider.id === 'aliyun-oss'" size="14" class="storage-provider-check" />
+                <Check v-if="provider.id === storageConfig.platform" size="14" class="storage-provider-check" />
               </button>
-              <p class="storage-provider-note">其他平台接入后可在此配置。</p>
             </nav>
 
-            <!-- 存储平台详细配置（纵向单列布局，一行一个输入项） -->
             <section class="storage-config-panel">
+              <p class="storage-required-note">{{ activeProviderNote }}</p>
               <div class="storage-fields">
-                <div class="form-group">
-                  <label>访问域名</label>
-                  <div class="input-with-icon"><Globe class="input-icon" size="14" /><input type="text" v-model="storageConfig.domain" placeholder="https://图片域名或 CDN 域名" /></div>
-                  <small class="help-text">用于生成图片链接，可填写 Bucket 域名或 CDN 域名</small>
-                </div>
-                <div class="form-group">
-                  <label>Bucket 名称</label>
-                  <div class="input-with-icon"><HardDrive class="input-icon" size="14" /><input type="text" v-model="storageConfig.bucketName" placeholder="例如：my-image-bucket" /></div>
-                </div>
-                <div class="form-group">
-                  <label>AccessKey ID</label>
-                  <div class="input-with-icon"><input type="text" v-model="storageConfig.accessKey" placeholder="输入 AccessKey ID" style="padding-left:12px;" /></div>
-                </div>
-                <div class="form-group">
-                  <label>AccessKey Secret</label>
-                  <div class="input-with-icon"><input type="text" v-model="storageConfig.secretKey" placeholder="输入 AccessKey Secret" style="padding-left:12px;" /></div>
-                </div>
-                <div class="form-group">
-                  <label>地域节点 Endpoint</label>
-                  <div class="input-with-icon"><Globe class="input-icon" size="14" /><input type="text" v-model="storageConfig.endPoint" placeholder="oss-cn-hangzhou.aliyuncs.com" /></div>
-                </div>
-                <div class="form-group">
-                  <label>存储路径 <span class="storage-optional">可选</span></label>
-                  <div class="input-with-icon"><UploadCloud class="input-icon" size="14" /><input type="text" v-model="storageConfig.basePath" placeholder="例如：images/articles" /></div>
+                <div class="form-group" v-for="field in activeStorageFields" :key="`${storageConfig.platform}-${field.key}`">
+                  <label>
+                    {{ field.label }}
+                    <span v-if="field.required" class="storage-required">必填</span>
+                    <span v-else class="storage-optional">可选</span>
+                  </label>
+                  <div v-if="field.type === 'select'" class="input-with-icon">
+                    <select v-model="activeStorageProviderConfig[field.key]">
+                      <option v-for="option in field.options" :key="option.value" :value="option.value">{{ option.label }}</option>
+                    </select>
+                  </div>
+                  <div v-else class="input-with-icon" :class="{ 'storage-secret-wrap': field.type === 'secret' }">
+                    <input
+                      :type="field.type === 'secret' ? (showSecretKey ? 'text' : 'password') : (field.type === 'url' ? 'url' : 'text')"
+                      v-model="activeStorageProviderConfig[field.key]"
+                      :placeholder="field.placeholder || ''"
+                      :autocomplete="field.type === 'secret' ? 'new-password' : 'off'"
+                    />
+                    <button v-if="field.type === 'secret'" type="button" class="secret-toggle-btn" @click="showSecretKey = !showSecretKey" :aria-label="showSecretKey ? '隐藏密钥' : '显示密钥'">
+                      <Eye v-if="!showSecretKey" size="14" /><EyeOff v-else size="14" />
+                    </button>
+                  </div>
+                  <small v-if="field.help" class="help-text">{{ field.help }}</small>
                 </div>
               </div>
 
               <div class="storage-actions">
-                <button @click="handleTestConnection" class="btn-test-connection" :class="storageTestResult" :disabled="storageTestResult === 'testing'">
+                <button @click="handleTestConnection" class="btn-test-connection" :class="storageTestResult" :disabled="storageTestResult === 'testing' || !canAutoUpload">
                   <Wifi v-if="storageTestResult !== 'testing'" size="14" />
                   <span v-if="storageTestResult === ''">测试连接</span>
                   <span v-else-if="storageTestResult === 'testing'">测试中...</span>
@@ -1613,11 +1693,28 @@ const supportsSilent = (id) => {
         </div>
 
         <!-- Platform Config View -->
-        <div class="settings-main-form" v-else-if="activePlatform">
-          <div class="form-section-header">
-            <h3>配置详情: {{ activePlatform.name }}</h3>
+        <div class="settings-main-form publishing-settings-main" v-else-if="activePlatform">
+          <div class="publishing-settings-layout">
+            <div class="publishing-platform-nav" aria-label="发布平台列表">
+              <div class="publishing-platform-heading">平台列表</div>
+            <button
+              v-for="plat in platforms"
+              :key="plat.id"
+              class="publishing-platform-tab"
+              :class="{ 'is-active': activeTab === plat.id }"
+              @click="selectPlatform(plat.id)"
+            >
+              <span class="color-indicator" :style="{ backgroundColor: plat.color }"></span>
+              <span class="tab-label">{{ plat.name }}</span>
+            </button>
+            <button @click="addCustomPlatform" class="btn-add-platform">
+              <Plus size="14" />
+              <span>自建平台通道</span>
+            </button>
+          </div>
+          <div class="publishing-config-form">
+          <div v-if="activePlatform.id.startsWith('custom_')" class="publishing-config-actions">
             <button 
-              v-if="activePlatform.id.startsWith('custom_')" 
               @click="deletePlatform(activePlatform.id)"
               class="btn-delete-plat"
               title="删除自建平台"
@@ -1712,6 +1809,8 @@ const supportsSilent = (id) => {
               </small>
             </div>
           </div>
+          </div>
+        </div>
         </div>
 
         <div class="settings-main-form empty-form-state" v-else>
@@ -1876,7 +1975,9 @@ const supportsSilent = (id) => {
 }
 
 .settings-sidebar {
-  width: 220px;
+  width: 190px;
+  flex: 0 0 190px;
+  box-sizing: border-box;
   border-right: 1px solid var(--border-color);
   background: rgba(0, 0, 0, 0.01);
   display: flex;
@@ -1885,7 +1986,7 @@ const supportsSilent = (id) => {
 }
 
 .sidebar-title {
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
@@ -1895,15 +1996,13 @@ const supportsSilent = (id) => {
 }
 
 .platform-list {
-  flex: 1;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
   gap: 6px;
-  margin-bottom: 12px;
 }
 
-.platform-tab-btn {
+.platform-tab-btn,
+.publishing-platform-tab {
   background: transparent;
   border: 1px solid transparent;
   padding: 8px 12px;
@@ -1916,14 +2015,33 @@ const supportsSilent = (id) => {
   transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
 }
 
-.platform-tab-btn:hover {
+.platform-tab-btn:hover,
+.publishing-platform-tab:hover {
   background: rgba(0, 0, 0, 0.03);
 }
 
-.platform-tab-btn.is-active {
-  background: var(--bg-editor);
-  border-color: var(--border-color);
-  box-shadow: var(--shadow-sm);
+.platform-tab-btn.is-active,
+.publishing-platform-tab.is-active {
+  color: var(--accent-color);
+  background: var(--accent-bg);
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.platform-tab-btn.is-active .tab-label,
+.publishing-platform-tab.is-active .tab-label {
+  color: var(--accent-color);
+}
+
+.platform-management-btn {
+  width: fit-content;
+  min-width: 140px;
+  align-self: flex-start;
+}
+
+.platform-management-btn .tab-label,
+.publishing-platform-tab .tab-label {
+  font-size: 12px;
 }
 
 .color-indicator {
@@ -1940,6 +2058,10 @@ const supportsSilent = (id) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.platform-tab-btn .tab-label {
+  font-size: 12px;
 }
 
 .tab-sublabel {
@@ -1972,6 +2094,81 @@ const supportsSilent = (id) => {
   border-color: var(--accent-color);
   color: var(--accent-color);
   background: var(--accent-bg);
+}
+
+.settings-main-form.publishing-settings-main {
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.publishing-settings-layout {
+  display: grid;
+  grid-template-columns: 136px minmax(0, 1fr);
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.publishing-platform-nav {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 5px;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 16px 10px;
+  border-right: 1px solid var(--border-color);
+  background: rgba(0, 0, 0, 0.01);
+  flex-shrink: 0;
+}
+
+.publishing-platform-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.publishing-platform-heading {
+  padding: 0 8px 8px;
+  margin-bottom: 3px;
+  border-bottom: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.publishing-platform-tab {
+  width: 100%;
+  min-width: 0;
+  padding: 8px;
+}
+
+.publishing-platform-tab .tab-label {
+  min-width: 0;
+  max-width: none;
+}
+
+.publishing-platform-nav .btn-add-platform {
+  flex: 0 0 auto;
+  margin-top: 6px;
+  white-space: nowrap;
+}
+
+.publishing-config-form {
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+}
+
+.publishing-config-actions {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 20px;
+  margin-bottom: 8px;
 }
 
 .settings-main-form {
@@ -2026,9 +2223,44 @@ const supportsSilent = (id) => {
   color: white;
 }
 
+.general-settings-form .form-grid {
+  align-content: start;
+  gap: 22px 24px;
+}
+
+.general-settings-form .form-group label {
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.general-settings-form .help-text {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.general-settings-form .checkbox-container {
+  width: fit-content;
+  height: auto;
+  padding: 2px 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.general-settings-form .checkbox-label-text {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.general-settings-form .input-with-icon select {
+  border-radius: 6px;
+  background: var(--bg-card);
+}
+
 .form-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px 20px;
 }
 
@@ -2037,6 +2269,7 @@ const supportsSilent = (id) => {
 }
 
 .form-group {
+  min-width: 0;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -2052,6 +2285,7 @@ const supportsSilent = (id) => {
   position: relative;
   display: flex;
   align-items: center;
+  min-width: 0;
 }
 
 .input-icon {
@@ -2062,6 +2296,8 @@ const supportsSilent = (id) => {
 
 .input-with-icon input {
   width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   padding: 8px 12px 8px 34px;
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -2320,20 +2556,17 @@ const supportsSilent = (id) => {
 /* ── File Storage (图床) 专属样式 ── */
 .storage-main-form {
   padding: 20px 24px 24px 16px;
-  gap: 14px;
 }
 
 /* 全局独立控制：剪贴板图片自动上传 */
 .storage-global-banner {
-  background: var(--bg-card);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 13px 18px;
+  background: transparent;
+  border-bottom: 1px solid var(--border-color);
+  padding: 0 0 14px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .storage-global-info {
@@ -2373,6 +2606,11 @@ const supportsSilent = (id) => {
   color: #059669;
 }
 
+.storage-global-badge:not(.is-active) {
+  background: #f1f5f9;
+  color: #64748b;
+}
+
 .storage-global-desc {
   color: var(--text-muted);
   font-size: 11px;
@@ -2383,28 +2621,27 @@ const supportsSilent = (id) => {
 /* 存储布局：存储平台窄列贴左，右侧表单展开 */
 .storage-layout {
   display: grid;
-  grid-template-columns: 142px minmax(0, 1fr);
-  gap: 14px;
+  grid-template-columns: 172px minmax(0, 1fr);
+  gap: 18px;
   align-items: start;
+  margin-top: 14px;
 }
 
 .storage-provider-nav,
 .storage-config-panel {
   min-width: 0;
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  background: var(--bg-card);
 }
 
 .storage-provider-nav {
-  padding: 6px;
+  padding: 0 12px 0 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
+  border-right: 1px solid var(--border-color);
 }
 
 .storage-provider-heading {
-  padding: 4px 6px 6px;
+  padding: 2px 8px 6px;
   color: var(--text-muted);
   font-size: 11px;
   font-weight: 700;
@@ -2412,13 +2649,13 @@ const supportsSilent = (id) => {
 
 .storage-provider-option {
   width: 100%;
-  min-height: 42px;
+  min-height: 36px;
   display: flex;
   align-items: center;
   gap: 7px;
   padding: 6px 8px;
   border: 1px solid transparent;
-  border-radius: 8px;
+  border-radius: 6px;
   background: transparent;
   color: var(--text-main);
   text-align: left;
@@ -2432,14 +2669,15 @@ const supportsSilent = (id) => {
 }
 
 .storage-provider-option.is-selected {
-  border-color: #bfdbfe;
+  border-color: #c8dcf6;
   background: #eff6ff;
-  color: #1769c2;
+  color: #205f9e;
 }
 
 .storage-provider-option.is-unavailable {
-  opacity: 0.5;
+  color: var(--text-muted);
   cursor: not-allowed;
+  opacity: 0.68;
 }
 
 .storage-provider-copy {
@@ -2471,21 +2709,74 @@ const supportsSilent = (id) => {
   color: #1769c2;
 }
 
-.storage-provider-note {
-  margin: 6px 6px 2px;
-  color: var(--text-muted);
-  font-size: 10px;
-  line-height: 1.35;
+.storage-config-panel {
+  padding: 1px 0 0;
 }
 
-.storage-config-panel {
-  padding: 18px 20px;
+.storage-required-note {
+  margin: 10px 0 12px;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.storage-required {
+  margin-left: 4px;
+  color: #b45309;
+  font-size: 10px;
+  font-weight: 500;
 }
 
 .storage-fields {
   display: flex;
   flex-direction: column;
   gap: 13px;
+}
+
+.storage-fields .input-with-icon input {
+  padding-left: 12px;
+  height: 36px;
+  border-radius: 6px;
+  background: var(--bg-card);
+}
+
+.storage-fields .input-with-icon select {
+  height: 36px;
+  padding-left: 12px;
+  border-radius: 6px;
+  background: var(--bg-card);
+}
+
+.storage-fields .form-group label {
+  color: var(--text-main);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.storage-secret-wrap input { padding-right: 34px !important; }
+
+.storage-secret-wrap .secret-toggle-btn {
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.modern-switch.is-disabled { opacity: 0.45; cursor: not-allowed; }
+.modern-switch input:disabled + .slider { cursor: not-allowed; }
+
+.storage-main-form .btn-test-connection {
+  padding: 7px 12px;
+  border-color: var(--border-color);
+  color: var(--text-muted);
+  border-radius: 6px;
+  background: transparent;
+  box-shadow: none;
+}
+
+.storage-main-form .btn-test-connection:hover:not(:disabled) {
+  background: var(--bg-app);
+  border-color: #cbd5e1;
+  color: var(--text-main);
+  transform: none;
 }
 
 .storage-optional {
@@ -3582,7 +3873,7 @@ const supportsSilent = (id) => {
     grid-template-columns: 1fr;
   }
   .storage-layout {
-    grid-template-columns: 130px minmax(0, 1fr);
+    grid-template-columns: 150px minmax(0, 1fr);
     gap: 10px;
   }
 }
@@ -3615,15 +3906,64 @@ const supportsSilent = (id) => {
   }
   
   .sidebar-divider {
-    width: 1px !important;
-    height: 24px !important;
+    width: 100% !important;
+    height: 1px !important;
     background: var(--border-color) !important;
-    margin: auto 4px !important;
+    margin: 6px 0 !important;
+    flex: 0 0 100%;
+  }
+
+  .platform-list {
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .platform-management-title {
+    flex: 0 0 100%;
+    margin: 0;
   }
   
   .platform-tab-btn {
     padding: 6px 12px !important;
     white-space: nowrap !important;
+  }
+
+  .publishing-platform-nav {
+    flex-direction: row;
+    flex-wrap: wrap;
+    overflow: visible;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-color);
+    padding: 12px;
+  }
+
+  .publishing-settings-layout {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+
+  .publishing-settings-main {
+    padding: 0 !important;
+  }
+
+  .publishing-platform-heading {
+    flex: 0 0 100%;
+  }
+
+  .publishing-platform-tab {
+    width: auto;
+    max-width: 48%;
+  }
+
+  .publishing-platform-nav .btn-add-platform {
+    align-self: center !important;
+    margin: 0;
+  }
+
+  .publishing-config-form {
+    overflow: visible;
+    padding: 16px;
   }
   
   .tab-sublabel {
@@ -3647,16 +3987,20 @@ const supportsSilent = (id) => {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 4px;
+    padding: 0 0 10px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border-color);
   }
 
-  .storage-provider-heading,
-  .storage-provider-note {
+  .storage-provider-heading {
     grid-column: 1 / -1;
   }
 
   .storage-provider-option { min-width: 0; }
 
-  .storage-config-panel { padding: 13px; }
+  .storage-config-panel { padding: 12px 0 0; }
+
+  .storage-fields { gap: 11px; }
 
   .storage-actions { flex-wrap: wrap; }
   
