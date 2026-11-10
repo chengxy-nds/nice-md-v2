@@ -4,19 +4,10 @@ export const config = {
 
 /**
  * Universal Alibaba Cloud OSS Proxy & Signing Handler for Vercel
- * Supports both Vercel Edge Runtime and Node.js Serverless runtime.
- * 
- * Features:
- * 1. GET: Health check & check if server-side default OSS is configured (no secrets leaked).
- * 2. POST (action: 'sign-upload'): Generates short-lived signed POST Object policy & signature
- *    so the browser can upload directly to OSS with zero secret leakage and no Vercel payload limits.
+ * Runs strictly on Vercel Edge Runtime using 100% Web Standard APIs
+ * (crypto.subtle, TextEncoder, btoa, Request, Response).
+ * Zero Node.js dependencies, zero cold-start latency.
  */
-export default async function handler(req, res) {
-  if (res && (typeof res.setHeader === 'function' || typeof res.status === 'function')) {
-    return handleNode(req, res);
-  }
-  return handleEdge(req);
-}
 
 function resolveServerOssConfig() {
   const ak = (process.env.OSS_ACCESS_KEY_ID || process.env.ALIYUN_OSS_ACCESS_KEY_ID || process.env.OSS_AK || '').trim();
@@ -36,18 +27,20 @@ function resolveServerOssConfig() {
     bucket,
     endpoint,
     domain,
-    basePath
+    basePath,
   };
 }
 
-function pad2(n) { return String(n).padStart(2, '0'); }
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
 
 function generateObjectName(filename, basePath = '') {
   const ext = ((filename || 'image.png').split('.').pop() || 'png').toLowerCase();
   const now = new Date();
   const uuid = (typeof crypto !== 'undefined' && crypto.randomUUID)
     ? crypto.randomUUID().replace(/-/g, '').slice(0, 16)
-    : Math.random().toString(36).substring(2, 18);
+    : Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
   const datePath = `${now.getFullYear()}/${pad2(now.getMonth() + 1)}/${uuid}.${ext}`;
   const cleanBase = basePath.replace(/^\/+/, '').replace(/\/+$/, '');
   return cleanBase ? `${cleanBase}/${datePath}` : datePath;
@@ -62,32 +55,30 @@ function buildBucketHost(bucket, endpoint) {
 }
 
 function base64Encode(str) {
-  if (typeof btoa !== 'undefined') {
-    return btoa(String.fromCharCode(...new TextEncoder().encode(str)));
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
   }
-  return Buffer.from(str).toString('base64');
+  return btoa(binary);
 }
 
 async function hmacSha1Base64(keyStr, dataStr) {
-  if (typeof crypto !== 'undefined' && crypto.subtle) {
-    const encoder = new TextEncoder();
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw',
-      encoder.encode(keyStr),
-      { name: 'HMAC', hash: 'SHA-1' },
-      false,
-      ['sign']
-    );
-    const sig = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(dataStr));
-    const bytes = new Uint8Array(sig);
-    let binary = '';
-    for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
-    return typeof btoa !== 'undefined' ? btoa(binary) : Buffer.from(binary, 'binary').toString('base64');
+  const encoder = new TextEncoder();
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw',
+    encoder.encode(keyStr),
+    { name: 'HMAC', hash: 'SHA-1' },
+    false,
+    ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', cryptoKey, encoder.encode(dataStr));
+  const bytes = new Uint8Array(sig);
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) {
+    binary += String.fromCharCode(bytes[i]);
   }
-
-  // Node fallback if Web Crypto is unavailable
-  const nodeCrypto = await import('crypto');
-  return nodeCrypto.createHmac('sha1', keyStr).update(dataStr).digest('base64');
+  return btoa(binary);
 }
 
 async function generateSignedUploadParams(ossConfig, filename = 'image.png') {
@@ -101,8 +92,8 @@ async function generateSignedUploadParams(ossConfig, filename = 'image.png') {
     conditions: [
       { bucket: ossConfig.bucket },
       ['starts-with', '$key', ''],
-      ['content-length-range', 0, 100 * 1024 * 1024] // 100MB limit
-    ]
+      ['content-length-range', 0, 100 * 1024 * 1024], // 100MB limit
+    ],
   };
 
   const policyBase64 = base64Encode(JSON.stringify(policyObj));
@@ -125,15 +116,13 @@ async function generateSignedUploadParams(ossConfig, filename = 'image.png') {
       policy: policyBase64,
       OSSAccessKeyId: ossConfig.accessKeyId,
       success_action_status: '200',
-      Signature: signature
-    }
+      Signature: signature,
+    },
   };
 }
 
-/**
- * Vercel Edge Runtime Handler
- */
-async function handleEdge(req) {
+export default async function handler(req) {
+  // 1. CORS Preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, {
       status: 204,
@@ -146,6 +135,7 @@ async function handleEdge(req) {
     });
   }
 
+  // 2. Health & Status Check
   if (req.method === 'GET') {
     const ossConfig = resolveServerOssConfig();
     return new Response(
@@ -154,7 +144,7 @@ async function handleEdge(req) {
         hasDefault: Boolean(ossConfig),
         bucket: ossConfig?.bucket || '',
         endpoint: ossConfig?.endpoint || '',
-        domain: ossConfig?.domain || ''
+        domain: ossConfig?.domain || '',
       }),
       {
         status: 200,
@@ -166,12 +156,13 @@ async function handleEdge(req) {
     );
   }
 
+  // 3. Generate Signed Upload Policy for client-side direct upload
   if (req.method === 'POST') {
     const ossConfig = resolveServerOssConfig();
     if (!ossConfig) {
       return new Response(
         JSON.stringify({
-          error: 'Vercel 服务端未配置阿里云 OSS 环境变量 (OSS_ACCESS_KEY_ID / OSS_ACCESS_KEY_SECRET / OSS_BUCKET / OSS_ENDPOINT)。'
+          error: 'Vercel 服务端未配置阿里云 OSS 环境变量 (OSS_ACCESS_KEY_ID / OSS_ACCESS_KEY_SECRET / OSS_BUCKET / OSS_ENDPOINT)。',
         }),
         {
           status: 400,
@@ -213,67 +204,3 @@ async function handleEdge(req) {
 
   return new Response('Method Not Allowed', { status: 405 });
 }
-
-/**
- * Node.js Serverless Handler (Fallback)
- */
-async function handleNode(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', '*');
-
-  if (req.method === 'OPTIONS') {
-    res.statusCode = 204;
-    res.end();
-    return;
-  }
-
-  if (req.method === 'GET') {
-    const ossConfig = resolveServerOssConfig();
-    res.statusCode = 200;
-    res.setHeader('Content-Type', 'application/json');
-    res.end(JSON.stringify({
-      status: 'ok',
-      hasDefault: Boolean(ossConfig),
-      bucket: ossConfig?.bucket || '',
-      endpoint: ossConfig?.endpoint || '',
-      domain: ossConfig?.domain || ''
-    }));
-    return;
-  }
-
-  if (req.method === 'POST') {
-    const ossConfig = resolveServerOssConfig();
-    if (!ossConfig) {
-      res.statusCode = 400;
-      res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({
-        error: 'Vercel 服务端未配置阿里云 OSS 环境变量 (OSS_ACCESS_KEY_ID / OSS_ACCESS_KEY_SECRET / OSS_BUCKET / OSS_ENDPOINT)。'
-      }));
-      return;
-    }
-
-    const chunks = [];
-    req.on('data', chunk => chunks.push(chunk));
-    req.on('end', async () => {
-      try {
-        const bodyStr = Buffer.concat(chunks).toString('utf8');
-        const body = bodyStr ? JSON.parse(bodyStr) : {};
-        const filename = body?.filename || 'image.png';
-        const uploadParams = await generateSignedUploadParams(ossConfig, filename);
-        res.statusCode = 200;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify(uploadParams));
-      } catch (err) {
-        res.statusCode = 500;
-        res.setHeader('Content-Type', 'application/json');
-        res.end(JSON.stringify({ error: '生成 OSS 上传凭证失败: ' + err.message }));
-      }
-    });
-    return;
-  }
-
-  res.statusCode = 405;
-  res.end('Method Not Allowed');
-}
-
