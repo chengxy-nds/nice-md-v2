@@ -15,9 +15,7 @@ import {
   deleteGroupInTidb,
   deleteHistoryInTidb,
   clearDocHistoriesInTidb,
-  deleteCustomThemeInTidb,
-  DEFAULT_TIDB_URI,
-  initTidbDefaultIfAvailable
+  deleteCustomThemeInTidb
 } from './tidbStorage';
 
 import {
@@ -43,8 +41,6 @@ import {
 const CLOUD_SYNC_PROVIDER_KEY = 'nicemd_cloud_sync_provider_v1';
 
 export {
-  DEFAULT_TIDB_URI,
-  initTidbDefaultIfAvailable,
   getTidbConfig,
   saveTidbConfig,
   isTidbSyncEnabled,

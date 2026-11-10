@@ -27,7 +27,8 @@ import {
   FolderDown,
   FolderUp,
   Zap,
-  Check
+  Check,
+  ChevronDown
 } from '@lucide/vue';
 import { showConfirm } from '../utils/confirmDialog';
 import { soundEngine } from '../utils/synthAudio';
@@ -321,6 +322,15 @@ const saveStatus = ref(''); // '', 'saving', 'success', 'error'
 
 // ── File Storage (图床) state ──
 const storageConfig = ref(getStorageConfig());
+const storageProviders = [
+  { id: 'aliyun-oss', name: '阿里云 OSS', detail: '对象存储服务', available: true },
+  { id: 'tencent-cos', name: '腾讯云 COS', detail: '暂未接入', available: false },
+  { id: 'qiniu-kodo', name: '七牛云 Kodo', detail: '暂未接入', available: false },
+  { id: 'upyun-uss', name: '又拍云 USS', detail: '暂未接入', available: false },
+  { id: 'huawei-obs', name: '华为云 OBS', detail: '暂未接入', available: false },
+  { id: 'github', name: 'GitHub', detail: '暂未接入', available: false },
+  { id: 'custom-s3', name: '兼容 S3 的存储', detail: '暂未接入', available: false },
+];
 const serverOssStatus = ref(getServerDefaultOssStatus() || { hasDefault: false, bucket: '', endpoint: '', domain: '' });
 const isCustomOssConfigured = computed(() => hasCustomStorageConfig(storageConfig.value));
 const storageTestResult = ref(''); // '', 'testing', 'success', 'error'
@@ -358,8 +368,15 @@ async function handleTestConnection() {
   }
 }
 
+function handleToggleAutoUpload() {
+  soundEngine.playClick();
+  saveStorageConfig({ ...storageConfig.value });
+}
+
 function handleStorageSave() {
   soundEngine.playClick();
+  // Other entries are shown as unavailable until their upload adapters exist.
+  storageConfig.value.platform = 'aliyun-oss';
   saveStorageConfig({ ...storageConfig.value });
   saveStatus.value = 'success';
   setTimeout(() => { saveStatus.value = ''; }, 2000);
@@ -401,7 +418,7 @@ function setCloudProvider(p) {
 }
 
 const isTidbActive = computed(() => {
-  return Boolean(isCloudSyncActive.value && activeCloudProvider.value === 'tidb' && tidbConfig.value.enabled);
+  return Boolean(isCloudSyncActive.value && activeCloudProvider.value === 'tidb' && tidbConfig.value.enabled && tidbConfig.value.connectionString.trim());
 });
 
 const isNeonActive = computed(() => {
@@ -409,6 +426,7 @@ const isNeonActive = computed(() => {
 });
 
 function handleActivateProvider(p) {
+  if (p === 'tidb' && !tidbConfig.value.connectionString.trim()) return;
   soundEngine.playClick();
   if (p === 'tidb') {
     tidbConfig.value.enabled = true;
@@ -487,13 +505,17 @@ watch(neonConfig, (newVal) => {
 }, { deep: true });
 
 async function handleTestTidb() {
+  if (!tidbConfig.value.connectionString.trim()) {
+    tidbTestResult.value = 'error';
+    tidbTestMsg.value = '请先填写自己的数据库连接地址。';
+    return;
+  }
   tidbTestResult.value = 'testing';
   tidbTestMsg.value = '';
   try {
     const info = await testTidbConnection(tidbConfig.value.connectionString);
     tidbTestResult.value = 'success';
-    const sourceLabel = info.isDefault ? '（Vercel 服务端托管数据库）' : '（自定义数据库）';
-    tidbTestMsg.value = `连接成功 ${sourceLabel}！TiDB 版本: ${info.dbVersion.split(' ')[0]}，当前数据库: ${info.currentDb}。云端已有 ${info.docCount} 篇文档，${info.groupCount} 个分组，${info.historyCount} 个历史快照，${info.themeCount} 个自定义主题。`;
+    tidbTestMsg.value = '数据库连接正常。';
     tidbDbInfo.value = info;
     soundEngine.playChime();
   } catch (err) {
@@ -510,7 +532,19 @@ function handleSaveTidb() {
   setTimeout(() => { tidbSaveStatus.value = ''; }, 2000);
 }
 
+function handleClearTidbConnection() {
+  if (isTidbActive.value) handleDeactivateProvider('tidb');
+  tidbConfig.value.connectionString = '';
+  tidbConfig.value.enabled = false;
+  saveTidbConfig({ ...tidbConfig.value });
+  tidbTestResult.value = '';
+  tidbTestMsg.value = '';
+  tidbDbInfo.value = null;
+  isCloudSyncActive.value = isCloudSyncEnabled();
+}
+
 async function handlePushToTidb() {
+  if (!tidbConfig.value.connectionString.trim()) return;
   const ok = await showConfirm({
     title: '全量备份到 TiDB 云端',
     message: '确认将本地全部文档、分组、历史版本和自定义主题完整备份至 TiDB Cloud 吗？云端已有记录将被更新。',
@@ -548,6 +582,7 @@ async function handlePushToTidb() {
 }
 
 async function handlePullFromTidb() {
+  if (!tidbConfig.value.connectionString.trim()) return;
   const ok = await showConfirm({
     title: '从 TiDB 云端还原数据',
     message: '⚠️ 此操作将从 TiDB Cloud 拉取所有云端文档、分组、历史版本及自定义主题并合并更新本地，确定继续吗？',
@@ -579,6 +614,7 @@ async function handlePullFromTidb() {
 }
 
 async function handleTwoWaySyncTidb() {
+  if (!tidbConfig.value.connectionString.trim()) return;
   tidbSyncResult.value = 'syncing';
   tidbSyncMsg.value = '正在执行 TiDB 双向时间戳增量同步...';
   try {
@@ -622,7 +658,7 @@ async function handleTestNeon() {
   try {
     const info = await testNeonConnection(neonConfig.value.connectionString);
     neonTestResult.value = 'success';
-    neonTestMsg.value = `连接成功！Postgres 版本: ${info.dbVersion.split(' ')[0]}，云端已有 ${info.docCount} 篇文档，${info.groupCount} 个分组，${info.historyCount} 个历史快照，${info.themeCount} 个自定义主题。`;
+    neonTestMsg.value = '数据库连接正常。';
     neonDbInfo.value = info;
     soundEngine.playChime();
   } catch (err) {
@@ -637,6 +673,17 @@ function handleSaveNeon() {
   neonSaveStatus.value = 'success';
   soundEngine.playChime();
   setTimeout(() => { neonSaveStatus.value = ''; }, 2000);
+}
+
+function handleClearNeonConnection() {
+  if (isNeonActive.value) handleDeactivateProvider('neon');
+  neonConfig.value.connectionString = '';
+  neonConfig.value.enabled = false;
+  saveNeonConfig({ ...neonConfig.value });
+  neonTestResult.value = '';
+  neonTestMsg.value = '';
+  neonDbInfo.value = null;
+  isCloudSyncActive.value = isCloudSyncEnabled();
 }
 
 async function handlePushToNeon() {
@@ -1103,147 +1150,94 @@ const supportsSilent = (id) => {
         </div>
 
         <!-- File Storage (图床) Settings -->
-        <div class="settings-main-form" v-else-if="activeTab === 'storage'">
-          <div class="form-section-header">
-            <h3>图床配置</h3>
-          </div>
-          <p class="storage-desc">配置图床后，在编辑器中粘贴图片即可自动上传并插入 Markdown 图片链接。</p>
-
-          <!-- Status Hero Card -->
-          <div class="provider-hero-card" :class="isCustomOssConfigured || serverOssStatus.hasDefault ? 'hero-active' : 'hero-standby'" style="margin-bottom: 16px;">
-            <div class="hero-left">
-              <div class="hero-avatar" :style="isCustomOssConfigured ? 'background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: #fff;' : (serverOssStatus.hasDefault ? 'background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff;' : 'background: #64748b; color: #fff;')">
-                <HardDrive size="20" />
+        <div class="settings-main-form storage-main-form" v-else-if="activeTab === 'storage'">
+          <!-- 全局独立控制：剪贴板图片自动上传（脱离具体存储平台单独设计） -->
+          <div class="storage-global-banner">
+            <div class="storage-global-info">
+              <div class="storage-global-title-row">
+                <span class="storage-global-title">剪贴板图片自动上传</span>
+                <span class="storage-global-badge" :class="storageConfig.enableStorage !== false ? 'is-active' : ''">
+                  {{ storageConfig.enableStorage !== false ? '已启用' : '已关闭' }}
+                </span>
               </div>
-              <div class="hero-content">
-                <div class="hero-title-row">
-                  <h3 class="hero-title">阿里云 OSS 图床托管</h3>
-                  <span class="hero-state-badge" :class="isCustomOssConfigured || serverOssStatus.hasDefault ? 'badge-active' : 'badge-standby'">
-                    {{ isCustomOssConfigured ? '● 专属自定义 OSS (优先使用)' : (serverOssStatus.hasDefault ? '● Vercel 服务端默认托管中' : '○ 未配置图床') }}
-                  </span>
+              <div class="storage-global-desc">在编辑器中粘贴图片时自动上传至图床并插入 Markdown 图片链接</div>
+            </div>
+            <label class="modern-switch" title="切换剪贴板自动上传">
+              <input type="checkbox" v-model="storageConfig.enableStorage" @change="handleToggleAutoUpload" />
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="storage-layout">
+            <!-- 存储平台导航：变窄并贴左侧 -->
+            <nav class="storage-provider-nav" aria-label="图床平台">
+              <div class="storage-provider-heading">存储平台</div>
+              <button
+                v-for="provider in storageProviders"
+                :key="provider.id"
+                type="button"
+                class="storage-provider-option"
+                :class="{ 'is-selected': provider.id === 'aliyun-oss', 'is-unavailable': !provider.available }"
+                :disabled="!provider.available"
+                :aria-current="provider.id === 'aliyun-oss' ? 'page' : undefined"
+              >
+                <HardDrive size="15" />
+                <span class="storage-provider-copy">
+                  <strong>{{ provider.name }}</strong>
+                  <small>{{ provider.detail }}</small>
+                </span>
+                <Check v-if="provider.id === 'aliyun-oss'" size="14" class="storage-provider-check" />
+              </button>
+              <p class="storage-provider-note">其他平台接入后可在此配置。</p>
+            </nav>
+
+            <!-- 存储平台详细配置（已去除冗余的头部和嵌入式开关） -->
+            <section class="storage-config-panel">
+              <div class="form-grid storage-fields">
+                <div class="form-group">
+                  <label>访问域名</label>
+                  <div class="input-with-icon"><Globe class="input-icon" size="14" /><input type="text" v-model="storageConfig.domain" placeholder="https://图片域名或 CDN 域名" /></div>
+                  <small class="help-text">用于生成图片链接，可填写 Bucket 域名或 CDN 域名</small>
                 </div>
-                <p class="hero-desc">
-                  {{ isCustomOssConfigured
-                    ? '已配置您的专属阿里云 OSS 参数，粘贴或上传图片将优先上传至您的个人 Bucket。'
-                    : (serverOssStatus.hasDefault
-                        ? `当前未配置私有图床，系统已自动走 Vercel 服务端默认托管的阿里云 OSS（Bucket: ${serverOssStatus.bucket || '默认'}，安全防泄密）。若需使用个人专属 OSS，在下方填写即可优先覆盖。`
-                        : '本地未配置图床，且服务端未配置默认环境变量。编辑器粘贴图片将以 Base64 格式插入。在下方配置后即可启用自动上传。') }}
-                </p>
+                <div class="form-group">
+                  <label>Bucket 名称</label>
+                  <div class="input-with-icon"><HardDrive class="input-icon" size="14" /><input type="text" v-model="storageConfig.bucketName" placeholder="例如：my-image-bucket" /></div>
+                </div>
+                <div class="form-group">
+                  <label>AccessKey ID</label>
+                  <div class="input-with-icon"><input type="text" v-model="storageConfig.accessKey" placeholder="输入 AccessKey ID" style="padding-left:12px;" /></div>
+                </div>
+                <div class="form-group">
+                  <label>AccessKey Secret</label>
+                  <div class="input-with-icon secret-input-wrap">
+                    <input :type="showSecretKey ? 'text' : 'password'" v-model="storageConfig.secretKey" placeholder="输入 AccessKey Secret" class="secret-input" />
+                    <button class="secret-toggle-btn" @click="showSecretKey = !showSecretKey" type="button" aria-label="切换密钥显示">
+                      <Eye v-if="!showSecretKey" size="14" /><EyeOff v-else size="14" />
+                    </button>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>地域节点 Endpoint</label>
+                  <div class="input-with-icon"><Globe class="input-icon" size="14" /><input type="text" v-model="storageConfig.endPoint" placeholder="oss-cn-hangzhou.aliyuncs.com" /></div>
+                </div>
+                <div class="form-group">
+                  <label>存储路径 <span class="storage-optional">可选</span></label>
+                  <div class="input-with-icon"><UploadCloud class="input-icon" size="14" /><input type="text" v-model="storageConfig.basePath" placeholder="例如：images/articles" /></div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          <div class="form-grid">
-            <!-- Enable Toggle -->
-            <div class="form-group span-2">
-              <label>启用图床</label>
-              <label class="checkbox-container">
-                <input type="checkbox" v-model="storageConfig.enableStorage" />
-                <span class="checkbox-label-text">开启剪贴板图片自动上传</span>
-              </label>
-              <small class="help-text">开启后，在编辑器中粘贴截图或图片将自动上传至图床并返回链接。</small>
-            </div>
-
-            <!-- Platform -->
-            <div class="form-group">
-              <label>存储平台</label>
-              <div class="input-with-icon">
-                <HardDrive class="input-icon" size="14" />
-                <select v-model="storageConfig.platform" class="format-select" style="width:100%;padding-left:34px;">
-                  <option value="aliyun-oss">阿里云 OSS</option>
-                  <option value="tencent-cos">腾讯云 COS</option>
-                  <option value="qiniu-kodo">七牛云 Kodo</option>
-                  <option value="upyun-uss">又拍云 USS</option>
-                  <option value="huawei-obs">华为云 OBS</option>
-                  <option value="github">GitHub</option>
-                  <option value="custom-s3">自定义 S3</option>
-                </select>
-              </div>
-            </div>
-
-            <!-- Domain -->
-            <div class="form-group">
-              <label>访问域名</label>
-              <div class="input-with-icon">
-                <Globe class="input-icon" size="14" />
-                <input type="text" v-model="storageConfig.domain" placeholder="https://your-domain.com 或 CDN 加速域名" />
-              </div>
-              <small class="help-text">上传后生成的图片 URL 前缀，通常为 CDN 或 Bucket 域名</small>
-            </div>
-
-            <!-- Access Key -->
-            <div class="form-group">
-              <label>Access Key</label>
-              <div class="input-with-icon">
-                <input type="text" v-model="storageConfig.accessKey" placeholder="LTAIsFh65Dp3aqv9" style="padding-left:12px;" />
-              </div>
-            </div>
-
-            <!-- Secret Key -->
-            <div class="form-group">
-              <label>Secret Key</label>
-              <div class="input-with-icon secret-input-wrap">
-                <input
-                  :type="showSecretKey ? 'text' : 'password'"
-                  v-model="storageConfig.secretKey"
-                  placeholder="输入 Secret Key"
-                  class="secret-input"
-                />
-                <button class="secret-toggle-btn" @click="showSecretKey = !showSecretKey" type="button">
-                  <Eye v-if="!showSecretKey" size="14" />
-                  <EyeOff v-else size="14" />
+              <div class="storage-actions">
+                <button @click="handleTestConnection" class="btn-test-connection" :class="storageTestResult" :disabled="storageTestResult === 'testing'">
+                  <Wifi v-if="storageTestResult !== 'testing'" size="14" />
+                  <span v-if="storageTestResult === ''">测试连接</span>
+                  <span v-else-if="storageTestResult === 'testing'">测试中...</span>
+                  <span v-else-if="storageTestResult === 'success'">连接成功</span>
+                  <span v-else-if="storageTestResult === 'error'">连接失败</span>
                 </button>
+                <button @click="handleStorageSave" class="btn-save-storage"><Save size="14" /><span>保存配置</span></button>
               </div>
-            </div>
-
-            <!-- EndPoint -->
-            <div class="form-group">
-              <label>EndPoint</label>
-              <div class="input-with-icon">
-                <Globe class="input-icon" size="14" />
-                <input type="text" v-model="storageConfig.endPoint" placeholder="oss-cn-beijing.aliyuncs.com" />
-              </div>
-              <small class="help-text">存储服务地域节点，如 oss-cn-beijing.aliyuncs.com</small>
-            </div>
-
-            <!-- Bucket Name -->
-            <div class="form-group">
-              <label>Bucket 名称</label>
-              <div class="input-with-icon">
-                <HardDrive class="input-icon" size="14" />
-                <input type="text" v-model="storageConfig.bucketName" placeholder="firebook" />
-              </div>
-            </div>
-
-            <!-- Base Path -->
-            <div class="form-group">
-              <label>文件路径前缀 (Base Path)</label>
-              <div class="input-with-icon">
-                <UploadCloud class="input-icon" size="14" />
-                <input type="text" v-model="storageConfig.basePath" placeholder="blog/images（可选）" />
-              </div>
-              <small class="help-text">上传后的文件将保存在此目录下，如 blog/images</small>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="form-group span-2 storage-actions">
-              <button @click="handleTestConnection" class="btn-test-connection" :class="storageTestResult" :disabled="storageTestResult === 'testing'">
-                <Wifi v-if="storageTestResult !== 'testing'" size="14" />
-                <span v-if="storageTestResult === ''">测试连接</span>
-                <span v-else-if="storageTestResult === 'testing'">测试中...</span>
-                <span v-else-if="storageTestResult === 'success'">✓ 连接成功</span>
-                <span v-else-if="storageTestResult === 'error'">✗ 连接失败</span>
-              </button>
-              <button @click="handleStorageSave" class="btn-save-storage">
-                <Save size="14" />
-                <span>保存图床配置</span>
-              </button>
-            </div>
-
-            <!-- Test result message -->
-            <div v-if="storageTestMsg" class="form-group span-2">
-              <div class="test-result-msg" :class="storageTestResult">{{ storageTestMsg }}</div>
-            </div>
+              <div v-if="storageTestMsg" class="test-result-msg storage-test-result" :class="storageTestResult">{{ storageTestMsg }}</div>
+            </section>
           </div>
         </div>
 
@@ -1264,11 +1258,7 @@ const supportsSilent = (id) => {
                 </div>
                 <div class="tab-text-wrap">
                   <span class="tab-name">TiDB Cloud</span>
-                  <span class="tab-sub">MySQL Serverless</span>
-                </div>
-                <div class="tab-status-pill" :class="{ 'is-active': isTidbActive, 'is-ready': !isTidbActive }">
-                  <span class="pill-dot"></span>
-                  <span>{{ isTidbActive ? '主库运行中' : (tidbConfig.connectionString ? '自定义就绪' : '默认托管就绪') }}</span>
+                    <span class="tab-sub">MySQL</span>
                 </div>
               </button>
 
@@ -1283,55 +1273,35 @@ const supportsSilent = (id) => {
                 </div>
                 <div class="tab-text-wrap">
                   <span class="tab-name">Neon Postgres</span>
-                  <span class="tab-sub">PostgreSQL Serverless</span>
-                </div>
-                <div class="tab-status-pill" :class="{ 'is-active': isNeonActive, 'is-ready': !isNeonActive && neonConfig.connectionString }">
-                  <span class="pill-dot"></span>
-                  <span>{{ isNeonActive ? '主库运行中' : (neonConfig.connectionString ? '已就绪' : '未配置') }}</span>
+                    <span class="tab-sub">PostgreSQL</span>
                 </div>
               </button>
-            </div>
-            <div class="cloud-header-note">
-              <span>💡 多渠道云数据库各自独立保存连接串，系统单次仅激活一个主数据库进行同步，保障数据唯一与一致性。</span>
             </div>
           </div>
 
           <!-- ─────────── TiDB Cloud Panel ─────────── -->
           <div v-if="cloudProvider === 'tidb'" class="cloud-body-section">
             
-            <!-- Hero Status & Master Activation Card -->
-            <div class="provider-hero-card" :class="isTidbActive ? 'hero-active' : 'hero-standby'">
-              <div class="hero-left">
-                <div class="hero-avatar tidb-gradient">
-                  <Zap size="20" />
+            <div class="cloud-switch-card">
+              <div class="cloud-sync-state-row">
+                <div class="switch-card-info">
+                  <div class="switch-title">云端同步 <span class="sync-state-label" :class="{ 'is-active': isTidbActive }">{{ isTidbActive ? '已启用' : (tidbConfig.connectionString.trim() ? '未启用' : '待配置') }}</span></div>
+                  <div class="switch-desc">{{ !tidbConfig.connectionString.trim() ? '请先填写自己的数据库连接地址。' : (isTidbActive ? '内容会同步到你的数据库。' : '启用后开始同步到你的数据库。') }}</div>
                 </div>
-                <div class="hero-content">
-                  <div class="hero-title-row">
-                    <h3 class="hero-title">TiDB Cloud (MySQL)</h3>
-                    <span class="hero-state-badge" :class="isTidbActive ? 'badge-active' : 'badge-standby'">
-                      {{ isTidbActive ? '● 唯一主库实时同步中' : '○ 备用通道（未激活）' }}
-                    </span>
-                  </div>
-                  <p class="hero-desc">
-                    {{ isTidbActive 
-                      ? '系统已激活 TiDB 作为唯一主库，文档、分组、版本快照和自定义主题均会自动同步至此。' 
-                      : (tidbConfig.connectionString 
-                          ? '自定义 TiDB 连接串已就绪。点击右侧设为主库后，所有同步将自动定向至您的 TiDB。' 
-                          : '未配置私有连接串时，系统默认走 Vercel 服务端托管数据库（安全防泄露）。点击右侧设为主库即可启用。') }}
-                  </p>
-                </div>
-              </div>
-              <div class="hero-right">
-                <button 
-                  type="button" 
-                  class="hero-toggle-btn" 
-                  :class="isTidbActive ? 'btn-active-switch' : 'btn-activate-switch'"
-                  @click="handleToggleCurrentProvider('tidb')"
-                >
-                  <Check v-if="isTidbActive" size="14" />
-                  <Zap v-else size="14" />
-                  <span>{{ isTidbActive ? '主库运行中 (点击停用)' : '设为当前主数据库' }}</span>
+                <button type="button" class="sync-state-button" :class="{ 'is-active': isTidbActive }" :disabled="!isTidbActive && !tidbConfig.connectionString.trim()" @click="handleToggleCurrentProvider('tidb')">
+                  {{ isTidbActive ? '停用' : (tidbConfig.connectionString.trim() ? '启用同步' : '待配置') }}
                 </button>
+              </div>
+              <div class="sync-settings-divider"></div>
+              <div class="cloud-sync-auto-row">
+                <div class="switch-card-info">
+                  <div class="switch-title">编辑后自动同步</div>
+                  <div class="switch-desc">停止编辑约 2 秒后保存到云端。</div>
+                </div>
+                <label class="modern-switch">
+                  <input type="checkbox" v-model="tidbConfig.autoSync" :disabled="!isTidbActive" />
+                  <span class="slider"></span>
+                </label>
               </div>
             </div>
 
@@ -1340,11 +1310,21 @@ const supportsSilent = (id) => {
               <div class="config-card-header">
                 <div class="header-title-wrap">
                   <Database size="14" class="text-accent" />
-                  <span class="config-title">TiDB 数据库连接串 (Connection URI)</span>
+                  <span class="config-title">数据库连接</span>
                 </div>
-                <div v-if="tidbConfig.connectionString" class="header-action-wrap">
-                  <button type="button" class="btn-text-subtle" @click="tidbConfig.connectionString = ''; handleSaveTidb()">
-                    恢复为 Vercel 默认
+                <div class="connection-header-actions">
+                  <button
+                    @click="handleTestTidb"
+                    class="btn-cloud-test connection-test-btn"
+                    :class="tidbTestResult"
+                    :disabled="tidbTestResult === 'testing' || !tidbConfig.connectionString.trim()"
+                  >
+                    <RefreshCw v-if="tidbTestResult === 'testing'" size="13" class="animate-spin" />
+                    <Wifi v-else size="13" />
+                    <span>{{ tidbTestResult === 'testing' ? '测试中' : tidbTestResult === 'success' ? '已连接' : tidbTestResult === 'error' ? '重试' : '测试连接' }}</span>
+                  </button>
+                  <button v-if="tidbConfig.connectionString" type="button" class="connection-clear-btn" @click="handleClearTidbConnection">
+                    清空
                   </button>
                 </div>
               </div>
@@ -1354,7 +1334,7 @@ const supportsSilent = (id) => {
                 <input
                   type="text"
                   v-model="tidbConfig.connectionString"
-                  placeholder="留空即走 Vercel 默认（或填写自定义 mysql://user:pass@host:4000/db?ssl=true）"
+                  placeholder="填写你自己的 MySQL 数据库连接地址"
                   class="modern-code-input"
                   spellcheck="false"
                   autocomplete="off"
@@ -1364,62 +1344,32 @@ const supportsSilent = (id) => {
               <div class="config-helper-row">
                 <span class="helper-syntax">
                   <template v-if="!tidbConfig.connectionString">
-                    🟢 <strong>默认模式生效中：</strong>当前使用 Vercel 服务端环境变量 <code>TIDB_DATABASE_URL</code>，无前端泄露风险。
+                    连接地址仅保存在此设备；请填写自己的数据库后再启用同步。
                   </template>
                   <template v-else>
-                    🔵 <strong>自定义模式生效中：</strong>当前连接至您填写的私有 TiDB Cloud 实例。
+                    已配置个人数据库连接。
                   </template>
                 </span>
-                <span class="helper-info">在 TiDB Cloud 控制台点击 <strong>Connect</strong> 复制即可，支持 Serverless 25GiB 免费存储。</span>
+                <span class="helper-info" v-if="tidbConfig.connectionString">从 TiDB Cloud 控制台复制连接地址。</span>
               </div>
-            </div>
-
-            <!-- Real-time Auto Sync Row -->
-            <div class="cloud-switch-card">
-              <div class="switch-card-info">
-                <div class="switch-title">实时后台自动增量同步</div>
-                <div class="switch-desc">每次写作编辑停止 2 秒后，自动增量提交最新变更至 TiDB 云端，零感无缝。</div>
-              </div>
-              <label class="modern-switch">
-                <input type="checkbox" v-model="tidbConfig.autoSync" :disabled="!isTidbActive" />
-                <span class="slider"></span>
-              </label>
-            </div>
-
-            <!-- Test Connection Action Strip -->
-            <div class="cloud-action-strip">
-              <button 
-                @click="handleTestTidb" 
-                class="btn-cloud-test" 
-                :class="tidbTestResult" 
-                :disabled="tidbTestResult === 'testing'"
-              >
-                <RefreshCw v-if="tidbTestResult === 'testing'" size="14" class="animate-spin" />
-                <Wifi v-else size="14" />
-                <span v-if="tidbTestResult === ''">测试连接与初始化表结构</span>
-                <span v-else-if="tidbTestResult === 'testing'">正在连接 TiDB...</span>
-                <span v-else-if="tidbTestResult === 'success'">✓ 连接成功</span>
-                <span v-else-if="tidbTestResult === 'error'">✗ 连接失败</span>
-              </button>
-            </div>
-
-            <!-- Test Result Message / Database Metrics -->
-            <div v-if="tidbTestMsg" class="cloud-result-banner" :class="tidbTestResult">
-              <div class="result-text">{{ tidbTestMsg }}</div>
-              <div v-if="tidbDbInfo" class="metrics-chips">
-                <span class="metric-chip">📄 {{ tidbDbInfo.docCount }} 篇文档</span>
-                <span class="metric-chip">📁 {{ tidbDbInfo.groupCount }} 个分组</span>
-                <span class="metric-chip">🕒 {{ tidbDbInfo.historyCount }} 个历史快照</span>
-                <span class="metric-chip">🎨 {{ tidbDbInfo.themeCount }} 个自定义主题</span>
+              <div v-if="tidbTestMsg" class="connection-test-result" :class="tidbTestResult">
+                <span>{{ tidbTestMsg }}</span>
+                <div v-if="tidbDbInfo" class="metrics-chips">
+                  <span class="metric-chip">{{ tidbDbInfo.docCount }} 篇文档</span>
+                  <span class="metric-chip">{{ tidbDbInfo.groupCount }} 个分组</span>
+                  <span class="metric-chip">{{ tidbDbInfo.historyCount }} 个历史版本</span>
+                  <span class="metric-chip">{{ tidbDbInfo.themeCount }} 个主题</span>
+                </div>
               </div>
             </div>
 
             <!-- Cloud Data Operations Section -->
-            <div class="cloud-ops-box">
-              <div class="ops-header">
+            <details class="cloud-ops-box">
+              <summary class="ops-header">
                 <Cloud size="15" class="text-primary" />
-                <span class="ops-title">TiDB 云端数据管理与迁移操作</span>
-              </div>
+                <span class="ops-title">更多数据操作</span>
+                <ChevronDown size="15" class="ops-chevron" />
+              </summary>
 
               <div class="ops-cards-grid">
                 <!-- 1. Bidirectional Sync -->
@@ -1428,16 +1378,16 @@ const supportsSilent = (id) => {
                     <div class="ops-icon-wrap icon-blue">
                       <RefreshCw size="16" />
                     </div>
-                    <div class="ops-card-title">双向智能同步</div>
+                    <div class="ops-card-title">双向同步</div>
                   </div>
-                  <p class="ops-card-desc">比对本地与云端文章、分组、历史快照及主题，保留最新并双向合并。</p>
+                  <p class="ops-card-desc">合并本地和云端的最新内容。</p>
                   <button 
                     @click="handleTwoWaySyncTidb" 
                     class="ops-action-btn btn-blue"
-                    :disabled="tidbSyncResult === 'syncing'"
+                    :disabled="tidbSyncResult === 'syncing' || !tidbConfig.connectionString.trim()"
                   >
                     <RefreshCw size="13" :class="{ 'animate-spin': tidbSyncResult === 'syncing' }" />
-                    <span>立即双向同步</span>
+                    <span>立即同步</span>
                   </button>
                 </div>
 
@@ -1447,16 +1397,16 @@ const supportsSilent = (id) => {
                     <div class="ops-icon-wrap icon-green">
                       <FolderUp size="16" />
                     </div>
-                    <div class="ops-card-title">全量备份至云端</div>
+                    <div class="ops-card-title">备份到云端</div>
                   </div>
-                  <p class="ops-card-desc">将当前本地全部文章、分组、历史版本与自定义主题完整覆盖保存至 TiDB。</p>
+                  <p class="ops-card-desc">将此设备上的内容完整备份到云端。</p>
                   <button 
                     @click="handlePushToTidb" 
                     class="ops-action-btn btn-green"
-                    :disabled="tidbSyncResult === 'syncing'"
+                    :disabled="tidbSyncResult === 'syncing' || !tidbConfig.connectionString.trim()"
                   >
                     <FolderUp size="13" />
-                    <span>覆盖备份到云端</span>
+                    <span>开始备份</span>
                   </button>
                 </div>
 
@@ -1466,16 +1416,16 @@ const supportsSilent = (id) => {
                     <div class="ops-icon-wrap icon-purple">
                       <FolderDown size="16" />
                     </div>
-                    <div class="ops-card-title">从云端拉取还原</div>
+                    <div class="ops-card-title">从云端恢复</div>
                   </div>
-                  <p class="ops-card-desc">在新设备或重置环境后，一键从 TiDB 数据库拉取全部数据还原至本地。</p>
+                  <p class="ops-card-desc">将云端内容恢复到此设备。</p>
                   <button 
                     @click="handlePullFromTidb" 
                     class="ops-action-btn btn-purple"
-                    :disabled="tidbSyncResult === 'syncing'"
+                    :disabled="tidbSyncResult === 'syncing' || !tidbConfig.connectionString.trim()"
                   >
                     <FolderDown size="13" />
-                    <span>从云端拉取还原</span>
+                    <span>恢复数据</span>
                   </button>
                 </div>
               </div>
@@ -1484,46 +1434,33 @@ const supportsSilent = (id) => {
               <div v-if="tidbSyncMsg" class="cloud-result-banner mt-3" :class="tidbSyncResult">
                 {{ tidbSyncMsg }}
               </div>
-            </div>
+            </details>
 
           </div>
 
           <!-- ─────────── Neon Postgres Panel ─────────── -->
           <div v-else class="cloud-body-section">
             
-            <!-- Hero Status & Master Activation Card -->
-            <div class="provider-hero-card" :class="isNeonActive ? 'hero-active' : 'hero-standby'">
-              <div class="hero-left">
-                <div class="hero-avatar neon-gradient">
-                  <Database size="20" />
+            <div class="cloud-switch-card">
+              <div class="cloud-sync-state-row">
+                <div class="switch-card-info">
+                  <div class="switch-title">云端同步 <span class="sync-state-label" :class="{ 'is-active': isNeonActive }">{{ isNeonActive ? '已启用' : '未启用' }}</span></div>
+                  <div class="switch-desc">{{ isNeonActive ? '内容会同步到云端。' : '启用后开始同步到云端。' }}</div>
                 </div>
-                <div class="hero-content">
-                  <div class="hero-title-row">
-                    <h3 class="hero-title">Neon (PostgreSQL)</h3>
-                    <span class="hero-state-badge" :class="isNeonActive ? 'badge-active' : 'badge-standby'">
-                      {{ isNeonActive ? '● 唯一主库实时同步中' : '○ 备用通道（未激活）' }}
-                    </span>
-                  </div>
-                  <p class="hero-desc">
-                    {{ isNeonActive 
-                      ? '系统已激活 Neon 作为唯一主库，文档、分组、版本快照和自定义主题均会自动同步至此。' 
-                      : (neonConfig.connectionString 
-                          ? 'Neon 连接串已就绪。点击右侧设为主库后，所有同步将自动定向至 Neon。' 
-                          : '尚未配置或未激活 Neon 数据库，请在下方填入连接串并设为主库。') }}
-                  </p>
-                </div>
-              </div>
-              <div class="hero-right">
-                <button 
-                  type="button" 
-                  class="hero-toggle-btn" 
-                  :class="isNeonActive ? 'btn-active-switch' : 'btn-activate-switch'"
-                  @click="handleToggleCurrentProvider('neon')"
-                >
-                  <Check v-if="isNeonActive" size="14" />
-                  <Zap v-else size="14" />
-                  <span>{{ isNeonActive ? '主库运行中 (点击停用)' : '设为当前主数据库' }}</span>
+                <button type="button" class="sync-state-button" :class="{ 'is-active': isNeonActive }" @click="handleToggleCurrentProvider('neon')">
+                  {{ isNeonActive ? '停用' : '启用同步' }}
                 </button>
+              </div>
+              <div class="sync-settings-divider"></div>
+              <div class="cloud-sync-auto-row">
+                <div class="switch-card-info">
+                  <div class="switch-title">编辑后自动同步</div>
+                  <div class="switch-desc">停止编辑约 2 秒后保存到云端。</div>
+                </div>
+                <label class="modern-switch">
+                  <input type="checkbox" v-model="neonConfig.autoSync" :disabled="!isNeonActive" />
+                  <span class="slider"></span>
+                </label>
               </div>
             </div>
 
@@ -1532,7 +1469,22 @@ const supportsSilent = (id) => {
               <div class="config-card-header">
                 <div class="header-title-wrap">
                   <Database size="14" class="text-accent" />
-                  <span class="config-title">Neon 数据库连接串 (Connection URI)</span>
+                  <span class="config-title">数据库连接</span>
+                </div>
+                <div class="connection-header-actions">
+                  <button
+                    @click="handleTestNeon"
+                    class="btn-cloud-test connection-test-btn"
+                    :class="neonTestResult"
+                    :disabled="neonTestResult === 'testing' || !neonConfig.connectionString.trim()"
+                  >
+                    <RefreshCw v-if="neonTestResult === 'testing'" size="13" class="animate-spin" />
+                    <Wifi v-else size="13" />
+                    <span>{{ neonTestResult === 'testing' ? '测试中' : neonTestResult === 'success' ? '已连接' : neonTestResult === 'error' ? '重试' : '测试连接' }}</span>
+                  </button>
+                  <button v-if="neonConfig.connectionString" type="button" class="connection-clear-btn" @click="handleClearNeonConnection">
+                    清空
+                  </button>
                 </div>
               </div>
 
@@ -1541,7 +1493,7 @@ const supportsSilent = (id) => {
                 <input
                   type="text"
                   v-model="neonConfig.connectionString"
-                  placeholder="postgresql://neondb_owner:***@ep-***.neon.tech/easymd?sslmode=require"
+                  placeholder="粘贴 Neon 提供的 PostgreSQL 连接地址"
                   class="modern-code-input"
                   spellcheck="false"
                   autocomplete="off"
@@ -1549,57 +1501,27 @@ const supportsSilent = (id) => {
               </div>
               
               <div class="config-helper-row">
-                <span class="helper-syntax">格式示例：<code>postgresql://user:pass@ep-***.neon.tech/dbname?sslmode=require</code></span>
-                <span class="helper-info">在 Neon 控制台的 <strong>Dashboard</strong> 中复制 Connection String。连接串仅保存在本地客户端。</span>
+                <span class="helper-syntax">连接地址仅保存在此设备。</span>
+                <span class="helper-info">可从 Neon 控制台复制数据库连接地址。</span>
               </div>
-            </div>
-
-            <!-- Real-time Auto Sync Row -->
-            <div class="cloud-switch-card">
-              <div class="switch-card-info">
-                <div class="switch-title">实时后台自动增量同步</div>
-                <div class="switch-desc">每次写作编辑停止 2 秒后，自动增量提交最新变更至 Neon 云端，零感无缝。</div>
-              </div>
-              <label class="modern-switch">
-                <input type="checkbox" v-model="neonConfig.autoSync" :disabled="!isNeonActive" />
-                <span class="slider"></span>
-              </label>
-            </div>
-
-            <!-- Test Connection Action Strip -->
-            <div class="cloud-action-strip">
-              <button 
-                @click="handleTestNeon" 
-                class="btn-cloud-test" 
-                :class="neonTestResult" 
-                :disabled="neonTestResult === 'testing' || !neonConfig.connectionString"
-              >
-                <RefreshCw v-if="neonTestResult === 'testing'" size="14" class="animate-spin" />
-                <Wifi v-else size="14" />
-                <span v-if="neonTestResult === ''">测试连接与初始化表结构</span>
-                <span v-else-if="neonTestResult === 'testing'">正在连接 Neon...</span>
-                <span v-else-if="neonTestResult === 'success'">✓ 连接成功</span>
-                <span v-else-if="neonTestResult === 'error'">✗ 连接失败</span>
-              </button>
-            </div>
-
-            <!-- Test Result Message / Database Metrics -->
-            <div v-if="neonTestMsg" class="cloud-result-banner" :class="neonTestResult">
-              <div class="result-text">{{ neonTestMsg }}</div>
-              <div v-if="neonDbInfo" class="metrics-chips">
-                <span class="metric-chip">📄 {{ neonDbInfo.docCount }} 篇文档</span>
-                <span class="metric-chip">📁 {{ neonDbInfo.groupCount }} 个分组</span>
-                <span class="metric-chip">🕒 {{ neonDbInfo.historyCount }} 个历史快照</span>
-                <span class="metric-chip">🎨 {{ neonDbInfo.themeCount }} 个自定义主题</span>
+              <div v-if="neonTestMsg" class="connection-test-result" :class="neonTestResult">
+                <span>{{ neonTestMsg }}</span>
+                <div v-if="neonDbInfo" class="metrics-chips">
+                  <span class="metric-chip">{{ neonDbInfo.docCount }} 篇文档</span>
+                  <span class="metric-chip">{{ neonDbInfo.groupCount }} 个分组</span>
+                  <span class="metric-chip">{{ neonDbInfo.historyCount }} 个历史版本</span>
+                  <span class="metric-chip">{{ neonDbInfo.themeCount }} 个主题</span>
+                </div>
               </div>
             </div>
 
             <!-- Cloud Data Operations Section -->
-            <div class="cloud-ops-box">
-              <div class="ops-header">
+            <details class="cloud-ops-box">
+              <summary class="ops-header">
                 <Cloud size="15" class="text-primary" />
-                <span class="ops-title">Neon 云端数据管理与迁移操作</span>
-              </div>
+                <span class="ops-title">更多数据操作</span>
+                <ChevronDown size="15" class="ops-chevron" />
+              </summary>
 
               <div class="ops-cards-grid">
                 <!-- 1. Bidirectional Sync -->
@@ -1608,16 +1530,16 @@ const supportsSilent = (id) => {
                     <div class="ops-icon-wrap icon-blue">
                       <RefreshCw size="16" />
                     </div>
-                    <div class="ops-card-title">双向智能同步</div>
+                    <div class="ops-card-title">双向同步</div>
                   </div>
-                  <p class="ops-card-desc">比对本地与云端文章、分组、历史快照及主题，保留最新并双向合并。</p>
+                  <p class="ops-card-desc">合并本地和云端的最新内容。</p>
                   <button 
                     @click="handleTwoWaySyncNeon" 
                     class="ops-action-btn btn-blue"
                     :disabled="neonSyncResult === 'syncing' || !neonConfig.connectionString"
                   >
                     <RefreshCw size="13" :class="{ 'animate-spin': neonSyncResult === 'syncing' }" />
-                    <span>立即双向同步</span>
+                    <span>立即同步</span>
                   </button>
                 </div>
 
@@ -1627,16 +1549,16 @@ const supportsSilent = (id) => {
                     <div class="ops-icon-wrap icon-green">
                       <FolderUp size="16" />
                     </div>
-                    <div class="ops-card-title">全量备份至云端</div>
+                    <div class="ops-card-title">备份到云端</div>
                   </div>
-                  <p class="ops-card-desc">将当前本地全部文章、分组、历史版本与自定义主题完整推送并保存到 Neon。</p>
+                  <p class="ops-card-desc">将此设备上的内容完整备份到云端。</p>
                   <button 
                     @click="handlePushToNeon" 
                     class="ops-action-btn btn-green"
                     :disabled="neonSyncResult === 'syncing' || !neonConfig.connectionString"
                   >
                     <FolderUp size="13" />
-                    <span>覆盖备份到云端</span>
+                    <span>开始备份</span>
                   </button>
                 </div>
 
@@ -1646,16 +1568,16 @@ const supportsSilent = (id) => {
                     <div class="ops-icon-wrap icon-purple">
                       <FolderDown size="16" />
                     </div>
-                    <div class="ops-card-title">从云端恢复到本地</div>
+                    <div class="ops-card-title">从云端恢复</div>
                   </div>
-                  <p class="ops-card-desc">在新设备或重置环境后，一键从 Neon 数据库拉取全部数据还原至本地。</p>
+                  <p class="ops-card-desc">将云端内容恢复到此设备。</p>
                   <button 
                     @click="handlePullFromNeon" 
                     class="ops-action-btn btn-purple"
                     :disabled="neonSyncResult === 'syncing' || !neonConfig.connectionString"
                   >
                     <FolderDown size="13" />
-                    <span>从云端拉取还原</span>
+                    <span>恢复数据</span>
                   </button>
                 </div>
               </div>
@@ -1664,7 +1586,7 @@ const supportsSilent = (id) => {
               <div v-if="neonSyncMsg" class="cloud-result-banner mt-3" :class="neonSyncResult">
                 {{ neonSyncMsg }}
               </div>
-            </div>
+            </details>
 
           </div>
         </div>
@@ -2374,12 +2296,184 @@ const supportsSilent = (id) => {
   color: #8b5cf6;
 }
 
-.storage-desc {
-  font-size: 12px;
+/* ── File Storage (图床) 专属样式 ── */
+.storage-main-form {
+  padding: 20px 24px 24px 16px;
+  gap: 14px;
+}
+
+/* 全局独立控制：剪贴板图片自动上传 */
+.storage-global-banner {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 13px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+}
+
+.storage-global-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.storage-global-title-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.storage-global-title {
+  color: var(--text-main);
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+
+.storage-global-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--bg-app);
   color: var(--text-muted);
-  margin-top: -12px;
-  margin-bottom: 12px;
-  line-height: 1.5;
+  font-size: 10px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.storage-global-badge.is-active {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.storage-global-desc {
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+  margin: 0;
+}
+
+/* 存储布局：存储平台窄列贴左，右侧表单展开 */
+.storage-layout {
+  display: grid;
+  grid-template-columns: 142px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.storage-provider-nav,
+.storage-config-panel {
+  min-width: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-card);
+}
+
+.storage-provider-nav {
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.storage-provider-heading {
+  padding: 4px 6px 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.storage-provider-option {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-main);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+
+.storage-provider-option:hover:not(:disabled) {
+  background: var(--bg-app);
+}
+
+.storage-provider-option.is-selected {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1769c2;
+}
+
+.storage-provider-option.is-unavailable {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.storage-provider-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.storage-provider-copy strong {
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.storage-provider-copy small {
+  color: var(--text-muted);
+  font-size: 10px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.storage-provider-check {
+  flex: none;
+  color: #1769c2;
+}
+
+.storage-provider-note {
+  margin: 6px 6px 2px;
+  color: var(--text-muted);
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.storage-config-panel {
+  padding: 16px;
+}
+
+.storage-fields {
+  gap: 12px 14px;
+}
+
+.storage-optional {
+  margin-left: 4px;
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 400;
+}
+
+.storage-test-result {
+  margin-top: 12px;
 }
 
 .secret-input-wrap {
@@ -2427,7 +2521,7 @@ const supportsSilent = (id) => {
   display: flex;
   gap: 10px;
   align-items: center;
-  margin-top: 6px;
+  margin-top: 15px;
 }
 
 .btn-test-connection {
@@ -2533,11 +2627,10 @@ const supportsSilent = (id) => {
 .cloud-nav-segmented {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  background: var(--bg-app);
-  padding: 5px;
+  gap: 10px;
+  background: transparent;
+  padding: 0;
   border-radius: 12px;
-  border: 1px solid var(--border-color);
 }
 
 .cloud-nav-tab {
@@ -2545,9 +2638,9 @@ const supportsSilent = (id) => {
   align-items: center;
   gap: 10px;
   padding: 10px 14px;
-  border-radius: 9px;
-  background: transparent;
-  border: 1px solid transparent;
+  border-radius: 11px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
   cursor: pointer;
   transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   text-align: left;
@@ -2556,14 +2649,14 @@ const supportsSilent = (id) => {
 }
 
 .cloud-nav-tab:hover {
-  background: var(--bg-card);
-  border-color: var(--border-color);
+  background: var(--bg-app);
+  border-color: rgba(59, 130, 246, 0.24);
 }
 
 .cloud-nav-tab.is-active {
-  background: var(--bg-card);
-  border-color: var(--border-color);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  background: rgba(59, 130, 246, 0.035);
+  border-color: rgba(59, 130, 246, 0.38);
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
 }
 
 .tab-icon-wrap {
@@ -2662,16 +2755,6 @@ const supportsSilent = (id) => {
 .tab-status-pill.is-ready .pill-dot {
   background: #3b82f6;
   opacity: 0.9;
-}
-
-.cloud-header-note {
-  font-size: 11px;
-  color: var(--text-muted);
-  background: rgba(59, 130, 246, 0.05);
-  border: 1px solid rgba(59, 130, 246, 0.12);
-  padding: 6px 12px;
-  border-radius: 8px;
-  line-height: 1.4;
 }
 
 /* 2. Cloud Body Section */
@@ -2834,6 +2917,68 @@ const supportsSilent = (id) => {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
+}
+
+.connection-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.connection-test-btn {
+  flex: 0 0 auto;
+  width: auto;
+  min-width: 0;
+  padding: 5px 9px;
+  font-size: 11px;
+}
+
+.connection-header-actions .connection-test-btn {
+  flex: 0 0 auto;
+  width: auto;
+}
+
+.connection-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid var(--border-color);
+  border-radius: 7px;
+  background: var(--bg-card);
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.connection-clear-btn:hover {
+  border-color: rgba(239, 68, 68, 0.35);
+  background: rgba(239, 68, 68, 0.06);
+  color: #dc2626;
+}
+
+.connection-test-result {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 7px;
+  border-top: 1px solid var(--border-color);
+  color: var(--text-muted);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.connection-test-result.success {
+  color: #059669;
+}
+
+.connection-test-result.error {
+  color: #dc2626;
 }
 
 .header-title-wrap {
@@ -2953,11 +3098,83 @@ const supportsSilent = (id) => {
   background: var(--bg-card);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 10px 14px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cloud-sync-state-row,
+.cloud-sync-auto-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+}
+
+.sync-state-label {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: var(--bg-app);
+  color: var(--text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  vertical-align: 1px;
+}
+
+.sync-state-label.is-active {
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.sync-state-button {
+  flex: 0 0 auto;
+  min-width: 76px;
+  padding: 6px 12px;
+  border: 1px solid var(--accent-color);
+  border-radius: 8px;
+  background: var(--accent-color);
+  color: #fff;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.sync-state-button.is-active {
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.1);
+  color: #059669;
+}
+
+.sync-state-button.is-active:hover {
+  border-color: rgba(239, 68, 68, 0.3);
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+}
+
+.sync-state-button:disabled {
+  border-color: var(--border-color);
+  background: var(--bg-app);
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
+.sync-settings-divider {
+  height: 1px;
+  background: var(--border-color);
+}
+
+.cloud-sync-auto-row .switch-title {
+  font-size: 12px;
+}
+
+.cloud-sync-auto-row .switch-desc {
+  font-size: 11px;
 }
 
 .switch-card-info {
@@ -3029,12 +3246,6 @@ const supportsSilent = (id) => {
 .modern-switch input:disabled + .slider {
   opacity: 0.5;
   cursor: not-allowed;
-}
-
-/* 6. Action Strip */
-.cloud-action-strip {
-  display: flex;
-  gap: 10px;
 }
 
 .btn-cloud-test {
@@ -3166,12 +3377,35 @@ const supportsSilent = (id) => {
   display: flex;
   align-items: center;
   gap: 6px;
+  min-height: 22px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.ops-header::-webkit-details-marker {
+  display: none;
+}
+
+.ops-header:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.55);
+  outline-offset: 3px;
+  border-radius: 4px;
 }
 
 .ops-title {
   font-size: 12.5px;
   font-weight: 600;
   color: var(--text-main);
+}
+
+.ops-chevron {
+  margin-left: auto;
+  color: var(--text-muted);
+  transition: transform 0.18s ease;
+}
+
+.cloud-ops-box[open] .ops-chevron {
+  transform: rotate(180deg);
 }
 
 .text-primary {
@@ -3324,6 +3558,10 @@ const supportsSilent = (id) => {
   .sync-action-grid {
     grid-template-columns: 1fr;
   }
+  .storage-layout {
+    grid-template-columns: 130px minmax(0, 1fr);
+    gap: 10px;
+  }
 }
 
 /* Settings Modal Responsiveness */
@@ -3377,6 +3615,27 @@ const supportsSilent = (id) => {
   .settings-main-form {
     padding: 16px !important;
   }
+
+  .storage-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .storage-provider-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px;
+  }
+
+  .storage-provider-heading,
+  .storage-provider-note {
+    grid-column: 1 / -1;
+  }
+
+  .storage-provider-option { min-width: 0; }
+
+  .storage-config-panel { padding: 13px; }
+
+  .storage-actions { flex-wrap: wrap; }
   
   .form-grid {
     grid-template-columns: 1fr !important;

@@ -4,54 +4,7 @@ import { builtInThemeIds } from './themePresets.js';
 const TIDB_CONFIG_KEY = 'nicemd_tidb_sync_config_v1';
 const TIDB_LAST_SYNC_KEY = 'nicemd_tidb_last_sync_timestamp';
 
-export const DEFAULT_TIDB_URI = '';
 export const DEFAULT_TIDB_SENTINEL = '__DEFAULT__';
-
-let cachedServerDefaultStatus = null;
-
-/**
- * Check if Vercel server or local proxy has default TIDB_DATABASE_URL configured
- */
-export async function checkServerDefaultAvailable() {
-  if (cachedServerDefaultStatus !== null) return cachedServerDefaultStatus;
-  try {
-    const res = await fetch('/api/tidb-proxy', { method: 'GET' });
-    if (res.ok) {
-      const data = await res.json();
-      cachedServerDefaultStatus = Boolean(data.hasDefault);
-      return cachedServerDefaultStatus;
-    }
-  } catch {
-    // ignore
-  }
-  cachedServerDefaultStatus = false;
-  return false;
-}
-
-/**
- * Automatically enable TiDB sync using Vercel default database if available
- * and user has not explicitly configured or disabled it yet.
- */
-export async function initTidbDefaultIfAvailable() {
-  try {
-    const raw = localStorage.getItem(TIDB_CONFIG_KEY);
-    if (raw !== null) return false;
-
-    const hasDefault = await checkServerDefaultAvailable();
-    if (hasDefault) {
-      saveTidbConfig({
-        enabled: true,
-        connectionString: '',
-        autoSync: true,
-        lastSyncTime: 0
-      });
-      return true;
-    }
-  } catch {
-    // ignore
-  }
-  return false;
-}
 
 export function getEffectiveTidbUri(connectionString) {
   const trimmed = (connectionString || '').trim();
@@ -69,9 +22,10 @@ export function getTidbConfig() {
     const raw = localStorage.getItem(TIDB_CONFIG_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
+      const connectionString = String(parsed.connectionString || '').trim();
       return {
-        enabled: Boolean(parsed.enabled),
-        connectionString: parsed.connectionString || '',
+        enabled: Boolean(parsed.enabled && connectionString),
+        connectionString,
         autoSync: parsed.autoSync !== false,
         lastSyncTime: parsed.lastSyncTime || 0
       };
@@ -103,7 +57,7 @@ export async function ensureTidbTables(connectionString) {
 export function saveTidbConfig(config) {
   try {
     localStorage.setItem(TIDB_CONFIG_KEY, JSON.stringify(config));
-    if (config.enabled) {
+    if (config.enabled && String(config.connectionString || '').trim()) {
       ensureTidbTables(config.connectionString);
     }
     window.dispatchEvent(new CustomEvent('nicemd-tidb-config-updated', { detail: config }));
@@ -114,8 +68,7 @@ export function saveTidbConfig(config) {
 
 export function isTidbSyncEnabled() {
   const config = getTidbConfig();
-  // Enabled if sync toggle is ON (uses custom URI if entered, otherwise falls back to Vercel default)
-  return Boolean(config.enabled);
+  return Boolean(config.enabled && String(config.connectionString || '').trim());
 }
 
 export function getTidbLastSyncTime() {
@@ -252,6 +205,7 @@ const PLACEHOLDER_DEFAULT_URI = 'mysql://vercel:default@gateway01.ap-northeast-1
 function getClient(connectionString) {
   const effective = getEffectiveTidbUri(connectionString || getTidbConfig().connectionString);
   const isDefault = effective === DEFAULT_TIDB_SENTINEL;
+  if (isDefault) throw new Error('请先填写自己的 TiDB 数据库连接地址');
   const urlToUse = isDefault ? PLACEHOLDER_DEFAULT_URI : effective;
 
   return connect({

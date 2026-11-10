@@ -79,11 +79,11 @@ export function hasCustomStorageConfig(config = null) {
 
 export function isStorageEnabled() {
   const config = getStorageConfig();
-  if (hasCustomStorageConfig(config)) {
-    return config.enableStorage !== false;
-  }
-  if (config.enableStorage === false && config._userDisabled) {
+  if (config.enableStorage === false) {
     return false;
+  }
+  if (hasCustomStorageConfig(config)) {
+    return true;
   }
   return Boolean(cachedServerDefaultStatus?.hasDefault);
 }

@@ -43,7 +43,6 @@ import {
   isCloudSyncEnabled,
   isNeonSyncEnabled,
   isTidbSyncEnabled,
-  initTidbDefaultIfAvailable,
   realtimeSyncDoc,
   realtimeSyncGroup,
   realtimeDeleteDoc,
@@ -1470,12 +1469,6 @@ onMounted(async () => {
   document.documentElement.classList.remove('dark');
   document.documentElement.setAttribute('data-color-mode', 'light');
   try { localStorage.removeItem('nicemd_color_mode'); } catch (e) {}
-
-  // Auto-activate TiDB default if server has default TIDB_DATABASE_URL and user hasn't explicitly configured
-  const activated = await initTidbDefaultIfAvailable();
-  if (activated) {
-    window.dispatchEvent(new CustomEvent('nicemd-cloud-provider-changed', { detail: { provider: 'tidb', enable: true } }));
-  }
 
   // Probe server default OSS image storage if available
   initStorageDefaultIfAvailable().catch(() => {});
