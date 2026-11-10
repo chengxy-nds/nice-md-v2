@@ -23,11 +23,17 @@ import { showConfirm } from '../utils/confirmDialog';
 import SidebarDocItem from './SidebarDocItem.vue';
 import { isCloudSyncEnabled, getActiveCloudProvider } from '../utils/cloudSync';
 
+const CLOUD_PROVIDER_LABELS = {
+  tidb: 'TiDB Cloud (MySQL)',
+  neon: 'Neon (Postgres)',
+  github: 'GitHub 仓库',
+};
+
 const currentCloudProvider = ref(getActiveCloudProvider());
 const isCloudSyncActive = ref(isCloudSyncEnabled());
 
 const cloudSyncTitle = computed(() => {
-  const provider = currentCloudProvider.value === 'tidb' ? 'TiDB Cloud (MySQL)' : 'Neon (Postgres)';
+  const provider = CLOUD_PROVIDER_LABELS[currentCloudProvider.value] || '云端同步';
   return `${provider} 实时同步已开启`;
 });
 
@@ -42,6 +48,7 @@ onMounted(() => {
   window.addEventListener('nicemd-cloud-provider-changed', refreshCloudSyncState);
   window.addEventListener('nicemd-tidb-config-updated', refreshCloudSyncState);
   window.addEventListener('nicemd-neon-config-updated', refreshCloudSyncState);
+  window.addEventListener('nicemd-github-config-updated', refreshCloudSyncState);
   window.addEventListener('storage', refreshCloudSyncState);
 });
 
@@ -53,6 +60,7 @@ onUnmounted(() => {
   window.removeEventListener('nicemd-cloud-provider-changed', refreshCloudSyncState);
   window.removeEventListener('nicemd-tidb-config-updated', refreshCloudSyncState);
   window.removeEventListener('nicemd-neon-config-updated', refreshCloudSyncState);
+  window.removeEventListener('nicemd-github-config-updated', refreshCloudSyncState);
   window.removeEventListener('storage', refreshCloudSyncState);
 });
 

@@ -590,7 +590,13 @@ window.addEventListener('nicemd-neon-config-updated', () => {
 window.addEventListener('nicemd-tidb-config-updated', () => {
   triggerFullAutoSync();
 });
+window.addEventListener('nicemd-github-config-updated', () => {
+  triggerFullAutoSync();
+});
 window.addEventListener('nicemd-cloud-provider-changed', () => {
+  triggerFullAutoSync();
+});
+window.addEventListener('nicemd-request-auto-sync', () => {
   triggerFullAutoSync();
 });
 
@@ -1482,14 +1488,8 @@ onMounted(async () => {
       loadCustomThemes(),
       null,
       (err, res) => {
-        if (!err && res?.docs) {
-          documents.value = res.docs;
-          groups.value = res.groups;
-          saveDocuments(res.docs);
-          saveGroups(res.groups);
-          if (res.docs.length > 0 && !res.docs.some(d => d.id === activeDocId.value)) {
-            activeDocId.value = res.docs[0].id;
-          }
+        if (!err && res) {
+          handleSyncComplete(res);
         }
       }
     );

@@ -28,7 +28,8 @@ import {
   FolderUp,
   Zap,
   Check,
-  ChevronDown
+  ChevronDown,
+  GitBranch
 } from '@lucide/vue';
 import { showConfirm } from '../utils/confirmDialog';
 import { soundEngine } from '../utils/synthAudio';
@@ -44,7 +45,8 @@ import {
 import {
   getActiveCloudProvider,
   setActiveCloudProvider,
-  isCloudSyncEnabled
+  isCloudSyncEnabled,
+  disableAllCloudSync
 } from '../utils/cloudSync';
 import {
   getTidbConfig,
@@ -64,6 +66,16 @@ import {
   syncNeonBidirectional,
   getLastSyncTime
 } from '../utils/neonStorage';
+import {
+  getGithubConfig,
+  saveGithubConfig,
+  hasGithubCredentials,
+  testGithubConnection,
+  pushAllToGithub,
+  pullFromGithub,
+  syncGithubBidirectional,
+  getGithubLastSyncTime
+} from '../utils/githubStorage';
 import { loadDocuments, saveDocuments, loadGroups, saveGroups } from '../utils/docStorage';
 import { getAllDocSnapshots, saveAllDocSnapshots } from '../utils/docHistory';
 import { loadCustomThemes, saveCustomThemes, mergeCustomThemes } from '../utils/themePresets';
@@ -467,10 +479,11 @@ function handleToggleAutoUpload(event) {
   saveStorageConfig({ ...storageConfig.value });
 }
 
-// ── Unified Cloud Sync Provider ('tidb' | 'neon') ──
+// ── Unified Cloud Sync Provider ('tidb' | 'neon' | 'github') ──
 const cloudProvider = ref(getActiveCloudProvider());
 const activeCloudProvider = ref(getActiveCloudProvider());
 const isCloudSyncActive = ref(isCloudSyncEnabled());
+let isLoadingCloudConfigs = false;
 
 // ── TiDB Serverless MySQL Sync State ──
 const tidbConfig = ref(getTidbConfig());
@@ -478,19 +491,83 @@ const tidbTestResult = ref(''); // '', 'testing', 'success', 'error'
 const tidbTestMsg = ref('');
 const tidbSyncResult = ref(''); // '', 'syncing', 'success', 'error'
 const tidbSyncMsg = ref('');
-const tidbSaveStatus = ref('');
-const showTidbKey = ref(false);
 const tidbDbInfo = ref(null);
 
 // ── Neon Serverless Postgres Sync State ──
 const neonConfig = ref(getNeonConfig());
-const neonTestResult = ref(''); // '', 'testing', 'success', 'error'
+const neonTestResult = ref('');
 const neonTestMsg = ref('');
-const neonSyncResult = ref(''); // '', 'syncing', 'success', 'error'
+const neonSyncResult = ref('');
 const neonSyncMsg = ref('');
-const neonSaveStatus = ref('');
-const showNeonKey = ref(false);
 const neonDbInfo = ref(null);
+
+// ── GitHub Repository Sync State ──
+const githubConfig = ref(getGithubConfig());
+const githubTestResult = ref('');
+const githubTestMsg = ref('');
+const githubSyncResult = ref('');
+const githubSyncMsg = ref('');
+const githubRepoInfo = ref(null);
+
+const CLOUD_PROVIDER_UI = {
+  tidb: {
+    label: 'TiDB Cloud',
+    targetLabel: 'TiDB 云端',
+    configRef: tidbConfig,
+    saveConfig: saveTidbConfig,
+    testResult: tidbTestResult,
+    testMsg: tidbTestMsg,
+    syncResult: tidbSyncResult,
+    syncMsg: tidbSyncMsg,
+    infoRef: tidbDbInfo,
+    hasCredentials: () => Boolean(tidbConfig.value.connectionString.trim()),
+    getCredentialArg: () => tidbConfig.value.connectionString,
+    missingCredMsg: '请先填写自己的数据库连接地址。',
+    testFn: (arg) => testTidbConnection(arg),
+    pushFn: pushAllToTidb,
+    pullFn: pullFromTidb,
+    syncFn: syncTidbBidirectional,
+    testSuccessMsg: '数据库连接正常。',
+  },
+  neon: {
+    label: 'Neon Postgres',
+    targetLabel: 'Neon 云端',
+    configRef: neonConfig,
+    saveConfig: saveNeonConfig,
+    testResult: neonTestResult,
+    testMsg: neonTestMsg,
+    syncResult: neonSyncResult,
+    syncMsg: neonSyncMsg,
+    infoRef: neonDbInfo,
+    hasCredentials: () => Boolean(neonConfig.value.connectionString.trim()),
+    getCredentialArg: () => neonConfig.value.connectionString,
+    missingCredMsg: '请先填写 Neon 数据库连接串。',
+    testFn: (arg) => testNeonConnection(arg),
+    pushFn: pushAllToNeon,
+    pullFn: pullFromNeon,
+    syncFn: syncNeonBidirectional,
+    testSuccessMsg: '数据库连接正常。',
+  },
+  github: {
+    label: 'GitHub 仓库',
+    targetLabel: 'GitHub 仓库',
+    configRef: githubConfig,
+    saveConfig: saveGithubConfig,
+    testResult: githubTestResult,
+    testMsg: githubTestMsg,
+    syncResult: githubSyncResult,
+    syncMsg: githubSyncMsg,
+    infoRef: githubRepoInfo,
+    hasCredentials: () => hasGithubCredentials(githubConfig.value),
+    getCredentialArg: () => ({ ...githubConfig.value }),
+    missingCredMsg: '请先填写 GitHub Token、仓库拥有者与仓库名称。',
+    testFn: (arg) => testGithubConnection(arg),
+    pushFn: pushAllToGithub,
+    pullFn: pullFromGithub,
+    syncFn: syncGithubBidirectional,
+    testSuccessMsg: 'GitHub 仓库连接正常。',
+  },
+};
 
 function refreshCloudState() {
   activeCloudProvider.value = getActiveCloudProvider();
@@ -502,394 +579,348 @@ function setCloudProvider(p) {
   soundEngine.playClick();
 }
 
-const isTidbActive = computed(() => {
-  return Boolean(isCloudSyncActive.value && activeCloudProvider.value === 'tidb' && tidbConfig.value.enabled && tidbConfig.value.connectionString.trim());
+const isTidbActive = computed(() =>
+  Boolean(isCloudSyncActive.value && activeCloudProvider.value === 'tidb' && tidbConfig.value.enabled && tidbConfig.value.connectionString.trim())
+);
+
+const isNeonActive = computed(() =>
+  Boolean(isCloudSyncActive.value && activeCloudProvider.value === 'neon' && neonConfig.value.enabled && neonConfig.value.connectionString.trim())
+);
+
+const isGithubActive = computed(() =>
+  Boolean(isCloudSyncActive.value && activeCloudProvider.value === 'github' && githubConfig.value.enabled && hasGithubCredentials(githubConfig.value))
+);
+
+const hasGithubConfigReady = computed(() => hasGithubCredentials(githubConfig.value));
+
+const hasReusableImageGithub = computed(() => {
+  const imgGh = storageConfig.value?.providers?.github;
+  return Boolean(imgGh && String(imgGh.token || '').trim() && String(imgGh.owner || '').trim() && String(imgGh.repo || '').trim());
 });
 
-const isNeonActive = computed(() => {
-  return Boolean(isCloudSyncActive.value && activeCloudProvider.value === 'neon' && neonConfig.value.enabled);
+const currentCloudPanel = computed(() => {
+  const id = cloudProvider.value;
+  if (id === 'github') {
+    return {
+      id: 'github',
+      active: isGithubActive.value,
+      hasCred: hasGithubConfigReady.value,
+      config: githubConfig.value,
+      syncResult: githubSyncResult.value,
+      syncMsg: githubSyncMsg.value,
+      autoDesc: '停止编辑约 2 秒后同步到 GitHub 仓库。',
+      inactiveDesc: !hasGithubConfigReady.value ? '请先填写 GitHub Token 与仓库信息。' : '启用后开始同步到 GitHub 仓库。',
+      activeDesc: '文档与分组会同步到你的 GitHub 仓库。',
+      pushDesc: '将本地全部文档与分组完整备份到仓库。',
+      pullDesc: '从 GitHub 仓库拉取并还原文档与分组。',
+    };
+  }
+  if (id === 'neon') {
+    const hasCred = Boolean(neonConfig.value.connectionString.trim());
+    return {
+      id: 'neon',
+      active: isNeonActive.value,
+      hasCred,
+      config: neonConfig.value,
+      syncResult: neonSyncResult.value,
+      syncMsg: neonSyncMsg.value,
+      autoDesc: '停止编辑约 2 秒后保存到云端。',
+      inactiveDesc: !hasCred ? '请先填写自己的数据库连接地址。' : '启用后开始同步到你的数据库。',
+      activeDesc: '内容会同步到你的数据库。',
+      pushDesc: '将此设备上的内容完整备份到云端。',
+      pullDesc: '将云端内容恢复到此设备。',
+    };
+  }
+  const hasCred = Boolean(tidbConfig.value.connectionString.trim());
+  return {
+    id: 'tidb',
+    active: isTidbActive.value,
+    hasCred,
+    config: tidbConfig.value,
+    syncResult: tidbSyncResult.value,
+    syncMsg: tidbSyncMsg.value,
+    autoDesc: '停止编辑约 2 秒后保存到云端。',
+    inactiveDesc: !hasCred ? '请先填写自己的数据库连接地址。' : '启用后开始同步到你的数据库。',
+    activeDesc: '内容会同步到你的数据库。',
+    pushDesc: '将此设备上的内容完整备份到云端。',
+    pullDesc: '将云端内容恢复到此设备。',
+  };
 });
+
+function handleReuseImageGithubConfig() {
+  const imgGh = storageConfig.value?.providers?.github || {};
+  soundEngine.playClick();
+  githubConfig.value.token = String(imgGh.token || '').trim();
+  githubConfig.value.owner = String(imgGh.owner || '').trim();
+  githubConfig.value.repo = String(imgGh.repo || '').trim();
+  githubConfig.value.branch = String(imgGh.branch || '').trim();
+  if (!githubConfig.value.basePath.trim()) {
+    githubConfig.value.basePath = 'notes';
+  }
+  githubTestResult.value = '';
+  githubTestMsg.value = '';
+  githubRepoInfo.value = null;
+}
 
 function handleActivateProvider(p) {
-  if (p === 'tidb' && !tidbConfig.value.connectionString.trim()) return;
+  const meta = CLOUD_PROVIDER_UI[p];
+  if (!meta || !meta.hasCredentials()) return;
   soundEngine.playClick();
-  if (p === 'tidb') {
-    tidbConfig.value.enabled = true;
-    neonConfig.value.enabled = false;
-    saveTidbConfig({ ...tidbConfig.value, enabled: true });
-    saveNeonConfig({ ...neonConfig.value, enabled: false });
-    setActiveCloudProvider('tidb', true);
-    activeCloudProvider.value = 'tidb';
-  } else if (p === 'neon') {
-    neonConfig.value.enabled = true;
-    tidbConfig.value.enabled = false;
-    saveNeonConfig({ ...neonConfig.value, enabled: true });
-    saveTidbConfig({ ...tidbConfig.value, enabled: false });
-    setActiveCloudProvider('neon', true);
-    activeCloudProvider.value = 'neon';
+  isLoadingCloudConfigs = true;
+  try {
+    for (const [id, entry] of Object.entries(CLOUD_PROVIDER_UI)) {
+      const enabled = id === p;
+      entry.configRef.value.enabled = enabled;
+      entry.saveConfig({ ...entry.configRef.value, enabled });
+    }
+    setActiveCloudProvider(p, true);
+    activeCloudProvider.value = p;
+    isCloudSyncActive.value = isCloudSyncEnabled();
+    soundEngine.playChime();
+  } finally {
+    isLoadingCloudConfigs = false;
   }
-  isCloudSyncActive.value = isCloudSyncEnabled();
-  soundEngine.playChime();
 }
 
 function handleDeactivateProvider(p) {
+  const meta = CLOUD_PROVIDER_UI[p];
+  if (!meta) return;
   soundEngine.playClick();
-  if (p === 'tidb') {
-    tidbConfig.value.enabled = false;
-    saveTidbConfig({ ...tidbConfig.value, enabled: false });
-  } else if (p === 'neon') {
-    neonConfig.value.enabled = false;
-    saveNeonConfig({ ...neonConfig.value, enabled: false });
+  isLoadingCloudConfigs = true;
+  try {
+    meta.configRef.value.enabled = false;
+    meta.saveConfig({ ...meta.configRef.value, enabled: false });
+    disableAllCloudSync();
+    isCloudSyncActive.value = false;
+  } finally {
+    isLoadingCloudConfigs = false;
   }
-  disableAllCloudSync();
-  isCloudSyncActive.value = false;
 }
 
 function handleToggleCurrentProvider(p) {
-  const isActive = (p === 'tidb' ? isTidbActive.value : isNeonActive.value);
-  if (isActive) {
+  const activeMap = { tidb: isTidbActive.value, neon: isNeonActive.value, github: isGithubActive.value };
+  if (activeMap[p]) {
     handleDeactivateProvider(p);
   } else {
     handleActivateProvider(p);
   }
 }
 
-function loadTidbConfig() {
-  tidbConfig.value = getTidbConfig();
-}
+function loadTidbConfig() { tidbConfig.value = getTidbConfig(); }
+function loadNeonConfig() { neonConfig.value = getNeonConfig(); }
+function loadGithubConfig() { githubConfig.value = getGithubConfig(); }
 
-function loadNeonConfig() {
-  neonConfig.value = getNeonConfig();
-}
-const loadNeonState = loadNeonConfig;
-
-watch(tidbConfig, (newVal) => {
-  if (newVal) {
-    saveTidbConfig({ ...newVal });
-    if (newVal.enabled && neonConfig.value.enabled) {
-      neonConfig.value.enabled = false;
-      saveNeonConfig({ ...neonConfig.value, enabled: false });
-      setActiveCloudProvider('tidb', true);
-      activeCloudProvider.value = 'tidb';
+function setupProviderWatch(providerId) {
+  const meta = CLOUD_PROVIDER_UI[providerId];
+  watch(meta.configRef, (newVal) => {
+    if (!newVal || isLoadingCloudConfigs) return;
+    meta.saveConfig({ ...newVal });
+    if (newVal.enabled) {
+      isLoadingCloudConfigs = true;
+      try {
+        for (const [otherId, otherMeta] of Object.entries(CLOUD_PROVIDER_UI)) {
+          if (otherId !== providerId && otherMeta.configRef.value.enabled) {
+            otherMeta.configRef.value.enabled = false;
+            otherMeta.saveConfig({ ...otherMeta.configRef.value, enabled: false });
+          }
+        }
+        setActiveCloudProvider(providerId, true);
+        activeCloudProvider.value = providerId;
+      } finally {
+        isLoadingCloudConfigs = false;
+      }
     }
     isCloudSyncActive.value = isCloudSyncEnabled();
-  }
-}, { deep: true });
+  }, { deep: true });
+}
 
-watch(neonConfig, (newVal) => {
-  if (newVal) {
-    saveNeonConfig({ ...newVal });
-    if (newVal.enabled && tidbConfig.value.enabled) {
-      tidbConfig.value.enabled = false;
-      saveTidbConfig({ ...tidbConfig.value, enabled: false });
-      setActiveCloudProvider('neon', true);
-      activeCloudProvider.value = 'neon';
-    }
-    isCloudSyncActive.value = isCloudSyncEnabled();
-  }
-}, { deep: true });
+setupProviderWatch('tidb');
+setupProviderWatch('neon');
+setupProviderWatch('github');
 
-async function handleTestTidb() {
-  if (!tidbConfig.value.connectionString.trim()) {
-    tidbTestResult.value = 'error';
-    tidbTestMsg.value = '请先填写自己的数据库连接地址。';
+async function handleTestCloudProvider(p) {
+  const meta = CLOUD_PROVIDER_UI[p];
+  if (!meta) return;
+  if (!meta.hasCredentials()) {
+    meta.testResult.value = 'error';
+    meta.testMsg.value = meta.missingCredMsg;
     return;
   }
-  tidbTestResult.value = 'testing';
-  tidbTestMsg.value = '';
+  meta.testResult.value = 'testing';
+  meta.testMsg.value = '';
   try {
-    const info = await testTidbConnection(tidbConfig.value.connectionString);
-    tidbTestResult.value = 'success';
-    tidbTestMsg.value = '数据库连接正常。';
-    tidbDbInfo.value = info;
+    const info = await meta.testFn(meta.getCredentialArg());
+    meta.infoRef.value = info;
+    if (p === 'github' && info?.canPush === false) {
+      meta.testResult.value = 'error';
+      meta.testMsg.value = `已读取仓库 ${info.repoFullName}，但 Token 缺乏写入权限（需 Contents: Read and write）。`;
+      return;
+    }
+    meta.testResult.value = 'success';
+    meta.testMsg.value = p === 'github'
+      ? `仓库 ${info.repoFullName} (${info.branch}${info.isEmptyRepo ? ' · 空仓库' : ''}) 连接成功。`
+      : meta.testSuccessMsg;
     soundEngine.playChime();
   } catch (err) {
-    tidbTestResult.value = 'error';
-    tidbTestMsg.value = '连接失败: ' + (err.message || '请检查 TiDB 连接串与网络');
+    meta.testResult.value = 'error';
+    meta.testMsg.value = '连接失败: ' + (err.message || '请检查配置与网络');
   }
 }
 
-function handleSaveTidb() {
-  soundEngine.playClick();
-  saveTidbConfig({ ...tidbConfig.value });
-  tidbSaveStatus.value = 'success';
-  soundEngine.playChime();
-  setTimeout(() => { tidbSaveStatus.value = ''; }, 2000);
-}
+function handleClearCloudProvider(p) {
+  const meta = CLOUD_PROVIDER_UI[p];
+  if (!meta) return;
+  const activeMap = { tidb: isTidbActive.value, neon: isNeonActive.value, github: isGithubActive.value };
+  if (activeMap[p]) handleDeactivateProvider(p);
 
-function handleClearTidbConnection() {
-  if (isTidbActive.value) handleDeactivateProvider('tidb');
-  tidbConfig.value.connectionString = '';
-  tidbConfig.value.enabled = false;
-  saveTidbConfig({ ...tidbConfig.value });
-  tidbTestResult.value = '';
-  tidbTestMsg.value = '';
-  tidbDbInfo.value = null;
+  isLoadingCloudConfigs = true;
+  try {
+    if (p === 'github') {
+      meta.configRef.value.token = '';
+      meta.configRef.value.owner = '';
+      meta.configRef.value.repo = '';
+      meta.configRef.value.branch = '';
+      meta.configRef.value.basePath = '';
+    } else {
+      meta.configRef.value.connectionString = '';
+    }
+    meta.configRef.value.enabled = false;
+    meta.saveConfig({ ...meta.configRef.value });
+  } finally {
+    isLoadingCloudConfigs = false;
+  }
+  meta.testResult.value = '';
+  meta.testMsg.value = '';
+  meta.infoRef.value = null;
   isCloudSyncActive.value = isCloudSyncEnabled();
 }
 
-async function handlePushToTidb() {
-  if (!tidbConfig.value.connectionString.trim()) return;
+function applySyncedPayload(res) {
+  saveDocuments(res.docs || []);
+  saveGroups(res.groups || []);
+  if (res.histories && res.histories.length > 0) {
+    saveAllDocSnapshots(res.histories);
+  }
+  if (res.customThemes && res.customThemes.length > 0) {
+    mergeCustomThemes(res.customThemes);
+  }
+  emit('sync-complete', {
+    docs: res.docs || [],
+    groups: res.groups || [],
+    histories: res.histories || [],
+    customThemes: res.customThemes || [],
+  });
+}
+
+async function handlePushCloudProvider(p) {
+  const meta = CLOUD_PROVIDER_UI[p];
+  if (!meta || !meta.hasCredentials()) {
+    if (meta) {
+      meta.syncResult.value = 'error';
+      meta.syncMsg.value = meta.missingCredMsg;
+    }
+    return;
+  }
+
   const ok = await showConfirm({
-    title: '全量备份到 TiDB 云端',
-    message: '确认将本地全部文档、分组、历史版本和自定义主题完整备份至 TiDB Cloud 吗？云端已有记录将被更新。',
-    confirmText: '开始备份'
+    title: `全量备份到 ${meta.targetLabel}`,
+    message: `确认将本地全部文档、分组、历史版本和自定义主题完整备份至 ${meta.label} 吗？云端已有记录将被更新。`,
+    confirmText: '开始备份',
   });
   if (!ok) return;
 
-  tidbSyncResult.value = 'syncing';
-  tidbSyncMsg.value = '正在上传数据至 TiDB 云端...';
+  meta.syncResult.value = 'syncing';
+  meta.syncMsg.value = `正在上传数据至 ${meta.targetLabel}...`;
   try {
     const localDocs = loadDocuments();
     const localGroups = loadGroups();
     const localHistories = getAllDocSnapshots();
     const localThemes = loadCustomThemes();
-    const res = await pushAllToTidb(
-      tidbConfig.value.connectionString,
+    const res = await meta.pushFn(
+      meta.getCredentialArg(),
       localDocs,
       localGroups,
       localHistories,
       localThemes
     );
-    tidbSyncResult.value = 'success';
-    tidbSyncMsg.value = `备份完成！成功上传 ${res.pushedDocs} 篇文档，${res.pushedGroups} 个分组，${res.pushedHistories} 个历史版本，${res.pushedThemes} 个自定义主题。`;
+    meta.syncResult.value = 'success';
+    meta.syncMsg.value = `备份完成！成功上传 ${res.pushedDocs} 篇文档，${res.pushedGroups} 个分组，${res.pushedHistories} 个历史版本，${res.pushedThemes} 个自定义主题。`;
     soundEngine.playChime();
     emit('sync-complete', {
       docs: localDocs,
       groups: localGroups,
       histories: localHistories,
-      customThemes: localThemes
+      customThemes: localThemes,
     });
   } catch (err) {
-    tidbSyncResult.value = 'error';
-    tidbSyncMsg.value = '备份失败: ' + (err.message || '网络连接超时');
+    meta.syncResult.value = 'error';
+    meta.syncMsg.value = '备份失败: ' + (err.message || '网络连接超时');
   }
 }
 
-async function handlePullFromTidb() {
-  if (!tidbConfig.value.connectionString.trim()) return;
+async function handlePullCloudProvider(p) {
+  const meta = CLOUD_PROVIDER_UI[p];
+  if (!meta || !meta.hasCredentials()) {
+    if (meta) {
+      meta.syncResult.value = 'error';
+      meta.syncMsg.value = meta.missingCredMsg;
+    }
+    return;
+  }
+
   const ok = await showConfirm({
-    title: '从 TiDB 云端还原数据',
-    message: '⚠️ 此操作将从 TiDB Cloud 拉取所有云端文档、分组、历史版本及自定义主题并合并更新本地，确定继续吗？',
+    title: `从 ${meta.targetLabel} 还原数据`,
+    message: `⚠️ 此操作将从 ${meta.label} 拉取所有云端文档、分组、历史版本及自定义主题并更新本地，确定继续吗？`,
     confirmText: '立即拉取',
-    danger: true
+    danger: true,
   });
   if (!ok) return;
 
-  tidbSyncResult.value = 'syncing';
-  tidbSyncMsg.value = '正在从 TiDB 云端下载最新数据...';
+  meta.syncResult.value = 'syncing';
+  meta.syncMsg.value = `正在从 ${meta.targetLabel} 下载最新数据...`;
   try {
-    const { docs, groups, histories, customThemes } = await pullFromTidb(tidbConfig.value.connectionString);
-    saveDocuments(docs);
-    saveGroups(groups);
-    if (histories && histories.length > 0) {
-      saveAllDocSnapshots(histories);
-    }
-    if (customThemes && customThemes.length > 0) {
-      mergeCustomThemes(customThemes);
-    }
-    tidbSyncResult.value = 'success';
-    tidbSyncMsg.value = `还原成功！共恢复 ${docs.length} 篇文档，${groups.length} 个分组，${histories.length} 个历史版本，${customThemes.length} 个自定义主题。`;
+    const res = await meta.pullFn(meta.getCredentialArg());
+    applySyncedPayload(res);
+    meta.syncResult.value = 'success';
+    meta.syncMsg.value = `还原成功！共恢复 ${res.docs.length} 篇文档，${res.groups.length} 个分组，${res.histories.length} 个历史版本，${res.customThemes.length} 个自定义主题。`;
     soundEngine.playChime();
-    emit('sync-complete', { docs, groups, histories, customThemes });
   } catch (err) {
-    tidbSyncResult.value = 'error';
-    tidbSyncMsg.value = '拉取失败: ' + (err.message || '网络连接超时');
+    meta.syncResult.value = 'error';
+    meta.syncMsg.value = '拉取失败: ' + (err.message || '网络连接超时');
   }
 }
 
-async function handleTwoWaySyncTidb() {
-  if (!tidbConfig.value.connectionString.trim()) return;
-  tidbSyncResult.value = 'syncing';
-  tidbSyncMsg.value = '正在执行 TiDB 双向时间戳增量同步...';
+async function handleTwoWaySyncProvider(p) {
+  const meta = CLOUD_PROVIDER_UI[p];
+  if (!meta || !meta.hasCredentials()) {
+    if (meta) {
+      meta.syncResult.value = 'error';
+      meta.syncMsg.value = meta.missingCredMsg;
+    }
+    return;
+  }
+
+  meta.syncResult.value = 'syncing';
+  meta.syncMsg.value = `正在执行 ${meta.label} 双向增量同步...`;
   try {
     const localDocs = loadDocuments();
     const localGroups = loadGroups();
     const localHistories = getAllDocSnapshots();
     const localThemes = loadCustomThemes();
-    const res = await syncTidbBidirectional(
-      tidbConfig.value.connectionString,
+    const res = await meta.syncFn(
+      meta.getCredentialArg(),
       localDocs,
       localGroups,
       localHistories,
       localThemes
     );
-    saveDocuments(res.docs);
-    saveGroups(res.groups);
-    if (res.histories && res.histories.length > 0) {
-      saveAllDocSnapshots(res.histories);
-    }
-    if (res.customThemes && res.customThemes.length > 0) {
-      mergeCustomThemes(res.customThemes);
-    }
-    tidbSyncResult.value = 'success';
-    tidbSyncMsg.value = `同步成功！合并后文档: ${res.docs.length} 篇，分组: ${res.groups.length} 个，历史版本: ${res.histories.length} 个，自定义主题: ${res.customThemes.length} 个。`;
-    soundEngine.playChime();
-    emit('sync-complete', {
-      docs: res.docs,
-      groups: res.groups,
-      histories: res.histories,
-      customThemes: res.customThemes
-    });
-  } catch (err) {
-    tidbSyncResult.value = 'error';
-    tidbSyncMsg.value = '同步失败: ' + (err.message || '网络错误');
-  }
-}
-
-async function handleTestNeon() {
-  neonTestResult.value = 'testing';
-  neonTestMsg.value = '';
-  try {
-    const info = await testNeonConnection(neonConfig.value.connectionString);
-    neonTestResult.value = 'success';
-    neonTestMsg.value = '数据库连接正常。';
-    neonDbInfo.value = info;
+    applySyncedPayload(res);
+    meta.syncResult.value = 'success';
+    meta.syncMsg.value = `同步成功！合并后文档: ${res.docs.length} 篇，分组: ${res.groups.length} 个，历史版本: ${res.histories.length} 个，自定义主题: ${res.customThemes.length} 个。`;
     soundEngine.playChime();
   } catch (err) {
-    neonTestResult.value = 'error';
-    neonTestMsg.value = '连接失败: ' + (err.message || '请检查数据库连接串与网络');
-  }
-}
-
-function handleSaveNeon() {
-  soundEngine.playClick();
-  saveNeonConfig({ ...neonConfig.value });
-  neonSaveStatus.value = 'success';
-  soundEngine.playChime();
-  setTimeout(() => { neonSaveStatus.value = ''; }, 2000);
-}
-
-function handleClearNeonConnection() {
-  if (isNeonActive.value) handleDeactivateProvider('neon');
-  neonConfig.value.connectionString = '';
-  neonConfig.value.enabled = false;
-  saveNeonConfig({ ...neonConfig.value });
-  neonTestResult.value = '';
-  neonTestMsg.value = '';
-  neonDbInfo.value = null;
-  isCloudSyncActive.value = isCloudSyncEnabled();
-}
-
-async function handlePushToNeon() {
-  if (!neonConfig.value.connectionString) {
-    neonSyncResult.value = 'error';
-    neonSyncMsg.value = '请先填写 Neon 数据库连接串';
-    return;
-  }
-  const ok = await showConfirm({
-    title: '全量备份到云端',
-    message: '确认将本地全部文档、分组、历史版本和自定义主题完整备份至 Neon 云数据库吗？云端已有记录将被更新。',
-    confirmText: '开始备份'
-  });
-  if (!ok) return;
-
-  neonSyncResult.value = 'syncing';
-  neonSyncMsg.value = '正在上传数据至 Neon 云端...';
-  try {
-    const localDocs = loadDocuments();
-    const localGroups = loadGroups();
-    const localHistories = getAllDocSnapshots();
-    const localThemes = loadCustomThemes();
-    const res = await pushAllToNeon(
-      neonConfig.value.connectionString,
-      localDocs,
-      localGroups,
-      localHistories,
-      localThemes
-    );
-    neonSyncResult.value = 'success';
-    neonSyncMsg.value = `备份完成！成功上传 ${res.pushedDocs} 篇文档，${res.pushedGroups} 个分组，${res.pushedHistories} 个历史版本，${res.pushedThemes} 个自定义主题。`;
-    soundEngine.playChime();
-    emit('sync-complete', {
-      docs: localDocs,
-      groups: localGroups,
-      histories: localHistories,
-      customThemes: localThemes
-    });
-  } catch (err) {
-    neonSyncResult.value = 'error';
-    neonSyncMsg.value = '备份失败: ' + (err.message || '网络连接超时');
-  }
-}
-
-async function handlePullFromNeon() {
-  if (!neonConfig.value.connectionString) {
-    neonSyncResult.value = 'error';
-    neonSyncMsg.value = '请先填写 Neon 数据库连接串';
-    return;
-  }
-  const ok = await showConfirm({
-    title: '从云端还原数据',
-    message: '⚠️ 此操作将从 Neon 数据库拉取所有云端文档、分组、历史版本及自定义主题并合并更新本地，确定继续吗？',
-    confirmText: '立即拉取',
-    danger: true
-  });
-  if (!ok) return;
-
-  neonSyncResult.value = 'syncing';
-  neonSyncMsg.value = '正在从 Neon 云端下载最新数据...';
-  try {
-    const { docs, groups, histories, customThemes } = await pullFromNeon(neonConfig.value.connectionString);
-    saveDocuments(docs);
-    saveGroups(groups);
-    if (histories && histories.length > 0) {
-      saveAllDocSnapshots(histories);
-    }
-    if (customThemes && customThemes.length > 0) {
-      mergeCustomThemes(customThemes);
-    }
-    neonSyncResult.value = 'success';
-    neonSyncMsg.value = `还原成功！共恢复 ${docs.length} 篇文档，${groups.length} 个分组，${histories.length} 个历史版本，${customThemes.length} 个自定义主题。`;
-    soundEngine.playChime();
-    emit('sync-complete', { docs, groups, histories, customThemes });
-  } catch (err) {
-    neonSyncResult.value = 'error';
-    neonSyncMsg.value = '拉取失败: ' + (err.message || '网络连接超时');
-  }
-}
-
-async function handleTwoWaySyncNeon() {
-  if (!neonConfig.value.connectionString) {
-    neonSyncResult.value = 'error';
-    neonSyncMsg.value = '请先填写 Neon 数据库连接串';
-    return;
-  }
-
-  neonSyncResult.value = 'syncing';
-  neonSyncMsg.value = '正在执行双向时间戳增量同步...';
-  try {
-    const localDocs = loadDocuments();
-    const localGroups = loadGroups();
-    const localHistories = getAllDocSnapshots();
-    const localThemes = loadCustomThemes();
-    const res = await syncNeonBidirectional(
-      neonConfig.value.connectionString,
-      localDocs,
-      localGroups,
-      localHistories,
-      localThemes
-    );
-    saveDocuments(res.docs);
-    saveGroups(res.groups);
-    if (res.histories && res.histories.length > 0) {
-      saveAllDocSnapshots(res.histories);
-    }
-    if (res.customThemes && res.customThemes.length > 0) {
-      mergeCustomThemes(res.customThemes);
-    }
-    neonSyncResult.value = 'success';
-    neonSyncMsg.value = `同步成功！文档: ${res.stats.totalDocs} 篇，分组: ${res.stats.totalGroups} 个，历史版本: ${res.stats.totalHistories} 个，自定义主题: ${res.stats.totalThemes} 个。`;
-    soundEngine.playChime();
-    emit('sync-complete', {
-      docs: res.docs,
-      groups: res.groups,
-      histories: res.histories,
-      customThemes: res.customThemes
-    });
-  } catch (err) {
-    neonSyncResult.value = 'error';
-    neonSyncMsg.value = '同步失败: ' + (err.message || '网络错误');
+    meta.syncResult.value = 'error';
+    meta.syncMsg.value = '同步失败: ' + (err.message || '网络错误');
   }
 }
 
@@ -970,8 +1001,14 @@ watch(() => props.isOpen, (newVal) => {
   if (newVal) {
     loadConfigFromExtension();
     loadStorageConfig();
-    loadTidbConfig();
-    loadNeonConfig();
+    isLoadingCloudConfigs = true;
+    try {
+      loadTidbConfig();
+      loadNeonConfig();
+      loadGithubConfig();
+    } finally {
+      isLoadingCloudConfigs = false;
+    }
     refreshCloudState();
     cloudProvider.value = getActiveCloudProvider();
     tidbTestResult.value = '';
@@ -982,6 +1019,10 @@ watch(() => props.isOpen, (newVal) => {
     neonTestMsg.value = '';
     neonSyncResult.value = '';
     neonSyncMsg.value = '';
+    githubTestResult.value = '';
+    githubTestMsg.value = '';
+    githubSyncResult.value = '';
+    githubSyncMsg.value = '';
     storageTestResult.value = '';
     storageTestMsg.value = '';
     soundMuted.value = soundEngine.getMuteState();
@@ -1012,6 +1053,7 @@ const handleSave = () => {
   }
   if (tidbConfig.value) saveTidbConfig({ ...tidbConfig.value });
   if (neonConfig.value) saveNeonConfig({ ...neonConfig.value });
+  if (githubConfig.value) saveGithubConfig({ ...githubConfig.value });
 
   if (isExtensionConnected.value) {
     // Send to extension via message bridge
@@ -1173,14 +1215,14 @@ const supportsSilent = (id) => {
               <span class="tab-label">图床设置</span>
             </button>
 
-            <!-- 云端数据库同步 Tab (TiDB & Neon) -->
+            <!-- 云端同步 Tab (TiDB & Neon & GitHub) -->
             <button
               class="platform-tab-btn cloud-tab-btn"
               :class="{ 'is-active': activeTab === 'cloud' || activeTab === 'neon' }"
               @click="selectPlatform('cloud')"
             >
-              <Database size="14" class="cloud-indicator-icon" />
-              <span class="tab-label">云端数据库同步</span>
+              <Cloud size="14" class="cloud-indicator-icon" />
+              <span class="tab-label">云端同步</span>
               <span v-if="isCloudSyncEnabled()" class="cloud-active-dot" title="云端同步已开启"></span>
             </button>
 
@@ -1342,7 +1384,7 @@ const supportsSilent = (id) => {
           </div>
         </div>
 
-        <!-- Cloud Database Sync View (TiDB & Neon) -->
+        <!-- Cloud Sync View (TiDB & Neon & GitHub) -->
         <div class="settings-main-form cloud-sync-container" v-else-if="activeTab === 'cloud' || activeTab === 'neon'">
           
           <!-- 1. Top Channel Segmented Navigation -->
@@ -1359,7 +1401,7 @@ const supportsSilent = (id) => {
                 </div>
                 <div class="tab-text-wrap">
                   <span class="tab-name">TiDB Cloud</span>
-                    <span class="tab-sub">MySQL</span>
+                  <span class="tab-sub">MySQL</span>
                 </div>
               </button>
 
@@ -1374,40 +1416,67 @@ const supportsSilent = (id) => {
                 </div>
                 <div class="tab-text-wrap">
                   <span class="tab-name">Neon Postgres</span>
-                    <span class="tab-sub">PostgreSQL</span>
+                  <span class="tab-sub">PostgreSQL</span>
+                </div>
+              </button>
+
+              <button 
+                type="button"
+                class="cloud-nav-tab"
+                :class="{ 'is-active': cloudProvider === 'github' }"
+                @click="setCloudProvider('github')"
+              >
+                <div class="tab-icon-wrap github-color">
+                  <GitBranch size="15" />
+                </div>
+                <div class="tab-text-wrap">
+                  <span class="tab-name">GitHub</span>
+                  <span class="tab-sub">代码仓库</span>
                 </div>
               </button>
             </div>
           </div>
 
-          <!-- ─────────── TiDB Cloud Panel ─────────── -->
-          <div v-if="cloudProvider === 'tidb'" class="cloud-body-section">
-            
+          <div class="cloud-body-section">
+            <!-- 2. Shared Sync Toggle & Auto-Sync Card -->
             <div class="cloud-switch-card">
               <div class="cloud-sync-state-row">
                 <div class="switch-card-info">
-                  <div class="switch-title">云端同步 <span class="sync-state-label" :class="{ 'is-active': isTidbActive }">{{ isTidbActive ? '已启用' : (tidbConfig.connectionString.trim() ? '未启用' : '待配置') }}</span></div>
-                  <div class="switch-desc">{{ !tidbConfig.connectionString.trim() ? '请先填写自己的数据库连接地址。' : (isTidbActive ? '内容会同步到你的数据库。' : '启用后开始同步到你的数据库。') }}</div>
+                  <div class="switch-title">
+                    云端同步
+                    <span class="sync-state-label" :class="{ 'is-active': currentCloudPanel.active }">
+                      {{ currentCloudPanel.active ? '已启用' : (currentCloudPanel.hasCred ? '未启用' : '待配置') }}
+                    </span>
+                  </div>
+                  <div class="switch-desc">
+                    {{ currentCloudPanel.active ? currentCloudPanel.activeDesc : currentCloudPanel.inactiveDesc }}
+                  </div>
                 </div>
-                <button type="button" class="sync-state-button" :class="{ 'is-active': isTidbActive }" :disabled="!isTidbActive && !tidbConfig.connectionString.trim()" @click="handleToggleCurrentProvider('tidb')">
-                  {{ isTidbActive ? '停用' : (tidbConfig.connectionString.trim() ? '启用同步' : '待配置') }}
+                <button
+                  type="button"
+                  class="sync-state-button"
+                  :class="{ 'is-active': currentCloudPanel.active }"
+                  :disabled="!currentCloudPanel.active && !currentCloudPanel.hasCred"
+                  @click="handleToggleCurrentProvider(cloudProvider)"
+                >
+                  {{ currentCloudPanel.active ? '停用' : (currentCloudPanel.hasCred ? '启用同步' : '待配置') }}
                 </button>
               </div>
               <div class="sync-settings-divider"></div>
               <div class="cloud-sync-auto-row">
                 <div class="switch-card-info">
                   <div class="switch-title">编辑后自动同步</div>
-                  <div class="switch-desc">停止编辑约 2 秒后保存到云端。</div>
+                  <div class="switch-desc">{{ currentCloudPanel.autoDesc }}</div>
                 </div>
                 <label class="modern-switch">
-                  <input type="checkbox" v-model="tidbConfig.autoSync" :disabled="!isTidbActive" />
+                  <input type="checkbox" v-model="currentCloudPanel.config.autoSync" :disabled="!currentCloudPanel.active" />
                   <span class="slider"></span>
                 </label>
               </div>
             </div>
 
-            <!-- Connection URI Configuration Card -->
-            <div class="cloud-config-card">
+            <!-- 3A. TiDB Cloud Connection Card -->
+            <div v-if="cloudProvider === 'tidb'" class="cloud-config-card">
               <div class="config-card-header">
                 <div class="header-title-wrap">
                   <Database size="14" class="text-accent" />
@@ -1415,7 +1484,7 @@ const supportsSilent = (id) => {
                 </div>
                 <div class="connection-header-actions">
                   <button
-                    @click="handleTestTidb"
+                    @click="handleTestCloudProvider('tidb')"
                     class="btn-cloud-test connection-test-btn"
                     :class="tidbTestResult"
                     :disabled="tidbTestResult === 'testing' || !tidbConfig.connectionString.trim()"
@@ -1424,7 +1493,7 @@ const supportsSilent = (id) => {
                     <Wifi v-else size="13" />
                     <span>{{ tidbTestResult === 'testing' ? '测试中' : tidbTestResult === 'success' ? '已连接' : tidbTestResult === 'error' ? '重试' : '测试连接' }}</span>
                   </button>
-                  <button v-if="tidbConfig.connectionString" type="button" class="connection-clear-btn" @click="handleClearTidbConnection">
+                  <button v-if="tidbConfig.connectionString" type="button" class="connection-clear-btn" @click="handleClearCloudProvider('tidb')">
                     清空
                   </button>
                 </div>
@@ -1441,7 +1510,7 @@ const supportsSilent = (id) => {
                   autocomplete="off"
                 />
               </div>
-              
+
               <div class="config-helper-row">
                 <span class="helper-syntax">
                   <template v-if="!tidbConfig.connectionString">
@@ -1464,109 +1533,8 @@ const supportsSilent = (id) => {
               </div>
             </div>
 
-            <!-- Cloud Data Operations Section -->
-            <details class="cloud-ops-box">
-              <summary class="ops-header">
-                <Cloud size="15" class="text-primary" />
-                <span class="ops-title">更多数据操作</span>
-                <ChevronDown size="15" class="ops-chevron" />
-              </summary>
-
-              <div class="ops-cards-grid">
-                <!-- 1. Bidirectional Sync -->
-                <div class="ops-card card-sync">
-                  <div class="ops-card-top">
-                    <div class="ops-icon-wrap icon-blue">
-                      <RefreshCw size="16" />
-                    </div>
-                    <div class="ops-card-title">双向同步</div>
-                  </div>
-                  <p class="ops-card-desc">合并本地和云端的最新内容。</p>
-                  <button 
-                    @click="handleTwoWaySyncTidb" 
-                    class="ops-action-btn btn-blue"
-                    :disabled="tidbSyncResult === 'syncing' || !tidbConfig.connectionString.trim()"
-                  >
-                    <RefreshCw size="13" :class="{ 'animate-spin': tidbSyncResult === 'syncing' }" />
-                    <span>立即同步</span>
-                  </button>
-                </div>
-
-                <!-- 2. Push Backup -->
-                <div class="ops-card card-push">
-                  <div class="ops-card-top">
-                    <div class="ops-icon-wrap icon-green">
-                      <FolderUp size="16" />
-                    </div>
-                    <div class="ops-card-title">备份到云端</div>
-                  </div>
-                  <p class="ops-card-desc">将此设备上的内容完整备份到云端。</p>
-                  <button 
-                    @click="handlePushToTidb" 
-                    class="ops-action-btn btn-green"
-                    :disabled="tidbSyncResult === 'syncing' || !tidbConfig.connectionString.trim()"
-                  >
-                    <FolderUp size="13" />
-                    <span>开始备份</span>
-                  </button>
-                </div>
-
-                <!-- 3. Pull Restore -->
-                <div class="ops-card card-pull">
-                  <div class="ops-card-top">
-                    <div class="ops-icon-wrap icon-purple">
-                      <FolderDown size="16" />
-                    </div>
-                    <div class="ops-card-title">从云端恢复</div>
-                  </div>
-                  <p class="ops-card-desc">将云端内容恢复到此设备。</p>
-                  <button 
-                    @click="handlePullFromTidb" 
-                    class="ops-action-btn btn-purple"
-                    :disabled="tidbSyncResult === 'syncing' || !tidbConfig.connectionString.trim()"
-                  >
-                    <FolderDown size="13" />
-                    <span>恢复数据</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Sync Result Toast -->
-              <div v-if="tidbSyncMsg" class="cloud-result-banner mt-3" :class="tidbSyncResult">
-                {{ tidbSyncMsg }}
-              </div>
-            </details>
-
-          </div>
-
-          <!-- ─────────── Neon Postgres Panel ─────────── -->
-          <div v-else class="cloud-body-section">
-            
-            <div class="cloud-switch-card">
-              <div class="cloud-sync-state-row">
-                <div class="switch-card-info">
-                  <div class="switch-title">云端同步 <span class="sync-state-label" :class="{ 'is-active': isNeonActive }">{{ isNeonActive ? '已启用' : '未启用' }}</span></div>
-                  <div class="switch-desc">{{ isNeonActive ? '内容会同步到云端。' : '启用后开始同步到云端。' }}</div>
-                </div>
-                <button type="button" class="sync-state-button" :class="{ 'is-active': isNeonActive }" @click="handleToggleCurrentProvider('neon')">
-                  {{ isNeonActive ? '停用' : '启用同步' }}
-                </button>
-              </div>
-              <div class="sync-settings-divider"></div>
-              <div class="cloud-sync-auto-row">
-                <div class="switch-card-info">
-                  <div class="switch-title">编辑后自动同步</div>
-                  <div class="switch-desc">停止编辑约 2 秒后保存到云端。</div>
-                </div>
-                <label class="modern-switch">
-                  <input type="checkbox" v-model="neonConfig.autoSync" :disabled="!isNeonActive" />
-                  <span class="slider"></span>
-                </label>
-              </div>
-            </div>
-
-            <!-- Connection URI Configuration Card -->
-            <div class="cloud-config-card">
+            <!-- 3B. Neon Postgres Connection Card -->
+            <div v-else-if="cloudProvider === 'neon'" class="cloud-config-card">
               <div class="config-card-header">
                 <div class="header-title-wrap">
                   <Database size="14" class="text-accent" />
@@ -1574,7 +1542,7 @@ const supportsSilent = (id) => {
                 </div>
                 <div class="connection-header-actions">
                   <button
-                    @click="handleTestNeon"
+                    @click="handleTestCloudProvider('neon')"
                     class="btn-cloud-test connection-test-btn"
                     :class="neonTestResult"
                     :disabled="neonTestResult === 'testing' || !neonConfig.connectionString.trim()"
@@ -1583,7 +1551,7 @@ const supportsSilent = (id) => {
                     <Wifi v-else size="13" />
                     <span>{{ neonTestResult === 'testing' ? '测试中' : neonTestResult === 'success' ? '已连接' : neonTestResult === 'error' ? '重试' : '测试连接' }}</span>
                   </button>
-                  <button v-if="neonConfig.connectionString" type="button" class="connection-clear-btn" @click="handleClearNeonConnection">
+                  <button v-if="neonConfig.connectionString" type="button" class="connection-clear-btn" @click="handleClearCloudProvider('neon')">
                     清空
                   </button>
                 </div>
@@ -1600,7 +1568,7 @@ const supportsSilent = (id) => {
                   autocomplete="off"
                 />
               </div>
-              
+
               <div class="config-helper-row">
                 <span class="helper-syntax">连接地址仅保存在此设备。</span>
                 <span class="helper-info">可从 Neon 控制台复制数据库连接地址。</span>
@@ -1616,16 +1584,142 @@ const supportsSilent = (id) => {
               </div>
             </div>
 
-            <!-- Cloud Data Operations Section -->
-            <details class="cloud-ops-box">
+            <!-- 3C. GitHub Repository Connection Card -->
+            <div v-else class="cloud-config-card">
+              <div class="config-card-header">
+                <div class="header-title-wrap">
+                  <GitBranch size="14" class="text-accent" />
+                  <span class="config-title">GitHub 仓库连接</span>
+                </div>
+                <div class="connection-header-actions">
+                  <button
+                    v-if="hasReusableImageGithub && !hasGithubConfigReady"
+                    type="button"
+                    class="btn-quick-fill"
+                    @click="handleReuseImageGithubConfig"
+                    title="填入图床设置中的 GitHub Token 与仓库信息"
+                  >
+                    <span>复用图床配置</span>
+                  </button>
+                  <button
+                    @click="handleTestCloudProvider('github')"
+                    class="btn-cloud-test connection-test-btn"
+                    :class="githubTestResult"
+                    :disabled="githubTestResult === 'testing' || !hasGithubConfigReady"
+                  >
+                    <RefreshCw v-if="githubTestResult === 'testing'" size="13" class="animate-spin" />
+                    <Wifi v-else size="13" />
+                    <span>{{ githubTestResult === 'testing' ? '测试中' : githubTestResult === 'success' ? '已连接' : githubTestResult === 'error' ? '重试' : '测试连接' }}</span>
+                  </button>
+                  <button
+                    v-if="githubConfig.token || githubConfig.owner || githubConfig.repo"
+                    type="button"
+                    class="connection-clear-btn"
+                    @click="handleClearCloudProvider('github')"
+                  >
+                    清空
+                  </button>
+                </div>
+              </div>
+
+              <div class="github-config-fields">
+                <div class="github-field-item">
+                  <label class="github-field-label">GitHub Token (PAT)</label>
+                  <div class="modern-input-group">
+                    <input
+                      type="text"
+                      v-model="githubConfig.token"
+                      placeholder="填写具备仓库 Contents 读写权限的 Token (github_pat_... 或 ghp_...)"
+                      class="modern-code-input"
+                      spellcheck="false"
+                      autocomplete="off"
+                    />
+                  </div>
+                </div>
+
+                <div class="github-fields-grid">
+                  <div class="github-field-item">
+                    <label class="github-field-label">仓库拥有者 (Owner)</label>
+                    <div class="modern-input-group">
+                      <input
+                        type="text"
+                        v-model="githubConfig.owner"
+                        placeholder="用户名或组织名，如 octocat"
+                        class="modern-code-input"
+                        spellcheck="false"
+                        autocomplete="off"
+                      />
+                    </div>
+                  </div>
+                  <div class="github-field-item">
+                    <label class="github-field-label">仓库名称 (Repo)</label>
+                    <div class="modern-input-group">
+                      <input
+                        type="text"
+                        v-model="githubConfig.repo"
+                        placeholder="如 my-markdown-notes"
+                        class="modern-code-input"
+                        spellcheck="false"
+                        autocomplete="off"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="github-fields-grid">
+                  <div class="github-field-item">
+                    <label class="github-field-label">分支名称 <span class="storage-optional">可选</span></label>
+                    <div class="modern-input-group">
+                      <input
+                        type="text"
+                        v-model="githubConfig.branch"
+                        placeholder="留空自动使用仓库默认分支"
+                        class="modern-code-input"
+                        spellcheck="false"
+                        autocomplete="off"
+                      />
+                    </div>
+                  </div>
+                  <div class="github-field-item">
+                    <label class="github-field-label">同步目录 <span class="storage-optional">可选</span></label>
+                    <div class="modern-input-group">
+                      <input
+                        type="text"
+                        v-model="githubConfig.basePath"
+                        placeholder="例如 notes（留空存放在根目录）"
+                        class="modern-code-input"
+                        spellcheck="false"
+                        autocomplete="off"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="config-helper-row">
+                <span class="helper-syntax">凭证仅保存在当前设备；文档按分组目录以可读 .md 文件直接提交到仓库。</span>
+              </div>
+              <div v-if="githubTestMsg" class="connection-test-result" :class="githubTestResult">
+                <span>{{ githubTestMsg }}</span>
+                <div v-if="githubRepoInfo" class="metrics-chips">
+                  <span class="metric-chip">{{ githubRepoInfo.docCount }} 篇文档</span>
+                  <span class="metric-chip">{{ githubRepoInfo.groupCount }} 个分组</span>
+                  <span class="metric-chip">{{ githubRepoInfo.historyCount }} 个历史版本</span>
+                  <span class="metric-chip">{{ githubRepoInfo.themeCount }} 个主题</span>
+                  <span class="metric-chip">{{ githubRepoInfo.isPrivate ? '私有仓库' : '公开仓库' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- 4. Shared Cloud Data Operations Section -->
+            <details class="cloud-ops-box" :open="cloudProvider === 'github'">
               <summary class="ops-header">
                 <Cloud size="15" class="text-primary" />
-                <span class="ops-title">更多数据操作</span>
+                <span class="ops-title">{{ cloudProvider === 'github' ? '仓库推送与拉取操作' : '更多数据操作' }}</span>
                 <ChevronDown size="15" class="ops-chevron" />
               </summary>
 
               <div class="ops-cards-grid">
-                <!-- 1. Bidirectional Sync -->
                 <div class="ops-card card-sync">
                   <div class="ops-card-top">
                     <div class="ops-icon-wrap icon-blue">
@@ -1634,61 +1728,57 @@ const supportsSilent = (id) => {
                     <div class="ops-card-title">双向同步</div>
                   </div>
                   <p class="ops-card-desc">合并本地和云端的最新内容。</p>
-                  <button 
-                    @click="handleTwoWaySyncNeon" 
+                  <button
+                    @click="handleTwoWaySyncProvider(cloudProvider)"
                     class="ops-action-btn btn-blue"
-                    :disabled="neonSyncResult === 'syncing' || !neonConfig.connectionString"
+                    :disabled="currentCloudPanel.syncResult === 'syncing' || !currentCloudPanel.hasCred"
                   >
-                    <RefreshCw size="13" :class="{ 'animate-spin': neonSyncResult === 'syncing' }" />
+                    <RefreshCw size="13" :class="{ 'animate-spin': currentCloudPanel.syncResult === 'syncing' }" />
                     <span>立即同步</span>
                   </button>
                 </div>
 
-                <!-- 2. Push Backup -->
                 <div class="ops-card card-push">
                   <div class="ops-card-top">
                     <div class="ops-icon-wrap icon-green">
                       <FolderUp size="16" />
                     </div>
-                    <div class="ops-card-title">备份到云端</div>
+                    <div class="ops-card-title">{{ cloudProvider === 'github' ? '推送到仓库' : '备份到云端' }}</div>
                   </div>
-                  <p class="ops-card-desc">将此设备上的内容完整备份到云端。</p>
-                  <button 
-                    @click="handlePushToNeon" 
+                  <p class="ops-card-desc">{{ currentCloudPanel.pushDesc }}</p>
+                  <button
+                    @click="handlePushCloudProvider(cloudProvider)"
                     class="ops-action-btn btn-green"
-                    :disabled="neonSyncResult === 'syncing' || !neonConfig.connectionString"
+                    :disabled="currentCloudPanel.syncResult === 'syncing' || !currentCloudPanel.hasCred"
                   >
                     <FolderUp size="13" />
-                    <span>开始备份</span>
+                    <span>{{ cloudProvider === 'github' ? '立即推送' : '开始备份' }}</span>
                   </button>
                 </div>
 
-                <!-- 3. Pull Restore -->
                 <div class="ops-card card-pull">
                   <div class="ops-card-top">
                     <div class="ops-icon-wrap icon-purple">
                       <FolderDown size="16" />
                     </div>
-                    <div class="ops-card-title">从云端恢复</div>
+                    <div class="ops-card-title">{{ cloudProvider === 'github' ? '从仓库拉取' : '从云端恢复' }}</div>
                   </div>
-                  <p class="ops-card-desc">将云端内容恢复到此设备。</p>
-                  <button 
-                    @click="handlePullFromNeon" 
+                  <p class="ops-card-desc">{{ currentCloudPanel.pullDesc }}</p>
+                  <button
+                    @click="handlePullCloudProvider(cloudProvider)"
                     class="ops-action-btn btn-purple"
-                    :disabled="neonSyncResult === 'syncing' || !neonConfig.connectionString"
+                    :disabled="currentCloudPanel.syncResult === 'syncing' || !currentCloudPanel.hasCred"
                   >
                     <FolderDown size="13" />
-                    <span>恢复数据</span>
+                    <span>{{ cloudProvider === 'github' ? '拉取还原' : '恢复数据' }}</span>
                   </button>
                 </div>
               </div>
 
-              <!-- Sync Result Toast -->
-              <div v-if="neonSyncMsg" class="cloud-result-banner mt-3" :class="neonSyncResult">
-                {{ neonSyncMsg }}
+              <div v-if="currentCloudPanel.syncMsg" class="cloud-result-banner mt-3" :class="currentCloudPanel.syncResult">
+                {{ currentCloudPanel.syncMsg }}
               </div>
             </details>
-
           </div>
         </div>
 
@@ -1835,7 +1925,7 @@ const supportsSilent = (id) => {
             <Save v-if="saveStatus !== 'success'" size="14" />
             <span v-if="saveStatus === ''">保存配置</span>
             <span v-else-if="saveStatus === 'saving'">保存中...</span>
-            <span v-else-if="saveStatus === 'success'">{{ activeTab === 'storage' ? '图床配置已保存 ✨' : (isExtensionConnected ? '配置已同步到插件 ✨' : '配置已保存 ✨') }}</span>
+            <span v-else-if="saveStatus === 'success'">{{ activeTab === 'storage' ? '图床配置已保存 ✨' : (activeTab === 'cloud' || activeTab === 'neon') ? '云端配置已保存 ✨' : (isExtensionConnected ? '配置已同步到插件 ✨' : '配置已保存 ✨') }}</span>
             <span v-else-if="saveStatus === 'error'">保存失败</span>
           </button>
         </div>
@@ -2940,7 +3030,7 @@ const supportsSilent = (id) => {
 
 .cloud-nav-segmented {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 10px;
   background: transparent;
   padding: 0;
@@ -2951,7 +3041,8 @@ const supportsSilent = (id) => {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 10px 14px;
+  padding: 10px 12px;
+  min-width: 0;
   border-radius: 11px;
   background: var(--bg-card);
   border: 1px solid var(--border-color);
@@ -2994,6 +3085,11 @@ const supportsSilent = (id) => {
   color: #00e599;
 }
 
+.tab-icon-wrap.github-color {
+  background: rgba(15, 23, 42, 0.08);
+  color: #1e293b;
+}
+
 .cloud-nav-tab.is-active .tab-icon-wrap.tidb-color {
   background: #f97316;
   color: #ffffff;
@@ -3002,6 +3098,36 @@ const supportsSilent = (id) => {
 .cloud-nav-tab.is-active .tab-icon-wrap.neon-color {
   background: #00e599;
   color: #0f172a;
+}
+
+.cloud-nav-tab.is-active .tab-icon-wrap.github-color {
+  background: #1e293b;
+  color: #ffffff;
+}
+
+.github-config-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.github-fields-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.github-field-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.github-field-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
 }
 
 .tab-text-wrap {
@@ -4003,6 +4129,11 @@ const supportsSilent = (id) => {
   .storage-fields { gap: 11px; }
 
   .storage-actions { flex-wrap: wrap; }
+
+  .cloud-nav-segmented,
+  .github-fields-grid {
+    grid-template-columns: 1fr;
+  }
   
   .form-grid {
     grid-template-columns: 1fr !important;
