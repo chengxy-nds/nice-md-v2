@@ -1,5 +1,11 @@
 import { neon } from '@neondatabase/serverless';
 import { builtInThemeIds } from './themePresets.js';
+import {
+  loadSyncTombstones,
+  recordEntityTimestamps,
+  recordDeletedTombstone,
+  recordDeletedTombstonesBatch
+} from './syncTombstones.js';
 
 const NEON_CONFIG_KEY = 'nicemd_neon_sync_config_v1';
 const NEON_LAST_SYNC_KEY = 'nicemd_neon_last_sync_timestamp';
@@ -353,6 +359,7 @@ export async function pullFromNeon(connectionString) {
     };
   }).filter(t => t && t.id && !builtInThemeIds.has(t.id));
 
+  recordEntityTimestamps(docs, groups, histories, customThemes);
   return { docs, groups, histories, customThemes };
 }
 
@@ -520,6 +527,7 @@ export async function syncNeonBidirectional(
   if (!connectionString) throw new Error('数据库连接串为空');
   const sql = neon(connectionString.trim());
   await initNeonTables(connectionString);
+  const tombstones = loadSyncTombstones();
 
   // 1. Pull current cloud state
   const {
@@ -534,11 +542,13 @@ export async function syncNeonBidirectional(
   const cloudGroupsMap = new Map(cloudGroups.map(g => [g.id, g]));
   const mergedGroups = [];
   const groupsToUpload = [];
+  const groupIdsToDeleteInCloud = [];
   const allGroupIds = new Set([...localGroupsMap.keys(), ...cloudGroupsMap.keys()]);
 
   for (const id of allGroupIds) {
     const local = localGroupsMap.get(id);
     const cloud = cloudGroupsMap.get(id);
+    const localDeletedAt = Number(tombstones.groups?.[id]) || 0;
     if (local && cloud) {
       if ((local.updatedAt || 0) >= (cloud.updatedAt || 0)) {
         mergedGroups.push(local);
@@ -550,6 +560,11 @@ export async function syncNeonBidirectional(
       mergedGroups.push(local);
       groupsToUpload.push(local);
     } else if (!local && cloud) {
+      const cloudTs = Number(cloud.updatedAt || cloud.createdAt) || 0;
+      if (localDeletedAt >= cloudTs) {
+        groupIdsToDeleteInCloud.push(id);
+        continue;
+      }
       mergedGroups.push(cloud);
     }
   }
@@ -559,11 +574,13 @@ export async function syncNeonBidirectional(
   const cloudDocsMap = new Map(cloudDocs.map(d => [d.id, d]));
   const mergedDocs = [];
   const docsToUpload = [];
+  const docIdsToDeleteInCloud = [];
   const allDocIds = new Set([...localDocsMap.keys(), ...cloudDocsMap.keys()]);
 
   for (const id of allDocIds) {
     const local = localDocsMap.get(id);
     const cloud = cloudDocsMap.get(id);
+    const localDeletedAt = Number(tombstones.docs?.[id]) || 0;
     if (local && cloud) {
       if ((local.updatedAt || 0) >= (cloud.updatedAt || 0)) {
         mergedDocs.push(local);
@@ -575,6 +592,11 @@ export async function syncNeonBidirectional(
       mergedDocs.push(local);
       docsToUpload.push(local);
     } else if (!local && cloud) {
+      const cloudTs = Number(cloud.updatedAt || cloud.createdAt) || 0;
+      if (localDeletedAt >= cloudTs) {
+        docIdsToDeleteInCloud.push(id);
+        continue;
+      }
       mergedDocs.push(cloud);
     }
   }
@@ -584,11 +606,14 @@ export async function syncNeonBidirectional(
   const cloudHistoriesMap = new Map(cloudHistories.map(h => [h.id, h]));
   const mergedHistories = [];
   const historiesToUpload = [];
+  const historyIdsToDeleteInCloud = [];
   const allHistoryIds = new Set([...localHistoriesMap.keys(), ...cloudHistoriesMap.keys()]);
 
   for (const id of allHistoryIds) {
     const local = localHistoriesMap.get(id);
     const cloud = cloudHistoriesMap.get(id);
+    const localDeletedAt = Number(tombstones.histories?.[id]) || 0;
+    const clearedDocAt = Number(tombstones.clearedHistoryDocs?.[cloud?.docId]) || 0;
     if (local && cloud) {
       if ((local.updatedAt || local.createdAt || 0) >= (cloud.updatedAt || cloud.createdAt || 0)) {
         mergedHistories.push(local);
@@ -602,6 +627,11 @@ export async function syncNeonBidirectional(
       mergedHistories.push(local);
       historiesToUpload.push(local);
     } else if (!local && cloud) {
+      const cloudTs = Number(cloud.updatedAt || cloud.createdAt) || 0;
+      if (Math.max(localDeletedAt, clearedDocAt) >= cloudTs) {
+        historyIdsToDeleteInCloud.push(id);
+        continue;
+      }
       mergedHistories.push(cloud);
     }
   }
@@ -614,11 +644,13 @@ export async function syncNeonBidirectional(
   const cloudThemesMap = new Map(validCloudThemes.map(t => [t.id, t]));
   const mergedThemes = [];
   const themesToUpload = [];
+  const themeIdsToDeleteInCloud = [];
   const allThemeIds = new Set([...localThemesMap.keys(), ...cloudThemesMap.keys()]);
 
   for (const id of allThemeIds) {
     const local = localThemesMap.get(id);
     const cloud = cloudThemesMap.get(id);
+    const localDeletedAt = Number(tombstones.themes?.[id]) || 0;
     if (local && cloud) {
       if ((local.updatedAt || 0) >= (cloud.updatedAt || 0)) {
         mergedThemes.push(local);
@@ -630,8 +662,27 @@ export async function syncNeonBidirectional(
       mergedThemes.push(local);
       themesToUpload.push(local);
     } else if (!local && cloud) {
+      const cloudTs = Number(cloud.updatedAt || cloud.createdAt) || 0;
+      if (localDeletedAt >= cloudTs) {
+        themeIdsToDeleteInCloud.push(id);
+        continue;
+      }
       mergedThemes.push(cloud);
     }
+  }
+
+  // 1.5 Clean up stale cloud items matched by local permanent deletion tombstones
+  if (docIdsToDeleteInCloud.length > 0) {
+    await sql`DELETE FROM nicemd_documents WHERE id = ANY(${docIdsToDeleteInCloud});`;
+  }
+  if (groupIdsToDeleteInCloud.length > 0) {
+    await sql`DELETE FROM nicemd_groups WHERE id = ANY(${groupIdsToDeleteInCloud});`;
+  }
+  if (historyIdsToDeleteInCloud.length > 0) {
+    await sql`UPDATE nicemd_doc_histories SET is_deleted = TRUE, updated_at = ${Date.now()} WHERE id = ANY(${historyIdsToDeleteInCloud});`;
+  }
+  if (themeIdsToDeleteInCloud.length > 0) {
+    await sql`UPDATE nicemd_custom_themes SET is_deleted = TRUE, updated_at = ${Date.now()} WHERE id = ANY(${themeIdsToDeleteInCloud});`;
   }
 
   // 2. Upload newer local items to cloud
@@ -763,6 +814,7 @@ export async function syncNeonBidirectional(
     `;
   }
 
+  recordEntityTimestamps(mergedDocs, mergedGroups, mergedHistories, mergedThemes);
   setLastSyncTime();
 
   return {
@@ -1074,22 +1126,37 @@ export async function deleteDocInNeon(connectionString, docId) {
   }
 }
 
-export async function permanentDeleteDocInNeon(connectionString, docId) {
-  if (!connectionString || !docId) return;
+export async function permanentDeleteDocsInNeon(connectionString, docIds = []) {
+  const cleanIds = (Array.isArray(docIds) ? docIds : []).filter(Boolean);
+  if (cleanIds.length === 0) return;
+
+  recordDeletedTombstonesBatch('docs', cleanIds);
+  if (!connectionString) return;
   try {
     await ensureNeonTables(connectionString);
     const sql = neon(connectionString.trim());
-    await sql`
-      DELETE FROM nicemd_documents 
-      WHERE id = ${docId};
-    `;
+    const BATCH_SIZE = 100;
+    for (let i = 0; i < cleanIds.length; i += BATCH_SIZE) {
+      const batch = cleanIds.slice(i, i + BATCH_SIZE);
+      await sql`
+        DELETE FROM nicemd_documents 
+        WHERE id = ANY(${batch});
+      `;
+    }
   } catch (e) {
-    console.warn('[Neon Sync] Failed to permanently delete document in cloud:', e);
+    console.warn('[Neon Sync] Failed to permanently delete documents in cloud:', e);
   }
 }
 
+export function permanentDeleteDocInNeon(connectionString, docId) {
+  if (!docId) return Promise.resolve();
+  return permanentDeleteDocsInNeon(connectionString, [docId]);
+}
+
 export async function deleteGroupInNeon(connectionString, groupId) {
-  if (!connectionString || !groupId) return;
+  if (!groupId) return;
+  recordDeletedTombstone('groups', groupId);
+  if (!connectionString) return;
   try {
     await ensureNeonTables(connectionString);
     const sql = neon(connectionString.trim());
@@ -1110,7 +1177,9 @@ export async function deleteGroupInNeon(connectionString, groupId) {
 }
 
 export async function deleteHistoryInNeon(connectionString, historyId) {
-  if (!connectionString || !historyId) return;
+  if (!historyId) return;
+  recordDeletedTombstone('histories', historyId);
+  if (!connectionString) return;
   try {
     await ensureNeonTables(connectionString);
     const sql = neon(connectionString.trim());
@@ -1125,7 +1194,9 @@ export async function deleteHistoryInNeon(connectionString, historyId) {
 }
 
 export async function clearDocHistoriesInNeon(connectionString, docId) {
-  if (!connectionString || !docId) return;
+  if (!docId) return;
+  recordDeletedTombstone('clearedHistoryDocs', docId);
+  if (!connectionString) return;
   try {
     await ensureNeonTables(connectionString);
     const sql = neon(connectionString.trim());
@@ -1140,7 +1211,9 @@ export async function clearDocHistoriesInNeon(connectionString, docId) {
 }
 
 export async function deleteCustomThemeInNeon(connectionString, themeId) {
-  if (!connectionString || !themeId) return;
+  if (!themeId) return;
+  recordDeletedTombstone('themes', themeId);
+  if (!connectionString) return;
   try {
     await ensureNeonTables(connectionString);
     const sql = neon(connectionString.trim());

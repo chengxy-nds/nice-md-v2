@@ -5,23 +5,29 @@
  */
 
 import { builtInThemeIds } from './themePresets.js';
+import {
+  pruneTombstones,
+  mergeAllTombstones,
+  loadSyncTombstones as loadLocalTombstones,
+  saveSyncTombstones as saveLocalTombstones,
+  recordEntityTimestamps as recordKnownTimestamps,
+  recordDeletedTombstone as recordGithubTombstone,
+} from './syncTombstones.js';
+
+export { recordGithubTombstone };
 
 const GITHUB_CONFIG_KEY = 'nicemd_github_sync_config_v1';
 const GITHUB_LAST_SYNC_KEY = 'nicemd_github_last_sync_timestamp';
-const GITHUB_TOMBSTONE_KEY = 'nicemd_github_tombstones_v1';
 
 const GITHUB_API_BASE = 'https://api.github.com';
 const GITHUB_API_VERSION = '2022-11-28';
 const META_DIR = '.nicemd';
 const INLINE_TREE_CHAR_LIMIT = 1.5 * 1024 * 1024;
-const TOMBSTONE_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 // In-memory blob content cache keyed by Git blob SHA to avoid redundant fetches across syncs.
 const blobTextCache = new Map();
 // Cached last known remote manifest snapshot per repository key so unmodified histories/themes skip re-uploads.
 const repoSyncCache = new Map();
-// Last known updatedAt per entity (`kind:id`) so local tombstones survive system clock skew.
-const knownEntityUpdatedAt = new Map();
 
 // Serialized write mutex queue so concurrent edits/deletes never cause Git 422 ref conflicts.
 let syncTaskChain = Promise.resolve();
@@ -152,86 +158,6 @@ export function setGithubLastSyncTime(timestamp = Date.now()) {
   try {
     localStorage.setItem(GITHUB_LAST_SYNC_KEY, String(timestamp));
   } catch {}
-}
-
-// ── Local Tombstone Store (prevents resurrected permanent deletes across multi-device sync) ──
-
-function loadLocalTombstones() {
-  try {
-    const raw = localStorage.getItem(GITHUB_TOMBSTONE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      return pruneTombstones({
-        docs: parsed.docs || {},
-        groups: parsed.groups || {},
-        histories: parsed.histories || {},
-        clearedHistoryDocs: parsed.clearedHistoryDocs || {},
-        themes: parsed.themes || {},
-      });
-    }
-  } catch {}
-  return { docs: {}, groups: {}, histories: {}, clearedHistoryDocs: {}, themes: {} };
-}
-
-function saveLocalTombstones(tombstones) {
-  try {
-    localStorage.setItem(GITHUB_TOMBSTONE_KEY, JSON.stringify(pruneTombstones(tombstones)));
-  } catch {}
-}
-
-function pruneTombstones(tombstones = {}) {
-  const cutoff = Date.now() - TOMBSTONE_RETENTION_MS;
-  const cleanBucket = (bucket = {}) => {
-    const out = {};
-    for (const [id, ts] of Object.entries(bucket)) {
-      const num = Number(ts) || 0;
-      if (num > cutoff) out[id] = num;
-    }
-    return out;
-  };
-  return {
-    docs: cleanBucket(tombstones.docs),
-    groups: cleanBucket(tombstones.groups),
-    histories: cleanBucket(tombstones.histories),
-    clearedHistoryDocs: cleanBucket(tombstones.clearedHistoryDocs),
-    themes: cleanBucket(tombstones.themes),
-  };
-}
-
-function recordKnownTimestamps(docs = [], groups = [], histories = [], themes = []) {
-  for (const d of docs) if (d?.id) knownEntityUpdatedAt.set(`docs:${d.id}`, Number(d.updatedAt) || 0);
-  for (const g of groups) if (g?.id) knownEntityUpdatedAt.set(`groups:${g.id}`, Number(g.updatedAt) || 0);
-  for (const h of histories) if (h?.id) knownEntityUpdatedAt.set(`histories:${h.id}`, Number(h.updatedAt || h.createdAt) || 0);
-  for (const t of themes) if (t?.id) knownEntityUpdatedAt.set(`themes:${t.id}`, Number(t.updatedAt) || 0);
-}
-
-export function recordGithubTombstone(kind, id) {
-  if (!id || !['docs', 'groups', 'histories', 'clearedHistoryDocs', 'themes'].includes(kind)) return;
-  const tombstones = loadLocalTombstones();
-  const knownFloor = knownEntityUpdatedAt.get(`${kind}:${id}`) || 0;
-  tombstones[kind][id] = Math.max(Date.now(), knownFloor + 1);
-  saveLocalTombstones(tombstones);
-}
-
-function mergeTombstoneMaps(localMap = {}, remoteMap = {}) {
-  const merged = { ...remoteMap };
-  for (const [id, ts] of Object.entries(localMap)) {
-    const num = Number(ts) || 0;
-    if (num > (Number(merged[id]) || 0)) {
-      merged[id] = num;
-    }
-  }
-  return merged;
-}
-
-function mergeAllTombstones(local = {}, remote = {}) {
-  return {
-    docs: mergeTombstoneMaps(local.docs, remote.docs),
-    groups: mergeTombstoneMaps(local.groups, remote.groups),
-    histories: mergeTombstoneMaps(local.histories, remote.histories),
-    clearedHistoryDocs: mergeTombstoneMaps(local.clearedHistoryDocs, remote.clearedHistoryDocs),
-    themes: mergeTombstoneMaps(local.themes, remote.themes),
-  };
 }
 
 // ── Encoding & Hashing Utilities ──

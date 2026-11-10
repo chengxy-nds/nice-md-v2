@@ -1,5 +1,11 @@
 import { connect } from '@tidbcloud/serverless';
 import { builtInThemeIds } from './themePresets.js';
+import {
+  loadSyncTombstones,
+  recordEntityTimestamps,
+  recordDeletedTombstone,
+  recordDeletedTombstonesBatch
+} from './syncTombstones.js';
 
 const TIDB_CONFIG_KEY = 'nicemd_tidb_sync_config_v1';
 const TIDB_LAST_SYNC_KEY = 'nicemd_tidb_last_sync_timestamp';
@@ -636,9 +642,39 @@ export async function pullFromTidb(connectionString) {
     })
     .filter(t => t && t.id && !builtInThemeIds.has(t.id));
 
+  recordEntityTimestamps(docs, groups, histories, customThemes);
   setTidbLastSyncTime();
 
   return { docs, groups, histories, customThemes };
+}
+
+const VALID_TIDB_TABLES = new Set([
+  'nicemd_documents',
+  'nicemd_groups',
+  'nicemd_doc_histories',
+  'nicemd_custom_themes'
+]);
+
+async function deleteIdsInTidbTable(client, tableName, ids = [], softDelete = false) {
+  if (!VALID_TIDB_TABLES.has(tableName) || !Array.isArray(ids) || ids.length === 0) return;
+  const BATCH_SIZE = 100;
+  const now = Date.now();
+  for (let i = 0; i < ids.length; i += BATCH_SIZE) {
+    const batch = ids.slice(i, i + BATCH_SIZE).filter(Boolean);
+    if (batch.length === 0) continue;
+    const placeholders = batch.map(() => '?').join(', ');
+    if (softDelete) {
+      await client.execute(
+        `UPDATE ${tableName} SET is_deleted = 1, updated_at = ? WHERE id IN (${placeholders});`,
+        [now, ...batch]
+      );
+    } else {
+      await client.execute(
+        `DELETE FROM ${tableName} WHERE id IN (${placeholders});`,
+        batch
+      );
+    }
+  }
 }
 
 /**
@@ -648,6 +684,7 @@ export async function syncTidbBidirectional(connectionString, localDocs = [], lo
   const conn = getEffectiveTidbUri(connectionString);
   await ensureTidbTables(conn);
   const client = getClient(conn);
+  const tombstones = loadSyncTombstones();
 
   // 1. Pull all remote records
   const { docs: cloudDocs, groups: cloudGroups, histories: cloudHistories, customThemes: cloudThemes } = await pullFromTidb(conn);
@@ -657,11 +694,13 @@ export async function syncTidbBidirectional(connectionString, localDocs = [], lo
   const cloudGroupsMap = new Map(cloudGroups.map(g => [g.id, g]));
   const mergedGroups = [];
   const groupsToUpload = [];
+  const groupIdsToDeleteInCloud = [];
   const allGroupIds = new Set([...localGroupsMap.keys(), ...cloudGroupsMap.keys()]);
 
   for (const id of allGroupIds) {
     const local = localGroupsMap.get(id);
     const cloud = cloudGroupsMap.get(id);
+    const localDeletedAt = Number(tombstones.groups?.[id]) || 0;
     if (local && cloud) {
       if ((local.updatedAt || local.createdAt || 0) >= (cloud.updatedAt || cloud.createdAt || 0)) {
         mergedGroups.push(local);
@@ -673,6 +712,11 @@ export async function syncTidbBidirectional(connectionString, localDocs = [], lo
       mergedGroups.push(local);
       groupsToUpload.push(local);
     } else if (!local && cloud) {
+      const cloudTs = Number(cloud.updatedAt || cloud.createdAt) || 0;
+      if (localDeletedAt >= cloudTs) {
+        groupIdsToDeleteInCloud.push(id);
+        continue;
+      }
       mergedGroups.push(cloud);
     }
   }
@@ -682,11 +726,13 @@ export async function syncTidbBidirectional(connectionString, localDocs = [], lo
   const cloudDocsMap = new Map(cloudDocs.map(d => [d.id, d]));
   const mergedDocs = [];
   const docsToUpload = [];
+  const docIdsToDeleteInCloud = [];
   const allDocIds = new Set([...localDocsMap.keys(), ...cloudDocsMap.keys()]);
 
   for (const id of allDocIds) {
     const local = localDocsMap.get(id);
     const cloud = cloudDocsMap.get(id);
+    const localDeletedAt = Number(tombstones.docs?.[id]) || 0;
     if (local && cloud) {
       if ((local.updatedAt || local.createdAt || 0) >= (cloud.updatedAt || cloud.createdAt || 0)) {
         mergedDocs.push(local);
@@ -698,6 +744,11 @@ export async function syncTidbBidirectional(connectionString, localDocs = [], lo
       mergedDocs.push(local);
       docsToUpload.push(local);
     } else if (!local && cloud) {
+      const cloudTs = Number(cloud.updatedAt || cloud.createdAt) || 0;
+      if (localDeletedAt >= cloudTs) {
+        docIdsToDeleteInCloud.push(id);
+        continue;
+      }
       mergedDocs.push(cloud);
     }
   }
@@ -707,11 +758,14 @@ export async function syncTidbBidirectional(connectionString, localDocs = [], lo
   const cloudHistoriesMap = new Map(cloudHistories.map(h => [h.id, h]));
   const mergedHistories = [];
   const historiesToUpload = [];
+  const historyIdsToDeleteInCloud = [];
   const allHistoryIds = new Set([...localHistoriesMap.keys(), ...cloudHistoriesMap.keys()]);
 
   for (const id of allHistoryIds) {
     const local = localHistoriesMap.get(id);
     const cloud = cloudHistoriesMap.get(id);
+    const localDeletedAt = Number(tombstones.histories?.[id]) || 0;
+    const clearedDocAt = Number(tombstones.clearedHistoryDocs?.[cloud?.docId]) || 0;
     if (local && cloud) {
       if ((local.updatedAt || local.createdAt || 0) >= (cloud.updatedAt || cloud.createdAt || 0)) {
         mergedHistories.push(local);
@@ -725,6 +779,11 @@ export async function syncTidbBidirectional(connectionString, localDocs = [], lo
       mergedHistories.push(local);
       historiesToUpload.push(local);
     } else if (!local && cloud) {
+      const cloudTs = Number(cloud.updatedAt || cloud.createdAt) || 0;
+      if (Math.max(localDeletedAt, clearedDocAt) >= cloudTs) {
+        historyIdsToDeleteInCloud.push(id);
+        continue;
+      }
       mergedHistories.push(cloud);
     }
   }
@@ -737,11 +796,13 @@ export async function syncTidbBidirectional(connectionString, localDocs = [], lo
   const cloudThemesMap = new Map(validCloudThemes.map(t => [t.id, t]));
   const mergedThemes = [];
   const themesToUpload = [];
+  const themeIdsToDeleteInCloud = [];
   const allThemeIds = new Set([...localThemesMap.keys(), ...cloudThemesMap.keys()]);
 
   for (const id of allThemeIds) {
     const local = localThemesMap.get(id);
     const cloud = cloudThemesMap.get(id);
+    const localDeletedAt = Number(tombstones.themes?.[id]) || 0;
     if (local && cloud) {
       if ((local.updatedAt || 0) >= (cloud.updatedAt || 0)) {
         mergedThemes.push(local);
@@ -753,9 +814,20 @@ export async function syncTidbBidirectional(connectionString, localDocs = [], lo
       mergedThemes.push(local);
       themesToUpload.push(local);
     } else if (!local && cloud) {
+      const cloudTs = Number(cloud.updatedAt || cloud.createdAt) || 0;
+      if (localDeletedAt >= cloudTs) {
+        themeIdsToDeleteInCloud.push(id);
+        continue;
+      }
       mergedThemes.push(cloud);
     }
   }
+
+  // 1.5 Clean up stale cloud items matched by local permanent deletion tombstones
+  await deleteIdsInTidbTable(client, 'nicemd_documents', docIdsToDeleteInCloud, false);
+  await deleteIdsInTidbTable(client, 'nicemd_groups', groupIdsToDeleteInCloud, false);
+  await deleteIdsInTidbTable(client, 'nicemd_doc_histories', historyIdsToDeleteInCloud, true);
+  await deleteIdsInTidbTable(client, 'nicemd_custom_themes', themeIdsToDeleteInCloud, true);
 
   // 2. Upload newer local items to TiDB
   for (const g of groupsToUpload) {
@@ -892,6 +964,7 @@ export async function syncTidbBidirectional(connectionString, localDocs = [], lo
     );
   }
 
+  recordEntityTimestamps(mergedDocs, mergedGroups, mergedHistories, mergedThemes);
   setTidbLastSyncTime();
 
   return {
@@ -1188,23 +1261,25 @@ export async function deleteDocInTidb(connectionString, docId) {
 }
 
 /**
- * Permanent Hard Deletions on TiDB Cloud
+ * Permanent Hard Deletions on TiDB Cloud (supports single or batch)
  */
-export async function permanentDeleteDocInTidb(connectionString, docId) {
-  if (!docId) return;
+export async function permanentDeleteDocsInTidb(connectionString, docIds = []) {
+  const cleanIds = (Array.isArray(docIds) ? docIds : []).filter(Boolean);
+  if (cleanIds.length === 0) return;
+
+  recordDeletedTombstonesBatch('docs', cleanIds);
   const conn = getEffectiveTidbUri(connectionString);
 
-  if (docSyncDebounceMap.has(docId)) {
-    clearTimeout(docSyncDebounceMap.get(docId));
-    docSyncDebounceMap.delete(docId);
+  for (const id of cleanIds) {
+    if (docSyncDebounceMap.has(id)) {
+      clearTimeout(docSyncDebounceMap.get(id));
+      docSyncDebounceMap.delete(id);
+    }
   }
 
   const executeDelete = async () => {
     const client = getClient(conn);
-    await client.execute(
-      `DELETE FROM nicemd_documents WHERE id = ?;`,
-      [docId]
-    );
+    await deleteIdsInTidbTable(client, 'nicemd_documents', cleanIds, false);
     setTidbLastSyncTime();
   };
 
@@ -1217,13 +1292,19 @@ export async function permanentDeleteDocInTidb(connectionString, docId) {
       tablesEnsuredFor = conn;
       await executeDelete();
     } catch (retryErr) {
-      console.warn('[TiDB Sync] Failed to permanently delete document in cloud:', retryErr);
+      console.warn('[TiDB Sync] Failed to permanently delete documents in cloud:', retryErr);
     }
   }
 }
 
+export function permanentDeleteDocInTidb(connectionString, docId) {
+  if (!docId) return Promise.resolve();
+  return permanentDeleteDocsInTidb(connectionString, [docId]);
+}
+
 export async function deleteGroupInTidb(connectionString, groupId) {
   if (!groupId) return;
+  recordDeletedTombstone('groups', groupId);
   const conn = getEffectiveTidbUri(connectionString);
   const executeDelete = async () => {
     const client = getClient(conn);
@@ -1256,6 +1337,7 @@ export async function deleteGroupInTidb(connectionString, groupId) {
 
 export async function deleteHistoryInTidb(connectionString, historyId) {
   if (!historyId) return;
+  recordDeletedTombstone('histories', historyId);
   const conn = getEffectiveTidbUri(connectionString);
   const executeDelete = async () => {
     const client = getClient(conn);
@@ -1282,6 +1364,7 @@ export async function deleteHistoryInTidb(connectionString, historyId) {
 
 export async function clearDocHistoriesInTidb(connectionString, docId) {
   if (!docId) return;
+  recordDeletedTombstone('clearedHistoryDocs', docId);
   const conn = getEffectiveTidbUri(connectionString);
   const executeDelete = async () => {
     const client = getClient(conn);
@@ -1308,6 +1391,7 @@ export async function clearDocHistoriesInTidb(connectionString, docId) {
 
 export async function deleteCustomThemeInTidb(connectionString, themeId) {
   if (!themeId) return;
+  recordDeletedTombstone('themes', themeId);
   const conn = getEffectiveTidbUri(connectionString);
   const executeDelete = async () => {
     const client = getClient(conn);

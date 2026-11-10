@@ -12,6 +12,7 @@ import {
   syncSingleCustomThemeToTidb,
   deleteDocInTidb,
   permanentDeleteDocInTidb,
+  permanentDeleteDocsInTidb,
   deleteGroupInTidb,
   deleteHistoryInTidb,
   clearDocHistoriesInTidb,
@@ -32,6 +33,7 @@ import {
   syncSingleCustomThemeToNeon,
   deleteDocInNeon,
   permanentDeleteDocInNeon,
+  permanentDeleteDocsInNeon,
   deleteGroupInNeon,
   deleteHistoryInNeon,
   clearDocHistoriesInNeon,
@@ -51,6 +53,11 @@ import {
   recordGithubTombstone,
   scheduleGithubRealtimeSync
 } from './githubStorage';
+
+import {
+  recordDeletedTombstone,
+  recordDeletedTombstonesBatch
+} from './syncTombstones';
 
 const CLOUD_SYNC_PROVIDER_KEY = 'nicemd_cloud_sync_provider_v1';
 const SUPPORTED_PROVIDERS = ['tidb', 'neon', 'github'];
@@ -95,6 +102,7 @@ const PROVIDER_ADAPTERS = {
     syncTheme: (cfg, theme) => syncSingleCustomThemeToTidb(cfg.connectionString, theme),
     deleteDoc: (cfg, docId) => deleteDocInTidb(cfg.connectionString, docId),
     permanentDeleteDoc: (cfg, docId) => permanentDeleteDocInTidb(cfg.connectionString, docId),
+    permanentDeleteDocsBatch: (cfg, docIds) => permanentDeleteDocsInTidb(cfg.connectionString, docIds),
     deleteGroup: (cfg, groupId) => deleteGroupInTidb(cfg.connectionString, groupId),
     deleteHistory: (cfg, historyId) => deleteHistoryInTidb(cfg.connectionString, historyId),
     clearDocHistories: (cfg, docId) => clearDocHistoriesInTidb(cfg.connectionString, docId),
@@ -118,6 +126,7 @@ const PROVIDER_ADAPTERS = {
     syncTheme: (cfg, theme) => syncSingleCustomThemeToNeon(cfg.connectionString, theme),
     deleteDoc: (cfg, docId) => deleteDocInNeon(cfg.connectionString, docId),
     permanentDeleteDoc: (cfg, docId) => permanentDeleteDocInNeon(cfg.connectionString, docId),
+    permanentDeleteDocsBatch: (cfg, docIds) => permanentDeleteDocsInNeon(cfg.connectionString, docIds),
     deleteGroup: (cfg, groupId) => deleteGroupInNeon(cfg.connectionString, groupId),
     deleteHistory: (cfg, historyId) => deleteHistoryInNeon(cfg.connectionString, historyId),
     clearDocHistories: (cfg, docId) => clearDocHistoriesInNeon(cfg.connectionString, docId),
@@ -142,6 +151,7 @@ const PROVIDER_ADAPTERS = {
     syncTheme: () => scheduleGithubRealtimeSync(),
     deleteDoc: () => {},
     permanentDeleteDoc: (_cfg, docId) => recordGithubTombstone('docs', docId),
+    permanentDeleteDocsBatch: (_cfg, docIds) => recordDeletedTombstonesBatch('docs', docIds),
     deleteGroup: (_cfg, groupId) => recordGithubTombstone('groups', groupId),
     deleteHistory: (_cfg, historyId) => {
       recordGithubTombstone('histories', historyId);
@@ -160,6 +170,29 @@ const PROVIDER_ADAPTERS = {
 
 function getAdapter(provider) {
   return PROVIDER_ADAPTERS[provider] || PROVIDER_ADAPTERS.tidb;
+}
+
+// Track sync epoch and in-flight delete mutations so stale sync responses never resurrect deleted items.
+let syncGeneration = 0;
+const activeMutationPromises = new Set();
+
+export function bumpSyncGeneration() {
+  syncGeneration += 1;
+  return syncGeneration;
+}
+
+function trackMutationPromise(promise) {
+  if (promise && typeof promise.then === 'function') {
+    activeMutationPromises.add(promise);
+    const cleanup = () => activeMutationPromises.delete(promise);
+    promise.then(cleanup, cleanup);
+  }
+  return promise;
+}
+
+async function waitForPendingMutations() {
+  if (activeMutationPromises.size === 0) return;
+  await Promise.allSettled(Array.from(activeMutationPromises));
 }
 
 /**
@@ -252,6 +285,7 @@ export async function testCloudConnection(provider, credentialsOrConn) {
  */
 export async function pushAllToCloud(credentialsOrConn, docs, groups, histories, customThemes, provider = null) {
   cancelPendingAutoSync();
+  await waitForPendingMutations();
   const targetProvider = provider || getActiveCloudProvider();
   return await getAdapter(targetProvider).pushAll(credentialsOrConn, docs, groups, histories, customThemes);
 }
@@ -261,6 +295,7 @@ export async function pushAllToCloud(credentialsOrConn, docs, groups, histories,
  */
 export async function pullFromCloud(credentialsOrConn, provider = null) {
   cancelPendingAutoSync();
+  await waitForPendingMutations();
   const targetProvider = provider || getActiveCloudProvider();
   return await getAdapter(targetProvider).pull(credentialsOrConn);
 }
@@ -270,6 +305,7 @@ export async function pullFromCloud(credentialsOrConn, provider = null) {
  */
 export async function syncCloudBidirectional(credentialsOrConn, localDocs, localGroups, localHistories, localThemes, provider = null) {
   cancelPendingAutoSync();
+  await waitForPendingMutations();
   const targetProvider = provider || getActiveCloudProvider();
   return await getAdapter(targetProvider).syncBidirectional(credentialsOrConn, localDocs, localGroups, localHistories, localThemes);
 }
@@ -277,19 +313,60 @@ export async function syncCloudBidirectional(credentialsOrConn, localDocs, local
 function dispatchRealtime(action, payload) {
   if (!isCloudSyncEnabled() || !payload) return;
   const adapter = getAdapter(getActiveCloudProvider());
-  adapter[action](adapter.getConfig(), payload);
+  return trackMutationPromise(adapter[action](adapter.getConfig(), payload));
 }
 
 export const realtimeSyncDoc = (doc) => dispatchRealtime('syncDoc', doc);
 export const realtimeSyncGroup = (group) => dispatchRealtime('syncGroup', group);
 export const realtimeSyncHistory = (history) => dispatchRealtime('syncHistory', history);
 export const realtimeSyncCustomTheme = (theme) => dispatchRealtime('syncTheme', theme);
-export const realtimeDeleteDoc = (docId) => dispatchRealtime('deleteDoc', docId);
-export const realtimePermanentDeleteDoc = (docId) => dispatchRealtime('permanentDeleteDoc', docId);
-export const realtimeDeleteGroup = (groupId) => dispatchRealtime('deleteGroup', groupId);
-export const realtimeDeleteHistory = (historyId) => dispatchRealtime('deleteHistory', historyId);
-export const realtimeClearDocHistories = (docId) => dispatchRealtime('clearDocHistories', docId);
-export const realtimeDeleteCustomTheme = (themeId) => dispatchRealtime('deleteTheme', themeId);
+
+export const realtimeDeleteDoc = (docId) => {
+  if (!docId) return;
+  bumpSyncGeneration();
+  return dispatchRealtime('deleteDoc', docId);
+};
+
+export const realtimePermanentDeleteDoc = (docId) => {
+  if (!docId) return;
+  recordDeletedTombstone('docs', docId);
+  bumpSyncGeneration();
+  return dispatchRealtime('permanentDeleteDoc', docId);
+};
+
+export const realtimePermanentDeleteDocsBatch = (docIds = []) => {
+  const cleanIds = (Array.isArray(docIds) ? docIds : []).filter(Boolean);
+  if (cleanIds.length === 0) return;
+  recordDeletedTombstonesBatch('docs', cleanIds);
+  bumpSyncGeneration();
+  cancelPendingAutoSync();
+  return dispatchRealtime('permanentDeleteDocsBatch', cleanIds);
+};
+
+export const realtimeDeleteGroup = (groupId) => {
+  if (!groupId) return;
+  recordDeletedTombstone('groups', groupId);
+  bumpSyncGeneration();
+  return dispatchRealtime('deleteGroup', groupId);
+};
+
+export const realtimeDeleteHistory = (historyId) => {
+  if (!historyId) return;
+  recordDeletedTombstone('histories', historyId);
+  return dispatchRealtime('deleteHistory', historyId);
+};
+
+export const realtimeClearDocHistories = (docId) => {
+  if (!docId) return;
+  recordDeletedTombstone('clearedHistoryDocs', docId);
+  return dispatchRealtime('clearDocHistories', docId);
+};
+
+export const realtimeDeleteCustomTheme = (themeId) => {
+  if (!themeId) return;
+  recordDeletedTombstone('themes', themeId);
+  return dispatchRealtime('deleteTheme', themeId);
+};
 
 // Background auto sync debounce & Auth error guard
 let cloudAutoSyncTimer = null;
@@ -339,11 +416,15 @@ export function triggerAutoSyncDebounced(docs, groups, histories = [], customThe
 
   cloudAutoSyncTimer = setTimeout(async () => {
     cloudAutoSyncTimer = null;
+    await waitForPendingMutations();
+    const myGen = syncGeneration;
     try {
       if (typeof onSyncStart === 'function') onSyncStart();
       const res = await adapter.syncBidirectional(adapter.getSyncArg(config), docs, groups, histories, customThemes);
+      if (myGen !== syncGeneration) return;
       if (typeof onSyncEnd === 'function') onSyncEnd(null, res);
     } catch (err) {
+      if (myGen !== syncGeneration) return;
       const errMsg = err?.message || String(err);
       if (isAuthError(errMsg)) {
         cloudAuthErrorProviders.add(provider);
@@ -368,12 +449,17 @@ export async function triggerAutoSyncImmediate(docs, groups, histories = [], cus
   const config = adapter.getConfig();
   if (!adapter.canAutoSync(config)) return;
 
+  cancelPendingAutoSync();
+  await waitForPendingMutations();
+  const myGen = syncGeneration;
   try {
     if (typeof onSyncStart === 'function') onSyncStart();
     const res = await adapter.syncBidirectional(adapter.getSyncArg(config), docs, groups, histories, customThemes);
+    if (myGen !== syncGeneration) return;
     if (typeof onSyncEnd === 'function') onSyncEnd(null, res);
     return res;
   } catch (err) {
+    if (myGen !== syncGeneration) return;
     const errMsg = err?.message || String(err);
     if (isAuthError(errMsg)) {
       cloudAuthErrorProviders.add(provider);

@@ -47,12 +47,14 @@ import {
   realtimeSyncGroup,
   realtimeDeleteDoc,
   realtimePermanentDeleteDoc,
+  realtimePermanentDeleteDocsBatch,
   realtimeDeleteGroup,
   realtimeSyncHistory,
   realtimeDeleteHistory,
   realtimeSyncCustomTheme,
   realtimeDeleteCustomTheme
 } from './utils/cloudSync';
+import { filterOutTombstonedEntities } from './utils/syncTombstones';
 import { initStorageDefaultIfAvailable } from './utils/fileStorage';
 
 // ── view & document state ──
@@ -435,8 +437,8 @@ function handlePermanentDeleteDoc(id) {
 
 function handleEmptyRecycleBin() {
   soundEngine.playClick('backspace');
-  const deletedIds = documents.value.filter(d => d.isDeleted).map(d => d.id);
-  documents.value = documents.value.filter(d => !d.isDeleted);
+  const deletedIds = documents.value.filter(d => d.isDeleted || d.is_deleted).map(d => d.id);
+  documents.value = documents.value.filter(d => !d.isDeleted && !d.is_deleted);
 
   if (activeDocId.value && deletedIds.includes(activeDocId.value)) {
     if (documents.value.length === 0) {
@@ -448,8 +450,8 @@ function handleEmptyRecycleBin() {
   }
 
   saveDocuments(documents.value);
-  for (const id of deletedIds) {
-    realtimePermanentDeleteDoc(id);
+  if (deletedIds.length > 0) {
+    realtimePermanentDeleteDocsBatch(deletedIds);
   }
 }
 
@@ -535,11 +537,13 @@ function handleSyncComplete(payload) {
   if (!payload) return;
   isApplyingSync = true;
   if (payload.docs && Array.isArray(payload.docs)) {
-    documents.value = [...payload.docs.map(normalizeDoc)];
+    const safeDocs = filterOutTombstonedEntities('docs', payload.docs.map(normalizeDoc));
+    documents.value = [...safeDocs];
     saveDocuments(documents.value);
   }
   if (payload.groups && Array.isArray(payload.groups)) {
-    groups.value = [...payload.groups];
+    const safeGroups = filterOutTombstonedEntities('groups', payload.groups);
+    groups.value = [...safeGroups];
     saveGroups(groups.value);
   }
   if (payload.histories && Array.isArray(payload.histories)) {
