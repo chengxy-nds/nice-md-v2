@@ -15,31 +15,102 @@ import {
   X,
   Cloud,
   RotateCcw,
+  RefreshCw,
+  FolderUp,
+  FolderDown,
+  Settings,
   FileText,
   ArrowUpDown,
   ChevronsUpDown
 } from '@lucide/vue';
 import { showConfirm } from '../utils/confirmDialog';
 import SidebarDocItem from './SidebarDocItem.vue';
-import { isCloudSyncEnabled, getActiveCloudProvider } from '../utils/cloudSync';
+import { getConfiguredCloudSyncInfo } from '../utils/cloudSync';
 
 const CLOUD_PROVIDER_LABELS = {
-  tidb: 'TiDB Cloud (MySQL)',
-  neon: 'Neon (Postgres)',
+  tidb: 'TiDB Cloud',
+  neon: 'Neon Postgres',
   github: 'GitHub 仓库',
 };
 
-const currentCloudProvider = ref(getActiveCloudProvider());
-const isCloudSyncActive = ref(isCloudSyncEnabled());
+const cloudSyncInfo = ref(getConfiguredCloudSyncInfo());
+const showSyncMenu = ref(false);
+const syncMenuRef = ref(null);
 
-const cloudSyncTitle = computed(() => {
-  const provider = CLOUD_PROVIDER_LABELS[currentCloudProvider.value] || '云端同步';
-  return `${provider} 实时同步已开启`;
+const currentProviderLabel = computed(() =>
+  CLOUD_PROVIDER_LABELS[cloudSyncInfo.value.provider] || '云端同步'
+);
+
+const syncButtonTitle = computed(() => {
+  if (props.isCloudSyncing) return '正在执行云端同步...';
+  if (!cloudSyncInfo.value.configured) return '未设置自定义同步，点击前往配置';
+  if (cloudSyncInfo.value.enabled) return `${currentProviderLabel.value} 实时同步已开启（点击选择同步操作）`;
+  return `已配置 ${currentProviderLabel.value}（点击选择同步操作）`;
+});
+
+const syncMenuOptions = computed(() => {
+  const isGithub = cloudSyncInfo.value.provider === 'github';
+  const targetName = isGithub ? '仓库' : '云端';
+  return [
+    {
+      action: 'bidirectional',
+      title: '双向同步',
+      desc: `合并本地和${targetName}最新内容`,
+      icon: RefreshCw,
+      colorClass: 'icon-blue',
+    },
+    {
+      action: 'push',
+      title: isGithub ? '推送到仓库' : '备份到云端',
+      desc: `将本地文档与分组备份到${targetName}`,
+      icon: FolderUp,
+      colorClass: 'icon-green',
+    },
+    {
+      action: 'pull',
+      title: isGithub ? '从仓库拉取' : '从云端恢复',
+      desc: `将${targetName}内容拉取还原到本地`,
+      icon: FolderDown,
+      colorClass: 'icon-purple',
+    },
+  ];
 });
 
 function refreshCloudSyncState() {
-  currentCloudProvider.value = getActiveCloudProvider();
-  isCloudSyncActive.value = isCloudSyncEnabled();
+  cloudSyncInfo.value = getConfiguredCloudSyncInfo();
+}
+
+function handleSyncTriggerClick() {
+  if (props.isCloudSyncing) return;
+  refreshCloudSyncState();
+  if (!cloudSyncInfo.value.configured) {
+    showSyncMenu.value = false;
+    emit('open-cloud-settings');
+    return;
+  }
+  showSyncMenu.value = !showSyncMenu.value;
+}
+
+function handleSelectSyncAction(action) {
+  showSyncMenu.value = false;
+  emit('cloud-sync-action', action, cloudSyncInfo.value.provider);
+}
+
+function handleOpenCloudSettings() {
+  showSyncMenu.value = false;
+  emit('open-cloud-settings');
+}
+
+function handleSyncMenuPointerDown(e) {
+  if (showSyncMenu.value && syncMenuRef.value && !syncMenuRef.value.contains(e.target)) {
+    showSyncMenu.value = false;
+  }
+}
+
+function handleSyncMenuKeyDown(e) {
+  if (e.key === 'Escape' && showSyncMenu.value) {
+    showSyncMenu.value = false;
+  }
 }
 
 onMounted(() => {
@@ -50,6 +121,8 @@ onMounted(() => {
   window.addEventListener('nicemd-neon-config-updated', refreshCloudSyncState);
   window.addEventListener('nicemd-github-config-updated', refreshCloudSyncState);
   window.addEventListener('storage', refreshCloudSyncState);
+  document.addEventListener('mousedown', handleSyncMenuPointerDown);
+  document.addEventListener('keydown', handleSyncMenuKeyDown);
 });
 
 onUnmounted(() => {
@@ -62,13 +135,16 @@ onUnmounted(() => {
   window.removeEventListener('nicemd-neon-config-updated', refreshCloudSyncState);
   window.removeEventListener('nicemd-github-config-updated', refreshCloudSyncState);
   window.removeEventListener('storage', refreshCloudSyncState);
+  document.removeEventListener('mousedown', handleSyncMenuPointerDown);
+  document.removeEventListener('keydown', handleSyncMenuKeyDown);
 });
 
 const props = defineProps({
   documents: { type: Array, required: true },
   groups: { type: Array, required: true },
   activeDocId: { type: String, default: null },
-  currentView: { type: String, default: 'editor' }
+  currentView: { type: String, default: 'editor' },
+  isCloudSyncing: { type: Boolean, default: false }
 });
 
 const emit = defineEmits([
@@ -77,7 +153,8 @@ const emit = defineEmits([
   'create-group', 'rename-group', 'delete-group',
   'move-doc', 'reorder-docs', 'reorder-groups', 'toggle-collapse',
   'open-templates', 'open-materials', 'open-doc-history',
-  'duplicate-doc', 'toggle-pin'
+  'duplicate-doc', 'toggle-pin',
+  'cloud-sync-action', 'open-cloud-settings'
 ]);
 
 // ── Search, Filter & Sort State ──
@@ -543,14 +620,60 @@ function resetSidebarWidth() {
       @dblclick="resetSidebarWidth"
       title="拖拽调整侧边栏宽度，双击恢复默认"
     ></div>
-    <!-- Toolbar: 我的文档 -->
+    <!-- Toolbar: 云端同步与文档操作 -->
     <div class="toolbar">
       <div class="toolbar-meta">
-        <div class="heading">我的文档</div>
-        <div v-if="isCloudSyncActive" class="sync" :title="cloudSyncTitle" aria-label="云端同步已开启">
-          <RotateCcw size="11" class="sync-icon" />
-          <span class="sync-label">已同步</span>
-          <span class="dot"></span>
+        <div class="sync-menu-container" ref="syncMenuRef">
+          <button
+            type="button"
+            class="sync-trigger-btn"
+            :class="{
+              'is-active': cloudSyncInfo.enabled,
+              'is-configured': cloudSyncInfo.configured && !cloudSyncInfo.enabled,
+              'is-syncing': props.isCloudSyncing
+            }"
+            :title="syncButtonTitle"
+            :aria-expanded="cloudSyncInfo.configured ? showSyncMenu : undefined"
+            :disabled="props.isCloudSyncing"
+            @click="handleSyncTriggerClick"
+          >
+            <RefreshCw v-if="props.isCloudSyncing" size="12" class="sync-icon is-spinning" />
+            <RefreshCw v-else-if="cloudSyncInfo.enabled" size="12" class="sync-icon" />
+            <Cloud v-else size="12" class="sync-icon" />
+            <span class="sync-label">
+              {{ props.isCloudSyncing ? '同步中...' : (cloudSyncInfo.enabled ? '已同步' : (cloudSyncInfo.configured ? '同步' : '云同步')) }}
+            </span>
+            <span v-if="cloudSyncInfo.enabled && !props.isCloudSyncing" class="dot"></span>
+            <ChevronDown v-if="cloudSyncInfo.configured" size="11" class="sync-chevron" :class="{ 'is-open': showSyncMenu }" />
+          </button>
+
+          <Transition name="sync-dropdown">
+            <div v-if="showSyncMenu && cloudSyncInfo.configured" class="sync-dropdown-menu" role="menu">
+              <div class="sync-dropdown-header">
+                <span class="sync-channel-name">{{ currentProviderLabel }}</span>
+                <button type="button" class="sync-settings-link" @click="handleOpenCloudSettings" title="打开云端同步设置">
+                  <Settings size="11" />
+                  <span>配置</span>
+                </button>
+              </div>
+              <button
+                v-for="item in syncMenuOptions"
+                :key="item.action"
+                type="button"
+                class="sync-dropdown-item"
+                role="menuitem"
+                @click="handleSelectSyncAction(item.action)"
+              >
+                <span class="sync-item-icon" :class="item.colorClass">
+                  <component :is="item.icon" size="13" />
+                </span>
+                <span class="sync-item-copy">
+                  <strong>{{ item.title }}</strong>
+                  <small>{{ item.desc }}</small>
+                </span>
+              </button>
+            </div>
+          </Transition>
         </div>
       </div>
       <div class="toolbar-actions">
@@ -956,10 +1079,12 @@ html.dark .create-action:hover {
 
 /* ── 2. Toolbar (.toolbar) ── */
 .toolbar {
+  position: relative;
+  z-index: 20;
   display: flex;
   align-items: center;
-  gap: 10px;
-  margin: 16px 2px 10px;
+  gap: 8px;
+  margin: 14px 2px 10px;
   flex-shrink: 0;
 }
 
@@ -978,35 +1103,84 @@ html.dark .create-action:hover {
   flex: 0 0 auto;
 }
 
-.heading {
-  font-size: 1.0625rem;
-  font-weight: 750;
-  letter-spacing: 0.2px;
-  color: #1e293b;
-  white-space: nowrap;
+.sync-menu-container {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
 }
 
-html.dark .heading {
-  color: #f1f5f9;
-}
-
-.sync {
-  display: flex;
+.sync-trigger-btn {
+  display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 6px;
-  border-radius: 20px;
-  background: #e9faf4;
-  color: #0ca879;
-  font-size: 0.6875rem;
+  height: 28px;
+  padding: 0 9px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  font-family: inherit;
+  font-size: 0.72rem;
   font-weight: 600;
   white-space: nowrap;
+  cursor: pointer;
+  transition: all 0.16s ease;
+}
+
+.sync-trigger-btn:hover:not(:disabled) {
+  background: #eef4fb;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+.sync-trigger-btn.is-configured {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.sync-trigger-btn.is-configured:hover:not(:disabled) {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}
+
+.sync-trigger-btn.is-active {
+  border-color: rgba(16, 185, 129, 0.28);
+  background: #e9faf4;
+  color: #0ca879;
+}
+
+.sync-trigger-btn.is-active:hover:not(:disabled) {
+  background: #d8f5eb;
+  border-color: rgba(16, 185, 129, 0.45);
+}
+
+.sync-trigger-btn:disabled {
+  opacity: 0.75;
+  cursor: wait;
 }
 
 .sync-label { line-height: 1; }
 
 .sync-icon {
-  font-size: 0.75rem;
+  flex-shrink: 0;
+}
+
+.sync-icon.is-spinning {
+  animation: sync-spin 0.9s linear infinite;
+}
+
+@keyframes sync-spin {
+  to { transform: rotate(360deg); }
+}
+
+.sync-chevron {
+  opacity: 0.7;
+  transition: transform 0.16s ease;
+}
+
+.sync-chevron.is-open {
+  transform: rotate(180deg);
 }
 
 .dot {
@@ -1020,6 +1194,184 @@ html.dark .heading {
 @keyframes pulse-dot {
   0%, 100% { opacity: 0.4; transform: scale(0.85); }
   50% { opacity: 1; transform: scale(1.15); }
+}
+
+/* Sync Dropdown Menu */
+.sync-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: min(232px, calc(100cqw - 24px));
+  min-width: 192px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 5px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.05);
+  z-index: 80;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sync-dropdown-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 8px 6px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 2px;
+}
+
+.sync-channel-name {
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.sync-settings-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border: 0;
+  background: transparent;
+  padding: 2px 6px;
+  border-radius: 5px;
+  color: #3b82f6;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.sync-settings-link:hover {
+  background: rgba(59, 130, 246, 0.1);
+}
+
+.sync-dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  text-align: left;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.14s ease;
+}
+
+.sync-dropdown-item:hover {
+  background: #f1f5f9;
+}
+
+.sync-item-icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.sync-item-icon.icon-blue {
+  background: rgba(59, 130, 246, 0.12);
+  color: #2563eb;
+}
+
+.sync-item-icon.icon-green {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+}
+
+.sync-item-icon.icon-purple {
+  background: rgba(139, 92, 246, 0.12);
+  color: #7c3aed;
+}
+
+.sync-item-copy {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.sync-item-copy strong {
+  font-size: 12px;
+  font-weight: 650;
+  color: #1e293b;
+  line-height: 1.25;
+}
+
+.sync-item-copy small {
+  font-size: 10px;
+  color: #64748b;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sync-dropdown-enter-active,
+.sync-dropdown-leave-active {
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+
+.sync-dropdown-enter-from,
+.sync-dropdown-leave-to {
+  opacity: 0;
+  transform: translateY(-4px) scale(0.98);
+}
+
+html.dark .sync-trigger-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+}
+
+html.dark .sync-trigger-btn:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+}
+
+html.dark .sync-trigger-btn.is-configured {
+  background: rgba(59, 130, 246, 0.14);
+  border-color: rgba(59, 130, 246, 0.35);
+  color: #93c5fd;
+}
+
+html.dark .sync-trigger-btn.is-active {
+  background: rgba(16, 185, 129, 0.16);
+  border-color: rgba(16, 185, 129, 0.35);
+  color: #34d399;
+}
+
+html.dark .sync-dropdown-menu {
+  background: #1e2028;
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+}
+
+html.dark .sync-dropdown-header {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+html.dark .sync-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+html.dark .sync-item-copy strong {
+  color: #f1f5f9;
+}
+
+html.dark .sync-item-copy small,
+html.dark .sync-channel-name {
+  color: #94a3b8;
 }
 
 .icon-btn {

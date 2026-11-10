@@ -84,6 +84,10 @@ const props = defineProps({
   isOpen: {
     type: Boolean,
     default: false
+  },
+  initialTab: {
+    type: String,
+    default: ''
   }
 });
 
@@ -997,8 +1001,13 @@ watch(lineNumbers, (val) => {
   window.dispatchEvent(new CustomEvent('nicemd-settings-updated'));
 });
 
+const activeTab = ref('general');
+
 watch(() => props.isOpen, (newVal) => {
   if (newVal) {
+    if (props.initialTab) {
+      activeTab.value = props.initialTab;
+    }
     loadConfigFromExtension();
     loadStorageConfig();
     isLoadingCloudConfigs = true;
@@ -1031,8 +1040,6 @@ watch(() => props.isOpen, (newVal) => {
     lineNumbers.value = localStorage.getItem('nicemd_line_numbers') !== 'false';
   }
 });
-
-const activeTab = ref('general');
 
 const selectPlatform = (id) => {
   soundEngine.playClick();

@@ -12,6 +12,7 @@ import { applyTheme, getThemeDefaultStyles, getThemeSavedStyles, themes as theme
 import { codeThemes } from './utils/codeThemes';
 import { htmlToMarkdown } from './utils/htmlToMarkdown';
 import { soundEngine } from './utils/synthAudio';
+import { showConfirm } from './utils/confirmDialog';
 import EditorPanel from './components/EditorPanel.vue';
 import PreviewPanel from './components/PreviewPanel.vue';
 import LaunchpadModal from './components/LaunchpadModal.vue';
@@ -43,6 +44,10 @@ import {
   isCloudSyncEnabled,
   isNeonSyncEnabled,
   isTidbSyncEnabled,
+  getConfiguredCloudSyncInfo,
+  pushAllToCloud,
+  pullFromCloud,
+  syncCloudBidirectional,
   realtimeSyncDoc,
   realtimeSyncGroup,
   realtimeDeleteDoc,
@@ -1314,10 +1319,100 @@ const closeLaunchpad = () => {
   isLaunchpadOpen.value = false;
 };
 
-const openSettings = () => {
+const settingsInitialTab = ref('');
+const isSidebarSyncing = ref(false);
+
+const CLOUD_SYNC_PROVIDER_NAMES = {
+  tidb: 'TiDB Cloud',
+  neon: 'Neon Postgres',
+  github: 'GitHub 仓库',
+};
+
+const openSettings = (tab = '') => {
   soundEngine.playChime();
+  settingsInitialTab.value = typeof tab === 'string' ? tab : '';
   isSettingsOpen.value = true;
 };
+
+async function handleSidebarCloudSync(action) {
+  if (isSidebarSyncing.value) return;
+
+  const info = getConfiguredCloudSyncInfo();
+  if (!info.configured || !info.syncArg) {
+    openSettings('cloud');
+    return;
+  }
+
+  const provider = info.provider;
+  const isGithub = provider === 'github';
+  const targetLabel = isGithub ? 'GitHub 仓库' : '云端数据库';
+  const providerLabel = CLOUD_SYNC_PROVIDER_NAMES[provider] || targetLabel;
+
+  if (action === 'push') {
+    const ok = await showConfirm({
+      title: `全量备份到 ${targetLabel}`,
+      message: `确认将本地全部文档、分组、历史版本和自定义主题完整备份至 ${providerLabel} 吗？云端已有记录将被更新。`,
+      confirmText: '开始备份',
+    });
+    if (!ok) return;
+  } else if (action === 'pull') {
+    const ok = await showConfirm({
+      title: `从 ${targetLabel} 还原数据`,
+      message: `⚠️ 此操作将从 ${providerLabel} 拉取所有云端文档、分组、历史版本及自定义主题并更新本地，确定继续吗？`,
+      confirmText: '立即拉取',
+      danger: true,
+    });
+    if (!ok) return;
+  } else if (action !== 'bidirectional') {
+    return;
+  }
+
+  isSidebarSyncing.value = true;
+  try {
+    const localDocs = documents.value;
+    const localGroups = groups.value;
+    const localHistories = getAllDocSnapshots();
+    const localThemes = loadCustomThemes();
+
+    if (action === 'push') {
+      const res = await pushAllToCloud(
+        info.syncArg,
+        localDocs,
+        localGroups,
+        localHistories,
+        localThemes,
+        provider
+      );
+      soundEngine.playChime();
+      triggerAppToast(`已推送 ${res.pushedDocs} 篇文档、${res.pushedGroups} 个分组到 ${providerLabel}`);
+      return;
+    }
+
+    if (action === 'pull') {
+      const res = await pullFromCloud(info.syncArg, provider);
+      handleSyncComplete(res);
+      soundEngine.playChime();
+      triggerAppToast(`已从 ${providerLabel} 拉取 ${(res.docs || []).length} 篇文档、${(res.groups || []).length} 个分组`);
+      return;
+    }
+
+    const res = await syncCloudBidirectional(
+      info.syncArg,
+      localDocs,
+      localGroups,
+      localHistories,
+      localThemes,
+      provider
+    );
+    handleSyncComplete(res);
+    soundEngine.playChime();
+    triggerAppToast(`双向同步完成：共 ${(res.docs || []).length} 篇文档、${(res.groups || []).length} 个分组`);
+  } catch (err) {
+    triggerAppToast('同步失败：' + (err?.message || '请检查网络与云端配置'));
+  } finally {
+    isSidebarSyncing.value = false;
+  }
+}
 
 // ── Header Capsule Toolbar State & Actions ──
 const showMoreTools = ref(false);
@@ -1682,7 +1777,7 @@ watch(customStyles, () => {
               }
               if (tab === 'templates') { currentView = 'templates'; }
               if (tab === 'materials') { currentView = 'materials'; }
-              if (tab === 'settings') isSettingsOpen = true;
+              if (tab === 'settings') openSettings();
               if (tab === 'launch') isLaunchpadOpen = true;
               if (tab === 'theme') toggleColorMode();
             }"
@@ -1701,6 +1796,7 @@ watch(customStyles, () => {
             :groups="groups"
             :activeDocId="activeDocId"
             :currentView="currentView"
+            :isCloudSyncing="isSidebarSyncing"
             @select-doc="(id) => { handleSelectDoc(id); currentView = 'editor'; mobileSidebarOpen = false; }"
             @create-doc="(groupId) => { handleCreateDoc(groupId); currentView = 'editor'; }"
             @open-templates="currentView = 'templates'"
@@ -1719,6 +1815,8 @@ watch(customStyles, () => {
             @reorder-groups="handleReorderGroups"
             @duplicate-doc="handleDuplicateDoc"
             @toggle-pin="handleTogglePinDoc"
+            @cloud-sync-action="handleSidebarCloudSync"
+            @open-cloud-settings="openSettings('cloud')"
           />
 
           <!-- 1. 模板中心 -->
@@ -1948,7 +2046,8 @@ watch(customStyles, () => {
     <!-- Settings Modal -->
     <SettingsModal
       :isOpen="isSettingsOpen"
-      @close="isSettingsOpen = false"
+      :initialTab="settingsInitialTab"
+      @close="isSettingsOpen = false; settingsInitialTab = ''"
       @sync-complete="handleSyncComplete"
     />
 

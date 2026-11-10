@@ -87,6 +87,7 @@ const PROVIDER_ADAPTERS = {
   tidb: {
     getConfig: getTidbConfig,
     saveConfig: saveTidbConfig,
+    hasCredentials: (cfg) => Boolean(cfg?.connectionString?.trim()),
     isEnabled: isTidbSyncEnabled,
     canAutoSync: (cfg) => Boolean(cfg.autoSync && cfg.connectionString?.trim()),
     testConnection: (cfgOrConn) => testTidbConnection(asConnStr(cfgOrConn, getTidbConfig())),
@@ -111,6 +112,7 @@ const PROVIDER_ADAPTERS = {
   neon: {
     getConfig: getNeonConfig,
     saveConfig: saveNeonConfig,
+    hasCredentials: (cfg) => Boolean(cfg?.connectionString?.trim()),
     isEnabled: isNeonSyncEnabled,
     canAutoSync: (cfg) => Boolean(cfg.autoSync && cfg.connectionString?.trim()),
     testConnection: (cfgOrConn) => testNeonConnection(asConnStr(cfgOrConn, getNeonConfig())),
@@ -135,6 +137,7 @@ const PROVIDER_ADAPTERS = {
   github: {
     getConfig: getGithubConfig,
     saveConfig: saveGithubConfig,
+    hasCredentials: (cfg) => hasGithubCredentials(cfg),
     isEnabled: isGithubSyncEnabled,
     canAutoSync: (cfg) => Boolean(cfg.autoSync && hasGithubCredentials(cfg)),
     testConnection: (cfgOrConn) => testGithubConnection(asGithubCfg(cfgOrConn)),
@@ -271,6 +274,60 @@ export function isCloudSyncEnabled() {
  */
 export function getActiveCloudConfig() {
   return getAdapter(getActiveCloudProvider()).getConfig();
+}
+
+/**
+ * Inspect whether any custom cloud sync channel is configured (enabled or has valid credentials).
+ */
+export function getConfiguredCloudSyncInfo() {
+  for (const id of SUPPORTED_PROVIDERS) {
+    const adapter = getAdapter(id);
+    if (adapter.isEnabled()) {
+      const cfg = adapter.getConfig();
+      return {
+        configured: true,
+        enabled: true,
+        provider: id,
+        config: cfg,
+        syncArg: adapter.getSyncArg(cfg),
+      };
+    }
+  }
+
+  const active = getActiveCloudProvider();
+  const activeAdapter = getAdapter(active);
+  const activeCfg = activeAdapter.getConfig();
+  if (activeAdapter.hasCredentials(activeCfg)) {
+    return {
+      configured: true,
+      enabled: false,
+      provider: active,
+      config: activeCfg,
+      syncArg: activeAdapter.getSyncArg(activeCfg),
+    };
+  }
+
+  for (const id of SUPPORTED_PROVIDERS) {
+    const adapter = getAdapter(id);
+    const cfg = adapter.getConfig();
+    if (adapter.hasCredentials(cfg)) {
+      return {
+        configured: true,
+        enabled: false,
+        provider: id,
+        config: cfg,
+        syncArg: adapter.getSyncArg(cfg),
+      };
+    }
+  }
+
+  return {
+    configured: false,
+    enabled: false,
+    provider: active,
+    config: activeCfg,
+    syncArg: null,
+  };
 }
 
 /**
