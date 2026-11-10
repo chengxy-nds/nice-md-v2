@@ -1219,9 +1219,9 @@ const supportsSilent = (id) => {
               <p class="storage-provider-note">其他平台接入后可在此配置。</p>
             </nav>
 
-            <!-- 存储平台详细配置（已去除冗余的头部和嵌入式开关） -->
+            <!-- 存储平台详细配置（纵向单列布局，一行一个输入项） -->
             <section class="storage-config-panel">
-              <div class="form-grid storage-fields">
+              <div class="storage-fields">
                 <div class="form-group">
                   <label>访问域名</label>
                   <div class="input-with-icon"><Globe class="input-icon" size="14" /><input type="text" v-model="storageConfig.domain" placeholder="https://图片域名或 CDN 域名" /></div>
@@ -2485,11 +2485,13 @@ const supportsSilent = (id) => {
 }
 
 .storage-config-panel {
-  padding: 16px;
+  padding: 18px 20px;
 }
 
 .storage-fields {
-  gap: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
 }
 
 .storage-optional {
