@@ -95,6 +95,27 @@ function base64Encode(str) {
   return btoa(String.fromCharCode(...new TextEncoder().encode(str)));
 }
 
+export function sanitizeDomain(domain, fallbackHost) {
+  if (!domain || typeof domain !== 'string') return `https://${fallbackHost}`;
+  const trimmed = domain.trim();
+  if (!trimmed || trimmed === '1' || trimmed === '0' || !trimmed.includes('.')) {
+    return `https://${fallbackHost}`;
+  }
+  const withProto = (trimmed.startsWith('http://') || trimmed.startsWith('https://'))
+    ? trimmed
+    : `https://${trimmed}`;
+  return withProto.replace(/\/+$/, '');
+}
+
+export function sanitizeBasePath(basePath) {
+  if (!basePath || typeof basePath !== 'string') return '';
+  const trimmed = basePath.trim().replace(/^\/+/, '').replace(/\/+$/, '');
+  if (trimmed === '1' || trimmed === '0' || trimmed.toLowerCase() === 'none' || trimmed.toLowerCase() === 'null') {
+    return '';
+  }
+  return trimmed;
+}
+
 // ── OSS HMAC-SHA1 signing via Web Crypto API ──
 async function hmacSha1Base64(keyStr, dataStr) {
   const encoder = new TextEncoder();
@@ -118,7 +139,7 @@ function generateObjectName(file, basePath = '') {
   const now = new Date();
   const uuid = crypto.randomUUID().replace(/-/g, '').slice(0, 16);
   const datePath = `${now.getFullYear()}/${pad2(now.getMonth() + 1)}/${uuid}.${ext}`;
-  const cleanBase = basePath.replace(/^\/+/, '').replace(/\/+$/, '');
+  const cleanBase = sanitizeBasePath(basePath);
   return cleanBase ? `${cleanBase}/${datePath}` : datePath;
 }
 
@@ -197,9 +218,8 @@ async function uploadToCustomOSS(file, rawConfig) {
     throw new Error(`图床上传失败 (${response.status}): ${errorText || response.statusText}`);
   }
 
-  const rawDomain = config.domain || `https://${bucketHost}`;
-  const domain = (rawDomain.startsWith('http://') || rawDomain.startsWith('https://') ? rawDomain : `https://${rawDomain}`).replace(/\/+$/, '');
-  const fileUrl = `${domain}/${objectName}`;
+  const cleanDomain = sanitizeDomain(config.domain, bucketHost);
+  const fileUrl = `${cleanDomain}/${objectName}`;
 
   return fileUrl;
 }
@@ -259,7 +279,20 @@ async function uploadToServerDefaultOSS(file) {
     throw new Error(`默认图床上传失败 (${response.status}): ${errorText || response.statusText}`);
   }
 
-  return signData.fileUrl;
+  let fileUrl = signData.fileUrl;
+  try {
+    const urlObj = new URL(fileUrl);
+    if (!urlObj.hostname || !urlObj.hostname.includes('.') || urlObj.hostname === '1' || urlObj.hostname === '0') {
+      const uploadUrlObj = new URL(signData.uploadUrl);
+      urlObj.host = uploadUrlObj.host;
+      urlObj.protocol = uploadUrlObj.protocol;
+      fileUrl = urlObj.toString();
+    }
+  } catch {
+    // 保持原样
+  }
+
+  return fileUrl;
 }
 
 // ── Universal Entry Point (Custom first, then Server Default) ──

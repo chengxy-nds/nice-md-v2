@@ -73,7 +73,8 @@ function createOssProxyMiddleware() {
             const pad2 = n => String(n).padStart(2, '0');
             const uuid = crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 16) : Math.random().toString(36).substring(2, 18);
             const datePath = `${now.getFullYear()}/${pad2(now.getMonth() + 1)}/${uuid}.${ext}`;
-            const cleanBase = ossConfig.basePath.replace(/^\/+/, '').replace(/\/+$/, '');
+            const rawBase = (ossConfig.basePath || '').trim().replace(/^\/+/, '').replace(/\/+$/, '');
+            const cleanBase = (rawBase === '1' || rawBase === '0' || rawBase.toLowerCase() === 'none' || rawBase.toLowerCase() === 'null') ? '' : rawBase;
             const objectName = cleanBase ? `${cleanBase}/${datePath}` : datePath;
 
             let bucketHost = (ossConfig.endpoint || '').replace(/^https?:\/\//i, '').replace(/\/+$/, '').trim();
@@ -93,9 +94,10 @@ function createOssProxyMiddleware() {
             const policyBase64 = Buffer.from(JSON.stringify(policyObj)).toString('base64');
             const signature = crypto.createHmac('sha1', ossConfig.accessKeySecret).update(policyBase64).digest('base64');
 
-            const rawDomain = ossConfig.domain || `https://${bucketHost}`;
-            const cleanDomain = (rawDomain.startsWith('http://') || rawDomain.startsWith('https://') ? rawDomain : `https://${rawDomain}`).replace(/\/+$/, '');
-            const fileUrl = `${cleanDomain}/${objectName}`;
+            const rawDomain = (ossConfig.domain || '').trim();
+            const isInvalidDomain = !rawDomain || rawDomain === '1' || rawDomain === '0' || !rawDomain.includes('.');
+            const effectiveDomain = isInvalidDomain ? `https://${bucketHost}` : (rawDomain.startsWith('http://') || rawDomain.startsWith('https://') ? rawDomain : `https://${rawDomain}`).replace(/\/+$/, '');
+            const fileUrl = `${effectiveDomain}/${objectName}`;
             const uploadUrl = `https://${bucketHost}/`;
 
             res.statusCode = 200;

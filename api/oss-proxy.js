@@ -35,6 +35,27 @@ function pad2(n) {
   return String(n).padStart(2, '0');
 }
 
+function sanitizeDomain(domain, fallbackHost) {
+  if (!domain || typeof domain !== 'string') return `https://${fallbackHost}`;
+  const trimmed = domain.trim();
+  if (!trimmed || trimmed === '1' || trimmed === '0' || !trimmed.includes('.')) {
+    return `https://${fallbackHost}`;
+  }
+  const withProto = (trimmed.startsWith('http://') || trimmed.startsWith('https://'))
+    ? trimmed
+    : `https://${trimmed}`;
+  return withProto.replace(/\/+$/, '');
+}
+
+function sanitizeBasePath(basePath) {
+  if (!basePath || typeof basePath !== 'string') return '';
+  const trimmed = basePath.trim().replace(/^\/+/, '').replace(/\/+$/, '');
+  if (trimmed === '1' || trimmed === '0' || trimmed.toLowerCase() === 'none' || trimmed.toLowerCase() === 'null') {
+    return '';
+  }
+  return trimmed;
+}
+
 function generateObjectName(filename, basePath = '') {
   const ext = ((filename || 'image.png').split('.').pop() || 'png').toLowerCase();
   const now = new Date();
@@ -42,7 +63,7 @@ function generateObjectName(filename, basePath = '') {
     ? crypto.randomUUID().replace(/-/g, '').slice(0, 16)
     : Math.random().toString(36).substring(2, 10) + Math.random().toString(36).substring(2, 10);
   const datePath = `${now.getFullYear()}/${pad2(now.getMonth() + 1)}/${uuid}.${ext}`;
-  const cleanBase = basePath.replace(/^\/+/, '').replace(/\/+$/, '');
+  const cleanBase = sanitizeBasePath(basePath);
   return cleanBase ? `${cleanBase}/${datePath}` : datePath;
 }
 
@@ -99,11 +120,7 @@ async function generateSignedUploadParams(ossConfig, filename = 'image.png') {
   const policyBase64 = base64Encode(JSON.stringify(policyObj));
   const signature = await hmacSha1Base64(ossConfig.accessKeySecret, policyBase64);
 
-  const rawDomain = ossConfig.domain || `https://${bucketHost}`;
-  const cleanDomain = (rawDomain.startsWith('http://') || rawDomain.startsWith('https://')
-    ? rawDomain
-    : `https://${rawDomain}`).replace(/\/+$/, '');
-
+  const cleanDomain = sanitizeDomain(ossConfig.domain, bucketHost);
   const fileUrl = `${cleanDomain}/${objectName}`;
   const uploadUrl = `https://${bucketHost}/`;
 
