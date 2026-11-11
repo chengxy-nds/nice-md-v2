@@ -1,5 +1,9 @@
+<script>
+let closeActiveDocMenu = null;
+</script>
+
 <script setup>
-import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue';
+import { ref, computed, nextTick, watch, onUnmounted } from 'vue';
 import { Pencil, Trash2, History, Copy, Pin, MoreHorizontal } from 'lucide-vue-next';
 import { showConfirm } from '../utils/confirmDialog';
 
@@ -20,6 +24,13 @@ const elRef = ref(null);
 
 const isMenuOpen = ref(false);
 const menuRef = ref(null);
+const moreBtnRef = ref(null);
+const menuPlacement = ref('bottom');
+const menuStyle = ref({
+  top: '-9999px',
+  left: '-9999px',
+  visibility: 'hidden'
+});
 
 watch(() => props.isActive, (newVal) => {
   if (newVal) {
@@ -101,19 +112,116 @@ function cancelRename() {
   isRenaming.value = false;
 }
 
+const MENU_VIEWPORT_PADDING = 8;
+const MENU_GAP = 4;
+
+function handleOutsidePointerDown(e) {
+  if (!isMenuOpen.value) return;
+  if (menuRef.value?.contains(e.target) || moreBtnRef.value?.contains(e.target)) return;
+  closeMenu();
+}
+
+function handleMenuKeyDown(e) {
+  if (e.key === 'Escape' && isMenuOpen.value) {
+    closeMenu();
+  }
+}
+
+function handleViewportScroll(e) {
+  if (!isMenuOpen.value) return;
+  if (menuRef.value?.contains(e.target)) return;
+  closeMenu();
+}
+
+function attachMenuGlobalListeners() {
+  window.addEventListener('mousedown', handleOutsidePointerDown, true);
+  window.addEventListener('keydown', handleMenuKeyDown);
+  window.addEventListener('scroll', handleViewportScroll, true);
+  window.addEventListener('resize', closeMenu);
+}
+
+function detachMenuGlobalListeners() {
+  window.removeEventListener('mousedown', handleOutsidePointerDown, true);
+  window.removeEventListener('keydown', handleMenuKeyDown);
+  window.removeEventListener('scroll', handleViewportScroll, true);
+  window.removeEventListener('resize', closeMenu);
+}
+
+async function openMenuAt({ source = 'button', clientX = 0, clientY = 0 } = {}) {
+  if (closeActiveDocMenu && closeActiveDocMenu !== closeMenu) {
+    closeActiveDocMenu();
+  }
+  closeActiveDocMenu = closeMenu;
+  menuStyle.value = { top: '-9999px', left: '-9999px', visibility: 'hidden' };
+  isMenuOpen.value = true;
+  attachMenuGlobalListeners();
+
+  await nextTick();
+  if (!isMenuOpen.value || !menuRef.value) return;
+
+  const menuRect = menuRef.value.getBoundingClientRect();
+  const maxLeft = Math.max(MENU_VIEWPORT_PADDING, window.innerWidth - menuRect.width - MENU_VIEWPORT_PADDING);
+  const maxTop = Math.max(MENU_VIEWPORT_PADDING, window.innerHeight - menuRect.height - MENU_VIEWPORT_PADDING);
+
+  let preferredLeft;
+  let anchorTop;
+  let anchorBottom;
+
+  if (source === 'context' && (clientX > 0 || clientY > 0)) {
+    preferredLeft = clientX + menuRect.width > window.innerWidth - MENU_VIEWPORT_PADDING
+      ? clientX - menuRect.width
+      : clientX;
+    anchorTop = clientY;
+    anchorBottom = clientY;
+  } else {
+    const anchorRect = (moreBtnRef.value || elRef.value)?.getBoundingClientRect();
+    if (!anchorRect) {
+      closeMenu();
+      return;
+    }
+    preferredLeft = anchorRect.right - menuRect.width;
+    anchorTop = anchorRect.top;
+    anchorBottom = anchorRect.bottom;
+  }
+
+  const spaceBelow = window.innerHeight - anchorBottom - MENU_VIEWPORT_PADDING;
+  const spaceAbove = anchorTop - MENU_VIEWPORT_PADDING;
+  const flipUp = spaceBelow < menuRect.height + MENU_GAP && spaceAbove > spaceBelow;
+  menuPlacement.value = flipUp ? 'top' : 'bottom';
+
+  const top = flipUp
+    ? Math.max(MENU_VIEWPORT_PADDING, anchorTop - menuRect.height - MENU_GAP)
+    : Math.min(anchorBottom + MENU_GAP, maxTop);
+  const left = Math.min(Math.max(preferredLeft, MENU_VIEWPORT_PADDING), maxLeft);
+
+  menuStyle.value = {
+    top: `${Math.round(top)}px`,
+    left: `${Math.round(left)}px`,
+    visibility: 'visible'
+  };
+}
+
 function toggleMenu(e) {
   e?.stopPropagation();
-  isMenuOpen.value = !isMenuOpen.value;
+  if (isMenuOpen.value) {
+    closeMenu();
+    return;
+  }
+  openMenuAt({ source: 'button' });
 }
 
 function closeMenu() {
   isMenuOpen.value = false;
+  detachMenuGlobalListeners();
+  if (closeActiveDocMenu === closeMenu) {
+    closeActiveDocMenu = null;
+  }
 }
 
 function openContextMenu(e) {
   e.preventDefault();
   e.stopPropagation();
-  isMenuOpen.value = true;
+  openMenuAt({ source: 'context', clientX: e.clientX, clientY: e.clientY });
 }
 
 function handleTogglePin() {
@@ -182,12 +290,8 @@ function onDrop(e) {
   emit('move-doc', { docId, targetDocId: props.doc.id, position: dragPosition.value });
 }
 
-onMounted(() => {
-  window.addEventListener('click', closeMenu);
-});
-
 onUnmounted(() => {
-  window.removeEventListener('click', closeMenu);
+  closeMenu();
 });
 </script>
 
@@ -247,6 +351,7 @@ onUnmounted(() => {
 
     <!-- More button (···) -->
     <button
+      ref="moreBtnRef"
       class="more"
       :class="{ 'is-active': isMenuOpen }"
       @click.stop="toggleMenu"
@@ -255,30 +360,40 @@ onUnmounted(() => {
       <MoreHorizontal size="15" />
     </button>
 
-    <!-- Floating Context Dropdown Menu -->
-    <div v-if="isMenuOpen" class="doc-menu-dropdown" ref="menuRef" @click.stop>
-      <button class="menu-item" @click="handleTogglePin">
-        <Pin size="12" class="menu-item-icon" />
-        <span>{{ doc.isPinned ? '取消置顶' : '置顶文档' }}</span>
-      </button>
-      <button class="menu-item" @click="startRenameFromMenu">
-        <Pencil size="12" class="menu-item-icon" />
-        <span>重命名 (双击)</span>
-      </button>
-      <button class="menu-item" @click="handleDuplicate">
-        <Copy size="12" class="menu-item-icon" />
-        <span>创建副本</span>
-      </button>
-      <button class="menu-item" @click="handleHistory">
-        <History size="12" class="menu-item-icon" />
-        <span>历史版本与比对</span>
-      </button>
-      <div class="menu-divider"></div>
-      <button class="menu-item text-danger" @click="handleDelete">
-        <Trash2 size="12" class="menu-item-icon" />
-        <span>移至回收站</span>
-      </button>
-    </div>
+    <!-- Floating Context Dropdown Menu (teleported to avoid scroll-area clipping) -->
+    <Teleport to="body">
+      <div
+        v-if="isMenuOpen"
+        class="doc-menu-dropdown"
+        :class="{ 'is-flip-up': menuPlacement === 'top' }"
+        :style="menuStyle"
+        ref="menuRef"
+        role="menu"
+        @click.stop
+      >
+        <button class="menu-item" role="menuitem" @click="handleTogglePin">
+          <Pin size="12" class="menu-item-icon" />
+          <span>{{ doc.isPinned ? '取消置顶' : '置顶文档' }}</span>
+        </button>
+        <button class="menu-item" role="menuitem" @click="startRenameFromMenu">
+          <Pencil size="12" class="menu-item-icon" />
+          <span>重命名 (双击)</span>
+        </button>
+        <button class="menu-item" role="menuitem" @click="handleDuplicate">
+          <Copy size="12" class="menu-item-icon" />
+          <span>创建副本</span>
+        </button>
+        <button class="menu-item" role="menuitem" @click="handleHistory">
+          <History size="12" class="menu-item-icon" />
+          <span>历史版本与比对</span>
+        </button>
+        <div class="menu-divider"></div>
+        <button class="menu-item text-danger" role="menuitem" @click="handleDelete">
+          <Trash2 size="12" class="menu-item-icon" />
+          <span>移至回收站</span>
+        </button>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -467,22 +582,32 @@ html.dark .rename-input:focus {
 
 /* Floating Dropdown Context Menu */
 .doc-menu-dropdown {
-  position: absolute;
-  right: 6px;
-  top: 32px;
-  z-index: 120;
-  min-width: 136px;
+  position: fixed;
+  z-index: 1500;
+  min-width: 144px;
   background: #ffffff;
   border: 1px solid #dfe7f1;
   border-radius: 9px;
   padding: 4px;
-  box-shadow: 0 10px 25px rgba(27, 55, 90, 0.12), 0 2px 6px rgba(27, 55, 90, 0.04);
+  box-shadow: 0 10px 25px rgba(27, 55, 90, 0.14), 0 2px 6px rgba(27, 55, 90, 0.05);
+  transform-origin: top right;
   animation: menuFadeIn 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
   box-sizing: border-box;
+}
+
+.doc-menu-dropdown.is-flip-up {
+  transform-origin: bottom right;
+  animation-name: menuFadeInUp;
 }
 
 @keyframes menuFadeIn {
   from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes menuFadeInUp {
+  from { opacity: 0; transform: translateY(4px) scale(0.97); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
