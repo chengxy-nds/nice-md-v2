@@ -328,6 +328,9 @@ watch([activeDocId, activeDocMap], ([newId, docMap]) => {
 // Take snapshot before switching doc & clear transient inline rename
 watch(activeDocId, (newId, oldId) => {
   renamingTabId.value = null;
+  if (newId !== oldId) {
+    scrollPercentage.value = 0;
+  }
   if (oldId) {
     const prevDoc = documents.value.find(d => d.id === oldId);
     if (prevDoc && prevDoc.content) {
@@ -879,7 +882,17 @@ function handleSyncComplete(payload) {
   if (!payload) return;
   isApplyingSync = true;
   if (payload.docs && Array.isArray(payload.docs)) {
-    const safeDocs = filterOutTombstonedEntities('docs', payload.docs.map(normalizeDoc));
+    const localActive = documents.value.find(d => d.id === activeDocId.value);
+    const localActiveTs = Number(localActive?.updatedAt || localActive?.createdAt || 0);
+    const safeDocs = filterOutTombstonedEntities('docs', payload.docs.map(normalizeDoc)).map(doc => {
+      if (localActive && doc.id === localActive.id) {
+        const incomingTs = Number(doc.updatedAt || doc.createdAt || 0);
+        if (localActiveTs > incomingTs) {
+          return normalizeDoc({ ...localActive });
+        }
+      }
+      return doc;
+    });
     documents.value = [...safeDocs];
     saveDocuments(documents.value);
   }
@@ -1858,9 +1871,6 @@ const handleScroll = (percentage) => {
 
 const handleFocusActive = (pane) => {
   activeScrollPane.value = pane;
-  if (pane === 'editor') {
-    sidebarRef.value?.expandActiveGroup();
-  }
 };
 
 const handleEditorClick = () => {
@@ -2407,6 +2417,7 @@ watch(customStyles, () => {
               <EditorPanel
                 ref="editorPanelRef"
                 v-model="markdownContent"
+                :docId="activeDocId || ''"
                 :docTitle="activeDocument?.title ?? '未命名文档'"
                 :scrollPercentage="scrollPercentage"
                 :activePane="activeScrollPane"

@@ -70,6 +70,10 @@ const props = defineProps({
     type: String,
     default: ''
   },
+  docId: {
+    type: String,
+    default: ''
+  },
   docTitle: {
     type: String,
     default: '未命名文档'
@@ -134,14 +138,28 @@ const loadPreferences = () => {
   showLineNumbers.value = localStorage.getItem('nicemd_line_numbers') !== 'false';
   if (cmView) {
     const currentSelection = cmView.state.selection;
+    const prevScrollTop = cmView.scrollDOM ? cmView.scrollDOM.scrollTop : 0;
     cmView.destroy();
     cmView = null;
     nextTick(() => {
       initCodeMirror();
-      if (cmView && currentSelection) {
-        try {
-          cmView.dispatch({ selection: currentSelection });
-        } catch (e) {}
+      if (cmView) {
+        if (currentSelection) {
+          try {
+            const docLen = cmView.state.doc.length;
+            cmView.dispatch({
+              selection: {
+                anchor: Math.min(currentSelection.main.anchor, docLen),
+                head: Math.min(currentSelection.main.head, docLen)
+              }
+            });
+          } catch {}
+        }
+        requestAnimationFrame(() => {
+          if (cmView?.scrollDOM) {
+            cmView.scrollDOM.scrollTop = prevScrollTop;
+          }
+        });
       }
     });
   }
@@ -214,20 +232,6 @@ const startUrlExtraction = async () => {
     isExtracting.value = false;
   }
 };
-
-watch(() => props.modelValue, (newVal) => {
-  if (newVal !== editorText.value) {
-    editorText.value = newVal || '';
-    if (cmView && !isUpdatingFromCodeMirror) {
-      const currentDoc = cmView.state.doc.toString();
-      if (currentDoc !== newVal) {
-        cmView.dispatch({
-          changes: { from: 0, to: currentDoc.length, insert: newVal || '' }
-        });
-      }
-    }
-  }
-});
 
 // Update value and emit event
 const handleInput = (e) => {
@@ -597,7 +601,7 @@ function clearUrlHoverTimer() {
 function hideUrlPreviewImmediately() {
   clearUrlHoverTimer();
   hoveredUrlInfo.value = null;
-  if (cmView?.contentDOM) {
+  if (cmView?.contentDOM && cmView.contentDOM.style.cursor) {
     cmView.contentDOM.style.cursor = '';
   }
 }
@@ -1426,8 +1430,22 @@ const handleScroll = () => {
   }
 };
 
+let isProgrammaticEditorScroll = false;
+
 watch(() => props.scrollPercentage, (percentage) => {
-  if (props.activePane !== 'editor' && textareaRef.value) {
+  if (props.activePane === 'editor') return;
+  if (cmView?.scrollDOM) {
+    const maxScroll = cmView.scrollDOM.scrollHeight - cmView.scrollDOM.clientHeight;
+    if (maxScroll > 0) {
+      isProgrammaticEditorScroll = true;
+      cmView.scrollDOM.scrollTop = percentage * maxScroll;
+      requestAnimationFrame(() => {
+        isProgrammaticEditorScroll = false;
+      });
+    }
+    return;
+  }
+  if (textareaRef.value) {
     const maxScroll = textareaRef.value.scrollHeight - textareaRef.value.clientHeight;
     textareaRef.value.scrollTop = percentage * maxScroll;
     if (lineGutterRef.value) {
@@ -1634,6 +1652,7 @@ function initCodeMirror() {
   if (cmView && cmView.scrollDOM) {
     cmView.scrollDOM.addEventListener('scroll', () => {
       hideUrlPreviewImmediately();
+      if (isProgrammaticEditorScroll) return;
       if (props.activePane === 'editor' && cmView.scrollDOM) {
         const scrollHeight = cmView.scrollDOM.scrollHeight - cmView.scrollDOM.clientHeight;
         if (scrollHeight > 0) {
@@ -1656,8 +1675,13 @@ watch(isSyntaxHighlightActive, (active) => {
   }
 });
 
-watch(() => props.modelValue, (newVal) => {
-  if (isUpdatingFromCodeMirror) return;
+let lastSyncedDocId = props.docId;
+
+watch([() => props.docId, () => props.modelValue], ([newDocId, newVal]) => {
+  const docSwitched = newDocId !== lastSyncedDocId;
+  lastSyncedDocId = newDocId;
+
+  if (isUpdatingFromCodeMirror && !docSwitched) return;
   const val = newVal ?? '';
   if (editorText.value !== val) {
     editorText.value = val;
@@ -1665,9 +1689,29 @@ watch(() => props.modelValue, (newVal) => {
   if (cmView) {
     const currentDoc = cmView.state.doc.toString();
     if (currentDoc !== val) {
-      cmView.dispatch({
-        changes: { from: 0, to: currentDoc.length, insert: val }
-      });
+      if (docSwitched) {
+        cmView.dispatch({
+          changes: { from: 0, to: currentDoc.length, insert: val },
+          selection: { anchor: 0, head: 0 }
+        });
+        if (cmView.scrollDOM) cmView.scrollDOM.scrollTop = 0;
+      } else {
+        const prevScrollTop = cmView.scrollDOM ? cmView.scrollDOM.scrollTop : 0;
+        const prevSel = cmView.state.selection.main;
+        const nextAnchor = Math.min(prevSel.anchor, val.length);
+        const nextHead = Math.min(prevSel.head, val.length);
+        cmView.dispatch({
+          changes: { from: 0, to: currentDoc.length, insert: val },
+          selection: { anchor: nextAnchor, head: nextHead }
+        });
+        requestAnimationFrame(() => {
+          if (cmView?.scrollDOM) {
+            cmView.scrollDOM.scrollTop = prevScrollTop;
+          }
+        });
+      }
+    } else if (docSwitched && cmView.scrollDOM) {
+      cmView.scrollDOM.scrollTop = 0;
     }
   } else if (textareaRef.value && textareaRef.value.value !== val) {
     textareaRef.value.value = val;
