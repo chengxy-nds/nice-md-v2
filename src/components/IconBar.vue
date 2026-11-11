@@ -1,5 +1,6 @@
 <script setup>
 import { House, Files, Palette, Boxes, Settings, CircleHelp } from '@lucide/vue';
+import BrandLogo from './BrandLogo.vue';
 
 defineProps({
   sidebarVisible: { type: Boolean, default: true },
@@ -13,12 +14,20 @@ defineEmits(['toggle-tab']);
   <nav class="icon-bar select-none">
     <!-- Top Main Navigation Group -->
     <div class="icon-bar-top">
+      <div
+        class="icon-bar-brand"
+        @click="$emit('toggle-tab', 'home')"
+      >
+        <BrandLogo :size="28" />
+      </div>
+
+      <span class="icon-bar-divider"></span>
+
       <!-- 0. 官方首页 -->
       <button
         class="icon-btn"
         :class="{ 'is-active': currentView === 'home' }"
         @click="$emit('toggle-tab', 'home')"
-        title="官方首页"
       >
         <House size="19" :stroke-width="currentView === 'home' ? 2 : 1.7" />
       </button>
@@ -87,11 +96,33 @@ defineEmits(['toggle-tab']);
   flex-direction: column;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 0;
+  padding: 10px 0 12px;
   z-index: 10;
   box-sizing: border-box;
   border-right: 1px solid var(--border-subtle, #EDF1F7);
   transition: background 0.3s ease, border-color 0.3s ease;
+}
+
+.icon-bar-brand {
+  width: 36px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.icon-bar-divider {
+  width: 20px;
+  height: 1px;
+  background: var(--border-color, #E2E8F0);
+  margin: 1px 0;
+  opacity: 0.75;
+}
+
+html.dark .icon-bar-divider {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .icon-bar-top,

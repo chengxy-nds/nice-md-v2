@@ -6,7 +6,7 @@ import {
   Menu, Sparkles, Search, Image, ImagePlus, BookOpen, Link, Upload, Trash2,
   Link2, Link2Off, Eye, EyeOff, Download, Undo2, Redo2, Code2,
   ChevronDown, FileCode, FileText, Globe, Settings, Check, X,
-  Pencil, History, Copy
+  History, Copy, Plus, ArrowLeftToLine, ArrowRightToLine, CircleX
 } from '@lucide/vue';
 import { applyTheme, getThemeDefaultStyles, getThemeSavedStyles, themes as themePresets } from './utils/themePresets';
 import { codeThemes } from './utils/codeThemes';
@@ -35,6 +35,7 @@ import {
   loadDocuments, saveDocuments, normalizeDoc,
   loadGroups, saveGroups,
   loadActiveDocId, saveActiveDocId,
+  loadOpenTabs, hasPersistedOpenTabs, saveOpenTabs,
   loadSidebarVisible, saveSidebarVisible,
   generateId
 } from './utils/docStorage';
@@ -65,7 +66,14 @@ import { getActiveStorageSummary, initStorageDefaultIfAvailable } from './utils/
 // ── view & document state ──
 const currentView = ref('editor'); // 'home' | 'editor' | 'templates' | 'materials'
 
+function ensureActiveDoc() {
+  if (!activeDocument.value) {
+    handleCreateDoc(null);
+  }
+}
+
 function handleInsertMaterial(htmlSnippet) {
+  ensureActiveDoc();
   let snippet = htmlSnippet ? htmlSnippet.trim() : '';
   if (snippet && !snippet.includes('data-material="true"')) {
     snippet = snippet.replace(/^<([a-zA-Z0-9]+)/, '<$1 data-material="true"');
@@ -80,6 +88,7 @@ function handleInsertMaterial(htmlSnippet) {
 }
 
 function handleApplyBackground(mat) {
+  ensureActiveDoc();
   const normId = (mat.id || '').replace(/^bg-/, '').replace(/-classic$/, '').replace(/-none$/, '');
   const updatedStyles = JSON.parse(JSON.stringify(customStyles.value || {}));
   if (!updatedStyles.body) updatedStyles.body = {};
@@ -92,11 +101,104 @@ function handleApplyBackground(mat) {
 const documents = ref([]);
 const groups = ref([]);
 const activeDocId = ref(null);
+const openTabIds = ref([]);
+const tabsScrollRef = ref(null);
 const sidebarVisible = ref(true);
 
 const activeDocument = computed(() =>
   documents.value.find(d => d.id === activeDocId.value)
 );
+
+const activeDocMap = computed(() => {
+  const map = new Map();
+  for (const doc of documents.value) {
+    if (!doc.isDeleted && !doc.is_deleted) {
+      map.set(doc.id, doc);
+    }
+  }
+  return map;
+});
+
+const openTabs = computed(() =>
+  openTabIds.value
+    .map(id => activeDocMap.value.get(id))
+    .filter(Boolean)
+    .map(doc => ({ id: doc.id, title: doc.title || '未命名文档' }))
+);
+
+function scrollActiveTabIntoView(tabId = activeDocId.value) {
+  if (!tabId) return;
+  nextTick(() => {
+    const container = tabsScrollRef.value;
+    if (!container) return;
+    const target = Array.from(container.children).find(el => el.dataset?.tabId === tabId);
+    target?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+  });
+}
+
+function handleTabsWheel(e) {
+  const container = tabsScrollRef.value;
+  if (!container) return;
+  const delta = Math.abs(e.deltaY) >= Math.abs(e.deltaX) ? e.deltaY : e.deltaX;
+  container.scrollLeft += delta;
+}
+
+const TAB_DRAG_THRESHOLD = 4;
+const isDraggingTabs = ref(false);
+let tabDragStartX = 0;
+let tabDragStartScrollLeft = 0;
+let hasMovedDuringTabDrag = false;
+let suppressNextTabClick = false;
+let suppressClickTimer = null;
+
+function handleTabsMouseDown(e) {
+  if (e.button !== 0) return;
+  if (e.target.closest('.workspace-tab-close, .workspace-tab-input')) return;
+  const container = tabsScrollRef.value;
+  if (!container || container.scrollWidth <= container.clientWidth) return;
+
+  tabDragStartX = e.clientX;
+  tabDragStartScrollLeft = container.scrollLeft;
+  hasMovedDuringTabDrag = false;
+  window.addEventListener('mousemove', handleTabsMouseMove);
+  window.addEventListener('mouseup', stopTabDrag);
+  window.addEventListener('blur', stopTabDrag);
+}
+
+function handleTabsMouseMove(e) {
+  const container = tabsScrollRef.value;
+  if (!container) return;
+  const dx = e.clientX - tabDragStartX;
+  if (!hasMovedDuringTabDrag && Math.abs(dx) < TAB_DRAG_THRESHOLD) return;
+  if (!hasMovedDuringTabDrag) {
+    hasMovedDuringTabDrag = true;
+    isDraggingTabs.value = true;
+  }
+  container.scrollLeft = tabDragStartScrollLeft - dx;
+}
+
+function stopTabDrag() {
+  window.removeEventListener('mousemove', handleTabsMouseMove);
+  window.removeEventListener('mouseup', stopTabDrag);
+  window.removeEventListener('blur', stopTabDrag);
+  if (hasMovedDuringTabDrag) {
+    suppressNextTabClick = true;
+    clearTimeout(suppressClickTimer);
+    suppressClickTimer = setTimeout(() => {
+      suppressNextTabClick = false;
+    }, 0);
+  }
+  hasMovedDuringTabDrag = false;
+  isDraggingTabs.value = false;
+}
+
+function handleTabClick(tabId) {
+  if (suppressNextTabClick) {
+    suppressNextTabClick = false;
+    return;
+  }
+  handleSelectDoc(tabId);
+}
 
 const markdownContent = computed({
   get: () => activeDocument.value?.content ?? '',
@@ -207,13 +309,30 @@ watch(markdownContent, (newContent) => {
   }, 10000);
 });
 
-// Take snapshot before switching doc
+// Keep open tabs synced with active document & prune deleted/removed docs
+watch([activeDocId, activeDocMap], ([newId, docMap]) => {
+  const pruned = openTabIds.value.filter(id => docMap.has(id));
+  if (newId && docMap.has(newId) && !pruned.includes(newId)) {
+    pruned.push(newId);
+  }
+  const changed = pruned.length !== openTabIds.value.length || pruned.some((id, idx) => id !== openTabIds.value[idx]);
+  if (changed) {
+    openTabIds.value = pruned;
+    saveOpenTabs(pruned);
+  }
+}, { immediate: false });
+
+// Take snapshot before switching doc & clear transient inline rename
 watch(activeDocId, (newId, oldId) => {
+  renamingTabId.value = null;
   if (oldId) {
     const prevDoc = documents.value.find(d => d.id === oldId);
     if (prevDoc && prevDoc.content) {
       createSnapshot(prevDoc.id, prevDoc.title, prevDoc.content, prevDoc.customStyles, 'auto');
     }
+  }
+  if (newId) {
+    scrollActiveTabIntoView(newId);
   }
 });
 
@@ -222,6 +341,172 @@ function handleSelectDoc(id) {
   soundEngine.playClick();
   activeDocId.value = id;
   saveActiveDocId(id);
+}
+
+function closeTabList(nextIds, fallbackFocusId = null) {
+  renamingTabId.value = null;
+  closeTabMenu();
+  soundEngine.playClick('backspace');
+  openTabIds.value = nextIds;
+  saveOpenTabs(nextIds);
+  if (nextIds.length === 0) {
+    activeDocId.value = null;
+    saveActiveDocId('');
+    return;
+  }
+  if (!activeDocId.value || !nextIds.includes(activeDocId.value)) {
+    const nextActive = (fallbackFocusId && nextIds.includes(fallbackFocusId)) ? fallbackFocusId : nextIds[0];
+    activeDocId.value = nextActive;
+    saveActiveDocId(nextActive);
+  }
+}
+
+function handleCloseTab(tabId) {
+  const idx = openTabIds.value.indexOf(tabId);
+  if (idx === -1) return;
+  const nextIds = openTabIds.value.filter(id => id !== tabId);
+  const fallbackId = nextIds[Math.min(idx, nextIds.length - 1)] || null;
+  closeTabList(nextIds, fallbackId);
+}
+
+function handleCloseLeftTabs(tabId) {
+  const idx = openTabIds.value.indexOf(tabId);
+  if (idx <= 0) return;
+  closeTabList(openTabIds.value.slice(idx), tabId);
+}
+
+function handleCloseRightTabs(tabId) {
+  const idx = openTabIds.value.indexOf(tabId);
+  if (idx === -1 || idx >= openTabIds.value.length - 1) return;
+  closeTabList(openTabIds.value.slice(0, idx + 1), tabId);
+}
+
+function handleCloseAllTabs() {
+  if (openTabIds.value.length === 0) return;
+  closeTabList([]);
+}
+
+const TAB_MENU_VIEWPORT_PADDING = 8;
+const TAB_MENU_OFFSET_Y = 6;
+const tabMenuRef = ref(null);
+const tabMenuVisible = ref(false);
+const tabMenuTargetId = ref(null);
+const tabMenuStyle = ref({});
+let tabMenuHoverOpenTimer = null;
+let tabMenuHoverCloseTimer = null;
+
+const tabMenuTargetIndex = computed(() =>
+  tabMenuTargetId.value ? openTabs.value.findIndex(t => t.id === tabMenuTargetId.value) : -1
+);
+
+const tabMenuItems = computed(() => {
+  const targetId = tabMenuTargetId.value;
+  const idx = tabMenuTargetIndex.value;
+  const total = openTabs.value.length;
+  return [
+    { key: 'close', label: '关闭', icon: X, disabled: idx === -1, action: () => handleCloseTab(targetId) },
+    { key: 'close-left', label: '关闭左侧', icon: ArrowLeftToLine, disabled: idx <= 0, action: () => handleCloseLeftTabs(targetId) },
+    { key: 'close-right', label: '关闭右侧', icon: ArrowRightToLine, disabled: idx === -1 || idx >= total - 1, action: () => handleCloseRightTabs(targetId) },
+    { key: 'close-all', label: '关闭全部', icon: CircleX, danger: true, dividerBefore: true, disabled: total === 0, action: () => handleCloseAllTabs() }
+  ];
+});
+
+function clearTabMenuTimers() {
+  if (tabMenuHoverOpenTimer) {
+    clearTimeout(tabMenuHoverOpenTimer);
+    tabMenuHoverOpenTimer = null;
+  }
+  if (tabMenuHoverCloseTimer) {
+    clearTimeout(tabMenuHoverCloseTimer);
+    tabMenuHoverCloseTimer = null;
+  }
+}
+
+function handleTabMenuOutsidePointerDown(e) {
+  if (!tabMenuVisible.value) return;
+  if (tabMenuRef.value?.contains(e.target)) return;
+  closeTabMenu();
+}
+
+function handleTabMenuKeyDown(e) {
+  if (e.key === 'Escape' && tabMenuVisible.value) {
+    closeTabMenu();
+  }
+}
+
+function attachTabMenuListeners() {
+  window.addEventListener('mousedown', handleTabMenuOutsidePointerDown, true);
+  window.addEventListener('keydown', handleTabMenuKeyDown);
+  window.addEventListener('resize', closeTabMenu);
+}
+
+function detachTabMenuListeners() {
+  window.removeEventListener('mousedown', handleTabMenuOutsidePointerDown, true);
+  window.removeEventListener('keydown', handleTabMenuKeyDown);
+  window.removeEventListener('resize', closeTabMenu);
+}
+
+async function positionTabMenu(anchorX, anchorY) {
+  tabMenuStyle.value = { top: '-9999px', left: '-9999px', visibility: 'hidden' };
+  await nextTick();
+  if (!tabMenuVisible.value || !tabMenuRef.value) return;
+
+  const rect = tabMenuRef.value.getBoundingClientRect();
+  const maxLeft = Math.max(TAB_MENU_VIEWPORT_PADDING, window.innerWidth - rect.width - TAB_MENU_VIEWPORT_PADDING);
+  const maxTop = Math.max(TAB_MENU_VIEWPORT_PADDING, window.innerHeight - rect.height - TAB_MENU_VIEWPORT_PADDING);
+  const left = Math.min(Math.max(anchorX, TAB_MENU_VIEWPORT_PADDING), maxLeft);
+  const top = Math.min(Math.max(anchorY, TAB_MENU_VIEWPORT_PADDING), maxTop);
+
+  tabMenuStyle.value = {
+    top: `${Math.round(top)}px`,
+    left: `${Math.round(left)}px`,
+    visibility: 'visible'
+  };
+}
+
+function openTabMenu(tabId, anchorX, anchorY) {
+  clearTabMenuTimers();
+  tabMenuTargetId.value = tabId;
+  if (!tabMenuVisible.value) {
+    tabMenuVisible.value = true;
+    attachTabMenuListeners();
+  }
+  positionTabMenu(anchorX, anchorY);
+}
+
+function closeTabMenu() {
+  clearTabMenuTimers();
+  if (tabMenuVisible.value) {
+    tabMenuVisible.value = false;
+    tabMenuTargetId.value = null;
+    detachTabMenuListeners();
+  }
+}
+
+function scheduleTabMenuHoverOpen(anchorEl, tabId) {
+  clearTabMenuTimers();
+  if (!anchorEl || isDraggingTabs.value) return;
+  const delayMs = tabMenuVisible.value ? 0 : 150;
+  tabMenuHoverOpenTimer = setTimeout(() => {
+    const rect = anchorEl.getBoundingClientRect();
+    openTabMenu(tabId, rect.left - 8, rect.bottom + TAB_MENU_OFFSET_Y);
+  }, delayMs);
+}
+
+function scheduleTabMenuClose() {
+  clearTabMenuTimers();
+  tabMenuHoverCloseTimer = setTimeout(() => {
+    closeTabMenu();
+  }, 160);
+}
+
+function openTabMenuFromContext(e, tabId) {
+  openTabMenu(tabId, e.clientX, e.clientY);
+}
+
+function handleSelectTabMenuItem(item) {
+  if (item.disabled) return;
+  item.action();
 }
 
 function handleCreateDoc(groupId = null) {
@@ -350,7 +635,7 @@ function handleApplyTemplate(template) {
   const title = (typeof template === 'object' && template.title) ? template.title : '已套用模板';
   const tmplCustomStyles = (typeof template === 'object' && template.customStyles) ? template.customStyles : {};
 
-  if (!markdownContent.value || markdownContent.value.trim() === defaultMarkdown.trim()) {
+  if (activeDocument.value && (!markdownContent.value || markdownContent.value.trim() === defaultMarkdown.trim())) {
     markdownContent.value = content;
     if (activeDocument.value) {
       activeDocument.value.title = title;
@@ -416,32 +701,35 @@ function handleRenameDoc({ id, title }) {
   }
 }
 
-// ── Toolbar document title inline rename ──
-const isRenamingToolbarDoc = ref(false);
-const toolbarDocRenameValue = ref('');
-const toolbarDocInputRef = ref(null);
+// ── Tab document title inline rename ──
+const renamingTabId = ref(null);
+const tabRenameValue = ref('');
+const tabRenameInputRef = ref(null);
 
-function startRenameToolbarDoc() {
-  if (!activeDocument.value) return;
-  toolbarDocRenameValue.value = activeDocument.value.title || '未命名文档';
-  isRenamingToolbarDoc.value = true;
+function startRenameTab(tab) {
+  if (!tab?.id) return;
+  closeTabMenu();
+  tabRenameValue.value = tab.title || '未命名文档';
+  renamingTabId.value = tab.id;
   nextTick(() => {
-    toolbarDocInputRef.value?.focus();
-    toolbarDocInputRef.value?.select();
+    const inputEl = Array.isArray(tabRenameInputRef.value) ? tabRenameInputRef.value[0] : tabRenameInputRef.value;
+    inputEl?.focus();
+    inputEl?.select();
   });
 }
 
-function confirmRenameToolbarDoc() {
-  if (!isRenamingToolbarDoc.value) return;
-  const trimmed = toolbarDocRenameValue.value.trim();
-  if (trimmed && activeDocument.value) {
-    handleRenameDoc({ id: activeDocument.value.id, title: trimmed });
+function confirmRenameTab() {
+  if (!renamingTabId.value) return;
+  const targetId = renamingTabId.value;
+  const trimmed = tabRenameValue.value.trim();
+  renamingTabId.value = null;
+  if (trimmed) {
+    handleRenameDoc({ id: targetId, title: trimmed });
   }
-  isRenamingToolbarDoc.value = false;
 }
 
-function cancelRenameToolbarDoc() {
-  isRenamingToolbarDoc.value = false;
+function cancelRenameTab() {
+  renamingTabId.value = null;
 }
 
 function handleDeleteDoc(id) {
@@ -1630,11 +1918,22 @@ onMounted(async () => {
     saveDocuments(documents.value);
   }
 
-  // 3. Set active document
+  // 3. Restore open tabs & active document
+  const persistedTabsExist = hasPersistedOpenTabs();
+  const savedTabs = loadOpenTabs().filter(id => activeDocMap.value.has(id));
   const savedActiveId = loadActiveDocId();
-  activeDocId.value = documents.value.some(d => d.id === savedActiveId)
-    ? savedActiveId
-    : documents.value[0].id;
+  const explicitClosedAll = persistedTabsExist && savedTabs.length === 0 && !savedActiveId;
+  const initialActiveId = explicitClosedAll
+    ? null
+    : (activeDocMap.value.has(savedActiveId)
+        ? savedActiveId
+        : (documents.value.find(d => !d.isDeleted && !d.is_deleted)?.id || documents.value[0]?.id || null));
+  if (initialActiveId && !savedTabs.includes(initialActiveId)) {
+    savedTabs.push(initialActiveId);
+  }
+  openTabIds.value = savedTabs;
+  saveOpenTabs(savedTabs);
+  activeDocId.value = initialActiveId;
 
   // 4. Apply theme
   applyTheme(currentTheme.value);
@@ -1723,6 +2022,9 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
+  stopTabDrag();
+  closeTabMenu();
+  clearTimeout(suppressClickTimer);
   clearTimeout(toolbarCopyTimer);
   document.removeEventListener('mousedown', handleImageMenuPointerDown);
   document.removeEventListener('keydown', handleImageMenuKeyDown);
@@ -1756,6 +2058,7 @@ watch(customStyles, () => {
       v-if="currentView === 'home'"
       @enter-editor="(prompt) => {
         if (prompt && typeof prompt === 'string') {
+          ensureActiveDoc();
           markdownContent = '# 创作草稿\n\n' + prompt;
         }
         currentView = 'editor';
@@ -1767,6 +2070,7 @@ watch(customStyles, () => {
       @import-file="(file) => {
         const reader = new FileReader();
         reader.onload = (e) => {
+          ensureActiveDoc();
           markdownContent = e.target.result || '';
           currentView = 'editor';
         };
@@ -1886,39 +2190,75 @@ watch(customStyles, () => {
 
           <!-- 3. 编辑与排版双栏工作台 -->
           <div v-else class="workspace-grid" :class="[`active-view-${mobileActiveView}`, { 'preview-hidden': !previewVisible, 'theme-panel-open': showThemePanel }]">
+          <!-- Document Tabs Bar -->
+          <div class="workspace-tabs" role="tablist" aria-label="已打开文档标签">
+            <div
+              ref="tabsScrollRef"
+              class="workspace-tabs-scroll"
+              :class="{ 'is-dragging': isDraggingTabs }"
+              @wheel.prevent="handleTabsWheel"
+              @mousedown="handleTabsMouseDown"
+              @dragstart.prevent
+            >
+              <div
+                v-for="tab in openTabs"
+                :key="tab.id"
+                :data-tab-id="tab.id"
+                class="workspace-tab-item"
+                :class="{ 'is-active': tab.id === activeDocId, 'is-renaming': renamingTabId === tab.id }"
+                role="tab"
+                :aria-selected="tab.id === activeDocId"
+                :title="`${tab.title}（双击重命名）`"
+                @click="handleTabClick(tab.id)"
+                @dblclick.stop="startRenameTab(tab)"
+                @contextmenu.prevent.stop="openTabMenuFromContext($event, tab.id)"
+                @mousedown.middle.prevent
+                @auxclick.middle.stop="handleCloseTab(tab.id)"
+              >
+                <FileText size="12.5" class="workspace-tab-icon" />
+                <span v-if="renamingTabId !== tab.id" class="workspace-tab-title">{{ tab.title }}</span>
+                <input
+                  v-else
+                  ref="tabRenameInputRef"
+                  v-model="tabRenameValue"
+                  class="workspace-tab-input"
+                  placeholder="输入文档名称"
+                  @blur="confirmRenameTab"
+                  @keyup.enter="confirmRenameTab"
+                  @keyup.escape="cancelRenameTab"
+                  @mousedown.stop
+                  @click.stop
+                  @dblclick.stop
+                />
+                <button
+                  v-show="renamingTabId !== tab.id"
+                  type="button"
+                  class="workspace-tab-close"
+                  data-no-tooltip="true"
+                  aria-label="关闭标签页"
+                  @click.stop="handleCloseTab(tab.id)"
+                  @mouseenter="scheduleTabMenuHoverOpen($event.currentTarget, tab.id)"
+                  @mouseleave="scheduleTabMenuClose"
+                >
+                  <X size="11.5" />
+                </button>
+              </div>
+            </div>
+            <button
+              type="button"
+              class="workspace-tab-add"
+              title="新建文档标签"
+              aria-label="新建文档标签"
+              @click="handleCreateDoc(null)"
+            >
+              <Plus size="14" />
+            </button>
+          </div>
+
+          <template v-if="openTabs.length > 0">
           <!-- Top Toolbar: editor-header spanning 100% width across the top of both columns -->
           <div class="editor-header workspace-toolbar">
             <div class="header-actions">
-              <!-- Document Title & Rename -->
-              <div
-                class="toolbar-doc-title-box"
-                :class="{ 'is-editing': isRenamingToolbarDoc }"
-                :title="`${activeDocument?.title || '未命名文档'}（双击重命名）`"
-                @dblclick.stop="startRenameToolbarDoc"
-              >
-                <FileText size="14" class="toolbar-doc-icon" />
-                <span
-                  v-if="!isRenamingToolbarDoc"
-                  class="toolbar-doc-name"
-                >
-                  {{ activeDocument?.title || '未命名文档' }}
-                </span>
-                <Pencil v-if="!isRenamingToolbarDoc" size="11" class="toolbar-doc-edit-hint" />
-                <input
-                  v-else
-                  ref="toolbarDocInputRef"
-                  v-model="toolbarDocRenameValue"
-                  class="toolbar-doc-input"
-                  placeholder="输入文档名称"
-                  @blur="confirmRenameToolbarDoc"
-                  @keyup.enter="confirmRenameToolbarDoc"
-                  @keyup.escape="cancelRenameToolbarDoc"
-                  @click.stop
-                />
-              </div>
-
-              <span class="toolbar-sep"></span>
-
               <!-- Content Editing & Import Group -->
               <div class="toolbar-btn-group">
                 <button @click="editorPanelRef?.openFindReplace()" class="btn-icon" title="查找与替换"><Search size="14.5" /></button>
@@ -2111,6 +2451,18 @@ watch(customStyles, () => {
               />
             </div>
           </div>
+          </template>
+          <div v-else class="workspace-empty-tabs-state">
+            <div class="empty-tabs-card">
+              <FileText size="28" class="empty-tabs-icon" />
+              <div class="empty-tabs-title">暂无打开的文档标签</div>
+              <div class="empty-tabs-desc">可从左侧文档列表点击打开已有文档，或直接新建空白文档开始写作。</div>
+              <button type="button" class="btn-empty-new-tab" @click="handleCreateDoc(null)">
+                <Plus size="14" />
+                <span>新建空白文档</span>
+              </button>
+            </div>
+          </div>
         </div>
       </main>
     </div>
@@ -2144,6 +2496,34 @@ watch(customStyles, () => {
       @close="historyModalVisible = false"
       @restore-version="handleRestoreVersion"
     />
+
+    <!-- Tab Close Context / Hover Menu -->
+    <Teleport to="body">
+      <div
+        v-if="tabMenuVisible"
+        ref="tabMenuRef"
+        class="tab-context-menu"
+        :style="tabMenuStyle"
+        role="menu"
+        @mouseenter="clearTabMenuTimers"
+        @mouseleave="scheduleTabMenuClose"
+      >
+        <template v-for="item in tabMenuItems" :key="item.key">
+          <div v-if="item.dividerBefore" class="tab-menu-divider"></div>
+          <button
+            type="button"
+            class="tab-menu-item"
+            :class="{ 'is-disabled': item.disabled, 'is-danger': item.danger }"
+            :disabled="item.disabled"
+            role="menuitem"
+            @click="handleSelectTabMenuItem(item)"
+          >
+            <component :is="item.icon" size="13.5" class="tab-menu-icon" />
+            <span>{{ item.label }}</span>
+          </button>
+        </template>
+      </div>
+    </Teleport>
 
     <!-- Global Confirm Dialog -->
     <ConfirmDialog />
@@ -2186,7 +2566,7 @@ html.dark .app-container.is-standalone-home {
 .app-header {
   position: relative;
   height: 54px;
-  display: flex;
+  display: none;
   justify-content: space-between;
   align-items: center;
   padding: 0 18px;
@@ -2307,7 +2687,7 @@ html.dark .wandor-wordmark {
 /* Floating Toast */
 .app-floating-toast {
   position: fixed;
-  top: 60px;
+  top: 84px;
   left: 50%;
   transform: translateX(-50%);
   background: rgba(15, 23, 42, 0.88);
@@ -2619,18 +2999,405 @@ html.dark .wandor-wordmark {
   flex-direction: column;
   height: 100%;
   min-width: 0;
+  overflow: hidden;
   padding: 0;
   box-sizing: border-box;
 }
 
-.workspace-toolbar {
+.workspace-tabs {
   height: 40px;
   display: flex;
   align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  background: #f5f8fc;
+  border-bottom: 1px solid #e7edf5;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
+  user-select: none;
+  z-index: 11;
+}
+
+html.dark .workspace-tabs {
+  background: #14161c;
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.workspace-tabs-scroll {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  max-width: calc(100% - 34px);
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.workspace-tabs-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.workspace-tabs-scroll.is-dragging,
+.workspace-tabs-scroll.is-dragging * {
+  cursor: grabbing !important;
+}
+
+.workspace-tab-item {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 29px;
+  min-width: 112px;
+  max-width: 210px;
+  flex-shrink: 0;
+  padding: 0 7px 0 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #5b6d85;
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
+}
+
+.workspace-tab-item:not(.is-active):not(:hover) + .workspace-tab-item:not(.is-active):not(:hover)::before {
+  content: '';
+  position: absolute;
+  left: -3px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 14px;
+  background: rgba(148, 163, 184, 0.3);
+  pointer-events: none;
+}
+
+.workspace-tab-item:hover:not(.is-active) {
+  background: rgba(255, 255, 255, 0.72);
+  color: #1e293b;
+}
+
+html.dark .workspace-tab-item {
+  color: #94a3b8;
+}
+
+html.dark .workspace-tab-item:not(.is-active):not(:hover) + .workspace-tab-item:not(.is-active):not(:hover)::before {
+  background: rgba(148, 163, 184, 0.18);
+}
+
+html.dark .workspace-tab-item:hover:not(.is-active) {
+  background: rgba(255, 255, 255, 0.06);
+  color: #f1f5f9;
+}
+
+.workspace-tab-item.is-active {
+  background: #ffffff;
+  border-color: #dce6f4;
+  color: #1e293b;
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 1px rgba(38, 120, 232, 0.04);
+}
+
+html.dark .workspace-tab-item.is-active {
+  background: #20232b;
+  border-color: rgba(148, 163, 184, 0.22);
+  color: #f1f5f9;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+}
+
+.workspace-tab-icon {
+  flex-shrink: 0;
+  color: #7c8ea6;
+  transition: color 0.16s ease;
+}
+
+.workspace-tab-item:hover:not(.is-active) .workspace-tab-icon {
+  color: #52647d;
+}
+
+.workspace-tab-item.is-active .workspace-tab-icon {
+  color: #2678e8;
+}
+
+html.dark .workspace-tab-item.is-active .workspace-tab-icon {
+  color: #93c5fd;
+}
+
+.workspace-tab-title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.workspace-tab-item.is-renaming {
+  min-width: 140px;
+  max-width: 220px;
+  padding-right: 8px;
+}
+
+.workspace-tab-input {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 5px;
+  border: 1px solid #2678e8;
+  background: #ffffff;
+  color: #1e293b;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  outline: none;
+  box-sizing: border-box;
+}
+
+html.dark .workspace-tab-input {
+  background: #1e1e24;
+  border-color: #60a5fa;
+  color: #f1f5f9;
+}
+
+.workspace-tab-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: #7c8ea6;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.14s ease, background 0.14s ease, color 0.14s ease;
+}
+
+.workspace-tab-item.is-active .workspace-tab-close {
+  opacity: 0.72;
+}
+
+.workspace-tab-item:hover .workspace-tab-close,
+.workspace-tab-item.is-active .workspace-tab-close:hover {
+  opacity: 1;
+}
+
+.workspace-tab-close:hover {
+  background: #edf4ff;
+  color: #2678e8;
+}
+
+html.dark .workspace-tab-close:hover {
+  background: rgba(59, 130, 246, 0.16);
+  color: #93c5fd;
+}
+
+.workspace-tab-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #5b6d85;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.workspace-tab-add:hover {
+  background: #edf4ff;
+  color: #2678e8;
+}
+
+html.dark .workspace-tab-add:hover {
+  background: rgba(59, 130, 246, 0.14);
+  color: #93c5fd;
+}
+
+.tab-context-menu {
+  position: fixed;
+  z-index: 9999;
+  min-width: 136px;
+  padding: 5px;
+  border-radius: 12px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12), 0 2px 6px rgba(15, 23, 42, 0.05);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-family: var(--font-sans);
+  box-sizing: border-box;
+}
+
+/* Hover bridge between tab close button and dropdown */
+.tab-context-menu::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: -8px;
+  height: 8px;
+}
+
+html.dark .tab-context-menu {
+  background: #1e2028;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.tab-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 9px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: #1e293b;
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+}
+
+.tab-menu-item:hover:not(:disabled) {
+  background: #f0f5fb;
+  color: #1e293b;
+}
+
+html.dark .tab-menu-item {
+  color: #e2e8f0;
+}
+
+html.dark .tab-menu-item:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.tab-menu-item.is-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.08);
+  color: #dc2626;
+}
+
+.tab-menu-item.is-disabled,
+.tab-menu-item:disabled {
+  color: #94a3b8;
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+
+.tab-menu-icon {
+  flex-shrink: 0;
+  color: #71839d;
+}
+
+.tab-menu-item.is-danger:hover:not(:disabled) .tab-menu-icon {
+  color: #dc2626;
+}
+
+.tab-menu-divider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 2px 4px;
+}
+
+html.dark .tab-menu-divider {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.workspace-empty-tabs-state {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 24px;
+}
+
+html.dark .workspace-empty-tabs-state {
+  background: #14151a;
+}
+
+.empty-tabs-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  max-width: 340px;
+  gap: 10px;
+  color: #718198;
+}
+
+.empty-tabs-icon {
+  color: #94a3b8;
+  opacity: 0.75;
+}
+
+.empty-tabs-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+html.dark .empty-tabs-title {
+  color: #f1f5f9;
+}
+
+.empty-tabs-desc {
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.btn-empty-new-tab {
+  margin-top: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
   padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid #d5e5fb;
+  background: #edf4ff;
+  color: #2678e8;
+  font-size: 12.5px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.btn-empty-new-tab:hover {
+  background: #347fe5;
+  border-color: #347fe5;
+  color: #ffffff;
+}
+
+.workspace-toolbar {
+  height: 42px;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
   border-bottom: 1px solid var(--border-color);
-  background: var(--bg-toolbar, #FAFBFC);
-  box-shadow: var(--shadow-toolbar);
+  background: var(--bg-editor, #ffffff);
+  box-shadow: none;
   flex-shrink: 0;
   width: 100%;
   z-index: 10;
@@ -2655,109 +3422,12 @@ html.dark .wandor-wordmark {
   transition: all 0.2s ease;
 }
 
-.toolbar-doc-title-box {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 4px 8px;
-  border-radius: 7px;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  user-select: none;
-  width: auto;
-  max-width: min(200px, 22vw);
-  min-width: 96px;
-  flex: 0 1 auto;
-  box-sizing: border-box;
-  cursor: pointer;
-  border: 1px solid transparent;
-  background: transparent;
-}
-
-.toolbar-doc-title-box:hover:not(.is-editing) {
-  background: var(--bg-card, #FFFFFF);
-  border-color: var(--border-color, #E2E8F0);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-}
-
-[data-color-mode="dark"] .toolbar-doc-title-box:hover:not(.is-editing) {
-  background: rgba(255, 255, 255, 0.07);
-}
-
-.toolbar-doc-icon {
-  color: var(--brand-primary, #116ACC);
-  opacity: 0.9;
-  flex-shrink: 0;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-}
-
-.toolbar-doc-title-box:hover:not(.is-editing) .toolbar-doc-icon {
-  opacity: 1;
-  transform: scale(1.06);
-}
-
-.toolbar-doc-name {
-  flex: 1;
-  min-width: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-main, #0F172A);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.4;
-  letter-spacing: -0.01em;
-}
-
-.toolbar-doc-edit-hint {
-  color: var(--text-muted);
-  opacity: 0;
-  transform: scale(0.85);
-  transition: all 0.2s ease;
-  flex-shrink: 0;
-  margin-left: -2px;
-}
-
-.toolbar-doc-title-box:hover:not(.is-editing) .toolbar-doc-edit-hint {
-  opacity: 0.55;
-  transform: scale(1);
-}
-
-.toolbar-doc-title-box.is-editing {
-  width: min(200px, 22vw);
-  min-width: 160px;
-  background: var(--bg-card, #FFFFFF);
-  border-color: rgba(17, 106, 204, 0.42);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-  padding: 4px 8px;
-}
-
-[data-color-mode="dark"] .toolbar-doc-title-box.is-editing {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(96, 165, 250, 0.48);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.toolbar-doc-input {
-  flex: 1;
-  min-width: 0;
-  width: 100%;
-  box-sizing: border-box;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-main);
-  background: transparent;
-  border: none;
-  padding: 1px 2px;
-  outline: none;
-  font-family: inherit;
-}
-
 .toolbar-sep {
   width: 1px;
-  height: 12px;
+  height: 16px;
   background: var(--border-subtle, #EDF1F7);
   display: inline-block;
-  margin: 0 1px;
+  margin: 0 3px;
   opacity: 1;
 }
 
@@ -2770,8 +3440,8 @@ html.dark .wandor-wordmark {
   border: 1px solid transparent;
   color: var(--text-muted, #64748B);
   border-radius: 6px;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2992,7 +3662,6 @@ html.dark .popout-item.is-active {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   min-height: 0;
-  height: calc(100% - 40px);
   width: 100%;
   overflow: hidden;
   transition: grid-template-columns 0.48s cubic-bezier(0.22, 1, 0.36, 1);
@@ -3122,8 +3791,13 @@ html.dark .popout-item.is-active {
   }
   
   .app-header {
+    display: flex;
     padding: 0 12px;
     height: 4rem;
+  }
+
+  .app-floating-toast {
+    top: 72px;
   }
 
   .header-center,

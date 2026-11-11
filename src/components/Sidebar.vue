@@ -20,7 +20,8 @@ import {
   FolderDown,
   Settings,
   ArrowUpDown,
-  ChevronsUpDown
+  ChevronsUpDown,
+  ChevronsDownUp
 } from '@lucide/vue';
 import { showConfirm } from '../utils/confirmDialog';
 import SidebarDocItem from './SidebarDocItem.vue';
@@ -807,9 +808,13 @@ function resetSidebarWidth() {
           @click="toggleAllGroups"
           :title="areAllGroupsExpanded ? '折叠全部文件夹' : '展开全部文件夹'"
           :aria-label="areAllGroupsExpanded ? '折叠全部文件夹' : '展开全部文件夹'"
+          :aria-pressed="areAllGroupsExpanded"
           :disabled="Boolean(searchQuery.trim())"
         >
-          <ChevronsUpDown size="15" stroke-width="2" />
+          <Transition name="toggle-icon-swap" mode="out-in">
+            <ChevronsDownUp v-if="areAllGroupsExpanded" key="collapse" size="15" stroke-width="2" />
+            <ChevronsUpDown v-else key="expand" size="15" stroke-width="2" />
+          </Transition>
         </button>
         <button
           class="icon-btn"
@@ -1139,7 +1144,7 @@ function resetSidebarWidth() {
   height: 100%;
   background: rgba(255, 255, 255, 0.88);
   border-right: 1px solid #e7edf5;
-  padding: 16px 12px 10px;
+  padding: 10px 12px 10px;
   overflow: hidden;
   z-index: 4;
   box-sizing: border-box;
@@ -1228,7 +1233,7 @@ html.dark .create-action:hover {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin: 14px 2px 10px;
+  margin: 2px 2px 10px;
   flex-shrink: 0;
 }
 
@@ -1541,6 +1546,25 @@ html.dark .sync-channel-name {
 .icon-btn:hover {
   background: #f0f5fb;
   color: #2678e8;
+}
+
+.icon-btn:active {
+  transform: scale(0.94);
+}
+
+.toggle-icon-swap-enter-active,
+.toggle-icon-swap-leave-active {
+  transition: opacity 0.12s ease, transform 0.12s ease;
+}
+
+.toggle-icon-swap-enter-from {
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.toggle-icon-swap-leave-to {
+  opacity: 0;
+  transform: scale(0.8);
 }
 
 .icon-btn.is-active {

@@ -1,10 +1,17 @@
 <script setup>
+import { useId } from 'vue';
+
 defineProps({
   size: {
     type: [Number, String],
     default: 32
   }
 });
+
+const uid = useId();
+const bgId = `brandLogoBg-${uid}`;
+const mId = `brandLogoM-${uid}`;
+const dotId = `brandLogoDot-${uid}`;
 </script>
 
 <template>
@@ -21,27 +28,27 @@ defineProps({
       xmlns="http://www.w3.org/2000/svg"
     >
       <defs>
-        <linearGradient id="brandLogoBg" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient :id="bgId" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#27272A"/>
           <stop offset="100%" stop-color="#09090B"/>
         </linearGradient>
-        <linearGradient id="brandLogoM" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient :id="mId" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#FFFFFF"/>
           <stop offset="100%" stop-color="#F4F4F5"/>
         </linearGradient>
-        <linearGradient id="brandLogoDot" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient :id="dotId" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stop-color="#FF7A59"/>
           <stop offset="100%" stop-color="#FF5E36"/>
         </linearGradient>
       </defs>
-      <rect width="64" height="64" rx="16" fill="url(#brandLogoBg)"/>
+      <rect width="64" height="64" rx="16" :fill="`url(#${bgId})`"/>
       <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="15.25" stroke="rgba(255, 255, 255, 0.15)" stroke-width="1.5" fill="none"/>
       <path d="M16 46V18.5L25.5 33.5L32 24.5L38.5 33.5L48 18.5V46" 
-            stroke="url(#brandLogoM)" 
+            :stroke="`url(#${mId})`" 
             stroke-width="4.5" 
             stroke-linecap="round" 
             stroke-linejoin="round"/>
-      <circle cx="32" cy="16" r="3" fill="url(#brandLogoDot)"/>
+      <circle cx="32" cy="16" r="3" :fill="`url(#${dotId})`"/>
     </svg>
   </div>
 </template>

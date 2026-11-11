@@ -7,6 +7,7 @@ const KEYS = {
   documents: 'nicemd_documents',
   groups: 'nicemd_groups',
   activeDocId: 'nicemd_active_doc_id',
+  openTabs: 'nicemd_open_tabs',
   sidebarVisible: 'nicemd_sidebar_visible'
 };
 
@@ -82,6 +83,24 @@ export function saveActiveDocId(id) {
   } catch {
     // ignore
   }
+}
+
+export function loadOpenTabs() {
+  const list = safeGet(KEYS.openTabs, []);
+  return Array.isArray(list) ? list.filter(id => typeof id === 'string' && id) : [];
+}
+
+export function hasPersistedOpenTabs() {
+  try {
+    return localStorage.getItem(KEYS.openTabs) !== null;
+  } catch {
+    return false;
+  }
+}
+
+export function saveOpenTabs(tabIds) {
+  const clean = Array.isArray(tabIds) ? [...new Set(tabIds.filter(id => typeof id === 'string' && id))] : [];
+  safeSet(KEYS.openTabs, clean);
 }
 
 export function loadSidebarVisible() {
