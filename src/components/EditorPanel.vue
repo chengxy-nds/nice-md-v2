@@ -27,12 +27,14 @@ import {
   Code2,
   Copy,
   ExternalLink,
-  ZoomIn
+  ZoomIn,
+  ZoomOut,
+  RotateCcw
 } from '@lucide/vue';
 import { soundEngine } from '../utils/synthAudio';
 import { showConfirm } from '../utils/confirmDialog';
 import { writeTextToClipboard } from '../utils/clipboard';
-import { detectUrlAtOffset, downloadUrlResource } from '../utils/editorUrlHelper';
+import { detectUrlAtOffset, downloadUrlResource, getFastPreviewImageUrl } from '../utils/editorUrlHelper';
 import mammoth from 'mammoth/mammoth.browser.js';
 import { htmlToMarkdown } from '../utils/htmlToMarkdown';
 import { isStorageEnabled, uploadToOSS } from '../utils/fileStorage';
@@ -264,9 +266,22 @@ const hoveredUrlInfo = ref(null);
 const urlImgStatus = ref('loading');
 const urlImgNaturalSize = ref({ width: 0, height: 0 });
 const lightboxImageUrl = ref('');
+const lightboxRawUrl = ref('');
 const lightboxImageName = ref('');
+const lightboxImgRef = ref(null);
+const lightboxZoom = ref(1);
+const lightboxPan = ref({ x: 0, y: 0 });
+const lightboxImgLoading = ref(false);
+const lightboxUseRaw = ref(false);
+const isLightboxPanning = ref(false);
+const lightboxHasTransform = computed(() =>
+  Boolean(lightboxRawUrl.value && getFastPreviewImageUrl(lightboxRawUrl.value, 1200) !== lightboxRawUrl.value)
+);
 let urlHoverHideTimer = null;
 let isHoveringUrlCard = false;
+let lightboxPanStart = { x: 0, y: 0 };
+let lightboxPanOrigin = { x: 0, y: 0 };
+let lightboxDidDrag = false;
 
 // Close the table picker whenever the float bar hides (deselect, click away, etc.)
 watch(showFloatBar, (v) => {
@@ -596,7 +611,7 @@ function scheduleHideUrlPreview() {
         cmView.contentDOM.style.cursor = '';
       }
     }
-  }, 180);
+  }, 260);
 }
 
 function handleEditorMouseMove(e) {
@@ -662,10 +677,11 @@ function handleEditorMouseMove(e) {
   const estimatedHeight = hit.type === 'image' ? 245 : 132;
   const placeBelow = startCoords.top < estimatedHeight + 24;
   const left = Math.max(12, Math.min(window.innerWidth - cardWidth - 16, startCoords.left));
-  const top = placeBelow ? endCoords.bottom + 8 : startCoords.top - 8;
+  const top = placeBelow ? endCoords.bottom + 4 : startCoords.top - 4;
 
   hoveredUrlInfo.value = {
     url: hit.url,
+    previewSrc: hit.type === 'image' ? getFastPreviewImageUrl(hit.url, 560) : hit.url,
     from: docFrom,
     to: docTo,
     type: hit.type,
@@ -688,6 +704,13 @@ function onUrlImgLoad(e) {
 }
 
 function onUrlImgError() {
+  if (hoveredUrlInfo.value && hoveredUrlInfo.value.previewSrc !== hoveredUrlInfo.value.url) {
+    hoveredUrlInfo.value = {
+      ...hoveredUrlInfo.value,
+      previewSrc: hoveredUrlInfo.value.url
+    };
+    return;
+  }
   urlImgStatus.value = 'error';
 }
 
@@ -724,14 +747,119 @@ async function handleCopyHoveredUrl(url) {
 function openUrlLightbox(url, name = '') {
   if (!url) return;
   soundEngine.playClick();
-  lightboxImageUrl.value = url;
+  const fastUrl = getFastPreviewImageUrl(url, 1200);
+  lightboxRawUrl.value = url;
+  lightboxUseRaw.value = fastUrl === url;
+  lightboxImageUrl.value = fastUrl;
   lightboxImageName.value = name || '图片预览';
+  lightboxZoom.value = 1;
+  lightboxPan.value = { x: 0, y: 0 };
+  lightboxImgLoading.value = true;
   hideUrlPreviewImmediately();
+  nextTick(() => {
+    if (lightboxImgRef.value?.complete && lightboxImgRef.value.naturalWidth > 0) {
+      lightboxImgLoading.value = false;
+    }
+  });
 }
 
 function closeUrlLightbox() {
+  cleanupLightboxPanListeners();
   lightboxImageUrl.value = '';
+  lightboxRawUrl.value = '';
   lightboxImageName.value = '';
+  lightboxZoom.value = 1;
+  lightboxPan.value = { x: 0, y: 0 };
+  lightboxImgLoading.value = false;
+  isLightboxPanning.value = false;
+}
+
+function stepLightboxZoom(delta) {
+  const next = Math.max(0.25, Math.min(5, Math.round((lightboxZoom.value + delta) * 100) / 100));
+  lightboxZoom.value = next;
+  if (next <= 1) {
+    lightboxPan.value = { x: 0, y: 0 };
+  }
+}
+
+function resetLightboxView() {
+  lightboxZoom.value = 1;
+  lightboxPan.value = { x: 0, y: 0 };
+}
+
+function toggleLightboxOriginal() {
+  if (!lightboxRawUrl.value || !lightboxHasTransform.value) return;
+  soundEngine.playClick();
+  lightboxUseRaw.value = !lightboxUseRaw.value;
+  lightboxImgLoading.value = true;
+  lightboxImageUrl.value = lightboxUseRaw.value
+    ? lightboxRawUrl.value
+    : getFastPreviewImageUrl(lightboxRawUrl.value, 1200);
+}
+
+function handleLightboxWheel(e) {
+  const step = e.deltaY < 0 ? 0.2 : -0.2;
+  stepLightboxZoom(step);
+}
+
+function onLightboxImgLoad() {
+  lightboxImgLoading.value = false;
+}
+
+function onLightboxImgError() {
+  if (!lightboxUseRaw.value && lightboxRawUrl.value && lightboxImageUrl.value !== lightboxRawUrl.value) {
+    lightboxUseRaw.value = true;
+    lightboxImageUrl.value = lightboxRawUrl.value;
+    return;
+  }
+  lightboxImgLoading.value = false;
+  emit('toast', '大图加载失败，可点击新窗口打开');
+}
+
+function handleLightboxPanMove(e) {
+  if (!isLightboxPanning.value) return;
+  const dx = e.clientX - lightboxPanStart.x;
+  const dy = e.clientY - lightboxPanStart.y;
+  if (Math.hypot(dx, dy) > 4) {
+    lightboxDidDrag = true;
+  }
+  lightboxPan.value = {
+    x: lightboxPanOrigin.x + dx,
+    y: lightboxPanOrigin.y + dy
+  };
+}
+
+function cleanupLightboxPanListeners() {
+  window.removeEventListener('pointermove', handleLightboxPanMove);
+  window.removeEventListener('pointerup', handleLightboxPanEnd);
+}
+
+function handleLightboxPanEnd() {
+  isLightboxPanning.value = false;
+  cleanupLightboxPanListeners();
+}
+
+function startLightboxPan(e) {
+  lightboxDidDrag = false;
+  if (lightboxZoom.value <= 1) return;
+  e.preventDefault();
+  isLightboxPanning.value = true;
+  lightboxPanStart = { x: e.clientX, y: e.clientY };
+  lightboxPanOrigin = { ...lightboxPan.value };
+  window.addEventListener('pointermove', handleLightboxPanMove);
+  window.addEventListener('pointerup', handleLightboxPanEnd);
+}
+
+function handleLightboxImgClick() {
+  if (lightboxDidDrag) {
+    lightboxDidDrag = false;
+    return;
+  }
+  if (lightboxZoom.value < 1.75) {
+    lightboxZoom.value = 2;
+  } else {
+    resetLightboxView();
+  }
 }
 
 // ── undo / redo ──
@@ -1562,12 +1690,23 @@ function handleGlobalPointerDown(e) {
 }
 
 function handleGlobalKeydown(e) {
-  if (e.key === 'Escape') {
-    if (lightboxImageUrl.value) {
+  if (lightboxImageUrl.value) {
+    if (e.key === 'Escape') {
       closeUrlLightbox();
-    } else if (hoveredUrlInfo.value) {
-      hideUrlPreviewImmediately();
+    } else if (e.key === '+' || e.key === '=') {
+      e.preventDefault();
+      stepLightboxZoom(0.25);
+    } else if (e.key === '-' || e.key === '_') {
+      e.preventDefault();
+      stepLightboxZoom(-0.25);
+    } else if (e.key === '0') {
+      e.preventDefault();
+      resetLightboxView();
     }
+    return;
+  }
+  if (e.key === 'Escape' && hoveredUrlInfo.value) {
+    hideUrlPreviewImmediately();
   }
 }
 
@@ -1586,6 +1725,7 @@ onUnmounted(() => {
   window.removeEventListener('nicemd-settings-updated', loadPreferences);
   document.removeEventListener('pointerdown', handleGlobalPointerDown);
   document.removeEventListener('keydown', handleGlobalKeydown);
+  cleanupLightboxPanListeners();
   clearUrlHoverTimer();
   if (cmView) {
     cmView.destroy();
@@ -1679,17 +1819,24 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
         @mousedown.stop
       >
         <template v-if="hoveredUrlInfo.type === 'image'">
-          <div class="url-img-preview-box">
+          <div
+            class="url-img-preview-box"
+            @click="openUrlLightbox(hoveredUrlInfo.url, hoveredUrlInfo.filename)"
+          >
             <img
-              :src="hoveredUrlInfo.url"
+              :src="hoveredUrlInfo.previewSrc"
               :alt="hoveredUrlInfo.filename || '图片预览'"
               class="url-img-preview-thumb"
               :class="{ 'is-hidden': urlImgStatus === 'error' }"
+              decoding="async"
+              fetchpriority="high"
               @load="onUrlImgLoad"
               @error="onUrlImgError"
-              @click="openUrlLightbox(hoveredUrlInfo.url, hoveredUrlInfo.filename)"
             />
-            <div v-if="urlImgStatus === 'loading'" class="url-img-status">正在加载图片预览...</div>
+            <div v-if="urlImgStatus === 'loading'" class="url-img-status">
+              <span class="url-img-spinner"></span>
+              <span>加载预览中...</span>
+            </div>
             <div v-else-if="urlImgStatus === 'error'" class="url-img-status is-error">
               <Image size="18" />
               <span>图片暂无法预览，可新窗口打开或下载</span>
@@ -1701,7 +1848,7 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
                 {{ urlImgNaturalSize.width }}×{{ urlImgNaturalSize.height }}
               </template>
               <template v-else>
-                {{ hoveredUrlInfo.filename || hoveredUrlInfo.host || '图片资源' }}
+                图片预览
               </template>
             </span>
             <div class="url-card-actions">
@@ -1786,12 +1933,51 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
           @click="closeUrlLightbox"
         >
           <div class="editor-lightbox-topbar" @click.stop>
-            <span class="editor-lightbox-name">{{ lightboxImageName }}</span>
             <div class="editor-lightbox-btns">
+              <button
+                class="editor-lightbox-btn is-icon"
+                title="缩小 (-)"
+                data-action="zoom-out"
+                @click="stepLightboxZoom(-0.25)"
+              >
+                <ZoomOut size="15" />
+              </button>
+              <button
+                class="editor-lightbox-zoom-badge"
+                title="点击重置 100% (0)"
+                @click="resetLightboxView"
+              >
+                {{ Math.round(lightboxZoom * 100) }}%
+              </button>
+              <button
+                class="editor-lightbox-btn is-icon"
+                title="放大 (+)"
+                data-action="zoom-in"
+                @click="stepLightboxZoom(0.25)"
+              >
+                <ZoomIn size="15" />
+              </button>
+              <button
+                class="editor-lightbox-btn is-icon"
+                title="重置适应窗口 (0)"
+                @click="resetLightboxView"
+              >
+                <RotateCcw size="14" />
+              </button>
+              <button
+                v-if="lightboxHasTransform"
+                class="editor-lightbox-btn"
+                :class="{ 'is-active': lightboxUseRaw }"
+                :title="lightboxUseRaw ? '当前显示原始高清图，点击切回加速版' : '当前显示加速图，点击加载原始高清图'"
+                @click="toggleLightboxOriginal"
+              >
+                <span>原图</span>
+              </button>
+              <span class="editor-lightbox-sep"></span>
               <button
                 class="editor-lightbox-btn"
                 title="新窗口打开"
-                @click="openHoveredUrl(lightboxImageUrl)"
+                @click="openHoveredUrl(lightboxRawUrl || lightboxImageUrl)"
               >
                 <ExternalLink size="15" />
                 <span>打开</span>
@@ -1799,7 +1985,7 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
               <button
                 class="editor-lightbox-btn"
                 title="下载图片"
-                @click="handleDownloadHoveredUrl(lightboxImageUrl, lightboxImageName)"
+                @click="handleDownloadHoveredUrl(lightboxRawUrl || lightboxImageUrl, lightboxImageName)"
               >
                 <Download size="15" />
                 <span>下载</span>
@@ -1813,8 +1999,27 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
               </button>
             </div>
           </div>
-          <div class="editor-lightbox-stage" @click.stop>
-            <img :src="lightboxImageUrl" :alt="lightboxImageName" class="editor-lightbox-img" />
+          <div
+            class="editor-lightbox-stage"
+            @click.self="closeUrlLightbox"
+            @wheel.prevent="handleLightboxWheel"
+          >
+            <img
+              ref="lightboxImgRef"
+              :src="lightboxImageUrl"
+              :alt="lightboxImageName"
+              class="editor-lightbox-img"
+              :class="{ 'is-zoomed': lightboxZoom > 1, 'is-panning': isLightboxPanning }"
+              :style="{
+                transform: `translate(${lightboxPan.x}px, ${lightboxPan.y}px) scale(${lightboxZoom})`
+              }"
+              @load="onLightboxImgLoad"
+              @error="onLightboxImgError"
+              @pointerdown="startLightboxPan"
+              @click.stop="handleLightboxImgClick"
+              draggable="false"
+            />
+            <div v-if="lightboxImgLoading" class="editor-lightbox-loading">正在加载高清图片...</div>
           </div>
         </div>
       </Teleport>
@@ -2671,6 +2876,7 @@ html.dark .btn-submit-url:hover:not(:disabled) {
   display: flex;
   align-items: center;
   justify-content: center;
+  cursor: zoom-in;
 }
 
 .url-img-preview-thumb {
@@ -2698,6 +2904,20 @@ html.dark .btn-submit-url:hover:not(:disabled) {
   color: var(--text-muted, #64748b);
   background: var(--bg-editor, #ffffff);
   text-align: center;
+  pointer-events: none;
+}
+
+.url-img-spinner {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid rgba(148, 163, 184, 0.35);
+  border-top-color: var(--accent-color, #116acc);
+  animation: url-spin 0.7s linear infinite;
+}
+
+@keyframes url-spin {
+  to { transform: rotate(360deg); }
 }
 
 .url-img-status.is-error {
@@ -2846,38 +3066,32 @@ html.dark .btn-submit-url:hover:not(:disabled) {
   top: 16px;
   left: 50%;
   transform: translateX(-50%);
+  z-index: 2;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  max-width: min(92vw, 720px);
+  gap: 12px;
+  max-width: min(94vw, 880px);
   width: max-content;
-  padding: 6px 10px 6px 14px;
+  padding: 6px 10px;
   border-radius: 999px;
-  background: rgba(15, 23, 42, 0.85);
+  background: rgba(15, 23, 42, 0.88);
   border: 1px solid rgba(255, 255, 255, 0.16);
   color: #f8fafc;
-}
-
-.editor-lightbox-name {
-  font-size: 12.5px;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 360px;
 }
 
 .editor-lightbox-btns {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .editor-lightbox-btn,
-.editor-lightbox-close {
+.editor-lightbox-close,
+.editor-lightbox-zoom-badge {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 4px;
   height: 28px;
   padding: 0 10px;
@@ -2889,28 +3103,85 @@ html.dark .btn-submit-url:hover:not(:disabled) {
   cursor: pointer;
 }
 
+.editor-lightbox-btn.is-icon {
+  padding: 0 7px;
+}
+
+.editor-lightbox-zoom-badge {
+  min-width: 48px;
+  padding: 0 8px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.editor-lightbox-btn.is-active {
+  background: #2563eb;
+  border-color: #60a5fa;
+  color: #ffffff;
+}
+
+.editor-lightbox-sep {
+  width: 1px;
+  height: 16px;
+  background: rgba(255, 255, 255, 0.18);
+  margin: 0 2px;
+}
+
 .editor-lightbox-close {
   padding: 0 7px;
 }
 
 .editor-lightbox-btn:hover,
-.editor-lightbox-close:hover {
-  background: rgba(255, 255, 255, 0.18);
+.editor-lightbox-close:hover,
+.editor-lightbox-zoom-badge:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.editor-lightbox-btn.is-active:hover {
+  background: #1d4ed8;
 }
 
 .editor-lightbox-stage {
-  max-width: 92vw;
-  max-height: 84vh;
+  position: relative;
+  width: 100%;
+  height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  user-select: none;
 }
 
 .editor-lightbox-img {
-  max-width: 92vw;
-  max-height: 84vh;
+  max-width: 88vw;
+  max-height: 82vh;
   border-radius: 8px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
   object-fit: contain;
+  cursor: zoom-in;
+  transition: transform 0.16s ease;
+  transform-origin: center center;
+}
+
+.editor-lightbox-img.is-zoomed {
+  cursor: grab;
+}
+
+.editor-lightbox-img.is-panning {
+  cursor: grabbing;
+  transition: none;
+}
+
+.editor-lightbox-loading {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #e2e8f0;
+  font-size: 12px;
 }
 </style>

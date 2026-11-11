@@ -24,3 +24,4 @@ export async function writeTextToClipboard(text) {
     throw new Error('Clipboard copy failed');
   }
 }
+

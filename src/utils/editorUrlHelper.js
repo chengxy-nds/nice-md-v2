@@ -178,6 +178,52 @@ export function detectUrlAtOffset(lineText, offsetInLine) {
 }
 
 /**
+ * Build a bandwidth-friendly CDN thumbnail URL for supported object stores (Aliyun OSS / Tencent COS)
+ * while preserving signed or non-CDN URLs untouched.
+ */
+export function getFastPreviewImageUrl(rawUrl, maxWidth = 560) {
+  if (!rawUrl || typeof rawUrl !== 'string') return '';
+  const trimmed = rawUrl.trim();
+  if (!isSafeHttpOrImageUrl(trimmed) || /^data:/i.test(trimmed)) return trimmed;
+
+  try {
+    const parsed = new URL(trimmed);
+    const host = parsed.hostname.toLowerCase();
+    const hasExistingProcess =
+      parsed.searchParams.has('x-oss-process') ||
+      parsed.search.includes('imageMogr2') ||
+      parsed.search.includes('imageView2');
+    const isSigned =
+      parsed.searchParams.has('Signature') ||
+      parsed.searchParams.has('OSSAccessKeyId') ||
+      parsed.searchParams.has('X-Amz-Signature') ||
+      parsed.searchParams.has('q-signature') ||
+      parsed.searchParams.has('sign');
+    if (hasExistingProcess || isSigned) return trimmed;
+    if (/\.(?:svg|gif)$/i.test(parsed.pathname)) return trimmed;
+
+    const isAliyunOss =
+      host.endsWith('.aliyuncs.com') ||
+      host.includes('oss-cn-') ||
+      host.includes('oss-ap-') ||
+      host.includes('oss-us-');
+    if (isAliyunOss) {
+      const delim = trimmed.includes('?') ? '&' : '?';
+      return `${trimmed}${delim}x-oss-process=image/resize,w_${maxWidth}/format,webp`;
+    }
+
+    if (host.endsWith('.myqcloud.com')) {
+      const delim = trimmed.includes('?') ? '&' : '?';
+      return `${trimmed}${delim}imageMogr2/thumbnail/${maxWidth}x/format/webp`;
+    }
+  } catch {
+    return trimmed;
+  }
+
+  return trimmed;
+}
+
+/**
  * Trigger a browser download for a URL. Uses fetch + Blob when CORS permits so remote files save
  * instead of navigating away, and falls back to anchor download attribute otherwise.
  */
