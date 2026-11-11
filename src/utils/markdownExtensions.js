@@ -344,9 +344,19 @@ export function ensureMarkdownExtensions() {
       {
         name: 'superscript',
         level: 'inline',
-        start(src) { return src.indexOf('^'); },
+        start(src) {
+          let idx = src.indexOf('^');
+          while (idx !== -1) {
+            const isFootnoteStart = idx > 0 && src[idx - 1] === '[' && /^[^\]]+\]/.test(src.slice(idx));
+            const isRubyCaret = src[idx + 1] === '(';
+            if (!isFootnoteStart && !isRubyCaret) return idx;
+            idx = src.indexOf('^', idx + 1);
+          }
+          return -1;
+        },
         tokenizer(src) {
-          const match = src.match(/^\^([^\^\n\s]+?)\^/);
+          if (src.startsWith('^(')) return;
+          const match = src.match(/^\^([^\^\n\s\[\]]+?)\^/);
           if (match) {
             return { type: 'superscript', raw: match[0], text: match[1] };
           }

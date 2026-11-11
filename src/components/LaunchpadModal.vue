@@ -4670,9 +4670,9 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 
 /* Main distribution drawer: quiet surfaces, compact list, clear action hierarchy. */
 .modal-overlay {
-  background: rgba(16, 24, 38, 0.3);
-  backdrop-filter: blur(2px);
-  -webkit-backdrop-filter: blur(2px);
+  background: rgba(16, 24, 38, 0.34);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .right-drawer-panel {
@@ -4727,7 +4727,7 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 }
 
 .drawer-content-scroll {
-  gap: 16px;
+  gap: 14px;
   padding: 16px 18px 18px;
   scrollbar-width: thin;
   scrollbar-color: #c9d1dc transparent;
@@ -4744,10 +4744,11 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 
 .current-doc-banner {
   margin: 0;
-  padding: 12px 14px;
-  border: 1px solid #e3e8ef;
-  border-radius: 8px;
-  background: #f8fafc;
+  padding: 1px 2px 13px;
+  border: 0;
+  border-bottom: 1px solid #e7ebf0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
 }
 
@@ -4767,8 +4768,8 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 .current-doc-title {
   margin-bottom: 5px;
   color: #1e293b;
-  font-size: 14px;
-  font-weight: 620;
+  font-size: 15px;
+  font-weight: 640;
   line-height: 1.4;
 }
 
@@ -4786,6 +4787,8 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 .drawer-section-header {
   min-height: 34px;
   gap: 8px;
+  padding-bottom: 7px !important;
+  border-bottom: 1px solid #edf0f4;
 }
 
 .section-title-left {
@@ -4855,15 +4858,15 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 
 .platforms-card-box {
   gap: 0;
-  padding: 3px 10px;
-  border: 1px solid #e2e7ed;
-  border-radius: 8px;
-  background: #fff;
+  padding: 0 2px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   box-shadow: none;
 }
 
 .platform-row-item {
-  min-height: 56px;
+  min-height: 55px;
   padding: 8px 7px;
   gap: 9px;
   border: 0;
@@ -4991,7 +4994,7 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 }
 
 .text-go-login {
-  color: #718096;
+  color: #1769d2;
   font-size: 11px;
   font-weight: 500;
 }
@@ -5135,13 +5138,37 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 }
 
 :global(html.dark) .current-doc-banner,
-:global(html[data-color-mode="dark"]) .current-doc-banner,
+:global(html[data-color-mode="dark"]) .current-doc-banner {
+  border-bottom-color: #303946;
+  background: transparent;
+  box-shadow: none;
+}
+
 :global(html.dark) .platforms-card-box,
-:global(html[data-color-mode="dark"]) .platforms-card-box,
+:global(html[data-color-mode="dark"]) .platforms-card-box {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
 :global(html.dark) .settings-card-box,
 :global(html[data-color-mode="dark"]) .settings-card-box {
   border-color: #303946;
   background: #1c232d;
+  box-shadow: none;
+}
+
+:global(html.dark) .drawer-section-header,
+:global(html[data-color-mode="dark"]) .drawer-section-header {
+  border-bottom-color: #303946;
+}
+
+/* Keep the cover settings grouped while the article and channel list stay flat. */
+:global(html.dark) .current-doc-banner,
+:global(html[data-color-mode="dark"]) .current-doc-banner,
+:global(html.dark) .settings-card-box,
+:global(html[data-color-mode="dark"]) .settings-card-box {
+  border-color: #303946;
   box-shadow: none;
 }
 
@@ -5165,6 +5192,11 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 :global(html.dark) .platform-row-item.is-unlogged .platform-name,
 :global(html[data-color-mode="dark"]) .platform-row-item.is-unlogged .platform-name {
   color: #b8c2cf;
+}
+
+:global(html.dark) .text-go-login,
+:global(html[data-color-mode="dark"]) .text-go-login {
+  color: #8abaff;
 }
 
 :global(html.dark) .btn-drawer-close:hover,
