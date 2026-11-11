@@ -13,7 +13,7 @@ const props = defineProps({
   searchQuery: { type: String, default: '' }
 });
 
-const emit = defineEmits(['select', 'rename', 'delete', 'move-doc', 'history', 'duplicate', 'toggle-pin']);
+const emit = defineEmits(['select', 'rename', 'delete', 'move-doc', 'history', 'duplicate', 'toggle-pin', 'drag-start', 'drag-end']);
 
 const isRenaming = ref(false);
 const renameValue = ref('');
@@ -255,13 +255,25 @@ async function handleDelete() {
   if (ok) emit('delete', props.doc.id);
 }
 
+function isDraggingDocTransfer(e) {
+  return Boolean(e.dataTransfer?.types?.includes('application/nicemd-doc'));
+}
+
 function onDragStart(e) {
+  closeMenu();
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('application/nicemd-doc', props.doc.id);
   e.dataTransfer.setData('text/plain', props.doc.id);
+  emit('drag-start', props.doc);
+}
+
+function onDragEnd() {
+  isDragOver.value = false;
+  emit('drag-end');
 }
 
 function onDragOver(e) {
+  if (!isDraggingDocTransfer(e)) return;
   e.preventDefault();
   e.dataTransfer.dropEffect = 'move';
   isDragOver.value = true;
@@ -273,21 +285,28 @@ function onDragOver(e) {
 }
 
 function onDragEnter(e) {
+  if (!isDraggingDocTransfer(e)) return;
   e.preventDefault();
   isDragOver.value = true;
 }
 
-function onDragLeave() {
-  isDragOver.value = false;
+function onDragLeave(e) {
+  if (!e.relatedTarget || !e.currentTarget?.contains(e.relatedTarget)) {
+    isDragOver.value = false;
+  }
 }
 
 function onDrop(e) {
   isDragOver.value = false;
+  if (!isDraggingDocTransfer(e)) return;
   const docId = e.dataTransfer.getData('application/nicemd-doc') || e.dataTransfer.getData('text/plain');
-  if (!docId || docId === props.doc.id) return;
+  if (!docId) return;
   e.preventDefault();
   e.stopPropagation();
-  emit('move-doc', { docId, targetDocId: props.doc.id, position: dragPosition.value });
+  if (docId !== props.doc.id) {
+    emit('move-doc', { docId, targetDocId: props.doc.id, position: dragPosition.value });
+  }
+  emit('drag-end');
 }
 
 onUnmounted(() => {
@@ -309,6 +328,7 @@ onUnmounted(() => {
     @click="$emit('select', props.doc.id)"
     @contextmenu="openContextMenu"
     @dragstart="onDragStart"
+    @dragend="onDragEnd"
     @dragover="onDragOver"
     @dragenter="onDragEnter"
     @dragleave="onDragLeave"

@@ -123,6 +123,7 @@ onMounted(() => {
   window.addEventListener('storage', refreshCloudSyncState);
   document.addEventListener('mousedown', handleSyncMenuPointerDown);
   document.addEventListener('keydown', handleSyncMenuKeyDown);
+  window.addEventListener('dragend', resetDragState);
 });
 
 onUnmounted(() => {
@@ -137,6 +138,7 @@ onUnmounted(() => {
   window.removeEventListener('storage', refreshCloudSyncState);
   document.removeEventListener('mousedown', handleSyncMenuPointerDown);
   document.removeEventListener('keydown', handleSyncMenuKeyDown);
+  window.removeEventListener('dragend', resetDragState);
 });
 
 const props = defineProps({
@@ -179,9 +181,7 @@ function toggleSorting() {
 
 const expandableGroupIds = computed(() => {
   if (props.groups.length === 0) return [];
-  const ids = props.groups.map(group => group.id);
-  if (filteredUngroupedDocs.value.length > 0) ids.push('__ungrouped__');
-  return ids;
+  return props.groups.map(group => group.id);
 });
 
 const areAllGroupsExpanded = computed(() =>
@@ -259,7 +259,7 @@ function loadExpandedGroups() {
     const raw = localStorage.getItem(STORAGE_KEY_EXPANDED);
     if (raw) return new Set(JSON.parse(raw));
   } catch (e) {}
-  return new Set(['__ungrouped__', '__default__']);
+  return new Set();
 }
 
 const expandedGroups = ref(loadExpandedGroups());
@@ -271,42 +271,33 @@ function saveExpandedGroups() {
 }
 
 function handleCreateDoc(explicitGroupId = null) {
-  let targetGroupId = explicitGroupId;
-  // If no explicit group passed, intelligently default to the active document's group if one exists
-  if (!targetGroupId && props.activeDocId) {
-    const activeDoc = props.documents.find(d => d.id === props.activeDocId && !isDocDeleted(d));
-    if (activeDoc && activeDoc.groupId) {
-      targetGroupId = activeDoc.groupId;
+  const targetGroupId = explicitGroupId || null;
+  if (targetGroupId) {
+    const s = new Set(expandedGroups.value);
+    if (!s.has(targetGroupId)) {
+      s.add(targetGroupId);
+      expandedGroups.value = s;
+      saveExpandedGroups();
     }
-  }
-
-  const groupKey = targetGroupId || '__ungrouped__';
-  const s = new Set(expandedGroups.value);
-  if (!s.has(groupKey)) {
-    s.add(groupKey);
-    expandedGroups.value = s;
-    saveExpandedGroups();
   }
   emit('create-doc', targetGroupId);
 }
 
 function expandActiveGroup() {
-  if (props.activeDocId) {
-    const doc = props.documents.find(d => d.id === props.activeDocId);
-    const groupId = doc?.groupId || '__ungrouped__';
+  if (!props.activeDocId) return;
+  const doc = props.documents.find(d => d.id === props.activeDocId);
+  if (doc?.groupId) {
     const s = new Set(expandedGroups.value);
-    if (!s.has(groupId)) {
-      s.add(groupId);
+    if (!s.has(doc.groupId)) {
+      s.add(doc.groupId);
       expandedGroups.value = s;
       saveExpandedGroups();
     }
-    nextTick(() => {
-      const activeEl = sidebarBodyRef.value?.querySelector('.sidebar-doc-item.is-active, .doc-item.is-active, .doc-item.active');
-      if (activeEl) {
-        activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }
-    });
   }
+  nextTick(() => {
+    const activeEl = sidebarBodyRef.value?.querySelector('.file-row.selected');
+    activeEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  });
 }
 
 watch(() => props.activeDocId, (newId) => {
@@ -332,7 +323,6 @@ function toggleGroup(groupId) {
 function isGroupExpanded(groupId) {
   const q = searchQuery.value.trim();
   if (q) {
-    if (groupId === '__default__' || groupId === '__ungrouped__') return filteredUngroupedDocs.value.length > 0;
     if (groupId === '__trash__') return filteredDeletedDocs.value.length > 0;
     return docsInGroup(groupId).length > 0;
   }
@@ -367,7 +357,7 @@ function confirmRenameGroup() {
 async function handleDeleteGroup(group) {
   const ok = await showConfirm({
     title: '删除分组',
-    message: `确定要删除「${group.name}」吗？分组内的文档将移到「未分类」。`,
+    message: `确定要删除「${group.name}」吗？分组内的文档将移至根目录。`,
     confirmText: '删除',
     danger: true
   });
@@ -460,64 +450,126 @@ async function handleEmptyTrashClick() {
 
 // ── Drag & Drop ──
 const dragOverGroupId = ref(null);
+const dragOverRoot = ref(false);
+const dragOverTrash = ref(false);
+const draggingDoc = ref(null);
+
+const isDraggingGroupedDoc = computed(() => Boolean(draggingDoc.value?.groupId));
+
+function resetDragState() {
+  dragOverGroupId.value = null;
+  dragOverRoot.value = false;
+  dragOverTrash.value = false;
+  draggingDoc.value = null;
+}
+
+function handleDocDragStart(doc) {
+  draggingDoc.value = doc || null;
+}
+
+function handleDocDragEnd() {
+  resetDragState();
+}
+
+function isDocDragEvent(e) {
+  return Boolean(e.dataTransfer?.types?.includes('application/nicemd-doc'));
+}
+
+function getActiveDocsInContainer(targetGroupId) {
+  return props.documents.filter(d =>
+    !isDocDeleted(d) && (targetGroupId === null ? !d.groupId : d.groupId === targetGroupId)
+  );
+}
 
 function onListDragOver(e, groupId) {
-  if (!e.dataTransfer.types.includes('application/nicemd-doc')) return;
+  if (!isDocDragEvent(e)) return;
   e.preventDefault();
+  e.stopPropagation();
   e.dataTransfer.dropEffect = 'move';
+  dragOverTrash.value = false;
+  if (groupId) {
+    dragOverRoot.value = false;
+    dragOverGroupId.value = groupId;
+  } else {
+    dragOverGroupId.value = null;
+    dragOverRoot.value = true;
+  }
+}
+
+function onRootDragLeave(e) {
+  if (!e.relatedTarget || !e.currentTarget?.contains(e.relatedTarget)) {
+    dragOverRoot.value = false;
+  }
 }
 
 function onListDrop(e, groupId) {
+  if (!isDocDragEvent(e)) {
+    resetDragState();
+    return;
+  }
   const docId = e.dataTransfer.getData('application/nicemd-doc');
-  if (!docId) return;
-  const targetGroupId = (groupId === '__default__' || groupId === '__ungrouped__' || groupId === null) ? null : groupId;
-  const listDocs = targetGroupId === null
-    ? props.documents.filter(d => !d.groupId || d.groupId === null)
-    : props.documents.filter(d => d.groupId === targetGroupId);
+  if (!docId) {
+    resetDragState();
+    return;
+  }
+  e.preventDefault();
+  e.stopPropagation();
+
+  const targetGroupId = groupId || null;
+  const listDocs = sortDocList(getActiveDocsInContainer(targetGroupId));
   const lastDoc = listDocs[listDocs.length - 1];
   if (lastDoc && lastDoc.id !== docId) {
-    e.preventDefault();
-    e.stopPropagation();
     emit('reorder-docs', { docId, targetDocId: lastDoc.id, position: 'after' });
   } else {
-    e.preventDefault();
-    e.stopPropagation();
     emit('move-doc', { docId, groupId: targetGroupId });
   }
+  resetDragState();
 }
 
 function handleDocMove({ docId, targetDocId, position }) {
   emit('reorder-docs', { docId, targetDocId, position });
+  resetDragState();
 }
 
 function onGroupHeaderDragOver(e, groupId) {
-  if (e.dataTransfer.types.includes('application/nicemd-doc')) {
+  if (isDocDragEvent(e)) {
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
+    dragOverRoot.value = false;
+    dragOverTrash.value = false;
     dragOverGroupId.value = groupId;
-  } else if (e.dataTransfer.types.includes('application/nicemd-group')) {
+  } else if (e.dataTransfer?.types?.includes('application/nicemd-group')) {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
   }
 }
 
-function onGroupDragLeave() {
-  dragOverGroupId.value = null;
+function onGroupDragLeave(e) {
+  if (!e.relatedTarget || !e.currentTarget?.contains(e.relatedTarget)) {
+    dragOverGroupId.value = null;
+  }
 }
 
 function onGroupHeaderDrop(e, groupId) {
-  dragOverGroupId.value = null;
-  const docId = e.dataTransfer.getData('application/nicemd-doc');
+  const docId = e.dataTransfer?.getData('application/nicemd-doc');
   if (docId) {
     e.preventDefault();
     e.stopPropagation();
-    const targetGroupId = (groupId === '__default__' || groupId === '__ungrouped__' || groupId === null) ? null : groupId;
+    const targetGroupId = groupId || null;
+    if (targetGroupId && !expandedGroups.value.has(targetGroupId)) {
+      const s = new Set(expandedGroups.value);
+      s.add(targetGroupId);
+      expandedGroups.value = s;
+      saveExpandedGroups();
+    }
     emit('move-doc', { docId, groupId: targetGroupId });
+    resetDragState();
     return;
   }
-  const draggedGroupId = e.dataTransfer.getData('application/nicemd-group');
-  if (draggedGroupId && draggedGroupId !== groupId && groupId !== '__default__') {
+  resetDragState();
+  const draggedGroupId = e.dataTransfer?.getData('application/nicemd-group');
+  if (draggedGroupId && draggedGroupId !== groupId) {
     e.preventDefault();
     e.stopPropagation();
     emit('reorder-groups', { groupId: draggedGroupId, targetGroupId: groupId });
@@ -527,6 +579,38 @@ function onGroupHeaderDrop(e, groupId) {
 function onGroupDragStart(e, groupId) {
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('application/nicemd-group', groupId);
+}
+
+function onTrashDragOver(e) {
+  if (!isDocDragEvent(e)) return;
+  e.preventDefault();
+  e.stopPropagation();
+  e.dataTransfer.dropEffect = 'move';
+  dragOverGroupId.value = null;
+  dragOverRoot.value = false;
+  dragOverTrash.value = true;
+}
+
+function onTrashDragLeave(e) {
+  if (!e.relatedTarget || !e.currentTarget?.contains(e.relatedTarget)) {
+    dragOverTrash.value = false;
+  }
+}
+
+function onTrashDrop(e) {
+  dragOverTrash.value = false;
+  if (!isDocDragEvent(e)) {
+    resetDragState();
+    return;
+  }
+  const docId = e.dataTransfer.getData('application/nicemd-doc') || e.dataTransfer.getData('text/plain');
+  resetDragState();
+  if (!docId) return;
+  const doc = props.documents.find(d => d.id === docId);
+  if (!doc || isDocDeleted(doc)) return;
+  e.preventDefault();
+  e.stopPropagation();
+  emit('delete-doc', docId);
 }
 
 // ── Sidebar Resizing & Responsive Width ──
@@ -726,7 +810,12 @@ function resetSidebarWidth() {
     </label>
 
     <!-- Sidebar Body / Document Tree -->
-    <div class="sidebar-body" ref="sidebarBodyRef">
+    <div
+      class="sidebar-body"
+      ref="sidebarBodyRef"
+      @dragover="onListDragOver($event, null)"
+      @drop="onListDrop($event, null)"
+    >
       <!-- Group Creation Inline Row (at top of list) -->
       <div v-if="isCreatingGroup" class="create-group-row">
         <span class="folder-icon create-icon"></span>
@@ -750,35 +839,8 @@ function resetSidebarWidth() {
         </div>
       </div>
 
-      <!-- Mode A: Clean Flat List when no custom groups exist -->
-      <div
-        v-if="groups.length === 0"
-        class="doc-list flat-doc-list"
-        @dragover="onListDragOver($event, null)"
-        @drop="onListDrop($event, null)"
-      >
-        <SidebarDocItem
-          v-for="doc in filteredUngroupedDocs"
-          :key="doc.id"
-          :doc="doc"
-          :isActive="doc.id === activeDocId"
-          :searchQuery="searchQuery"
-          @select="id => $emit('select-doc', id)"
-          @rename="payload => $emit('rename-doc', payload)"
-          @delete="id => $emit('delete-doc', id)"
-          @move-doc="handleDocMove"
-          @history="doc => $emit('open-doc-history', doc)"
-          @duplicate="doc => $emit('duplicate-doc', doc)"
-          @toggle-pin="doc => $emit('toggle-pin', doc)"
-        />
-        <div v-if="filteredUngroupedDocs.length === 0" class="empty-group-drop-hint">
-          <span>{{ searchQuery ? '无匹配文档' : '暂无文档，点击上方「新建文档」开始写作' }}</span>
-        </div>
-      </div>
-
-      <!-- Mode B: Grouped Tree when custom groups exist -->
-      <template v-else>
-        <!-- ── 自定义分组列表 ── -->
+      <!-- 自定义分组列表 -->
+      <template v-if="groups.length > 0">
         <section
           v-for="group in groups"
           :key="group.id"
@@ -794,7 +856,7 @@ function resetSidebarWidth() {
             @click="renamingGroupId === group.id ? null : toggleGroup(group.id)"
             @dragstart="onGroupDragStart($event, group.id)"
             @dragover="onGroupHeaderDragOver($event, group.id)"
-            @dragenter.prevent="dragOverGroupId = group.id"
+            @dragenter="onGroupHeaderDragOver($event, group.id)"
             @dragleave="onGroupDragLeave"
             @drop="onGroupHeaderDrop($event, group.id)"
           >
@@ -846,6 +908,7 @@ function resetSidebarWidth() {
             v-show="isGroupExpanded(group.id)"
             class="children"
             @dragover="onListDragOver($event, group.id)"
+            @dragleave="onGroupDragLeave"
             @drop="onListDrop($event, group.id)"
           >
             <SidebarDocItem
@@ -861,73 +924,64 @@ function resetSidebarWidth() {
               @history="doc => $emit('open-doc-history', doc)"
               @duplicate="doc => $emit('duplicate-doc', doc)"
               @toggle-pin="doc => $emit('toggle-pin', doc)"
+              @drag-start="handleDocDragStart"
+              @drag-end="handleDocDragEnd"
             />
             <div v-if="docsInGroup(group.id).length === 0" class="empty-group-drop-hint">
               <span>{{ searchQuery ? '无匹配文档' : '暂无文档，可拖拽至此' }}</span>
             </div>
           </div>
         </section>
-
-        <!-- ── 未分类文档 ── -->
-        <section
-          v-if="filteredUngroupedDocs.length > 0 || dragOverGroupId === '__ungrouped__'"
-          class="folder ungrouped-folder"
-        >
-          <div
-            class="folder-row"
-            :class="{ 'is-drop-target': dragOverGroupId === '__ungrouped__' }"
-            @click="toggleGroup('__ungrouped__')"
-            @dragover="onGroupHeaderDragOver($event, '__ungrouped__')"
-            @dragenter.prevent="dragOverGroupId = '__ungrouped__'"
-            @dragleave="onGroupDragLeave"
-            @drop="onGroupHeaderDrop($event, '__ungrouped__')"
-          >
-            <span class="chevron">
-              <ChevronRight v-if="!isGroupExpanded('__ungrouped__')" size="13" stroke-width="2.2" />
-              <ChevronDown v-else size="13" stroke-width="2.2" />
-            </span>
-            <span class="folder-icon gray"></span>
-            <span class="folder-name">未分类</span>
-            <div class="folder-right">
-              <span class="count">{{ filteredUngroupedDocs.length }}</span>
-              <div class="folder-actions" @click.stop>
-                <button class="mini-btn" @click="handleCreateDoc(null)" title="新建未分类文档">
-                  <Plus size="12" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <div
-            v-show="isGroupExpanded('__ungrouped__')"
-            class="children"
-            @dragover="onListDragOver($event, '__ungrouped__')"
-            @drop="onListDrop($event, '__ungrouped__')"
-          >
-            <SidebarDocItem
-              v-for="doc in filteredUngroupedDocs"
-              :key="doc.id"
-              :doc="doc"
-              :isActive="doc.id === activeDocId"
-              :searchQuery="searchQuery"
-              @select="id => $emit('select-doc', id)"
-              @rename="payload => $emit('rename-doc', payload)"
-              @delete="id => $emit('delete-doc', id)"
-              @move-doc="handleDocMove"
-              @history="doc => $emit('open-doc-history', doc)"
-              @duplicate="doc => $emit('duplicate-doc', doc)"
-              @toggle-pin="doc => $emit('toggle-pin', doc)"
-            />
-            <div v-if="filteredUngroupedDocs.length === 0" class="empty-group-drop-hint">
-              <span>{{ searchQuery ? '无匹配文档' : '暂无文档，可拖拽至此' }}</span>
-            </div>
-          </div>
-        </section>
       </template>
+
+      <!-- 根目录文档列表（无分组文档直接平铺展示在根目录，支持拖拽移出分组到根目录） -->
+      <div
+        class="doc-list flat-doc-list root-doc-list"
+        :class="{
+          'has-groups': groups.length > 0 && filteredUngroupedDocs.length > 0,
+          'is-drop-target': dragOverRoot
+        }"
+        @dragover="onListDragOver($event, null)"
+        @dragleave="onRootDragLeave"
+        @drop="onListDrop($event, null)"
+      >
+        <SidebarDocItem
+          v-for="doc in filteredUngroupedDocs"
+          :key="doc.id"
+          :doc="doc"
+          :isActive="doc.id === activeDocId"
+          :searchQuery="searchQuery"
+          @select="id => $emit('select-doc', id)"
+          @rename="payload => $emit('rename-doc', payload)"
+          @delete="id => $emit('delete-doc', id)"
+          @move-doc="handleDocMove"
+          @history="doc => $emit('open-doc-history', doc)"
+          @duplicate="doc => $emit('duplicate-doc', doc)"
+          @toggle-pin="doc => $emit('toggle-pin', doc)"
+          @drag-start="handleDocDragStart"
+          @drag-end="handleDocDragEnd"
+        />
+        <div v-if="groups.length === 0 && filteredUngroupedDocs.length === 0" class="empty-group-drop-hint">
+          <span>{{ searchQuery ? '无匹配文档' : '暂无文档，点击上方「新建文档」开始写作' }}</span>
+        </div>
+        <div v-else-if="groups.length > 0 && isDraggingGroupedDoc && (filteredUngroupedDocs.length === 0 || dragOverRoot)" class="root-drop-hint">
+          <span>释放移至根目录</span>
+        </div>
+      </div>
     </div>
 
     <!-- ── 底部固定回收站 ♻️ ── -->
-    <div class="bottom">
+    <div
+      class="bottom"
+      :class="{
+        'is-doc-dragging': Boolean(draggingDoc),
+        'is-trash-drop-target': dragOverTrash
+      }"
+      @dragover="onTrashDragOver"
+      @dragenter="onTrashDragOver"
+      @dragleave="onTrashDragLeave"
+      @drop="onTrashDrop"
+    >
       <div
         class="trash"
         @click="toggleGroup('__trash__')"
@@ -938,6 +992,7 @@ function resetSidebarWidth() {
         </span>
         <Trash2 size="16" stroke-width="1.8" class="trash-icon" />
         <span class="trash-name">回收站</span>
+        <span v-if="dragOverTrash" class="trash-drop-badge">松开移入</span>
         <span class="count">{{ deletedDocs.length }}</span>
         <button
           v-if="deletedDocs.length > 0"
@@ -1672,26 +1727,6 @@ html.dark .folder-row:hover {
   box-sizing: border-box;
 }
 
-.folder-icon.gray {
-  border-color: #8ea0b8;
-  background: #f7f9fc;
-}
-
-.folder-icon.gray:before {
-  border-color: #8ea0b8;
-  background: #f7f9fc;
-}
-
-html.dark .folder-icon.gray {
-  border-color: #64748b;
-  background: #23252d;
-}
-
-html.dark .folder-icon.gray:before {
-  border-color: #64748b;
-  background: #23252d;
-}
-
 .folder-name {
   flex: 1;
   min-width: 0;
@@ -1810,7 +1845,37 @@ html.dark .children {
   min-height: 14px;
 }
 
-.empty-group-drop-hint {
+.root-doc-list {
+  flex: 1 0 auto;
+  min-height: 24px;
+  border-radius: 10px;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
+}
+
+.root-doc-list.has-groups {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px dashed #e6ecf4;
+  border-radius: 0 0 10px 10px;
+}
+
+html.dark .root-doc-list.has-groups {
+  border-top-color: rgba(255, 255, 255, 0.08);
+}
+
+.root-doc-list.is-drop-target {
+  background: rgba(38, 120, 232, 0.05);
+  box-shadow: inset 0 0 0 1.5px rgba(38, 120, 232, 0.45);
+  border-radius: 10px;
+}
+
+html.dark .root-doc-list.is-drop-target {
+  background: rgba(59, 130, 246, 0.09);
+  box-shadow: inset 0 0 0 1.5px rgba(96, 165, 250, 0.45);
+}
+
+.empty-group-drop-hint,
+.root-drop-hint {
   padding: 8px 10px;
   margin: 3px 0 5px;
   font-size: 0.75rem;
@@ -1823,9 +1888,29 @@ html.dark .children {
   transition: all 0.15s ease;
 }
 
-html.dark .empty-group-drop-hint {
+.root-drop-hint {
+  border-style: dashed;
+  border-color: #cbd5e1;
+  color: #64748b;
+  margin-top: 6px;
+}
+
+.root-doc-list.is-drop-target .root-drop-hint {
+  border-color: #2678e8;
+  background: rgba(38, 120, 232, 0.08);
+  color: #2678e8;
+}
+
+html.dark .empty-group-drop-hint,
+html.dark .root-drop-hint {
   background: rgba(255, 255, 255, 0.02);
   border-color: rgba(255, 255, 255, 0.08);
+}
+
+html.dark .root-doc-list.is-drop-target .root-drop-hint {
+  border-color: rgba(96, 165, 250, 0.6);
+  background: rgba(59, 130, 246, 0.14);
+  color: #93c5fd;
 }
 
 /* ── 6. Bottom / Recycle Bin (.bottom / .trash) ── */
@@ -1834,6 +1919,7 @@ html.dark .empty-group-drop-hint {
   padding-top: 10px;
   margin-top: 10px;
   flex-shrink: 0;
+  transition: border-color 0.15s ease;
 }
 
 html.dark .bottom {
@@ -1844,17 +1930,35 @@ html.dark .bottom {
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 9px 8px;
+  padding: 8px 7px;
+  border: 1px solid transparent;
   border-radius: 9px;
   color: #52647d;
   font-size: 0.875rem;
   cursor: pointer;
-  transition: 0.15s background;
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
   user-select: none;
 }
 
 .trash:hover {
   background: #f5f8fc;
+}
+
+.bottom.is-doc-dragging .trash {
+  border-style: dashed;
+  border-color: #cbd5e1;
+}
+
+.bottom.is-trash-drop-target .trash {
+  background: #fff1f2;
+  border-style: solid;
+  border-color: #ef4444;
+  box-shadow: inset 0 0 0 1px rgba(239, 68, 68, 0.2);
+  color: #dc2626;
+}
+
+.bottom.is-trash-drop-target .trash-icon {
+  color: #ef4444;
 }
 
 html.dark .trash {
@@ -1863,6 +1967,36 @@ html.dark .trash {
 
 html.dark .trash:hover {
   background: rgba(255, 255, 255, 0.05);
+}
+
+html.dark .bottom.is-doc-dragging .trash {
+  border-color: rgba(255, 255, 255, 0.14);
+}
+
+html.dark .bottom.is-trash-drop-target .trash {
+  background: rgba(239, 68, 68, 0.14);
+  border-color: rgba(248, 113, 113, 0.65);
+  box-shadow: inset 0 0 0 1px rgba(248, 113, 113, 0.25);
+  color: #fca5a5;
+}
+
+html.dark .bottom.is-trash-drop-target .trash-icon {
+  color: #f87171;
+}
+
+.trash-drop-badge {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.12);
+  color: #dc2626;
+  white-space: nowrap;
+}
+
+html.dark .trash-drop-badge {
+  background: rgba(248, 113, 113, 0.2);
+  color: #fca5a5;
 }
 
 .trash-icon {

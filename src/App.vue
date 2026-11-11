@@ -516,6 +516,7 @@ function handleReorderDocs({ docId, targetDocId, position }) {
   if (srcIdx === -1 || !targetDoc || docId === targetDocId) return;
 
   const [moved] = documents.value.splice(srcIdx, 1);
+  const prevGroupId = moved.groupId || null;
   moved.groupId = targetDoc.groupId || null;
   moved.updatedAt = Date.now();
 
@@ -524,6 +525,9 @@ function handleReorderDocs({ docId, targetDocId, position }) {
   documents.value.splice(insertIdx, 0, moved);
   documents.value = [...documents.value];
   saveDocuments(documents.value);
+  if (prevGroupId !== moved.groupId) {
+    realtimeSyncDoc(moved);
+  }
 }
 
 function handleReorderGroups({ groupId, targetGroupId }) {
