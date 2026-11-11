@@ -342,6 +342,7 @@ onUnmounted(() => {
         class="file-name"
         @dblclick.stop="startRename"
         :title="doc.title || '未命名文档'"
+        data-tooltip-truncated="true"
       >
         <span>{{ doc.title }}</span>
         <span v-if="doc.isPinned" class="pin-badge" title="已置顶">📌</span>
@@ -364,7 +365,7 @@ onUnmounted(() => {
       </div>
 
       <!-- Meta Row (Time · Word Count) -->
-      <div class="meta" :title="`${docTime} · ${docCharCount} 字`">
+      <div class="meta">
         {{ docTime }} · {{ docCharCount }}字
       </div>
     </div>
@@ -443,12 +444,10 @@ html.dark .file-row:hover {
 
 .file-row.selected {
   background: #f1f6fd;
-  box-shadow: inset 0 0 0 1px #e1eaf7;
 }
 
 html.dark .file-row.selected {
   background: rgba(59, 130, 246, 0.09);
-  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.18);
 }
 
 .file-row.is-dragging-before {
@@ -471,7 +470,7 @@ html.dark .file-row.selected {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #1e293b;
+  color: #6c7688;
   line-height: 1.35;
   display: flex;
   align-items: center;
@@ -487,6 +486,7 @@ html.dark .file-row.selected {
 
 .file-row.selected .file-name {
   color: #1e293b;
+  font-weight: 500;
 }
 
 html.dark .file-name {
@@ -506,6 +506,7 @@ html.dark .file-row.selected .file-name {
   margin-top: 3px;
   color: #718198;
   font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

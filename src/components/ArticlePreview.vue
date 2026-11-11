@@ -687,9 +687,9 @@ function handlePopupClose() {
             <div v-if="props.isWeChatMode" class="phone-article-header">
               <div class="phone-title">{{ docTitle }}</div>
               <div class="phone-meta">
-                <span class="phone-author">NiceMD 作者</span>
+                <span class="phone-author">EasyMD 作者</span>
                 <span class="phone-date">刚刚</span>
-                <span class="phone-account">极简发布平台</span>
+                <span class="phone-account">EasyMD</span>
               </div>
             </div>
           </Transition>

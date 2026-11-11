@@ -29,6 +29,15 @@ function ensureTooltipElements() {
   document.body.appendChild(tooltipEl);
 }
 
+function isElementTruncated(el) {
+  if (!el) return false;
+  if (el.scrollWidth > el.clientWidth + 1) return true;
+  for (const child of el.children) {
+    if (child.scrollWidth > child.clientWidth + 1) return true;
+  }
+  return false;
+}
+
 function getTooltipTarget(node) {
   let el = node;
   while (el && el !== document.body && el !== document.documentElement) {
@@ -42,6 +51,10 @@ function getTooltipTarget(node) {
     }
     // Check title or data-nice-title or data-tooltip
     if (el.hasAttribute('title') || el.hasAttribute('data-nice-title') || el.hasAttribute('data-tooltip')) {
+      if (el.hasAttribute('data-tooltip-truncated') && !isElementTruncated(el)) {
+        el = el.parentElement;
+        continue;
+      }
       return el;
     }
     el = el.parentElement;
@@ -53,11 +66,13 @@ function getTooltipText(el) {
   if (!el) return '';
   if (el.hasAttribute('title')) {
     const text = el.getAttribute('title');
+    el.removeAttribute('title');
     if (text) {
       el.setAttribute('data-nice-title', text);
-      el.removeAttribute('title');
       return text;
     }
+    el.removeAttribute('data-nice-title');
+    return '';
   }
   return el.getAttribute('data-nice-title') || el.getAttribute('data-tooltip') || '';
 }

@@ -46,7 +46,7 @@ function onLeave() {
   transform: translate(-50%, -100%);
   background: #1a1a1a;
   color: #ffffff;
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-sans);
   font-size: 11px;
   font-weight: 600;
   padding: 4px 10px;

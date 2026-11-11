@@ -620,7 +620,7 @@ function escapeHtml(str) {
   background-color: #FAFAFA;
   background-image: radial-gradient(at 0% 0%, rgba(99, 102, 241, 0.04) 0px, transparent 50%),
                     radial-gradient(at 100% 100%, rgba(238, 242, 255, 0.5) 0px, transparent 50%);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-sans);
   color: #1E293B;
   display: flex;
   flex-direction: column;

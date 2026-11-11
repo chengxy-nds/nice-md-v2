@@ -844,7 +844,7 @@ function resetSidebarWidth() {
         v-if="searchQuery" 
         class="search-clear-btn" 
         @click="searchQuery = ''"
-        title="清空搜索"
+        aria-label="清空搜索"
       >
         <X size="12" />
       </button>
@@ -875,7 +875,7 @@ function resetSidebarWidth() {
           <button class="action-btn confirm-btn" @mousedown.prevent="handleSaveNewGroup" title="确认新建">
             <Check size="13" stroke-width="2" />
           </button>
-          <button class="action-btn cancel-btn" @mousedown.prevent="handleCancelNewGroup" title="取消">
+          <button class="action-btn cancel-btn" @mousedown.prevent="handleCancelNewGroup" aria-label="取消">
             <X size="13" stroke-width="2" />
           </button>
         </div>
@@ -943,6 +943,7 @@ function resetSidebarWidth() {
               class="folder-name"
               @dblclick.stop="startRenameGroup(group)"
               :title="group.name"
+              data-tooltip-truncated="true"
             >{{ group.name }}</span>
 
             <!-- group name edit -->
@@ -1114,7 +1115,7 @@ function resetSidebarWidth() {
           @click="handleSelectTrashDoc(doc)"
         >
           <div class="file-copy">
-            <span class="file-name" :title="doc.title || '未命名文档'">{{ doc.title || '未命名文档' }}</span>
+            <span class="file-name" :title="doc.title || '未命名文档'" data-tooltip-truncated="true">{{ doc.title || '未命名文档' }}</span>
             <div class="meta">{{ formatTrashDocTime(doc) }} · {{ trashDocCharCount(doc) }}字</div>
           </div>
           <div class="trash-item-actions" @click.stop>
@@ -1748,7 +1749,6 @@ html.dark .create-group-input {
   padding-right: 2px;
   display: flex;
   flex-direction: column;
-  gap: 2px;
 }
 
 .sidebar-body::-webkit-scrollbar {
@@ -1773,7 +1773,7 @@ html.dark .create-group-input {
 .folder-row {
   display: flex;
   align-items: center;
-  min-height: 40px;
+  min-height: 35px;
   padding: 0 8px;
   gap: 8px;
   font-size: 0.875rem;
@@ -1971,8 +1971,6 @@ html.dark .mini-btn:hover {
   border-left: 1px solid #e4ebf4;
   min-height: 10px;
   padding-bottom: 4px;
-  margin-top: 2px;
-  margin-bottom: 4px;
 }
 
 html.dark .children {
@@ -2234,6 +2232,7 @@ html.dark .trash-doc-item .file-name {
   margin-top: 3px;
   color: #718198;
   font-size: 0.6875rem;
+  font-variant-numeric: tabular-nums;
   line-height: 1.2;
 }
 

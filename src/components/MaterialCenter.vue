@@ -143,7 +143,7 @@ function handleApplyBackground(mat) {
             <Sparkles size="14" />
           </span>
           <h1 class="mc-title">素材中心</h1>
-          <span class="mc-count">{{ filteredMaterials.length }} 款排版素材</span>
+          <span class="mc-count">{{ filteredMaterials.length }} 个素材</span>
         </div>
       </div>
 
@@ -152,7 +152,7 @@ function handleApplyBackground(mat) {
         <input
           v-model="searchQuery"
           type="text"
-          placeholder="搜索素材名称、标签（如：清新、手账、国风、极客...）"
+          placeholder="搜索素材名称或标签"
         />
         <button v-if="searchQuery" class="mc-clear-btn" @click="searchQuery = ''">
           <X size="13" />
@@ -166,10 +166,7 @@ function handleApplyBackground(mat) {
       <div class="mc-filter-panel">
         <!-- Element Type Filter Row -->
         <div class="mc-filter-row">
-          <span class="mc-filter-label">
-            <Boxes size="12" />
-            <span>素材类型</span>
-          </span>
+          <span class="mc-filter-label">素材类型</span>
           <nav class="mc-tabs">
             <button
               v-for="cat in materialCategories"
@@ -186,10 +183,7 @@ function handleApplyBackground(mat) {
 
         <!-- Style Filter Row -->
         <div class="mc-filter-row">
-          <span class="mc-filter-label">
-            <Palette size="12" />
-            <span>视觉风格</span>
-          </span>
+          <span class="mc-filter-label">视觉风格</span>
           <nav class="mc-tabs style-tabs">
             <button
               v-for="st in styleCategories"
@@ -264,8 +258,6 @@ function handleApplyBackground(mat) {
               </span>
             </div>
 
-            <!-- Material Short ID / Copy icon -->
-            <span class="mc-card-quick-id">#{{ mat.id }}</span>
           </div>
 
           <!-- Pure Material Live Render Area -->
@@ -275,17 +267,11 @@ function handleApplyBackground(mat) {
 
           <!-- Card Metadata Footer (Minimalist & Clean) -->
           <div class="mc-card-footer">
-            <h4 class="mc-card-title" :title="mat.title">{{ mat.title }}</h4>
+            <h4 class="mc-card-title" :title="mat.title" data-tooltip-truncated="true">{{ mat.title }}</h4>
           </div>
 
-          <!-- Elegant Frosted Glass Hover Overlay -->
+          <!-- Actions stay out of the way until the card is hovered or focused. -->
           <div class="mc-card-overlay">
-            <div class="mc-overlay-info">
-              <div class="mc-overlay-title">{{ mat.title }}</div>
-              <div class="mc-overlay-cat">
-                {{ categoryNameMap[mat.category] }} · {{ getStyleBadge(mat.styleCategory).name }}
-              </div>
-            </div>
             <div class="mc-overlay-actions" @click.stop>
               <!-- Category is backgrounds -->
               <template v-if="mat.category === 'backgrounds'">

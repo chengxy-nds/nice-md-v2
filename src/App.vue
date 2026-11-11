@@ -4,7 +4,7 @@ import html2canvas from 'html2canvas';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ImageRun, AlignmentType } from 'docx';
 import {
   Menu, Sparkles, Search, Image, ImagePlus, BookOpen, Link, Upload, Trash2,
-  Link2, Link2Off, Eye, EyeOff, Download, Undo2, Redo2, Code2,
+  Eye, EyeOff, Download, Undo2, Redo2, Code2,
   ChevronDown, FileCode, FileText, Globe, Settings, Check, X,
   History, Copy, Plus, ArrowLeftToLine, ArrowRightToLine, CircleX
 } from '@lucide/vue';
@@ -23,6 +23,7 @@ import IconBar from './components/IconBar.vue';
 import DocHistoryModal from './components/DocHistoryModal.vue';
 import { compileToWeChatHtml, cleanEmptyListItems, stripOssProcessFromMarkdown } from './utils/wechatStyles';
 import { writeTextToClipboard } from './utils/clipboard';
+import { EDITOR_SETTINGS_UPDATED_EVENT, loadSyncScrollPreference } from './utils/editorPreferences';
 import { ensureMarkdownExtensions, stripYamlFrontMatter } from './utils/markdownExtensions';
 import { parseMarkdownWithDocToc, isDocTocToken, extractHeadingsFromTokens } from './utils/markdownToc';
 import { marked } from 'marked';
@@ -1835,10 +1836,10 @@ const getCompiledHtml = () => {
 
 const activeScrollPane = ref('editor');
 const scrollPercentage = ref(0);
-const syncScrollEnabled = ref(true);
+const syncScrollEnabled = ref(loadSyncScrollPreference());
 
-function toggleSyncScroll() {
-  syncScrollEnabled.value = !syncScrollEnabled.value;
+function refreshGeneralSettings() {
+  syncScrollEnabled.value = loadSyncScrollPreference();
 }
 
 // Modal & panel state
@@ -1948,6 +1949,7 @@ onMounted(async () => {
 
   document.addEventListener('mousedown', handleImageMenuPointerDown);
   document.addEventListener('keydown', handleImageMenuKeyDown);
+  window.addEventListener(EDITOR_SETTINGS_UPDATED_EVENT, refreshGeneralSettings);
 
   // 5. Immediate Cloud Sync on boot if enabled
   if (isCloudSyncEnabled()) {
@@ -2030,6 +2032,7 @@ onUnmounted(() => {
   clearTimeout(toolbarCopyTimer);
   document.removeEventListener('mousedown', handleImageMenuPointerDown);
   document.removeEventListener('keydown', handleImageMenuKeyDown);
+  window.removeEventListener(EDITOR_SETTINGS_UPDATED_EVENT, refreshGeneralSettings);
 });
 
 // ── auto-save watchers ──
@@ -2210,7 +2213,6 @@ watch(customStyles, () => {
                 :class="{ 'is-active': tab.id === activeDocId, 'is-renaming': renamingTabId === tab.id }"
                 role="tab"
                 :aria-selected="tab.id === activeDocId"
-                :title="`${tab.title}（双击重命名）`"
                 @click="handleTabClick(tab.id)"
                 @dblclick.stop="startRenameTab(tab)"
                 @contextmenu.prevent.stop="openTabMenuFromContext($event, tab.id)"
@@ -2218,7 +2220,12 @@ watch(customStyles, () => {
                 @auxclick.middle.stop="handleCloseTab(tab.id)"
               >
                 <FileText size="12.5" class="workspace-tab-icon" />
-                <span v-if="renamingTabId !== tab.id" class="workspace-tab-title">{{ tab.title }}</span>
+                <span
+                  v-if="renamingTabId !== tab.id"
+                  class="workspace-tab-title"
+                  :title="tab.title"
+                  data-tooltip-truncated="true"
+                >{{ tab.title }}</span>
                 <input
                   v-else
                   ref="tabRenameInputRef"
@@ -2340,13 +2347,6 @@ watch(customStyles, () => {
                 <button @click="editorPanelRef?.clearContent()" class="btn-icon btn-danger" title="清空内容"><Trash2 size="14.5" /></button>
               </div>
 
-              <span class="toolbar-sep"></span>
-
-              <!-- View & Sync Group -->
-              <div class="toolbar-btn-group">
-                <button @click="toggleSyncScroll" class="btn-icon" :class="{ 'is-active': syncScrollEnabled }" title="双栏同步滚动"><Link2 v-if="syncScrollEnabled" size="14.5" /><Link2Off v-else size="14.5" /></button>
-              </div>
-
               <!-- Spacer pushing Theme & Code style dropdowns to the far right -->
               <span class="toolbar-spacer"></span>
 
@@ -2427,7 +2427,6 @@ watch(customStyles, () => {
                 @scroll="handleScroll"
                 @focusActive="handleFocusActive"
                 @editor-click="handleEditorClick"
-                @toggleSyncScroll="toggleSyncScroll"
                 @togglePreview="togglePreview"
                 @toast="triggerAppToast"
               />
@@ -2752,7 +2751,7 @@ html.dark .wandor-wordmark {
 }
 
 .logo-text {
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-heading);
   font-weight: 800;
   font-size: 20px;
   letter-spacing: -0.5px;
@@ -2891,7 +2890,7 @@ html.dark .wandor-wordmark {
   border-radius: 8px;
   background: var(--accent-bg);
   border: 1px solid var(--border-color);
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-sans);
   display: inline-flex;
   align-items: center;
 }
@@ -2904,7 +2903,7 @@ html.dark .wandor-wordmark {
   border-radius: 8px;
   font-size: 10px;
   font-weight: 600;
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-sans);
   outline: none;
   cursor: pointer;
   appearance: none;
@@ -2951,7 +2950,7 @@ html.dark .wandor-wordmark {
   cursor: pointer;
   text-align: left;
   transition: background 0.15s ease;
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-sans);
 }
 
 .export-menu button:hover {
@@ -3095,7 +3094,6 @@ html.dark .workspace-tab-item:hover:not(.is-active) {
   background: #f5f8fc;
   box-shadow: inset 0 -1px 0 #e5ebf3;
   color: #0f172a;
-  font-weight: 600;
   z-index: 2;
 }
 

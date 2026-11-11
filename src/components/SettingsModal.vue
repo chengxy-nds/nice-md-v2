@@ -34,6 +34,23 @@ import {
 import { showConfirm } from '../utils/confirmDialog';
 import { soundEngine } from '../utils/synthAudio';
 import {
+  EDITOR_FONT_OPTIONS,
+  EDITOR_FONT_SIZE_STORAGE_KEY,
+  EDITOR_FONT_FAMILY_STORAGE_KEY,
+  EDITOR_SYNC_SCROLL_STORAGE_KEY,
+  EDITOR_SETTINGS_UPDATED_EVENT,
+  DEFAULT_EDITOR_FONT_SIZE,
+  DEFAULT_EDITOR_FONT_SIZE_NUM,
+  DEFAULT_EDITOR_FONT_FAMILY_KEY,
+  MIN_EDITOR_FONT_SIZE,
+  MAX_EDITOR_FONT_SIZE,
+  formatEditorFontSizeNumber,
+  normalizeEditorFontSize,
+  ensureEditorFontLoaded,
+  loadEditorPreferences,
+  loadSyncScrollPreference
+} from '../utils/editorPreferences';
+import {
   getStorageConfig,
   saveStorageConfig,
   isStorageEnabled,
@@ -973,32 +990,69 @@ onMounted(() => {
 });
 
 // ── general settings state ──
+const initialEditorPrefs = loadEditorPreferences();
 const soundMuted = ref(soundEngine.getMuteState());
-const syncScroll = ref(localStorage.getItem('nicemd_sync_scroll') !== 'false');
-const editorFontSize = ref(localStorage.getItem('nicemd_font_size') || '14.5px');
+const syncScroll = ref(loadSyncScrollPreference());
+const editorFontFamily = ref(initialEditorPrefs.fontFamilyKey);
+const editorFontSize = ref(initialEditorPrefs.fontSize);
+const editorFontSizeInput = ref(String(initialEditorPrefs.fontSizeNumber));
 const lineNumbers = ref(localStorage.getItem('nicemd_line_numbers') !== 'false');
+
+const emitSettingsUpdated = () => {
+  window.dispatchEvent(new CustomEvent(EDITOR_SETTINGS_UPDATED_EVENT));
+};
+
+const handleFontSizeInput = (event) => {
+  const raw = event?.target?.value ?? editorFontSizeInput.value;
+  editorFontSizeInput.value = raw;
+  const parsed = parseFloat(String(raw).trim());
+  if (Number.isFinite(parsed) && parsed >= MIN_EDITOR_FONT_SIZE && parsed <= MAX_EDITOR_FONT_SIZE) {
+    editorFontSize.value = normalizeEditorFontSize(parsed);
+  }
+};
+
+const commitFontSizeInput = (event) => {
+  const rawText = String(editorFontSizeInput.value ?? '').trim();
+  const parsed = parseFloat(rawText);
+  if (!rawText || !Number.isFinite(parsed)) {
+    editorFontSizeInput.value = formatEditorFontSizeNumber(editorFontSize.value);
+  } else {
+    const normalized = normalizeEditorFontSize(parsed);
+    editorFontSize.value = normalized;
+    editorFontSizeInput.value = formatEditorFontSizeNumber(normalized);
+  }
+  if (event?.target && event.target.value !== editorFontSizeInput.value) {
+    event.target.value = editorFontSizeInput.value;
+  }
+};
 
 watch(soundMuted, (val) => {
   if (val !== soundEngine.getMuteState()) {
     soundEngine.toggleMute();
   }
   localStorage.setItem('nicemd_sound_muted', val.toString());
-  window.dispatchEvent(new CustomEvent('nicemd-settings-updated'));
+  emitSettingsUpdated();
 });
 
 watch(syncScroll, (val) => {
-  localStorage.setItem('nicemd_sync_scroll', val.toString());
-  window.dispatchEvent(new CustomEvent('nicemd-settings-updated'));
+  localStorage.setItem(EDITOR_SYNC_SCROLL_STORAGE_KEY, val.toString());
+  emitSettingsUpdated();
+});
+
+watch(editorFontFamily, (val) => {
+  ensureEditorFontLoaded(val);
+  localStorage.setItem(EDITOR_FONT_FAMILY_STORAGE_KEY, val);
+  emitSettingsUpdated();
 });
 
 watch(editorFontSize, (val) => {
-  localStorage.setItem('nicemd_font_size', val);
-  window.dispatchEvent(new CustomEvent('nicemd-settings-updated'));
+  localStorage.setItem(EDITOR_FONT_SIZE_STORAGE_KEY, val);
+  emitSettingsUpdated();
 });
 
 watch(lineNumbers, (val) => {
   localStorage.setItem('nicemd_line_numbers', val.toString());
-  window.dispatchEvent(new CustomEvent('nicemd-settings-updated'));
+  emitSettingsUpdated();
 });
 
 const activeTab = ref('general');
@@ -1035,9 +1089,14 @@ watch(() => props.isOpen, (newVal) => {
     storageTestResult.value = '';
     storageTestMsg.value = '';
     soundMuted.value = soundEngine.getMuteState();
-    syncScroll.value = localStorage.getItem('nicemd_sync_scroll') !== 'false';
-    editorFontSize.value = localStorage.getItem('nicemd_font_size') || '14.5px';
+    syncScroll.value = loadSyncScrollPreference();
+    const editorPrefs = loadEditorPreferences();
+    editorFontFamily.value = editorPrefs.fontFamilyKey;
+    editorFontSize.value = editorPrefs.fontSize;
+    editorFontSizeInput.value = String(editorPrefs.fontSizeNumber);
     lineNumbers.value = localStorage.getItem('nicemd_line_numbers') !== 'false';
+  } else {
+    commitFontSizeInput();
   }
 });
 
@@ -1053,6 +1112,7 @@ const openPlatformManagement = () => {
 
 const handleSave = () => {
   soundEngine.playClick();
+  commitFontSizeInput();
   saveStatus.value = 'saving';
   
   if (storageConfig.value) {
@@ -1089,7 +1149,9 @@ const handleReset = async () => {
     if (ok) {
       soundMuted.value = false;
       syncScroll.value = true;
-      editorFontSize.value = '14.5px';
+      editorFontFamily.value = DEFAULT_EDITOR_FONT_FAMILY_KEY;
+      editorFontSize.value = DEFAULT_EDITOR_FONT_SIZE;
+      editorFontSizeInput.value = String(DEFAULT_EDITOR_FONT_SIZE_NUM);
       lineNumbers.value = true;
     }
     return;
@@ -1277,24 +1339,48 @@ const supportsSilent = (id) => {
               <small class="help-text">当滚动编辑区域时，预览区域会自动按百分比进行平滑同步滚动。</small>
             </div>
 
-            <!-- Font Size -->
+            <!-- Editor Font Family -->
             <div class="form-group">
-              <label>编辑器字体大小</label>
+              <label for="general-editor-font-family">编辑区字体</label>
               <div class="input-with-icon">
                 <Type class="input-icon" size="14" />
-                <select v-model="editorFontSize" class="format-select">
-                  <option value="12px">12 px (小)</option>
-                  <option value="13.5px">13.5 px (小默认)</option>
-                  <option value="14.5px">14.5 px (默认)</option>
-                  <option value="16px">16 px (大)</option>
-                  <option value="18px">18 px (超大)</option>
-                  <option value="20px">20 px (极致)</option>
+                <select id="general-editor-font-family" v-model="editorFontFamily" class="format-select">
+                  <option
+                    v-for="opt in EDITOR_FONT_OPTIONS"
+                    :key="opt.value"
+                    :value="opt.value"
+                  >
+                    {{ opt.label }}
+                  </option>
                 </select>
               </div>
+              <small class="help-text">选择编辑器正文显示的字体风格，修改后即时生效。</small>
+            </div>
+
+            <!-- Font Size -->
+            <div class="form-group">
+              <label for="general-editor-font-size">编辑器字体大小</label>
+              <div class="input-with-icon input-with-unit">
+                <Sliders class="input-icon" size="14" />
+                <input
+                  id="general-editor-font-size"
+                  type="number"
+                  :value="editorFontSizeInput"
+                  :min="MIN_EDITOR_FONT_SIZE"
+                  :max="MAX_EDITOR_FONT_SIZE"
+                  step="0.5"
+                  :placeholder="String(DEFAULT_EDITOR_FONT_SIZE_NUM)"
+                  @input="handleFontSizeInput"
+                  @blur="commitFontSizeInput"
+                  @keydown.enter="commitFontSizeInput"
+                />
+                <span class="input-unit-suffix">px</span>
+              </div>
+              <small class="help-text">支持 {{ MIN_EDITOR_FONT_SIZE }} - {{ MAX_EDITOR_FONT_SIZE }} px，可自由输入小数字号（默认 {{ DEFAULT_EDITOR_FONT_SIZE_NUM }}，如 14.5）。</small>
             </div>
 
             <!-- Line Numbers Toggle -->
-            <div class="form-group">
+            <div class="form-group span-2">
               <label>显示行号</label>
               <label class="checkbox-container">
                 <input type="checkbox" v-model="lineNumbers" />
@@ -2353,6 +2439,48 @@ const supportsSilent = (id) => {
 .general-settings-form .input-with-icon select {
   border-radius: 6px;
   background: var(--bg-card);
+}
+
+.general-settings-form .input-icon {
+  pointer-events: none;
+}
+
+.general-settings-form .input-with-unit {
+  height: 38px;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  background: var(--bg-card);
+  box-sizing: border-box;
+  transition: border-color 0.2s ease;
+}
+
+.general-settings-form .input-with-unit:focus-within {
+  border-color: var(--accent-color);
+}
+
+.general-settings-form .input-with-unit input {
+  flex: 1;
+  height: 100%;
+  border: none;
+  border-radius: 6px 0 0 6px;
+  background: transparent;
+  padding: 0 8px 0 34px;
+}
+
+.general-settings-form .input-with-unit .input-unit-suffix {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 0 11px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  border-left: 1px solid var(--border-color);
+  background: var(--bg-sidebar, #F8FAFC);
+  border-radius: 0 5px 5px 0;
+  user-select: none;
+  flex-shrink: 0;
 }
 
 .form-grid {

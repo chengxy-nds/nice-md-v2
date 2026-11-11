@@ -548,7 +548,7 @@ onUnmounted(() => {
           title="发布与多渠道分发"
           aria-label="发布文章"
         >
-          <Send size="16" stroke-width="2" class="bar-publish-icon" />
+          <Send size="18" stroke-width="1.8" class="bar-publish-icon" />
         </button>
 
         <div
@@ -568,7 +568,7 @@ onUnmounted(() => {
             title="复制排版内容"
             @click.stop="toggleCopyMenu"
           >
-            <Copy size="19" stroke-width="1.7" />
+            <Copy size="18" stroke-width="1.7" />
           </button>
         </div>
 
@@ -577,19 +577,17 @@ onUnmounted(() => {
         <button
           type="button"
           class="bar-action-btn preview-mode-toggle-btn"
-          :class="{ 'is-active': isWeChatMode }"
+          :class="{ 'is-active': isWeChatMode, 'is-current-mode': !isWeChatMode }"
           :aria-pressed="isWeChatMode"
           :aria-label="isWeChatMode ? '手机模拟预览（点击切换电脑预览）' : '电脑预览（点击切换手机预览）'"
           :data-tooltip="isWeChatMode ? '手机模拟预览（点击切换电脑预览）' : '电脑预览（点击切换手机预览）'"
           @click="isWeChatMode = !isWeChatMode"
         >
           <Transition name="mode-icon-swap" mode="out-in">
-            <Smartphone v-if="isWeChatMode" key="mobile" size="19" stroke-width="1.7" />
-            <Monitor v-else key="desktop" size="19" stroke-width="1.7" />
+            <Smartphone v-if="isWeChatMode" key="mobile" size="18" stroke-width="1.7" />
+            <Monitor v-else key="desktop" size="18" stroke-width="1.7" />
           </Transition>
         </button>
-
-        <span class="bar-divider"></span>
 
         <button
           class="bar-action-btn"
@@ -598,8 +596,8 @@ onUnmounted(() => {
           @click="$emit('togglePreview')"
           :title="previewVisible ? '隐藏预览区' : '显示预览区'"
         >
-          <Eye v-if="previewVisible" size="20" stroke-width="1.6" />
-          <EyeOff v-else size="20" stroke-width="1.6" />
+          <Eye v-if="previewVisible" size="18" stroke-width="1.7" />
+          <EyeOff v-else size="18" stroke-width="1.7" />
         </button>
       </div>
 
@@ -611,7 +609,7 @@ onUnmounted(() => {
           @click="$emit('update:themePanelVisible', !themePanelVisible)"
           title="自定义主题"
         >
-          <Palette size="20" stroke-width="1.6" />
+          <Palette size="18" stroke-width="1.7" />
         </button>
       </div>
     </aside>
@@ -734,19 +732,19 @@ onUnmounted(() => {
   font-size: 14px;
   font-weight: 700;
   color: var(--text-main);
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-heading);
 }
 
 .preview-header-subtitle {
   font-size: 11px;
   font-weight: 600;
   color: var(--text-muted);
-  font-family: 'Outfit', sans-serif;
+  font-family: var(--font-sans);
 }
 
 /* Right-side slider / bar styling — independent, pinned to the right edge, matching left sidebar */
 .preview-right-bar {
-  width: 46px;
+  width: 48px;
   flex-shrink: 0;
   background: var(--bg-rail, #F8FAFC);
   border-left: 1px solid var(--border-subtle, #EDF1F7);
@@ -785,6 +783,7 @@ onUnmounted(() => {
   height: 1px;
   flex: none;
   background: var(--border-subtle, #EDF1F7);
+  margin: 2px 0;
 }
 
 .bar-publish-btn {
@@ -793,28 +792,28 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9px;
-  border: 1px solid var(--btn-primary-border, rgba(17, 106, 204, 0.25));
-  background: var(--btn-primary-bg, linear-gradient(180deg, #1d7ae8 0%, #116ACC 100%));
-  color: var(--btn-primary-text, #ffffff);
+  border-radius: 8px;
+  border: 1px solid rgba(17, 106, 204, 0.1);
+  background: rgba(17, 106, 204, 0.09);
+  color: var(--brand-primary, #116ACC);
   cursor: pointer;
   padding: 0;
-  box-shadow: 0 2px 6px rgba(17, 106, 204, 0.24);
-  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  box-shadow: none;
+  box-sizing: border-box;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
 .bar-publish-btn:hover {
-  background: var(--btn-primary-hover, #0f5eb8);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 10px rgba(17, 106, 204, 0.32);
+  background: rgba(17, 106, 204, 0.15);
+  border-color: rgba(17, 106, 204, 0.18);
 }
 
 .bar-publish-btn:active {
-  transform: translateY(0) scale(0.96);
+  background: rgba(17, 106, 204, 0.2);
 }
 
 .bar-publish-icon {
-  transform: translate(-0.5px, 0.5px) rotate(-12deg);
+  transform: none;
 }
 
 .bar-action-btn {
@@ -823,19 +822,21 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 9px;
+  border-radius: 8px;
   background: transparent;
-  border: none;
+  border: 1px solid transparent;
   color: var(--text-muted, #64748b);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
   padding: 0;
   position: relative;
+  box-sizing: border-box;
 }
 
 .bar-action-btn:hover {
   color: var(--brand-primary, #116ACC);
-  background: rgba(17, 106, 204, 0.055);
+  border-color: rgba(17, 106, 204, 0.1);
+  background: rgba(17, 106, 204, 0.06);
 }
 
 html.dark .bar-action-btn:hover {
@@ -849,9 +850,21 @@ html.dark .bar-action-btn:hover {
 
 .bar-action-btn.is-active {
   color: var(--brand-primary, #116ACC);
+  border-color: rgba(17, 106, 204, 0.1);
   background: rgba(17, 106, 204, 0.09);
-  border-radius: 9px;
   box-shadow: none;
+}
+
+.bar-action-btn.is-current-mode {
+  color: var(--brand-primary, #116ACC);
+  border-color: rgba(17, 106, 204, 0.1);
+  background: rgba(17, 106, 204, 0.09);
+}
+
+.bar-action-btn:focus-visible,
+.bar-publish-btn:focus-visible {
+  outline: 2px solid rgba(17, 106, 204, 0.5);
+  outline-offset: 2px;
 }
 
 html.dark .bar-action-btn.is-active {

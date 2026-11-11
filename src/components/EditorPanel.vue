@@ -16,8 +16,6 @@ import {
   Search,
   Image,
   Trash2,
-  Link2,
-  Link2Off,
   Eye,
   EyeOff,
   FileCode,
@@ -32,6 +30,11 @@ import {
   RotateCcw
 } from '@lucide/vue';
 import { soundEngine } from '../utils/synthAudio';
+import {
+  EDITOR_SETTINGS_UPDATED_EVENT,
+  loadEditorPreferences,
+  parseEditorFontSizeNumber
+} from '../utils/editorPreferences';
 import { showConfirm } from '../utils/confirmDialog';
 import { writeTextToClipboard } from '../utils/clipboard';
 import { detectUrlAtOffset, downloadUrlResource, getFastPreviewImageUrl } from '../utils/editorUrlHelper';
@@ -112,7 +115,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:modelValue', 'update:currentTheme', 'update:currentCodeTheme', 'import', 'scroll', 'focusActive', 'editor-click', 'toggleSyncScroll', 'togglePreview', 'toast', 'export-md', 'export-html', 'export-word', 'export-pdf', 'export-pdf-raw', 'export-png']);
+const emit = defineEmits(['update:modelValue', 'update:currentTheme', 'update:currentCodeTheme', 'import', 'scroll', 'focusActive', 'editor-click', 'togglePreview', 'toast', 'export-md', 'export-html', 'export-word', 'export-pdf', 'export-pdf-raw', 'export-png']);
 
 const showDocThemeMenu = ref(false);
 const showCodeThemeMenu = ref(false);
@@ -128,36 +131,75 @@ const activeCodeThemeObj = computed(() =>
 const editorText = ref(props.modelValue);
 const isDragOver = ref(false);
 const jiggleActive = ref(false);
+const initialEditorPrefs = loadEditorPreferences();
 const isMuted = ref(soundEngine.getMuteState());
-const editorFontSize = ref(localStorage.getItem('nicemd_font_size') || '15px');
+const editorFontSize = ref(initialEditorPrefs.fontSize);
+const editorFontFamily = ref(initialEditorPrefs.fontFamily);
+const editorLineHeightRatio = ref(initialEditorPrefs.lineHeight);
+const editorLetterSpacing = ref(initialEditorPrefs.letterSpacing);
+const editorFontFeatureSettings = ref(initialEditorPrefs.fontFeatureSettings);
 const showLineNumbers = ref(localStorage.getItem('nicemd_line_numbers') !== 'false');
 
 const loadPreferences = () => {
+  const prefs = loadEditorPreferences();
+  const nextShowLineNumbers = localStorage.getItem('nicemd_line_numbers') !== 'false';
+  const needsRebuild = (
+    prefs.fontSize !== editorFontSize.value ||
+    prefs.fontFamily !== editorFontFamily.value ||
+    prefs.lineHeight !== editorLineHeightRatio.value ||
+    prefs.letterSpacing !== editorLetterSpacing.value ||
+    prefs.fontFeatureSettings !== editorFontFeatureSettings.value ||
+    nextShowLineNumbers !== showLineNumbers.value
+  );
+
   isMuted.value = soundEngine.getMuteState();
-  editorFontSize.value = localStorage.getItem('nicemd_font_size') || '15px';
-  showLineNumbers.value = localStorage.getItem('nicemd_line_numbers') !== 'false';
-  if (cmView) {
+  editorFontSize.value = prefs.fontSize;
+  editorFontFamily.value = prefs.fontFamily;
+  editorLineHeightRatio.value = prefs.lineHeight;
+  editorLetterSpacing.value = prefs.letterSpacing;
+  editorFontFeatureSettings.value = prefs.fontFeatureSettings;
+  showLineNumbers.value = nextShowLineNumbers;
+
+  if (cmView && needsRebuild) {
     const currentSelection = cmView.state.selection;
     const prevScrollTop = cmView.scrollDOM ? cmView.scrollDOM.scrollTop : 0;
+    let anchorPos = 0;
+    if (prevScrollTop > 0) {
+      try {
+        anchorPos = cmView.lineBlockAtHeight(prevScrollTop).from;
+      } catch {
+        anchorPos = 0;
+      }
+    }
     cmView.destroy();
     cmView = null;
     nextTick(() => {
       initCodeMirror();
-      if (cmView) {
-        if (currentSelection) {
-          try {
-            const docLen = cmView.state.doc.length;
-            cmView.dispatch({
-              selection: {
-                anchor: Math.min(currentSelection.main.anchor, docLen),
-                head: Math.min(currentSelection.main.head, docLen)
-              }
-            });
-          } catch {}
-        }
+      if (!cmView) return;
+      const docLen = cmView.state.doc.length;
+      if (currentSelection) {
+        try {
+          cmView.dispatch({
+            selection: {
+              anchor: Math.min(currentSelection.main.anchor, docLen),
+              head: Math.min(currentSelection.main.head, docLen)
+            }
+          });
+        } catch {}
+      }
+      if (prevScrollTop > 0) {
         requestAnimationFrame(() => {
-          if (cmView?.scrollDOM) {
-            cmView.scrollDOM.scrollTop = prevScrollTop;
+          if (!cmView) return;
+          isProgrammaticEditorScroll = true;
+          try {
+            const safeAnchor = Math.min(anchorPos, cmView.state.doc.length);
+            cmView.dispatch({
+              effects: EditorView.scrollIntoView(safeAnchor, { y: 'start', yMargin: 0 })
+            });
+          } finally {
+            requestAnimationFrame(() => {
+              isProgrammaticEditorScroll = false;
+            });
           }
         });
       }
@@ -1420,7 +1462,7 @@ const handleScroll = () => {
     if (lineGutterRef.value) {
       lineGutterRef.value.scrollTop = textareaRef.value.scrollTop;
     }
-    if (props.activePane === 'editor') {
+    if (props.syncScrollEnabled && props.activePane === 'editor') {
       const scrollHeight = textareaRef.value.scrollHeight - textareaRef.value.clientHeight;
       if (scrollHeight > 0) {
         const percentage = textareaRef.value.scrollTop / scrollHeight;
@@ -1433,7 +1475,7 @@ const handleScroll = () => {
 let isProgrammaticEditorScroll = false;
 
 watch(() => props.scrollPercentage, (percentage) => {
-  if (props.activePane === 'editor') return;
+  if (!props.syncScrollEnabled || props.activePane === 'editor') return;
   if (cmView?.scrollDOM) {
     const maxScroll = cmView.scrollDOM.scrollHeight - cmView.scrollDOM.clientHeight;
     if (maxScroll > 0) {
@@ -1478,20 +1520,31 @@ const markdownHighlightStyle = HighlightStyle.define([
 function initCodeMirror() {
   if (!cmContainerRef.value || cmView) return;
 
-  const editorLineHeight = Math.round(parseFloat(editorFontSize.value || '15px') * 1.72);
+  const lineHeightRatio = parseFloat(editorLineHeightRatio.value || '1.72') || 1.72;
+  const editorLineHeight = Math.round(parseEditorFontSizeNumber(editorFontSize.value) * lineHeightRatio);
 
   const customMarkdownTheme = EditorView.theme({
     "&": {
       height: "100%",
-      fontSize: editorFontSize.value || "15px",
-      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif",
+      fontSize: editorFontSize.value,
+      fontFamily: editorFontFamily.value,
+      letterSpacing: editorLetterSpacing.value,
+      fontFeatureSettings: editorFontFeatureSettings.value,
       backgroundColor: "transparent",
       color: "var(--text-main)",
       caretColor: "var(--accent-color)"
     },
+    ".cm-scroller": {
+      fontFamily: "inherit",
+      letterSpacing: "inherit",
+      fontFeatureSettings: "inherit"
+    },
     ".cm-content": {
       padding: "20px 0 32px",
-      lineHeight: "1.72",
+      lineHeight: editorLineHeightRatio.value,
+      fontFamily: "inherit",
+      letterSpacing: "inherit",
+      fontFeatureSettings: "inherit",
       caretColor: "var(--accent-color)"
     },
     ".cm-cursor, .cm-dropCursor": {
@@ -1531,12 +1584,12 @@ function initCodeMirror() {
     ".cm-placeholder": {
       color: "var(--text-muted, #64748b)",
       opacity: "0.72",
-      fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
+      fontFamily: "inherit",
       fontStyle: "normal"
     },
     ".cm-line": {
       padding: "0 16px",
-      lineHeight: "1.72"
+      lineHeight: editorLineHeightRatio.value
     },
     /* Warm Yellow-Orange Search & Selection Match Highlighting */
     ".cm-selectionMatch": {
@@ -1653,7 +1706,7 @@ function initCodeMirror() {
     cmView.scrollDOM.addEventListener('scroll', () => {
       hideUrlPreviewImmediately();
       if (isProgrammaticEditorScroll) return;
-      if (props.activePane === 'editor' && cmView.scrollDOM) {
+      if (props.syncScrollEnabled && props.activePane === 'editor' && cmView.scrollDOM) {
         const scrollHeight = cmView.scrollDOM.scrollHeight - cmView.scrollDOM.clientHeight;
         if (scrollHeight > 0) {
           const percentage = cmView.scrollDOM.scrollTop / scrollHeight;
@@ -1755,7 +1808,7 @@ function handleGlobalKeydown(e) {
 }
 
 onMounted(() => {
-  window.addEventListener('nicemd-settings-updated', loadPreferences);
+  window.addEventListener(EDITOR_SETTINGS_UPDATED_EVENT, loadPreferences);
   document.addEventListener('pointerdown', handleGlobalPointerDown);
   document.addEventListener('keydown', handleGlobalKeydown);
   if (isSyntaxHighlightActive.value) {
@@ -1766,7 +1819,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
-  window.removeEventListener('nicemd-settings-updated', loadPreferences);
+  window.removeEventListener(EDITOR_SETTINGS_UPDATED_EVENT, loadPreferences);
   document.removeEventListener('pointerdown', handleGlobalPointerDown);
   document.removeEventListener('keydown', handleGlobalKeydown);
   cleanupLightboxPanListeners();
@@ -1802,7 +1855,7 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
         </div>
       </div>
 
-      <div class="editor-input-area" :style="{ fontSize: editorFontSize }" @drop="handleEditorDrop" @dragover.prevent>
+      <div class="editor-input-area" :style="{ fontSize: editorFontSize, fontFamily: editorFontFamily, lineHeight: editorLineHeightRatio, letterSpacing: editorLetterSpacing, fontFeatureSettings: editorFontFeatureSettings }" @drop="handleEditorDrop" @dragover.prevent>
         <div v-show="isSyntaxHighlightActive" ref="cmContainerRef" class="codemirror-markdown-editor"></div>
         <textarea
           v-show="!isSyntaxHighlightActive"
@@ -1887,7 +1940,7 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
             </div>
           </div>
           <div class="url-card-footer">
-            <span class="url-meta-label" :title="hoveredUrlInfo.url">
+            <span class="url-meta-label">
               <template v-if="urlImgStatus === 'loaded' && urlImgNaturalSize.width">
                 {{ urlImgNaturalSize.width }}×{{ urlImgNaturalSize.height }}
               </template>
@@ -1933,14 +1986,14 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
           <div class="url-link-card-head">
             <FileText v-if="hoveredUrlInfo.isDownloadableFile" size="15" class="url-type-icon" />
             <Globe v-else size="15" class="url-type-icon" />
-            <span class="url-link-title" :title="hoveredUrlInfo.filename || hoveredUrlInfo.host">
+            <span class="url-link-title">
               {{ hoveredUrlInfo.filename || hoveredUrlInfo.host || '外部链接' }}
             </span>
             <span v-if="hoveredUrlInfo.host && hoveredUrlInfo.filename" class="url-host-badge">
               {{ hoveredUrlInfo.host }}
             </span>
           </div>
-          <div class="url-link-raw" :title="hoveredUrlInfo.url">{{ hoveredUrlInfo.url }}</div>
+          <div class="url-link-raw">{{ hoveredUrlInfo.url }}</div>
           <div class="url-card-actions is-link-actions">
             <button
               class="url-action-btn is-primary"
@@ -2036,7 +2089,7 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
               </button>
               <button
                 class="editor-lightbox-close"
-                title="关闭预览 (Esc)"
+                aria-label="关闭预览 (Esc)"
                 @click="closeUrlLightbox"
               >
                 <X size="16" />
@@ -2285,9 +2338,9 @@ textarea {
   position: absolute;
   top: 0; left: 0; width: 100%; height: 100%;
   margin: 0; padding: 20px 16px 32px; box-sizing: border-box;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
-  font-size: inherit; font-weight: 400; letter-spacing: -0.01em;
-  line-height: 1.72; white-space: pre-wrap; overflow-wrap: break-word; word-break: break-word;
+  font-family: inherit;
+  font-size: inherit; font-weight: 400; letter-spacing: inherit;
+  line-height: inherit; font-feature-settings: inherit; white-space: pre-wrap; overflow-wrap: break-word; word-break: break-word;
   tab-size: 2; -moz-tab-size: 2;
   border: none; outline: none; overflow-y: scroll;
   background: var(--bg-editor);

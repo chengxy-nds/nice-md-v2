@@ -1437,7 +1437,7 @@ onMounted(() => {
             <FileText size="13" class="doc-icon" />
             <span class="doc-badge-label">当前待发布文章</span>
           </div>
-          <h3 class="current-doc-title" :title="getPublishTitle()">
+          <h3 class="current-doc-title" :title="getPublishTitle()" data-tooltip-truncated="true">
             {{ getPublishTitle() }}
           </h3>
           <div class="current-doc-meta">
@@ -1555,7 +1555,7 @@ onMounted(() => {
                   <div v-if="plat.status === 'ignition' || plat.status === 'launched'" class="sync-spinner-ring"></div>
                   <CheckCircle2 v-else-if="plat.status === 'success'" size="13" class="sync-check-icon" />
                   <span v-else-if="plat.status === 'failed'" class="sync-fail-icon">✕</span>
-                  <span class="sync-stage-label" :title="plat.syncMessage">{{ plat.syncMessage || (plat.status === 'success' ? '同步成功 100%' : '正在同步...') }}</span>
+                  <span class="sync-stage-label" :title="plat.syncMessage" data-tooltip-truncated="true">{{ plat.syncMessage || (plat.status === 'success' ? '同步成功 100%' : '正在同步...') }}</span>
                 </div>
               </div>
 
@@ -3002,7 +3002,7 @@ input:checked + .slider:before {
   font-weight: 600;
   color: #334155;
   width: 100%;
-  font-family: 'Outfit', -apple-system, sans-serif;
+  font-family: var(--font-sans);
   outline: none;
 }
 

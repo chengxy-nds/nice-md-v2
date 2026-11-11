@@ -314,7 +314,7 @@ async function copyHistoricalContent() {
                 <button class="btn-manual-confirm" @click="confirmCreateManual" title="保存">
                   <Check size="13" />
                 </button>
-                <button class="btn-manual-cancel" @click="isCreatingManual = false" title="取消">
+                <button class="btn-manual-cancel" @click="isCreatingManual = false" aria-label="取消">
                   <X size="13" />
                 </button>
               </div>
@@ -351,7 +351,7 @@ async function copyHistoricalContent() {
                 <div class="card-main">
                   <!-- Name & Tag Row -->
                   <div class="card-header-row">
-                    <span v-if="renamingId !== snap.id" class="snap-name" :title="snap.name">
+                    <span v-if="renamingId !== snap.id" class="snap-name" :title="snap.name" data-tooltip-truncated="true">
                       {{ snap.name || (snap.type === 'manual' ? '手动快照' : '自动保存') }}
                     </span>
                     <input
@@ -372,7 +372,7 @@ async function copyHistoricalContent() {
 
                   <!-- Time & Stats Row -->
                   <div class="card-meta-row">
-                    <span class="snap-time" :title="new Date(snap.createdAt).toLocaleString()">
+                    <span class="snap-time">
                       {{ formatRelativeTime(snap.createdAt) }}
                     </span>
                     <span class="snap-stats">
