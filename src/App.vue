@@ -22,6 +22,7 @@ import Sidebar from './components/Sidebar.vue';
 import IconBar from './components/IconBar.vue';
 import DocHistoryModal from './components/DocHistoryModal.vue';
 import { compileToWeChatHtml, cleanEmptyListItems, stripOssProcessFromMarkdown } from './utils/wechatStyles';
+import { parseMarkdownWithDocToc, isDocTocToken, extractHeadingsFromTokens } from './utils/markdownToc';
 import { marked } from 'marked';
 import confetti from 'canvas-confetti';
 import { defaultMarkdown } from './utils/defaultMarkdown';
@@ -1204,7 +1205,7 @@ function downloadBlob(content, filename, mime) {
 // Mac-dot SVG headers, syntax highlighting, code shadows, and all theme styles.
 function getStyledHtml() {
   if (!markdownContent.value) return '';
-  const rawHtml = marked.parse(markdownContent.value);
+  const rawHtml = parseMarkdownWithDocToc(markdownContent.value);
   const cleaned = cleanEmptyListItems(rawHtml);
   const effectiveCodeTheme = customStyles.value?.code?.codeThemeId || currentCodeTheme.value || 'mdnice-classic';
   return compileToWeChatHtml(cleaned, currentTheme.value, effectiveCodeTheme, customStyles.value?.customCss || '', customStyles.value);
@@ -1418,6 +1419,16 @@ async function mdToDocxWithImages(tokens) {
           out.push(imgParagraph(t));
           break;
         case 'paragraph':
+          if (isDocTocToken(t)) {
+            extractHeadingsFromTokens(tokens).forEach((item) => {
+              out.push(new Paragraph({
+                children: [new TextRun({ text: item.text })],
+                bullet: { level: Math.min(item.level, 4) },
+                spacing: { after: 60 }
+              }));
+            });
+            break;
+          }
           out.push(...paragraphWithImages(t));
           break;
         case 'heading': {
@@ -1632,7 +1643,7 @@ async function exportPDF(options = {}) {
   let styledHtml = '';
   if (raw) {
     // Pure raw markdown HTML without WeChat preset theme styles or colors
-    const rawHtml = marked.parse(markdownContent.value);
+    const rawHtml = parseMarkdownWithDocToc(markdownContent.value);
     styledHtml = cleanEmptyListItems(rawHtml);
   } else {
     styledHtml = getStyledHtml();
@@ -1824,7 +1835,7 @@ const triggerAppToast = (msg) => {
 // Renders html content helper for Launchpad
 const getCompiledHtml = () => {
   if (!markdownContent.value) return '';
-  const rawHtml = marked.parse(markdownContent.value);
+  const rawHtml = parseMarkdownWithDocToc(markdownContent.value);
   return cleanEmptyListItems(rawHtml);
 };
 
@@ -3005,13 +3016,13 @@ html.dark .wandor-wordmark {
 }
 
 .workspace-tabs {
-  height: 40px;
+  height: 38px;
   display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0 12px;
-  background: #f5f8fc;
-  border-bottom: 1px solid #e7edf5;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
+  background: var(--bg-editor, #ffffff);
+  box-shadow: inset 0 -1px 0 #e5ebf3;
   flex-shrink: 0;
   width: 100%;
   box-sizing: border-box;
@@ -3020,15 +3031,16 @@ html.dark .wandor-wordmark {
 }
 
 html.dark .workspace-tabs {
-  background: #14161c;
-  border-bottom-color: rgba(255, 255, 255, 0.08);
+  background: var(--bg-editor, #1b1b1f);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .workspace-tabs-scroll {
   display: flex;
-  align-items: center;
-  gap: 5px;
-  max-width: calc(100% - 34px);
+  align-items: stretch;
+  gap: 0;
+  max-width: calc(100% - 38px);
+  height: 100%;
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
@@ -3049,73 +3061,75 @@ html.dark .workspace-tabs {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  height: 29px;
+  gap: 7px;
+  height: 100%;
   min-width: 112px;
   max-width: 210px;
   flex-shrink: 0;
-  padding: 0 7px 0 10px;
-  border-radius: 8px;
-  border: 1px solid transparent;
-  background: transparent;
-  color: #5b6d85;
+  padding: 0 10px 0 12px;
+  border-radius: 0;
+  border: none;
+  border-right: 1px solid #e5ebf3;
+  background: var(--bg-editor, #ffffff);
+  box-shadow: inset 0 -1px 0 #e5ebf3;
+  color: #64748b;
   font-size: 12.5px;
   font-weight: 500;
   font-family: var(--font-sans);
   cursor: pointer;
   box-sizing: border-box;
-  transition: background 0.16s ease, color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease;
-}
-
-.workspace-tab-item:not(.is-active):not(:hover) + .workspace-tab-item:not(.is-active):not(:hover)::before {
-  content: '';
-  position: absolute;
-  left: -3px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 1px;
-  height: 14px;
-  background: rgba(148, 163, 184, 0.3);
-  pointer-events: none;
+  transition: background 0.14s ease, color 0.14s ease;
 }
 
 .workspace-tab-item:hover:not(.is-active) {
-  background: rgba(255, 255, 255, 0.72);
+  background: #fafcff;
   color: #1e293b;
 }
 
 html.dark .workspace-tab-item {
+  background: var(--bg-editor, #1b1b1f);
+  border-right-color: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
   color: #94a3b8;
 }
 
-html.dark .workspace-tab-item:not(.is-active):not(:hover) + .workspace-tab-item:not(.is-active):not(:hover)::before {
-  background: rgba(148, 163, 184, 0.18);
-}
-
 html.dark .workspace-tab-item:hover:not(.is-active) {
-  background: rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.04);
   color: #f1f5f9;
 }
 
 .workspace-tab-item.is-active {
-  background: #ffffff;
-  border-color: #dce6f4;
-  color: #1e293b;
+  background: #f5f8fc;
+  box-shadow: inset 0 -1px 0 #e5ebf3;
+  color: #0f172a;
   font-weight: 600;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05), 0 1px 1px rgba(38, 120, 232, 0.04);
+  z-index: 2;
+}
+
+.workspace-tab-item.is-active::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: #2678e8;
 }
 
 html.dark .workspace-tab-item.is-active {
-  background: #20232b;
-  border-color: rgba(148, 163, 184, 0.22);
-  color: #f1f5f9;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+  background: #252936;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+}
+
+html.dark .workspace-tab-item.is-active::before {
+  background: #60a5fa;
 }
 
 .workspace-tab-icon {
   flex-shrink: 0;
-  color: #7c8ea6;
-  transition: color 0.16s ease;
+  color: #8b9bb0;
+  transition: color 0.14s ease;
 }
 
 .workspace-tab-item:hover:not(.is-active) .workspace-tab-icon {
@@ -3141,20 +3155,20 @@ html.dark .workspace-tab-item.is-active .workspace-tab-icon {
 .workspace-tab-item.is-renaming {
   min-width: 140px;
   max-width: 220px;
-  padding-right: 8px;
+  padding-right: 10px;
 }
 
 .workspace-tab-input {
   flex: 1;
   min-width: 0;
   width: 100%;
-  height: 22px;
+  height: 24px;
   padding: 0 6px;
   border-radius: 5px;
   border: 1px solid #2678e8;
   background: #ffffff;
-  color: #1e293b;
-  font-size: 12px;
+  color: #0f172a;
+  font-size: 12.5px;
   font-weight: 600;
   font-family: inherit;
   outline: none;
@@ -3162,7 +3176,7 @@ html.dark .workspace-tab-item.is-active .workspace-tab-icon {
 }
 
 html.dark .workspace-tab-input {
-  background: #1e1e24;
+  background: #14161c;
   border-color: #60a5fa;
   color: #f1f5f9;
 }
@@ -3174,18 +3188,19 @@ html.dark .workspace-tab-input {
   width: 18px;
   height: 18px;
   border: none;
-  border-radius: 5px;
+  border-radius: 4px;
   background: transparent;
-  color: #7c8ea6;
+  color: #8b9bb0;
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;
-  opacity: 0;
+  opacity: 0.65;
   transition: opacity 0.14s ease, background 0.14s ease, color 0.14s ease;
 }
 
 .workspace-tab-item.is-active .workspace-tab-close {
-  opacity: 0.72;
+  opacity: 0.85;
+  color: #64748b;
 }
 
 .workspace-tab-item:hover .workspace-tab-close,
@@ -3207,15 +3222,16 @@ html.dark .workspace-tab-close:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
+  width: 38px;
+  height: 100%;
   border: none;
-  border-radius: 8px;
+  border-right: 1px solid transparent;
+  border-radius: 0;
   background: transparent;
-  color: #5b6d85;
+  color: #64748b;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.14s ease, color 0.14s ease;
 }
 
 .workspace-tab-add:hover {

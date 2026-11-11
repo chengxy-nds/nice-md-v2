@@ -1527,7 +1527,7 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
           >
             <span style="font-size:11px;line-height:1;">ab→</span>
           </button>
-          <button @click="closeFindReplace" class="find-close-btn" title="关闭"><X size="13" /></button>
+          <button @click="closeFindReplace" class="find-close-btn"><X size="13" /></button>
         </div>
         <div v-if="showReplaceInput" class="find-bar-row">
           <div class="find-input-wrap">

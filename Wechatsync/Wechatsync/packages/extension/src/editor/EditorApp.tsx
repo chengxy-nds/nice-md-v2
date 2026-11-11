@@ -265,7 +265,7 @@ export function EditorApp() {
             <button
               onClick={handleClose}
               className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
-              title="关闭"
+
             >
               <X className="w-5 h-5 text-gray-500" />
             </button>

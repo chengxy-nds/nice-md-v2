@@ -1339,7 +1339,7 @@ const cssLineCount = computed(() => {
           <span>{{ isCustomTheme ? '恢复未保存' : '恢复默认' }}</span>
           <span v-if="resetToastVisible" class="reset-toast-tip">{{ resetToastMsg }}</span>
         </button>
-        <button class="close-btn" @click="close" title="关闭">
+        <button class="close-btn" @click="close">
           <X size="15" />
         </button>
       </div>

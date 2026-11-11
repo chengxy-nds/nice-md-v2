@@ -7,14 +7,6 @@ import {
   Palette, 
   FileText, 
   Globe, 
-  Sparkles,
-  CheckCircle2,
-  ExternalLink,
-  ChevronRight,
-  Send,
-  Layers,
-  Code,
-  ShieldCheck
 } from '@lucide/vue';
 import BrandLogo from './BrandLogo.vue';
 
@@ -27,7 +19,7 @@ const emit = defineEmits([
   'insert-sample'
 ]);
 
-const promptText = ref("我今天想写一篇关于分布式高并发架构演进的技术干货，需要优雅的代码高亮排版，并一键同步分发至微信公众号、知乎和掘金....");
+const promptText = ref('');
 const fileInputRef = ref(null);
 
 function triggerFileUpload() {
@@ -100,35 +92,16 @@ function scrollToChannels() {
 </script>
 
 <template>
-  <div class="wandor-landing-wrapper select-none">
-    <!-- Hero Full-Viewport Section -->
+  <div class="wandor-landing-wrapper">
+    <!-- Product hero -->
     <section class="wandor-hero-viewport">
-      <!-- Ambient Panoramic Background Layer -->
-      <div class="wandor-bg-canvas">
-        <video
-          class="wandor-bg-video"
-          src="https://pollen-batch-41236914.figma.site/_components/v2/f0ee2dae7671c170c34f12e31c4cb41418976c98/769c564298c132f7919405cd9f17c1b1231f341d.769c5642.mp4"
-          autoplay
-          muted
-          loop
-          playsinline
-        ></video>
-        
-        <!-- Bottom Panorama Vector Landscape Art Layer -->
-        <div class="wandor-landscape-illustration"></div>
-        <!-- Top-to-bottom clean fade gradient -->
-        <div class="wandor-top-gradient-mask"></div>
-      </div>
-
-      <!-- Top Navigation Bar (Wandor Visual Style) -->
+      <!-- Top navigation -->
       <header class="wandor-header-nav">
-        <!-- Brand Wordmark with Light/Dark Adaptive Vector Logo -->
         <div class="wandor-brand-box" @click="emit('enter-editor')">
           <BrandLogo :size="36" />
           <span class="wandor-wordmark">EASY MD</span>
         </div>
 
-        <!-- Center Nav Links (Tailored to NiceMD) -->
         <nav class="wandor-nav-menu">
           <button class="nav-text-link" @click="scrollToChannels">支持渠道</button>
           <button class="nav-text-link" @click="emit('open-templates')">精选模板</button>
@@ -136,7 +109,6 @@ function scrollToChannels() {
           <button class="nav-text-link" @click="emit('open-launchpad')">多平台分发</button>
         </nav>
 
-        <!-- Right Action Button -->
         <div class="wandor-nav-actions">
           <button class="btn-wandor-cta" @click="emit('enter-editor')">
             进入工作台
@@ -144,30 +116,31 @@ function scrollToChannels() {
         </div>
       </header>
 
-      <!-- Hero Main Content Center -->
+      <!-- Editorial headline and focused writing entry -->
       <div class="wandor-hero-body">
-        <!-- Giant Display Headline -->
-        <h1 class="wandor-hero-title">
-          一文排版，触达全网每一个角落
-        </h1>
+        <div class="hero-intro">
+          <div class="hero-eyebrow">Markdown 创作与多平台发布</div>
+          <h1 class="wandor-hero-title">写好一篇文章，<br /><span>从容发布到全网。</span></h1>
+          <p class="wandor-hero-subtitle">
+            专注写作、排版与发布。用熟悉的 Markdown 完成创作，再把内容带到你常用的平台。
+          </p>
+        </div>
 
-        <!-- 2-Line Clean Subtitle -->
-        <p class="wandor-hero-subtitle">
-          专为内容创作者与技术博主打造的极简 Markdown 排版与全渠道分发神器。<br />
-          输入灵感大纲或导入文档，一键无损同步至微信、知乎、掘金等 30+ 核心平台。
-        </p>
-
-        <!-- Frosted Liquid Glass Prompt Card (Wandor Visual Style) -->
         <div class="wandor-prompt-card">
-          <!-- Textarea / Editable Prompt -->
+          <div class="prompt-card-heading">
+            <div>
+              <strong>开始写作</strong>
+              <span>写下主题或大纲，也可以导入已有文档</span>
+            </div>
+            <span class="prompt-format-label">Markdown</span>
+          </div>
           <textarea
             v-model="promptText"
             class="wandor-card-input"
-            rows="3"
-            placeholder="输入今天想要创作的内容主题或文章大纲，直接开启全网排版与分发..."
+            rows="5"
+            placeholder="写下你想表达的内容，或粘贴文章大纲……"
           ></textarea>
 
-          <!-- Bottom Card Controls Row -->
           <div class="wandor-card-footer">
             <div class="card-footer-left">
               <input
@@ -195,9 +168,16 @@ function scrollToChannels() {
             </div>
 
             <button class="btn-card-submit-cta" @click="handleStartCreate">
-              <span>立即开启创作</span>
+              <span>进入编辑器</span>
+              <ArrowRight size="15" />
             </button>
           </div>
+        </div>
+
+        <div class="hero-platform-proof">
+          <span class="proof-label">适配常用内容平台</span>
+          <span class="proof-names">微信公众号 · 知乎 · 掘金 · CSDN · 更多</span>
+          <button class="proof-link" @click="scrollToChannels">查看全部渠道</button>
         </div>
       </div>
     </section>
@@ -1151,5 +1131,1159 @@ html.dark .footer-wordmark {
 
 html.dark .footer-link:hover {
   color: #ffffff;
+}
+
+/* ── Refined SaaS landing page ── */
+.wandor-landing-wrapper {
+  width: 100%;
+  height: 100%;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: #f7f9fc;
+  color: #172033;
+}
+
+html.dark .wandor-landing-wrapper {
+  background: #11151c;
+  color: #e8edf5;
+}
+
+.wandor-hero-viewport {
+  min-height: min(800px, 100vh);
+  padding: 0 32px 64px;
+  justify-content: flex-start;
+  background: #f7f9fc;
+}
+
+html.dark .wandor-hero-viewport {
+  background: #11151c;
+}
+
+.wandor-header-nav {
+  height: 76px;
+  max-width: 1240px;
+  padding: 0;
+}
+
+.wandor-brand-box {
+  gap: 10px;
+}
+
+.wandor-wordmark,
+.footer-wordmark {
+  font-family: var(--font-sans, Inter, sans-serif);
+  font-size: 20px;
+  font-weight: 750;
+  letter-spacing: -0.04em;
+  color: #172033;
+}
+
+html.dark .wandor-wordmark,
+html.dark .footer-wordmark {
+  color: #f1f5f9;
+}
+
+.wandor-nav-menu {
+  gap: 28px;
+}
+
+.nav-text-link {
+  padding: 8px 0;
+  color: #526178;
+  font-size: 13px;
+  font-weight: 550;
+  letter-spacing: 0;
+}
+
+.nav-text-link:hover {
+  color: #1769d2;
+  opacity: 1;
+}
+
+html.dark .nav-text-link {
+  color: #c0c9d7;
+}
+
+.btn-wandor-cta,
+.btn-card-submit-cta,
+.hero-start-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #1769d2;
+  border-radius: 7px;
+  background: #1769d2;
+  color: #fff;
+  box-shadow: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.15s ease;
+}
+
+.btn-wandor-cta {
+  min-height: 38px;
+  padding: 0 16px;
+}
+
+.btn-wandor-cta:hover,
+.btn-card-submit-cta:hover,
+.hero-start-button:hover {
+  background: #1258b5;
+  border-color: #1258b5;
+  box-shadow: none;
+  transform: translateY(-1px);
+}
+
+html.dark .btn-wandor-cta,
+html.dark .btn-card-submit-cta,
+html.dark .hero-start-button {
+  background: #347fe5;
+  border-color: #347fe5;
+  color: #fff;
+}
+
+.wandor-hero-body {
+  display: grid;
+  grid-template-columns: minmax(0, 0.92fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(44px, 7vw, 96px);
+  width: 100%;
+  max-width: 1180px;
+  padding: clamp(76px, 12vh, 120px) 0 48px;
+  text-align: left;
+}
+
+.hero-copy {
+  min-width: 0;
+}
+
+.hero-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+  color: #1769d2;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.hero-eyebrow-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #1769d2;
+}
+
+.wandor-hero-title {
+  margin: 0 0 18px;
+  color: #172033;
+  font-size: clamp(38px, 4.2vw, 58px);
+  font-weight: 720;
+  letter-spacing: -0.055em;
+  line-height: 1.16;
+}
+
+.wandor-hero-title span {
+  color: #1769d2;
+}
+
+html.dark .wandor-hero-title {
+  color: #f1f5f9;
+}
+
+html.dark .wandor-hero-title span,
+html.dark .hero-eyebrow {
+  color: #70a9f5;
+}
+
+html.dark .hero-eyebrow-dot {
+  background: #70a9f5;
+}
+
+.wandor-hero-subtitle {
+  max-width: 490px;
+  margin: 0 0 26px;
+  color: #617089;
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.75;
+}
+
+html.dark .wandor-hero-subtitle {
+  color: #a4afc0;
+}
+
+.hero-primary-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.hero-start-button {
+  min-height: 44px;
+  padding: 0 17px;
+  cursor: pointer;
+}
+
+.hero-secondary-button {
+  min-height: 40px;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: #526178;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.hero-secondary-button:hover {
+  color: #1769d2;
+}
+
+.hero-capabilities {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 34px;
+  color: #8290a4;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.hero-capabilities i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #aab5c4;
+}
+
+.wandor-prompt-card {
+  width: 100%;
+  padding: 20px;
+  gap: 14px;
+  border: 1px solid #dfe6ef;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 12px 32px rgba(20, 38, 66, 0.07);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.wandor-prompt-card:hover {
+  transform: none;
+  border-color: #cbd8e8;
+  box-shadow: 0 14px 36px rgba(20, 38, 66, 0.09);
+}
+
+html.dark .wandor-prompt-card {
+  border-color: #303a49;
+  background: #1a202a;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+}
+
+.prompt-card-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.prompt-card-heading > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.prompt-card-heading strong {
+  color: #172033;
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.prompt-card-heading span:not(.prompt-format-label) {
+  color: #8290a4;
+  font-size: 11px;
+}
+
+html.dark .prompt-card-heading strong {
+  color: #e8edf5;
+}
+
+.prompt-format-label {
+  padding: 4px 7px;
+  border: 1px solid #e5eaf1;
+  border-radius: 5px;
+  color: #6d7b90;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.wandor-card-input {
+  min-height: 142px;
+  padding: 12px;
+  border: 1px solid #e3e9f1;
+  border-radius: 8px;
+  background: #f9fafc;
+  color: #28364a;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.65;
+}
+
+.wandor-card-input::placeholder {
+  color: #9aa6b7;
+}
+
+.wandor-card-input:focus {
+  border-color: #8cb6ed;
+  box-shadow: 0 0 0 3px rgba(23, 105, 210, 0.1);
+}
+
+html.dark .wandor-card-input {
+  border-color: #354052;
+  background: #141922;
+  color: #e8edf5;
+}
+
+.wandor-card-footer {
+  padding-top: 0;
+}
+
+.card-footer-left {
+  gap: 8px;
+}
+
+.btn-card-upload-icon,
+.btn-card-sample-pill {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid #dfe6ef;
+  border-radius: 6px;
+  background: #fff;
+  color: #526178;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 550;
+}
+
+.btn-card-upload-icon:hover,
+.btn-card-sample-pill:hover {
+  transform: none;
+  border-color: #b8c9df;
+  background: #f8fafc;
+  color: #1769d2;
+}
+
+html.dark .btn-card-upload-icon,
+html.dark .btn-card-sample-pill {
+  border-color: #354052;
+  background: #202733;
+  color: #c1cbd8;
+}
+
+.btn-card-submit-cta {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.wandor-section {
+  max-width: 1240px;
+  padding: 76px 32px 32px;
+}
+
+.section-header-box {
+  margin-bottom: 28px;
+}
+
+.section-pretitle {
+  color: #1769d2;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+}
+
+.section-main-title {
+  color: #172033;
+  font-size: clamp(25px, 3vw, 34px);
+  font-weight: 680;
+  letter-spacing: -0.04em;
+}
+
+html.dark .section-main-title {
+  color: #eef2f7;
+}
+
+.section-subtext {
+  color: #718096;
+  font-size: 14px;
+}
+
+.channels-tab-bar {
+  justify-content: flex-start;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.channel-tab-item {
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border: 1px solid #e1e7ef;
+  border-radius: 6px;
+  background: transparent;
+  color: #64748b;
+}
+
+.channel-tab-item.is-active {
+  border-color: #b9d2f2;
+  background: #edf5ff;
+  color: #145cb5;
+  box-shadow: none;
+}
+
+html.dark .channel-tab-item.is-active {
+  border-color: #365b8c;
+  background: #1c2b3e;
+  color: #9bc5ff;
+}
+
+.channels-card-grid {
+  gap: 10px;
+}
+
+.channel-item-card {
+  min-width: 0;
+  padding: 14px;
+  gap: 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+html.dark .channel-item-card {
+  border-color: #2b3544;
+  background: #171d26;
+  box-shadow: none;
+}
+
+.channel-item-card:hover {
+  transform: none;
+  border-color: #b8cce5;
+  background: #fff;
+  box-shadow: none;
+}
+
+html.dark .channel-item-card:hover {
+  border-color: #486587;
+  background: #1b2430;
+}
+
+.channel-logo-wrap {
+  width: 38px;
+  height: 38px;
+  border-radius: 7px;
+  border: 1px solid #e8edf3;
+  box-shadow: none;
+}
+
+.channel-title-row {
+  justify-content: flex-start;
+  flex-wrap: wrap;
+}
+
+.channel-name {
+  font-size: 13px;
+  font-weight: 620;
+}
+
+.channel-feature-tag {
+  color: #60738d;
+  background: #f1f4f8;
+  font-size: 9px;
+  font-weight: 550;
+}
+
+html.dark .channel-feature-tag {
+  color: #aab8cb;
+  background: #273140;
+}
+
+.channel-desc {
+  font-size: 11px;
+  color: #718096;
+}
+
+.features-section-wrap {
+  padding-top: 48px;
+  padding-bottom: 76px;
+}
+
+.features-grid {
+  gap: 0;
+  border-top: 1px solid #e1e7ef;
+  border-bottom: 1px solid #e1e7ef;
+}
+
+.feature-card {
+  gap: 10px;
+  padding: 24px;
+  border: 0;
+  border-right: 1px solid #e1e7ef;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+.feature-card:last-child {
+  border-right: 0;
+}
+
+html.dark .feature-card {
+  border-color: #2b3544;
+  background: transparent;
+}
+
+.feature-icon-pill {
+  width: 34px;
+  height: 34px;
+  margin-bottom: 4px;
+  border-radius: 7px;
+  background: #edf5ff;
+  color: #1769d2;
+}
+
+.icon-terracotta,
+.icon-purple {
+  background: #edf5ff;
+  color: #1769d2;
+}
+
+html.dark .icon-blue,
+html.dark .icon-terracotta,
+html.dark .icon-purple {
+  background: #1c2b3e;
+  color: #8abaff;
+}
+
+.feature-name {
+  color: #172033;
+  font-size: 15px;
+  font-weight: 650;
+}
+
+html.dark .feature-name {
+  color: #e8edf5;
+}
+
+.feature-detail {
+  color: #718096;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.wandor-footer {
+  max-width: 1240px;
+  padding: 22px 32px 26px;
+  border-top-color: #e1e7ef;
+}
+
+.footer-wordmark {
+  font-size: 16px;
+}
+
+.footer-copyright {
+  color: #8793a5;
+}
+
+.footer-links-side {
+  gap: 18px;
+}
+
+.footer-link {
+  color: #65748a;
+  font-weight: 500;
+}
+
+.footer-link:hover {
+  color: #1769d2;
+}
+
+@media (max-width: 960px) {
+  .wandor-hero-viewport {
+    min-height: auto;
+    padding: 0 24px 64px;
+  }
+
+  .wandor-header-nav {
+    height: 68px;
+  }
+
+  .wandor-hero-body {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1fr);
+    gap: 32px;
+    padding: 74px 0 24px;
+  }
+
+  .wandor-hero-title {
+    font-size: clamp(36px, 5.2vw, 48px);
+  }
+
+  .wandor-card-input {
+    min-height: 120px;
+  }
+}
+
+@media (max-width: 720px) {
+  .wandor-hero-viewport {
+    padding: 0 18px 48px;
+  }
+
+  .wandor-header-nav {
+    height: 64px;
+  }
+
+  .wandor-brand-box {
+    gap: 8px;
+  }
+
+  .wandor-wordmark {
+    font-size: 18px;
+  }
+
+  .btn-wandor-cta {
+    min-height: 34px;
+    padding: 0 11px;
+    font-size: 11px;
+  }
+
+  .wandor-hero-body {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 30px;
+    padding: 62px 0 0;
+  }
+
+  .wandor-hero-title {
+    margin-bottom: 14px;
+    font-size: clamp(36px, 10vw, 48px);
+  }
+
+  .wandor-hero-subtitle {
+    margin-bottom: 20px;
+    font-size: 14px;
+  }
+
+  .hero-capabilities {
+    margin-top: 22px;
+    gap: 8px;
+    font-size: 10px;
+  }
+
+  .wandor-prompt-card {
+    padding: 15px;
+  }
+
+  .wandor-card-input {
+    min-height: 112px;
+    font-size: 13px;
+  }
+
+  .btn-card-upload-icon .upload-text {
+    display: none;
+  }
+
+  .wandor-section {
+    padding: 54px 18px 24px;
+  }
+
+  .section-header-box {
+    text-align: left;
+  }
+
+  .section-main-title {
+    font-size: 25px;
+    line-height: 1.3;
+  }
+
+  .channels-tab-bar {
+    justify-content: flex-start;
+  }
+
+  .features-section-wrap {
+    padding-top: 24px;
+    padding-bottom: 50px;
+  }
+
+  .features-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .feature-card {
+    padding: 18px 0;
+    border-right: 0;
+    border-bottom: 1px solid #e1e7ef;
+  }
+
+  .feature-card:last-child {
+    border-bottom: 0;
+  }
+
+  .wandor-footer {
+    align-items: flex-start;
+    padding: 20px 18px 24px;
+    text-align: left;
+  }
+
+  .footer-brand-side {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .footer-copyright {
+    flex-basis: 100%;
+    margin-left: 0;
+  }
+
+  .footer-links-side {
+    flex-wrap: wrap;
+    gap: 8px 14px;
+  }
+}
+
+/* ── Editorial home composition ── */
+.wandor-landing-wrapper {
+  background: #fbfbfa;
+  color: #182233;
+}
+
+html.dark .wandor-landing-wrapper {
+  background: #11151b;
+  color: #edf1f6;
+}
+
+.wandor-hero-viewport {
+  min-height: min(820px, 100vh);
+  padding: 0 32px 48px;
+  background: #fbfbfa;
+}
+
+html.dark .wandor-hero-viewport {
+  background: #11151b;
+}
+
+.wandor-header-nav {
+  width: min(100%, 1160px);
+  height: 72px;
+  padding: 0;
+  border-bottom: 1px solid #e9ebee;
+}
+
+html.dark .wandor-header-nav {
+  border-bottom-color: #28303a;
+}
+
+.wandor-brand-box {
+  gap: 9px;
+}
+
+.wandor-brand-box :deep(*) {
+  cursor: pointer;
+}
+
+.wandor-wordmark {
+  color: #182233;
+  font-family: var(--font-sans, Inter, system-ui, sans-serif);
+  font-size: 18px;
+  font-weight: 720;
+  letter-spacing: -0.045em;
+}
+
+html.dark .wandor-wordmark {
+  color: #f4f6f9;
+}
+
+.wandor-nav-menu {
+  gap: 25px;
+}
+
+.nav-text-link {
+  padding: 8px 0;
+  color: #596779;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.nav-text-link:hover {
+  color: #1769d2;
+  opacity: 1;
+}
+
+html.dark .nav-text-link {
+  color: #bac4d1;
+}
+
+.btn-wandor-cta,
+.btn-card-submit-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid #1769d2;
+  border-radius: 7px;
+  background: #1769d2;
+  color: #fff;
+  box-shadow: none;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  transition: background-color 150ms ease, border-color 150ms ease;
+}
+
+.btn-wandor-cta {
+  min-height: 37px;
+  padding: 0 15px;
+}
+
+.btn-wandor-cta:hover,
+.btn-card-submit-cta:hover {
+  transform: none;
+  border-color: #0c58b5;
+  background: #0c58b5;
+  box-shadow: none;
+}
+
+html.dark .btn-wandor-cta,
+html.dark .btn-card-submit-cta {
+  border-color: #347fe5;
+  background: #347fe5;
+  color: #fff;
+}
+
+.wandor-hero-body {
+  display: flex;
+  width: min(100%, 900px);
+  padding: clamp(72px, 10vh, 104px) 0 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  text-align: center;
+}
+
+.hero-intro {
+  width: min(100%, 780px);
+  margin-bottom: 32px;
+}
+
+.hero-eyebrow {
+  margin: 0 0 18px;
+  color: #667487;
+  font-size: 13px;
+  font-weight: 550;
+  letter-spacing: 0.01em;
+}
+
+.hero-eyebrow-dot {
+  display: none;
+}
+
+.wandor-hero-title {
+  margin: 0 0 17px;
+  color: #172033;
+  font-size: clamp(42px, 5.1vw, 60px);
+  font-weight: 690;
+  letter-spacing: -0.055em;
+  line-height: 1.2;
+}
+
+.wandor-hero-title span {
+  color: #1769d2;
+}
+
+html.dark .wandor-hero-title {
+  color: #f2f4f7;
+}
+
+html.dark .wandor-hero-title span {
+  color: #7db1fa;
+}
+
+.wandor-hero-subtitle {
+  max-width: 620px;
+  margin: 0 auto;
+  color: #667487;
+  font-size: 15px;
+  line-height: 1.8;
+}
+
+html.dark .hero-eyebrow,
+html.dark .wandor-hero-subtitle {
+  color: #aab5c3;
+}
+
+.wandor-prompt-card {
+  width: min(100%, 760px);
+  padding: 16px;
+  gap: 12px;
+  border: 1px solid #dfe4ea;
+  border-radius: 9px;
+  background: #fff;
+  box-shadow: 0 3px 12px rgba(25, 40, 60, 0.035);
+  text-align: left;
+}
+
+.wandor-prompt-card:hover {
+  border-color: #d2dbe6;
+  box-shadow: 0 3px 12px rgba(25, 40, 60, 0.035);
+}
+
+html.dark .wandor-prompt-card {
+  border-color: #303a47;
+  background: #171d25;
+  box-shadow: none;
+}
+
+.prompt-card-heading {
+  min-height: 31px;
+}
+
+.prompt-card-heading > div {
+  gap: 3px;
+}
+
+.prompt-card-heading strong {
+  color: #202b3b;
+  font-size: 14px;
+  font-weight: 620;
+}
+
+.prompt-card-heading span:not(.prompt-format-label) {
+  color: #7a8797;
+  font-size: 12px;
+}
+
+html.dark .prompt-card-heading strong {
+  color: #edf1f6;
+}
+
+html.dark .prompt-card-heading span:not(.prompt-format-label) {
+  color: #9aa6b5;
+}
+
+.prompt-format-label {
+  padding: 4px 7px;
+  border: 1px solid #e6e9ee;
+  border-radius: 4px;
+  color: #758196;
+  font-size: 10px;
+  font-weight: 550;
+}
+
+.wandor-card-input {
+  min-height: 124px;
+  padding: 12px 13px;
+  border: 1px solid #e6e9ee;
+  border-radius: 6px;
+  background: #fcfcfb;
+  color: #263345;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.wandor-card-input:focus {
+  border-color: #8fb8eb;
+  box-shadow: 0 0 0 2px rgba(23, 105, 210, 0.09);
+}
+
+.wandor-card-input::placeholder {
+  color: #9aa5b4;
+}
+
+html.dark .wandor-card-input {
+  border-color: #303a47;
+  background: #12171e;
+  color: #e9edf2;
+}
+
+.wandor-card-footer {
+  padding-top: 1px;
+}
+
+.card-footer-left {
+  gap: 7px;
+}
+
+.btn-card-upload-icon,
+.btn-card-sample-pill {
+  min-height: 34px;
+  padding: 0 10px;
+  border: 1px solid #e1e5eb;
+  border-radius: 6px;
+  background: #fff;
+  color: #536174;
+  box-shadow: none;
+  font-size: 12px;
+  font-weight: 520;
+}
+
+.btn-card-upload-icon:hover,
+.btn-card-sample-pill:hover {
+  transform: none;
+  border-color: #c9d4e1;
+  background: #f8fafc;
+  color: #1769d2;
+}
+
+html.dark .btn-card-upload-icon,
+html.dark .btn-card-sample-pill {
+  border-color: #34404f;
+  background: #1c242e;
+  color: #c2ccd8;
+}
+
+.btn-card-submit-cta {
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.hero-platform-proof {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 9px 13px;
+  margin-top: 23px;
+  color: #798596;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.proof-label {
+  color: #667487;
+  font-weight: 550;
+}
+
+.proof-names {
+  color: #8a95a3;
+}
+
+.proof-link {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: #1769d2;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 550;
+  cursor: pointer;
+}
+
+.proof-link:hover {
+  color: #0c58b5;
+}
+
+html.dark .proof-label,
+html.dark .proof-names {
+  color: #9aa6b5;
+}
+
+.wandor-section {
+  padding-top: 64px;
+}
+
+.section-pretitle {
+  color: #1769d2;
+}
+
+.channel-item-card {
+  cursor: pointer;
+}
+
+@media (max-width: 960px) {
+  .wandor-hero-viewport {
+    min-height: auto;
+    padding: 0 24px 56px;
+  }
+
+  .wandor-hero-body {
+    width: min(100%, 820px);
+    padding-top: clamp(64px, 9vh, 88px);
+  }
+}
+
+@media (max-width: 720px) {
+  .wandor-hero-viewport {
+    padding: 0 18px 42px;
+  }
+
+  .wandor-header-nav {
+    height: 64px;
+  }
+
+  .wandor-hero-body {
+    padding-top: 58px;
+  }
+
+  .hero-intro {
+    margin-bottom: 25px;
+  }
+
+  .hero-eyebrow {
+    margin-bottom: 14px;
+    font-size: 12px;
+  }
+
+  .wandor-hero-title {
+    font-size: clamp(34px, 9vw, 46px);
+    line-height: 1.24;
+  }
+
+  .wandor-hero-subtitle {
+    max-width: 460px;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .wandor-prompt-card {
+    padding: 13px;
+  }
+
+  .wandor-card-input {
+    min-height: 112px;
+    font-size: 13px;
+  }
+
+  .hero-platform-proof {
+    gap: 5px 9px;
+    margin-top: 18px;
+    font-size: 11px;
+  }
+
+  .proof-link {
+    font-size: 11px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .btn-wandor-cta,
+  .btn-card-submit-cta,
+  .nav-text-link {
+    transition: none;
+  }
 }
 </style>

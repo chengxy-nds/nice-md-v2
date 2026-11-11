@@ -1,56 +1,43 @@
 <script setup>
-import { useId } from 'vue';
-
 defineProps({
   size: {
     type: [Number, String],
     default: 32
   }
 });
-
-const uid = useId();
-const bgId = `brandLogoBg-${uid}`;
-const mId = `brandLogoM-${uid}`;
-const dotId = `brandLogoDot-${uid}`;
 </script>
 
 <template>
-  <div 
-    class="easymd-brand-logo-container" 
+  <span
+    class="easymd-brand-logo-container"
     :style="{ width: `${size}px`, height: `${size}px` }"
+    aria-hidden="true"
   >
-    <svg 
-      class="logo-svg" 
-      viewBox="0 0 64 64" 
-      width="100%" 
-      height="100%" 
-      fill="none" 
+    <svg
+      class="logo-svg"
+      viewBox="0 0 64 64"
+      width="100%"
+      height="100%"
+      fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <defs>
-        <linearGradient :id="bgId" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#27272A"/>
-          <stop offset="100%" stop-color="#09090B"/>
-        </linearGradient>
-        <linearGradient :id="mId" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#FFFFFF"/>
-          <stop offset="100%" stop-color="#F4F4F5"/>
-        </linearGradient>
-        <linearGradient :id="dotId" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#FF7A59"/>
-          <stop offset="100%" stop-color="#FF5E36"/>
-        </linearGradient>
-      </defs>
-      <rect width="64" height="64" rx="16" :fill="`url(#${bgId})`"/>
-      <rect x="0.75" y="0.75" width="62.5" height="62.5" rx="15.25" stroke="rgba(255, 255, 255, 0.15)" stroke-width="1.5" fill="none"/>
-      <path d="M16 46V18.5L25.5 33.5L32 24.5L38.5 33.5L48 18.5V46" 
-            :stroke="`url(#${mId})`" 
-            stroke-width="4.5" 
-            stroke-linecap="round" 
-            stroke-linejoin="round"/>
-      <circle cx="32" cy="16" r="3" :fill="`url(#${dotId})`"/>
+      <rect width="64" height="64" rx="16" fill="#1769D2" />
+      <path
+        d="M20 10H38L50 22V51C50 53.7614 47.7614 56 45 56H20C17.2386 56 15 53.7614 15 51V15C15 12.2386 17.2386 10 20 10Z"
+        fill="white"
+      />
+      <path d="M38 10V19C38 20.6569 39.3431 22 41 22H50L38 10Z" fill="#B8F2E8" />
+      <path
+        d="M21 41V28L32 37L43 28V41"
+        stroke="#1769D2"
+        stroke-width="4"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
+      <path d="M23 47H34" stroke="#9ABCEB" stroke-width="2.5" stroke-linecap="round" />
+      <rect x="37" y="43.5" width="3" height="7" rx="1.5" fill="#22B8A5" />
     </svg>
-  </div>
+  </span>
 </template>
 
 <style scoped>
@@ -58,11 +45,9 @@ const dotId = `brandLogoDot-${uid}`;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  position: relative;
+  flex: 0 0 auto;
   user-select: none;
-  cursor: pointer;
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), filter 0.2s ease;
+  vertical-align: middle;
 }
 
 .logo-svg {
@@ -70,12 +55,16 @@ const dotId = `brandLogoDot-${uid}`;
   width: 100%;
   height: 100%;
   border-radius: 25%;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease;
+  transition: transform 0.16s ease;
 }
 
 .easymd-brand-logo-container:hover .logo-svg {
-  transform: scale(1.06) rotate(-2deg);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.28);
+  transform: scale(1.04);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .logo-svg {
+    transition: none;
+  }
 }
 </style>

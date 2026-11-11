@@ -183,7 +183,7 @@ function hasPrefixOption(id) {
           <div class="drawer-title-group">
             <span class="drawer-active-tab-title">{{ titleText }}</span>
           </div>
-          <button class="drawer-close-btn" @click="emit('close')" title="关闭 (Esc)">
+          <button class="drawer-close-btn" @click="emit('close')" >
             <X size="15" />
           </button>
         </div>

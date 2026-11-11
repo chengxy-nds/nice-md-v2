@@ -4331,7 +4331,8 @@ export const backgroundTemplates = [
 
 export function getBackgroundPatternStyle(textureId) {
   const normId = (textureId || '').replace(/^bg-/, '').replace(/-classic$/, '').replace(/-none$/, '');
-  const t = backgroundTemplates.find(b => b.id === normId || b.id === textureId) || backgroundTemplates.find(b => b.id === 'grid') || backgroundTemplates[1];
+  const resolvedId = !normId || normId === 'clean' ? 'none' : normId;
+  const t = backgroundTemplates.find(b => b.id === resolvedId || b.id === textureId) || backgroundTemplates[0];
   return {
     backgroundImage: t.bgImage || 'none',
     backgroundSize: t.bgSize || 'auto',

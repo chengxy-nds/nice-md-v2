@@ -1,6 +1,5 @@
 <script setup>
 import { ref, computed, watch, nextTick, onUnmounted } from 'vue';
-import { marked } from 'marked';
 import {
   Eye,
   EyeOff,
@@ -19,6 +18,7 @@ import {
   stripOssProcessFromHtml,
   stripOssProcessFromMarkdown
 } from '../utils/wechatStyles';
+import { parseMarkdownWithDocToc } from '../utils/markdownToc';
 import { soundEngine } from '../utils/synthAudio';
 import ThemeCustomizer from './ThemeCustomizer.vue';
 import ArticlePreview from './ArticlePreview.vue';
@@ -310,7 +310,7 @@ const showToast = (msg) => {
 // Copy WeChat styled HTML — 100% clean WeChat MP Editor generator
 const handleCopyWeChat = async () => {
   soundEngine.playChime();
-  const rawHtml = marked.parse(props.markdown || '');
+  const rawHtml = parseMarkdownWithDocToc(props.markdown || '');
   const previewDom = document.querySelector('.article-preview-container') || document.querySelector('.markdown-body') || document.querySelector('#preview-content');
   const targetCodeTheme = activeCustomStyles.value?.code?.codeThemeId || props.codeThemeId || 'mdnice-classic';
   const success = await copyToWeChat(
@@ -330,7 +330,7 @@ const handleCopyWeChat = async () => {
 // Copy Zhihu styled HTML
 const handleCopyZhihu = async () => {
   soundEngine.playChime();
-  const rawHtml = marked.parse(props.markdown || '');
+  const rawHtml = parseMarkdownWithDocToc(props.markdown || '');
   const cleanHtml = stripOssProcessFromHtml(rawHtml);
   const cleanMarkdown = stripOssProcessFromMarkdown(props.markdown || '');
   const htmlBlob = new Blob([cleanHtml], { type: 'text/html' });
@@ -352,7 +352,7 @@ const handleCopyZhihu = async () => {
 // Copy Toutiao styled HTML
 const handleCopyToutiao = async () => {
   soundEngine.playChime();
-  const rawHtml = marked.parse(props.markdown || '');
+  const rawHtml = parseMarkdownWithDocToc(props.markdown || '');
   const cleanHtml = stripOssProcessFromHtml(rawHtml);
   const cleanMarkdown = stripOssProcessFromMarkdown(props.markdown || '');
   const htmlBlob = new Blob([cleanHtml], { type: 'text/html' });
@@ -574,26 +574,20 @@ onUnmounted(() => {
 
         <span class="bar-divider"></span>
 
-        <div class="preview-mode-group" role="group" aria-label="预览设备">
-          <button
-            class="bar-action-btn"
-            :class="{ 'is-active': !isWeChatMode }"
-            :aria-pressed="!isWeChatMode"
-            @click="isWeChatMode = false"
-            title="电脑预览"
-          >
-            <Monitor size="19" stroke-width="1.7" />
-          </button>
-          <button
-            class="bar-action-btn"
-            :class="{ 'is-active': isWeChatMode }"
-            :aria-pressed="isWeChatMode"
-            @click="isWeChatMode = true"
-            title="手机模拟预览"
-          >
-            <Smartphone size="19" stroke-width="1.7" />
-          </button>
-        </div>
+        <button
+          type="button"
+          class="bar-action-btn preview-mode-toggle-btn"
+          :class="{ 'is-active': isWeChatMode }"
+          :aria-pressed="isWeChatMode"
+          :aria-label="isWeChatMode ? '手机模拟预览（点击切换电脑预览）' : '电脑预览（点击切换手机预览）'"
+          :data-tooltip="isWeChatMode ? '手机模拟预览（点击切换电脑预览）' : '电脑预览（点击切换手机预览）'"
+          @click="isWeChatMode = !isWeChatMode"
+        >
+          <Transition name="mode-icon-swap" mode="out-in">
+            <Smartphone v-if="isWeChatMode" key="mobile" size="19" stroke-width="1.7" />
+            <Monitor v-else key="desktop" size="19" stroke-width="1.7" />
+          </Transition>
+        </button>
 
         <span class="bar-divider"></span>
 
@@ -775,13 +769,15 @@ onUnmounted(() => {
   width: 100%;
 }
 
-.preview-mode-group {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  padding: 2px;
-  border-radius: 10px;
+.mode-icon-swap-enter-active,
+.mode-icon-swap-leave-active {
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+
+.mode-icon-swap-enter-from,
+.mode-icon-swap-leave-to {
+  opacity: 0;
+  transform: scale(0.86);
 }
 
 .bar-divider {

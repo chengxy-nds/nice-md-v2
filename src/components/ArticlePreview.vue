@@ -6,6 +6,7 @@ import 'katex/dist/katex.min.css';
 import mermaid from 'mermaid';
 import hljs from 'highlight.js';
 import { compileToWeChatHtml, cleanEmptyListItems } from '../utils/wechatStyles';
+import { parseMarkdownWithDocToc } from '../utils/markdownToc';
 import { themes } from '../utils/themePresets';
 import { getCodeThemeStyles } from '../utils/codeThemes';
 import MaterialPopup from './MaterialPopup.vue';
@@ -410,7 +411,7 @@ onBeforeUnmount(() => {
 
 const compiledHtml = computed(() => {
   if (!debouncedMarkdown.value) return '';
-  const rawHtml = marked.parse(debouncedMarkdown.value);
+  const rawHtml = parseMarkdownWithDocToc(debouncedMarkdown.value);
   return cleanEmptyListItems(rawHtml);
 });
 
@@ -607,11 +608,31 @@ onBeforeUnmount(() => {
   }
 });
 
+function scrollToPreviewHeading(targetId) {
+  const scrollContainer = getScrollableElement();
+  if (!scrollContainer || !targetId) return;
+  const targetEl = scrollContainer.querySelector(`#${CSS.escape(targetId)}`);
+  if (!targetEl) return;
+  const containerRect = scrollContainer.getBoundingClientRect();
+  const targetRect = targetEl.getBoundingClientRect();
+  const nextTop = scrollContainer.scrollTop + (targetRect.top - containerRect.top) - 16;
+  scrollContainer.scrollTo({ top: Math.max(0, nextTop), behavior: 'smooth' });
+  setActivePreviewTarget(targetEl);
+}
+
 function handlePreviewElementClick(e) {
   const target = e.target;
   if (!target || !target.closest) return;
   // Only trigger for clicks inside rendered content
   if (!target.closest('.preview-body') && !target.closest('.wechat-phone-frame') && !target.closest('.tc-rendered-paper')) return;
+
+  const anchorLink = target.closest('a[href^="#"]');
+  if (anchorLink) {
+    e.preventDefault();
+    e.stopPropagation();
+    scrollToPreviewHeading(anchorLink.getAttribute('href').slice(1));
+    return;
+  }
 
   clearActivePreviewTarget();
 
@@ -1018,6 +1039,21 @@ function handlePopupClose() {
 .markdown-body :deep(li) {
   color: var(--ct-li-color, var(--ct-body-color, var(--text-main)));
   margin-bottom: 0.5em;
+}
+
+.markdown-body :deep([data-doc-toc="true"] a) {
+  cursor: pointer;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.markdown-body :deep([data-doc-toc="true"] a:hover) {
+  text-decoration: underline !important;
+  opacity: 0.85;
+}
+
+:global(html.dark) .preview-body:not(.is-wechat-wrapper) .markdown-body :deep([data-doc-toc="true"] a) {
+  color: var(--accent-color, #60a5fa) !important;
 }
 
 .markdown-body :deep(:not(pre) > code) {

@@ -1767,7 +1767,7 @@ onMounted(() => {
             </div>
             <p class="manage-modal-subtitle">自定义在右侧发布面板中展示的平台，未登录渠道可在登录后开启展示</p>
           </div>
-          <button class="manage-modal-close" @click="showPlatformManageModal = false" title="关闭">
+          <button class="manage-modal-close" @click="showPlatformManageModal = false">
             <X size="16" />
           </button>
         </div>
@@ -1990,7 +1990,7 @@ onMounted(() => {
               <h3 class="picker-modal-title">更换文章封面</h3>
               <p class="picker-modal-subtitle">从文章正文插图中选取，或从本地上传自定义封面</p>
             </div>
-            <button class="picker-modal-close" @click="showCoverSelectModal = false" title="关闭">
+            <button class="picker-modal-close" @click="showCoverSelectModal = false">
               <X size="18" />
             </button>
           </div>

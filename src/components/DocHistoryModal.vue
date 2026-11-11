@@ -276,7 +276,7 @@ async function copyHistoricalContent() {
               <Plus size="14" />
               <span>保存当前快照</span>
             </button>
-            <button class="btn-close-modal" @click="emit('close')" title="关闭 (Esc)">
+            <button class="btn-close-modal" @click="emit('close')" >
               <X size="16" />
             </button>
           </div>

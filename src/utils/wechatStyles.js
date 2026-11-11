@@ -52,6 +52,12 @@ export function cleanCss(css) {
   return (css || '').replace(/;+/g, ';').replace(/\s+/g, ' ').trim();
 }
 
+function copyElementId(fromEl, toEl) {
+  if (fromEl?.id && toEl && !toEl.id) {
+    toEl.setAttribute('id', fromEl.id);
+  }
+}
+
 /**
  * Strips Aliyun OSS processing query parameters (e.g. ?x-oss-process=image/resize...)
  * to ensure pristine original image URLs are used on export, copy, or storage.
@@ -104,7 +110,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
 
   const bodyColor = customStyles?.body?.color || themeStyles['--text-main'] || '#3f3f3f';
   const bodyBg = customStyles?.body?.backgroundColor || themeStyles['--bg-preview'] || '#ffffff';
-  const bgTextureId = customStyles?.body?.backgroundTexture || customStyles?.body?.materialTemplateId || 'grid';
+  const bgTextureId = customStyles?.body?.backgroundTexture || customStyles?.body?.materialTemplateId || 'none';
   const pattern = getBackgroundPatternStyle(bgTextureId);
 
   // Map colors directly to the selected theme's properties to perfectly match the Standard Preview
@@ -141,6 +147,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
   // 1. Global Container Styling with selected background pattern & body color
   const bodyPadding = customStyles?.body?.padding || '5px';
   const bodyFontFamily = customStyles?.body?.fontFamily || '-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif';
+  const hasPatternImage = pattern.backgroundImage && pattern.backgroundImage !== 'none';
   root.setAttribute('style', cleanCss(`
     font-family: ${bodyFontFamily};
     font-size: 16px;
@@ -148,10 +155,12 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     color: ${colors.text};
     letter-spacing: 0.05em;
     padding: ${bodyPadding};
-    background-image: ${pattern.backgroundImage};
-    background-size: ${pattern.backgroundSize};
-    ${pattern.backgroundPosition ? `background-position: ${pattern.backgroundPosition};` : ''}
-    background-repeat: repeat;
+    ${hasPatternImage ? `
+      background-image: ${pattern.backgroundImage};
+      background-size: ${pattern.backgroundSize};
+      ${pattern.backgroundPosition ? `background-position: ${pattern.backgroundPosition};` : ''}
+      background-repeat: repeat;
+    ` : 'background-image: none;'}
     background-color: ${colors.bgPreview};
   `));
 
@@ -163,6 +172,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
       if (/^h[1-6]$/i.test(el.tagName)) {
         const hTag = el.tagName.toLowerCase();
         const section = doc.createElement('section');
+        copyElementId(el, section);
         section.setAttribute('data-heading', hTag);
         section.setAttribute('style', cleanedStyle);
         // Copy children to section
@@ -199,6 +209,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           tempContainer.innerHTML = renderedHtml;
           const replacement = tempContainer.firstElementChild;
           if (replacement) {
+            copyElementId(el, replacement);
             replacement.setAttribute('data-heading', tag);
             replacement.setAttribute('data-tag', tag);
             replacement.setAttribute('data-material', 'true');
@@ -304,7 +315,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     };
     const liList = Array.from(root.querySelectorAll('li')).sort((a, b) => getLiDepth(b) - getLiDepth(a));
     liList.forEach(el => {
-      if (isMaterialEl(el) || !el.parentNode) return;
+      if (isMaterialEl(el) || !el.parentNode || el.closest('[data-doc-toc="true"]')) return;
       liIndex++;
       const itemHtml = el.innerHTML.trim();
       const renderedHtml = tmpl.render ? tmpl.render(itemHtml, liIndex) : null;
@@ -1116,6 +1127,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     root.querySelectorAll('h1').forEach(el => {
       if (isMaterialEl(el)) return;
       const section = doc.createElement('section');
+      copyElementId(el, section);
       section.setAttribute('data-heading', 'h1');
       section.setAttribute('style', cleanCss(`
         display: block;
@@ -1134,6 +1146,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     root.querySelectorAll('h2').forEach(el => {
       if (isMaterialEl(el)) return;
       const section = doc.createElement('section');
+      copyElementId(el, section);
       section.setAttribute('data-heading', 'h2');
       section.setAttribute('style', cleanCss(`
         margin-top: 28px;
@@ -1153,6 +1166,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     root.querySelectorAll('h3').forEach(el => {
       if (isMaterialEl(el)) return;
       const section = doc.createElement('section');
+      copyElementId(el, section);
       section.setAttribute('data-heading', 'h3');
       const h3FontSize = h3Spec.size || '18px';
       const h3Color = h3Spec.color || colors.text;
@@ -1185,6 +1199,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     root.querySelectorAll('h4').forEach(el => {
       if (isMaterialEl(el)) return;
       const section = doc.createElement('section');
+      copyElementId(el, section);
       section.setAttribute('data-heading', 'h4');
       section.setAttribute('style', cleanCss(`
         display: block;
@@ -1386,9 +1401,29 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     height: auto;
   `);
 
+  // Preserve compact hierarchical list spacing inside `[TOC]` directories
+  root.querySelectorAll('[data-doc-toc="true"] ul').forEach(tocUl => {
+    let nestedDepth = 0;
+    let parent = tocUl.parentElement;
+    while (parent && !parent.hasAttribute('data-doc-toc')) {
+      if (parent.tagName === 'UL') nestedDepth++;
+      parent = parent.parentElement;
+    }
+    const listTypes = ['disc', 'circle', 'square'];
+    const listStyle = listTypes[Math.min(nestedDepth, listTypes.length - 1)];
+    const ulMargin = nestedDepth === 0 ? '0 0 1.2em 0' : '4px 0 2px 0';
+    const padLeft = nestedDepth === 0 ? '20px' : '18px';
+    tocUl.setAttribute('style', cleanCss(`margin: ${ulMargin}; padding-left: ${padLeft}; list-style-type: ${listStyle};`));
+  });
+
   // Transform <li> children into <section> block wrappers to match mdnice structure
   // This ensures WeChat MP Editor's UEditor parser treats each list item as a unified block and NEVER breaks inline formatting tags on paste.
   root.querySelectorAll('li').forEach(li => {
+    const isDocToc = Boolean(li.closest('[data-doc-toc="true"]'));
+    if (isDocToc) {
+      li.setAttribute('style', cleanCss(`margin-bottom: 3px; line-height: 1.65; color: ${colors.text}; height: auto;`));
+    }
+
     // 1. Convert task list checkboxes
     const checkbox = li.querySelector('input[type="checkbox"]');
     if (checkbox) {
@@ -1411,6 +1446,16 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     }
 
     // 2. Wrap non-sublist content inside <li> into a <section> block (matching mdnice)
+    const liSectionStyle = cleanCss(`
+      margin-top: ${isDocToc ? '2px' : '5px'};
+      margin-bottom: ${isDocToc ? '2px' : '5px'};
+      color: ${colors.text};
+      font-size: ${isDocToc ? '15px' : '16px'};
+      line-height: ${isDocToc ? '1.65em' : '1.8em'};
+      letter-spacing: 0em;
+      text-align: left;
+      font-weight: normal;
+    `);
     const childNodes = Array.from(li.childNodes);
     let inlineGroup = [];
 
@@ -1431,30 +1476,12 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
       if (inlineGroup.length === 1 && inlineGroup[0].nodeType === 1 && ['P', 'SECTION', 'DIV'].includes(inlineGroup[0].tagName)) {
         const block = inlineGroup[0];
         const section = doc.createElement('section');
-        section.setAttribute('style', cleanCss(`
-          margin-top: 5px;
-          margin-bottom: 5px;
-          color: ${colors.text};
-          font-size: 16px;
-          line-height: 1.8em;
-          letter-spacing: 0em;
-          text-align: left;
-          font-weight: normal;
-        `));
+        section.setAttribute('style', liSectionStyle);
         while (block.firstChild) section.appendChild(block.firstChild);
         block.parentNode.replaceChild(section, block);
       } else {
         const section = doc.createElement('section');
-        section.setAttribute('style', cleanCss(`
-          margin-top: 5px;
-          margin-bottom: 5px;
-          color: ${colors.text};
-          font-size: 16px;
-          line-height: 1.8em;
-          letter-spacing: 0em;
-          text-align: left;
-          font-weight: normal;
-        `));
+        section.setAttribute('style', liSectionStyle);
         inlineGroup[0].parentNode.insertBefore(section, inlineGroup[0]);
         inlineGroup.forEach(node => section.appendChild(node));
       }
@@ -2008,6 +2035,11 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
   root.querySelectorAll('a').forEach(a => {
     if (isMaterialEl(a)) return;
     const href = (a.getAttribute('href') || '').trim();
+    if (a.closest('[data-doc-toc="true"]')) {
+      a.setAttribute('style', cleanCss(`color: ${colors.primary}; text-decoration: none;`));
+      return;
+    }
+    if (href.startsWith('#')) return;
     const isWeChatDomain = href.includes('mp.weixin.qq.com') || href.startsWith('weixin://');
     if (!isWeChatDomain) {
       const span = doc.createElement('span');
@@ -2467,6 +2499,7 @@ function convertHeadingsToSections(root) {
     if (isMaterialEl(h)) return;
     const tag = h.tagName.toLowerCase();
     const section = document.createElement('section');
+    copyElementId(h, section);
     section.setAttribute('data-heading', tag);
     const style = h.getAttribute('style') || '';
     section.setAttribute('style', style + (style.includes('display:') ? '' : '; display: block'));
