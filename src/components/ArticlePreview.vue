@@ -1,158 +1,16 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
-import { marked } from 'marked';
 import renderMathInElement from 'katex/dist/contrib/auto-render.js';
 import 'katex/dist/katex.min.css';
 import mermaid from 'mermaid';
-import hljs from 'highlight.js';
 import { compileToWeChatHtml, cleanEmptyListItems } from '../utils/wechatStyles';
+import { ensureMarkdownExtensions } from '../utils/markdownExtensions';
 import { parseMarkdownWithDocToc } from '../utils/markdownToc';
 import { themes } from '../utils/themePresets';
 import { getCodeThemeStyles } from '../utils/codeThemes';
 import MaterialPopup from './MaterialPopup.vue';
 
-marked.setOptions({
-  gfm: true,
-  breaks: true
-});
-
-marked.use({
-  renderer: {
-    code(arg1, arg2) {
-      let code = '';
-      let lang = '';
-      if (typeof arg1 === 'object' && arg1 !== null) {
-        code = arg1.text || '';
-        lang = arg1.lang || '';
-      } else {
-        code = arg1 || '';
-        lang = arg2 || '';
-      }
-      if (lang === 'mermaid') {
-        const escapedCode = encodeURIComponent(code);
-        return `<div class="mermaid" data-original-code="${escapedCode}">${code}</div>`;
-      }
-      
-      let highlighted = '';
-      if (lang && hljs.getLanguage(lang)) {
-        try {
-          highlighted = hljs.highlight(code, { language: lang, ignoreIllegals: true }).value;
-        } catch (e) {
-          try {
-            highlighted = hljs.highlightAuto(code).value;
-          } catch (err) {
-            highlighted = code;
-          }
-        }
-      } else {
-        try {
-          highlighted = hljs.highlightAuto(code).value;
-        } catch (e) {
-          highlighted = code;
-        }
-      }
-
-      return `<pre class="custom" data-lang="${lang || ''}"><code class="hljs language-${lang || 'text'}">${highlighted}</code></pre>`;
-    }
-  },
-  extensions: [
-    {
-      name: 'blockMath',
-      level: 'block',
-      start(src) { return src.indexOf('$$'); },
-      tokenizer(src) {
-        const match = src.match(/^\$\$\n?([\s\S]+?)\n?\$\$/);
-        if (match) {
-          return {
-            type: 'blockMath',
-            raw: match[0],
-            text: match[1]
-          };
-        }
-      },
-      renderer(token) {
-        return `<div class="math-block">$$${token.text}$$</div>`;
-      }
-    },
-    {
-      name: 'inlineMath',
-      level: 'inline',
-      start(src) { return src.indexOf('$'); },
-      tokenizer(src) {
-        const match = src.match(/^\$([^$\n]+?)\$/);
-        if (match) {
-          return {
-            type: 'inlineMath',
-            raw: match[0],
-            text: match[1]
-          };
-        }
-      },
-      renderer(token) {
-        return `<span class="math-inline">$${token.text}$</span>`;
-      }
-    },
-    {
-      name: 'highlight',
-      level: 'inline',
-      start(src) { return src.indexOf('=='); },
-      tokenizer(src) {
-        const match = src.match(/^==([^=\n]+?)==/);
-        if (match) {
-          return {
-            type: 'highlight',
-            raw: match[0],
-            text: match[1]
-          };
-        }
-      },
-      renderer(token) {
-        return `<mark>${token.text}</mark>`;
-      }
-    },
-    {
-      name: 'superscript',
-      level: 'inline',
-      start(src) { return src.indexOf('^'); },
-      tokenizer(src) {
-        const match = src.match(/^\^([^\^\n\s]+?)\^/);
-        if (match) {
-          return {
-            type: 'superscript',
-            raw: match[0],
-            text: match[1]
-          };
-        }
-      },
-      renderer(token) {
-        return `<sup>${token.text}</sup>`;
-      }
-    },
-    {
-      name: 'subscript',
-      level: 'inline',
-      start(src) {
-        const idx = src.indexOf('~');
-        if (idx === -1) return -1;
-        if (src[idx + 1] === '~') return -1;
-        return idx;
-      },
-      tokenizer(src) {
-        const match = src.match(/^~([^~\n\s]+?)~(?!~)/);
-        if (match) {
-          return {
-            type: 'subscript',
-            raw: match[0],
-            text: match[1]
-          };
-        }
-      },
-      renderer(token) {
-        return `<sub>${token.text}</sub>`;
-      }
-    }
-  ]
-});
+ensureMarkdownExtensions();
 
 const props = defineProps({
   markdown: {
@@ -634,6 +492,10 @@ function handlePreviewElementClick(e) {
     return;
   }
 
+  if (target.closest('details, summary')) {
+    return;
+  }
+
   clearActivePreviewTarget();
 
   // 1. Check pre / code block / hljs first
@@ -853,14 +715,13 @@ function handlePopupClose() {
             :style="markdownBodyStyles"
             v-html="wechatStyledHtml"
           ></div>
-
-          <Transition name="preview-chrome">
-            <div v-if="props.isWeChatMode" class="phone-article-footer">
-              <span class="read-more">阅读原文</span>
-              <span class="read-count">阅读 100k+</span>
-            </div>
-          </Transition>
         </div>
+        <Transition name="preview-chrome">
+          <div v-if="props.isWeChatMode" class="phone-article-footer">
+            <span class="read-more">阅读原文</span>
+            <span class="read-count">阅读 100k+</span>
+          </div>
+        </Transition>
         <Transition name="preview-chrome">
           <div v-if="props.isWeChatMode" class="phone-home-indicator"></div>
         </Transition>
@@ -1047,12 +908,62 @@ function handlePopupClose() {
   transition: opacity 0.15s ease;
 }
 
-.markdown-body :deep([data-doc-toc="true"] a:hover) {
+.markdown-body :deep([data-doc-toc="true"] a:hover),
+.markdown-body :deep(.footnote-ref a:hover),
+.markdown-body :deep(.footnote-backref:hover) {
   text-decoration: underline !important;
   opacity: 0.85;
 }
 
-:global(html.dark) .preview-body:not(.is-wechat-wrapper) .markdown-body :deep([data-doc-toc="true"] a) {
+.markdown-body :deep(details.md-container-details),
+.markdown-body :deep(details) {
+  margin: 16px 0;
+  padding: 12px 16px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  background: rgba(248, 250, 252, 0.72);
+}
+
+.markdown-body :deep(details > summary) {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--text-main);
+  user-select: none;
+}
+
+.markdown-body :deep(details[open] > summary) {
+  margin-bottom: 10px;
+}
+
+.markdown-body :deep(ruby) {
+  ruby-align: center;
+  margin: 0 1px;
+}
+
+.markdown-body :deep(ruby rp) {
+  display: none;
+}
+
+.markdown-body :deep(ruby rt) {
+  font-size: 0.68em;
+  color: var(--text-muted);
+}
+
+.markdown-body :deep(abbr) {
+  border-bottom: 1px dotted var(--text-muted);
+  text-decoration: none;
+  cursor: help;
+}
+
+:global(html.dark) .preview-body:not(.is-wechat-wrapper) .markdown-body :deep(details.md-container-details),
+:global(html.dark) .preview-body:not(.is-wechat-wrapper) .markdown-body :deep(details) {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+:global(html.dark) .preview-body:not(.is-wechat-wrapper) .markdown-body :deep([data-doc-toc="true"] a),
+:global(html.dark) .preview-body:not(.is-wechat-wrapper) .markdown-body :deep(.footnote-ref a),
+:global(html.dark) .preview-body:not(.is-wechat-wrapper) .markdown-body :deep(.footnote-backref) {
   color: var(--accent-color, #60a5fa) !important;
 }
 
@@ -1310,7 +1221,7 @@ function handlePopupClose() {
 
 .wechat-body {
   width: 100%;
-  flex: 1;
+  flex: 1 0 auto;
 }
 
 .phone-empty-placeholder {
@@ -1404,15 +1315,17 @@ function handlePopupClose() {
 }
 
 .phone-article-footer {
-  margin-top: 2rem;
-  padding-top: 1rem;
+  margin-top: 0;
+  padding: 10px 20px 6px;
   border-top: 1px solid #f1f5f9;
+  background: #ffffff;
   display: flex;
   justify-content: space-between;
   align-items: center;
   font-size: 0.75rem;
   color: #94a3b8;
   flex-shrink: 0;
+  user-select: none;
 }
 
 .phone-home-indicator {

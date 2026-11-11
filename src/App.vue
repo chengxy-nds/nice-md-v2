@@ -22,6 +22,7 @@ import Sidebar from './components/Sidebar.vue';
 import IconBar from './components/IconBar.vue';
 import DocHistoryModal from './components/DocHistoryModal.vue';
 import { compileToWeChatHtml, cleanEmptyListItems, stripOssProcessFromMarkdown } from './utils/wechatStyles';
+import { ensureMarkdownExtensions, stripYamlFrontMatter } from './utils/markdownExtensions';
 import { parseMarkdownWithDocToc, isDocTocToken, extractHeadingsFromTokens } from './utils/markdownToc';
 import { marked } from 'marked';
 import confetti from 'canvas-confetti';
@@ -1517,7 +1518,8 @@ async function exportWord() {
   soundEngine.playClick();
   const title = getExportTitle();
   try {
-    const tokens = marked.lexer(markdownContent.value || '');
+    ensureMarkdownExtensions();
+    const tokens = marked.lexer(stripYamlFrontMatter(markdownContent.value || ''));
     const children = await mdToDocxWithImages(tokens);
 
     const doc = new Document({

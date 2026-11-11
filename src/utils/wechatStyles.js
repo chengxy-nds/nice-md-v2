@@ -31,6 +31,7 @@ import {
   backgroundTemplatesMap,
   getBackgroundPatternStyle
 } from './materialLibrary';
+import { CONTAINER_CONFIGS } from './markdownExtensions';
 
 function isMaterialEl(el) {
   if (!el || el.nodeType !== 1) return false;
@@ -44,7 +45,7 @@ function isMaterialEl(el) {
     if (el.closest && el.closest('[data-material="true"], [data-material], .material-block, [data-heading][data-material="true"], [data-code-block="true"], .code-snippet__fix')) {
       return true;
     }
-  } catch (e) {}
+  } catch (e) { }
   return false;
 }
 
@@ -56,6 +57,37 @@ function copyElementId(fromEl, toEl) {
   if (fromEl?.id && toEl && !toEl.id) {
     toEl.setAttribute('id', fromEl.id);
   }
+}
+
+function getWechatImgDimensionsCss(img) {
+  const wRaw = (img.getAttribute('data-img-width') || img.getAttribute('width') || '').trim();
+  const hRaw = (img.getAttribute('data-img-height') || img.getAttribute('height') || '').trim();
+  const w = /^\d+$/.test(wRaw) ? `${wRaw}px` : wRaw;
+  const h = /^\d+$/.test(hRaw) ? `${hRaw}px` : hRaw;
+  return {
+    widthRule: w ? `width: ${w} !important;` : '',
+    heightRule: `height: ${h || 'auto'} !important;`
+  };
+}
+
+function buildCalloutCardElement(doc, rawType, titleText, bodyHtml) {
+  const normType = (rawType || 'note').toLowerCase();
+  const cfg = CONTAINER_CONFIGS[normType] || CONTAINER_CONFIGS.note;
+  const card = doc.createElement('section');
+  card.setAttribute('data-material', 'true');
+  card.setAttribute('style', `margin: 20px 0; padding: 14px 18px; background: ${cfg.bg}; border: 1px solid ${cfg.border}; border-left: 4px solid ${cfg.accent}; border-radius: 8px; display: flex; align-items: flex-start; gap: 12px; box-sizing: border-box;`);
+  const safeTitle = String(titleText || cfg.label)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  card.innerHTML = `
+    <span style="font-size: 18px; line-height: 1; flex-shrink: 0; margin-top: 2px;">${cfg.icon}</span>
+    <section style="flex: 1; min-width: 0;">
+      <section style="font-size: 14px; font-weight: 700; color: ${cfg.titleColor}; margin-bottom: 4px;">${safeTitle}</section>
+      <section style="font-size: 13.5px; color: ${cfg.textColor}; line-height: 1.65;">${bodyHtml}</section>
+    </section>
+  `;
+  return card;
 }
 
 /**
@@ -73,7 +105,7 @@ export function stripOssProcessParam(url) {
       }
       return url;
     }
-  } catch (e) {}
+  } catch (e) { }
 
   return url
     .replace(/([?&])x-oss-process=[^&#]*(&|$)/gi, (match, prefix, suffix) => {
@@ -164,7 +196,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     background-color: ${colors.bgPreview};
   `));
 
-// Helper to set style safely and convert elements to section if it is a heading to prevent WeChat from overriding styles
+  // Helper to set style safely and convert elements to section if it is a heading to prevent WeChat from overriding styles
   const styleEl = (selector, styleStr) => {
     root.querySelectorAll(selector).forEach(el => {
       if (isMaterialEl(el)) return;
@@ -315,7 +347,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     };
     const liList = Array.from(root.querySelectorAll('li')).sort((a, b) => getLiDepth(b) - getLiDepth(a));
     liList.forEach(el => {
-      if (isMaterialEl(el) || !el.parentNode || el.closest('[data-doc-toc="true"]')) return;
+      if (isMaterialEl(el) || !el.parentNode || el.closest('[data-doc-toc="true"], [data-footnotes="true"]')) return;
       liIndex++;
       const itemHtml = el.innerHTML.trim();
       const renderedHtml = tmpl.render ? tmpl.render(itemHtml, liIndex) : null;
@@ -471,7 +503,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         });
 
         const wrapper = createTableWrapper('margin: 24px 0; border: 1.5px solid #292524; border-radius: 14px; overflow: hidden; background-color: #ffffff; clear: both; display: block; box-sizing: border-box; width: 100%;');
-        
+
         tableEl.parentNode.insertBefore(wrapper, tableEl);
 
         if (explicitTitle || !hasThead) {
@@ -517,7 +549,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         });
 
         const wrapper = createTableWrapper('margin: 24px 0; border: 2px solid #1a1a1a; background-color: #ffffff; overflow: hidden; clear: both; display: block; box-sizing: border-box; width: 100%;');
-        
+
         const winHeader = doc.createElement('table');
         winHeader.setAttribute('data-material', 'true');
         winHeader.setAttribute('style', cleanCss('width: 100%; border-collapse: collapse; border: none; background-color: #ffffff; border-bottom: 2px solid #1a1a1a; margin: 0; box-sizing: border-box; display: table;'));
@@ -526,7 +558,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
           <td style="padding: 8px 4px; text-align: center; vertical-align: middle; border: none; font-size: 14.5px; font-weight: 800; color: #1a1a1a; letter-spacing: 1px; background-color: #ffffff;">${title}</td>
           <td style="width: 25%; padding: 8px 12px; text-align: right; vertical-align: middle; border: none; font-family: monospace; font-size: 13px; font-weight: bold; letter-spacing: 2px; color: #1a1a1a; background-color: #ffffff;">_ □ ✕</td>
         </tr></tbody>`;
-        
+
         tableEl.parentNode.insertBefore(wrapper, tableEl);
         wrapper.appendChild(winHeader);
         wrapper.appendChild(tableEl);
@@ -779,7 +811,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         });
 
         const wrapper = createTableWrapper('margin: 24px 0; border: 1.5px solid #334155; border-radius: 10px; overflow: hidden; background-color: #0f172a; clear: both; font-family: "JetBrains Mono", Consolas, Monaco, monospace; display: block; box-sizing: border-box; width: 100%;');
-        
+
         const bar = doc.createElement('table');
         bar.setAttribute('data-material', 'true');
         bar.setAttribute('style', cleanCss('width: 100%; border-collapse: collapse; border: none; background-color: #1e293b; border-bottom: 1px solid #334155; margin: 0; box-sizing: border-box; display: table;'));
@@ -862,7 +894,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         });
 
         const wrapper = createTableWrapper('margin: 24px 0; border: 2px solid #991b1b; padding: 3px; background-color: #faf7f2; clear: both; font-family: "Songti SC", SimSun, "Source Han Serif SC", STSong, serif; display: block; box-sizing: border-box; width: 100%;');
-        
+
         const innerBox = doc.createElement('div');
         innerBox.setAttribute('style', cleanCss('border: 1px solid #b91c1c; padding: 2px; display: block; box-sizing: border-box;'));
 
@@ -901,7 +933,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         });
 
         const wrapper = createTableWrapper('margin: 24px 0; border: 2px solid #18181b; border-radius: 12px; background-color: #ffffff; box-shadow: 4px 4px 0px #fed7aa; overflow: hidden; clear: both; display: block; box-sizing: border-box; width: 100%;');
-        
+
         const banner = doc.createElement('table');
         banner.setAttribute('data-material', 'true');
         banner.setAttribute('style', cleanCss('width: 100%; border-collapse: collapse; border: none; background-color: #fef08a; border-bottom: 2px solid #18181b; margin: 0; box-sizing: border-box; display: table;'));
@@ -1058,7 +1090,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         });
 
         const wrapper = createTableWrapper('margin: 24px 0; border: 1.5px solid #cbd5e1; border-radius: 12px; overflow: hidden; background-color: #ffffff; clear: both; display: block; box-sizing: border-box; width: 100%;');
-        
+
         tableEl.parentNode.insertBefore(wrapper, tableEl);
 
         if (explicitTitle || !hasThead) {
@@ -1107,7 +1139,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         });
 
         const wrapper = createTableWrapper('margin: 24px 0; border: 1.5px solid #fda4af; border-radius: 14px; overflow: hidden; background-color: #ffffff; box-shadow: 0 4px 14px rgba(244,63,94,0.08); clear: both; display: block; box-sizing: border-box; width: 100%;');
-        
+
         const banner = doc.createElement('table');
         banner.setAttribute('data-material', 'true');
         banner.setAttribute('style', cleanCss('width: 100%; border-collapse: collapse; border: none; background-color: #f43f5e; background-image: linear-gradient(135deg, #fb7185, #f43f5e); margin: 0; box-sizing: border-box; display: table;'));
@@ -1371,7 +1403,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     border-radius: 4px;
   `;
   styleEl('blockquote', wechatTypo.blockquote ? wechatTypo.blockquote : defaultBqStyle);
-  
+
   styleEl('blockquote p', wechatTypo.blockquoteP || `
     margin-top: 0px;
     margin-bottom: 0px;
@@ -1420,8 +1452,11 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
   // This ensures WeChat MP Editor's UEditor parser treats each list item as a unified block and NEVER breaks inline formatting tags on paste.
   root.querySelectorAll('li').forEach(li => {
     const isDocToc = Boolean(li.closest('[data-doc-toc="true"]'));
+    const isFootnoteItem = Boolean(li.closest('[data-footnotes="true"]'));
     if (isDocToc) {
       li.setAttribute('style', cleanCss(`margin-bottom: 3px; line-height: 1.65; color: ${colors.text}; height: auto;`));
+    } else if (isFootnoteItem) {
+      li.setAttribute('style', cleanCss(`margin-bottom: 4px; line-height: 1.65; font-size: 13px; color: ${colors.muted}; height: auto;`));
     }
 
     // 1. Convert task list checkboxes
@@ -1446,12 +1481,13 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     }
 
     // 2. Wrap non-sublist content inside <li> into a <section> block (matching mdnice)
+    const isCompactList = isDocToc || isFootnoteItem;
     const liSectionStyle = cleanCss(`
-      margin-top: ${isDocToc ? '2px' : '5px'};
-      margin-bottom: ${isDocToc ? '2px' : '5px'};
-      color: ${colors.text};
-      font-size: ${isDocToc ? '15px' : '16px'};
-      line-height: ${isDocToc ? '1.65em' : '1.8em'};
+      margin-top: ${isCompactList ? '2px' : '5px'};
+      margin-bottom: ${isCompactList ? '2px' : '5px'};
+      color: ${isFootnoteItem ? colors.muted : colors.text};
+      font-size: ${isFootnoteItem ? '13px' : (isDocToc ? '15px' : '16px')};
+      line-height: ${isCompactList ? '1.65em' : '1.8em'};
       letter-spacing: 0em;
       text-align: left;
       font-weight: normal;
@@ -1597,8 +1633,8 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         overflow: hidden;
         text-align: left;
       `));
-      
-      const langSpan = (showCodeLang && langName) 
+
+      const langSpan = (showCodeLang && langName)
         ? `<span style="float: right; font-size: 10px; font-weight: 600; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; color: ${macText}; text-transform: uppercase; letter-spacing: 0.05em; line-height: 28px;">${langName}</span>`
         : '';
 
@@ -1698,7 +1734,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
             const existing = el.getAttribute('style') || '';
             el.setAttribute('style', cleanCss(`${existing}; ${styleStr}`));
           });
-        } catch (e) {}
+        } catch (e) { }
       });
     };
 
@@ -1777,12 +1813,12 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
   });
 
   // 11. Convert LaTeX Math Formulas (KaTeX) into high-resolution transparent PNG images via CodeCogs
-  
+
   // Pass A: Process any unrendered math wrappers containing raw text ($...$ or $$...$$)
   root.querySelectorAll('.math-block, .math-inline').forEach(el => {
     const text = el.textContent.trim();
     const isBlock = el.classList.contains('math-block');
-    const hasDelimiters = isBlock 
+    const hasDelimiters = isBlock
       ? text.startsWith('$$') && text.endsWith('$$')
       : text.startsWith('$') && text.endsWith('$');
 
@@ -1843,7 +1879,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     if (!latexCode) return;
 
     const isBlock = Boolean(
-      katexEl.closest('.math-block') || 
+      katexEl.closest('.math-block') ||
       katexEl.classList.contains('katex-display') ||
       katexEl.closest('.katex-display')
     );
@@ -1869,7 +1905,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         max-width: 100% !important;
         height: auto !important;
       `));
-      
+
       const parentMathBlock = katexEl.closest('.math-block');
       if (parentMathBlock && parentMathBlock.parentNode) {
         parentMathBlock.parentNode.replaceChild(img, parentMathBlock);
@@ -1931,7 +1967,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
             const existing = clone.getAttribute('style') || '';
             clone.setAttribute('style', existing ? `${existing}; ${inlineParts.join('; ')}` : inlineParts.join('; '));
           }
-        } catch (e) {}
+        } catch (e) { }
       }
 
       // Remove <style> tags inside SVG because WeChat sanitizer strips or dumps their text
@@ -2016,9 +2052,11 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
         }
       }
 
+      const { widthRule, heightRule } = getWechatImgDimensionsCss(img);
       img.setAttribute('style', cleanCss(`
+        ${widthRule}
         max-width: 100% !important;
-        height: auto !important;
+        ${heightRule}
         display: block !important;
         margin: 16px auto !important;
         border-radius: 8px;
@@ -2029,13 +2067,95 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
 
   convertImageContainersAndMargins(root, colors);
 
+  // 14. Extended Markdown elements (containers, definition lists, ruby pinyin, abbreviations, footnotes, details)
+  root.querySelectorAll('section[data-container]').forEach(el => {
+    const type = el.getAttribute('data-container');
+    const titleText = el.getAttribute('data-container-title') || '';
+    const card = buildCalloutCardElement(doc, type, titleText, el.innerHTML);
+    el.parentNode.replaceChild(card, el);
+  });
+
+  root.querySelectorAll('dl').forEach(dl => {
+    if (isMaterialEl(dl)) return;
+    const dlSection = doc.createElement('section');
+    dlSection.setAttribute('data-definition-list', 'true');
+    dlSection.setAttribute('style', cleanCss('margin: 14px 0; display: block;'));
+    Array.from(dl.children).forEach(child => {
+      const tag = child.tagName?.toLowerCase();
+      const row = doc.createElement('section');
+      if (tag === 'dt') {
+        row.setAttribute('style', cleanCss(`font-weight: 700; color: ${colors.text}; margin: 10px 0 4px 0; font-size: 16px; line-height: 1.6;`));
+      } else {
+        row.setAttribute('style', cleanCss(`color: ${colors.muted}; margin: 0 0 8px 0; padding-left: 14px; border-left: 2px solid ${colors.border}; font-size: 15px; line-height: 1.7;`));
+      }
+      row.innerHTML = child.innerHTML;
+      dlSection.appendChild(row);
+    });
+    dl.parentNode.replaceChild(dlSection, dl);
+  });
+
+  root.querySelectorAll('ruby').forEach(ruby => {
+    ruby.setAttribute('style', cleanCss(`ruby-align: center; margin: 0 1px;`));
+    ruby.querySelectorAll('rt').forEach(rt => {
+      rt.setAttribute('style', cleanCss(`font-size: 0.68em; color: ${colors.muted}; font-weight: normal; line-height: 1.2;`));
+    });
+    ruby.querySelectorAll('rp').forEach(rp => {
+      rp.setAttribute('style', 'display: none;');
+    });
+  });
+
+  root.querySelectorAll('abbr').forEach(abbr => {
+    const abbrStyle = cleanCss(`border-bottom: 1px dotted ${colors.muted}; text-decoration: none; cursor: help;`);
+    if (options?.isExport) {
+      const span = doc.createElement('span');
+      span.setAttribute('style', cleanCss(`border-bottom: 1px dotted ${colors.muted};`));
+      span.textContent = abbr.textContent;
+      abbr.parentNode.replaceChild(span, abbr);
+    } else {
+      abbr.setAttribute('style', abbrStyle);
+    }
+  });
+
+  root.querySelectorAll('[data-footnotes="true"]').forEach(fnBox => {
+    fnBox.setAttribute('style', cleanCss(`margin: 28px 0 14px; padding-top: 12px; border-top: 1px dashed ${colors.border || '#e2e8f0'}; display: block;`));
+    const ol = fnBox.querySelector('ol');
+    if (ol) {
+      ol.setAttribute('style', cleanCss(`margin: 0; padding-left: 18px; color: ${colors.muted}; font-size: 13px; line-height: 1.65; list-style-type: decimal;`));
+    }
+    if (options?.isExport) {
+      fnBox.querySelectorAll('.footnote-backref').forEach(back => back.remove());
+    }
+  });
+
+  if (options?.isExport) {
+    root.querySelectorAll('sup.footnote-ref a').forEach(fnLink => {
+      const span = doc.createElement('span');
+      span.setAttribute('style', cleanCss(`color: ${colors.primary}; font-weight: 700; text-decoration: none;`));
+      span.textContent = fnLink.textContent;
+      fnLink.parentNode.replaceChild(span, fnLink);
+    });
+
+    // WeChat MP strips interactive <details>/<summary>; expand into static readable cards on export
+    root.querySelectorAll('details').forEach(details => {
+      const summaryEl = details.querySelector('summary');
+      const summaryHtml = summaryEl ? summaryEl.innerHTML.trim() : '详细信息';
+      if (summaryEl) summaryEl.remove();
+      const bodyHtml = details.innerHTML.trim();
+      const card = doc.createElement('section');
+      card.setAttribute('data-material', 'true');
+      card.setAttribute('style', cleanCss(`margin: 16px 0; padding: 14px 16px; background: #f8fafc; border: 1px solid ${colors.border || '#e2e8f0'}; border-radius: 8px; box-sizing: border-box;`));
+      card.innerHTML = `<section style="font-size: 14px; font-weight: 700; color: ${colors.text}; margin-bottom: 6px;">▸ ${summaryHtml}</section><section style="font-size: 14px; color: ${colors.muted}; line-height: 1.7;">${bodyHtml}</section>`;
+      details.parentNode.replaceChild(card, details);
+    });
+  }
+
   // Downgrade external hyperlinks to satisfy WeChat MP editor link policies by replacing them with <span> + auto-generating reference footnotes
   const externalRefs = [];
   const externalRefMap = new Map();
   root.querySelectorAll('a').forEach(a => {
     if (isMaterialEl(a)) return;
     const href = (a.getAttribute('href') || '').trim();
-    if (a.closest('[data-doc-toc="true"]')) {
+    if (a.closest('[data-doc-toc="true"]') || a.closest('sup.footnote-ref') || a.closest('.footnote-backref') || a.classList.contains('footnote-backref')) {
       a.setAttribute('style', cleanCss(`color: ${colors.primary}; text-decoration: none;`));
       return;
     }
@@ -2182,7 +2302,7 @@ export function cleanEmptyListItems(html) {
   if (!html) return '';
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
-  
+
   doc.querySelectorAll('li').forEach(li => {
     const text = li.textContent.replace(/[\u200B-\u200D\uFEFF\u00A0\s]/g, '');
     const hasMedia = li.querySelector('img, iframe, code, pre, svg, video, audio, canvas') !== null;
@@ -2192,14 +2312,6 @@ export function cleanEmptyListItems(html) {
   });
 
   // Transform GitHub-style Alerts (> [!NOTE], > [!TIP], > [!IMPORTANT], > [!WARNING], > [!CAUTION]) into WeChat-ready Callout Cards
-  const alertConfigs = {
-    NOTE: { icon: 'ℹ️', label: '核心信息提示 (Note)', bg: '#eff6ff', border: '#bfdbfe', accent: '#2563eb', titleColor: '#1e40af', textColor: '#1e3a8a' },
-    TIP: { icon: '💡', label: '效率提升技巧 (Tip)', bg: '#f0fdf4', border: '#bbf7d0', accent: '#16a34a', titleColor: '#166534', textColor: '#14532d' },
-    IMPORTANT: { icon: '📌', label: '关键核心要点 (Important)', bg: '#f5f3ff', border: '#ddd6fe', accent: '#7c3aed', titleColor: '#5b21b6', textColor: '#4c1d95' },
-    WARNING: { icon: '⚠️', label: '重点注意要点 (Warning)', bg: '#fff7ed', border: '#fed7aa', accent: '#ea580c', titleColor: '#9a3412', textColor: '#7c2d12' },
-    CAUTION: { icon: '🛑', label: '高危红线警示 (Caution)', bg: '#fef2f2', border: '#fecaca', accent: '#dc2626', titleColor: '#991b1b', textColor: '#7f1d1d' }
-  };
-
   doc.querySelectorAll('blockquote').forEach(bq => {
     const firstP = bq.querySelector('p');
     if (!firstP) return;
@@ -2207,8 +2319,8 @@ export function cleanEmptyListItems(html) {
     const match = rawHtml.match(/^\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\](?:<br\s*\/?>|\s*\n|\s+)?([\s\S]*)$/i);
     if (!match) return;
 
-    const type = match[1].toUpperCase();
-    const cfg = alertConfigs[type];
+    const type = match[1].toLowerCase();
+    const cfg = CONTAINER_CONFIGS[type];
     if (!cfg) return;
 
     const remainderHtml = (match[2] || '').trim();
@@ -2218,20 +2330,10 @@ export function cleanEmptyListItems(html) {
       firstP.remove();
     }
 
-    const bodyHtml = bq.innerHTML.trim();
-    const card = doc.createElement('section');
-    card.setAttribute('data-material', 'true');
-    card.setAttribute('style', `margin: 20px 0; padding: 14px 18px; background: ${cfg.bg}; border: 1px solid ${cfg.border}; border-left: 4px solid ${cfg.accent}; border-radius: 8px; display: flex; align-items: flex-start; gap: 12px; box-sizing: border-box;`);
-    card.innerHTML = `
-      <span style="font-size: 18px; line-height: 1; flex-shrink: 0; margin-top: 2px;">${cfg.icon}</span>
-      <section style="flex: 1; min-width: 0;">
-        <section style="font-size: 14px; font-weight: 700; color: ${cfg.titleColor}; margin-bottom: 4px;">${cfg.label}</section>
-        <section style="font-size: 13.5px; color: ${cfg.textColor}; line-height: 1.65;">${bodyHtml}</section>
-      </section>
-    `;
+    const card = buildCalloutCardElement(doc, type, cfg.label, bq.innerHTML.trim());
     bq.parentNode.replaceChild(card, bq);
   });
-  
+
   return doc.body.innerHTML;
 }
 
@@ -2387,10 +2489,12 @@ function convertImageContainersAndMargins(root, colors = {}) {
       .replace(/display:[^;]+;?/gi, '')
       .replace(/max-width:[^;]+;?/gi, '');
 
+    const { widthRule, heightRule } = getWechatImgDimensionsCss(img);
     const imgStyle = `
       display: block !important;
+      ${widthRule}
       max-width: 100% !important;
-      height: auto !important;
+      ${heightRule}
       margin: 0 auto !important;
       margin-top: 12px !important;
       margin-bottom: 12px !important;
@@ -2637,8 +2741,8 @@ function applyCustomCssRules(root, customCss) {
       const matchedEls = cleanSelector === ':scope'
         ? [root]
         : cleanSelector.startsWith(':scope')
-        ? [root, ...root.querySelectorAll(cleanSelector.replace(/^:scope,?\s*/, ''))]
-        : Array.from(root.querySelectorAll(cleanSelector));
+          ? [root, ...root.querySelectorAll(cleanSelector.replace(/^:scope,?\s*/, ''))]
+          : Array.from(root.querySelectorAll(cleanSelector));
 
       matchedEls.forEach(el => {
         if (!el || el.nodeType !== 1) return;

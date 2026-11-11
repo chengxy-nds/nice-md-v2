@@ -1,16 +1,13 @@
 import { marked } from 'marked';
+import {
+  ensureMarkdownExtensions,
+  escapeHtml,
+  preprocessMarkdownSyntax,
+  postprocessMarkdownDom
+} from './markdownExtensions';
 
 const DOC_TOC_LINE_RE = /^[ \t]*\[toc\][ \t]*$/im;
 const DOC_TOC_PLACEHOLDER = '<section data-doc-toc-placeholder="true"></section>\n';
-
-function escapeHtml(str) {
-  return String(str ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
 
 /**
  * Check whether a top-level marked token represents a standalone `[TOC]` directive.
@@ -75,6 +72,15 @@ function buildDocTocInnerHtml(headings) {
   return renderTocListHtml(buildHeadingTree(headings));
 }
 
+function getHeadingPlainLabel(headingEl) {
+  if (!headingEl.querySelector('ruby')) {
+    return (headingEl.textContent || '').trim();
+  }
+  const clone = headingEl.cloneNode(true);
+  clone.querySelectorAll('rp, rt').forEach(el => el.remove());
+  return (clone.textContent || '').trim();
+}
+
 /**
  * Extract top-level heading items directly from marked tokens (used for non-DOM exports such as Word).
  */
@@ -90,30 +96,41 @@ export function extractHeadingsFromTokens(tokens = []) {
 }
 
 /**
- * Parse Markdown into HTML and expand standalone `[TOC]` lines into a nested heading directory.
+ * Parse Markdown into HTML with extended syntax, footnotes, abbreviations, and `[TOC]` directory support.
  */
 export function parseMarkdownWithDocToc(markdownText) {
   if (!markdownText || typeof markdownText !== 'string') return '';
-  if (!DOC_TOC_LINE_RE.test(markdownText)) {
-    return marked.parse(markdownText);
+  ensureMarkdownExtensions();
+
+  const { markdown, footnotes, abbreviations } = preprocessMarkdownSyntax(markdownText);
+  const mayHaveToc = DOC_TOC_LINE_RE.test(markdown);
+
+  if (!mayHaveToc && footnotes.size === 0 && abbreviations.size === 0) {
+    return marked.parse(markdown);
   }
 
-  const tokens = marked.lexer(markdownText);
+  let html;
   let hasDirective = false;
-  const outTokens = tokens.map((token) => {
-    if (!isDocTocToken(token)) return token;
-    hasDirective = true;
-    return {
-      type: 'html',
-      raw: token.raw,
-      text: DOC_TOC_PLACEHOLDER,
-      block: true
-    };
-  });
-  outTokens.links = tokens.links || {};
+  if (mayHaveToc) {
+    const tokens = marked.lexer(markdown);
+    const outTokens = tokens.map((token) => {
+      if (!isDocTocToken(token)) return token;
+      hasDirective = true;
+      return {
+        type: 'html',
+        raw: token.raw,
+        text: DOC_TOC_PLACEHOLDER,
+        block: true
+      };
+    });
+    outTokens.links = tokens.links || {};
+    html = marked.parser(outTokens);
+  } else {
+    html = marked.parse(markdown);
+  }
 
-  const html = marked.parser(outTokens);
-  if (!hasDirective || !html.includes('data-doc-toc-placeholder')) {
+  const hasPlaceholders = hasDirective && html.includes('data-doc-toc-placeholder');
+  if (!hasPlaceholders && footnotes.size === 0 && abbreviations.size === 0) {
     return html;
   }
 
@@ -122,30 +139,33 @@ export function parseMarkdownWithDocToc(markdownText) {
   const root = doc.getElementById('__easymd_toc_root__');
   if (!root) return html;
 
-  const headings = [];
-  root.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach((headingEl) => {
-    if (headingEl.closest('blockquote, [data-material="true"], [data-doc-toc-placeholder="true"]')) return;
-    const text = (headingEl.textContent || '').trim();
-    if (!text) return;
-    const id = headingEl.id || `easymd-heading-${headings.length}`;
-    headingEl.id = id;
-    headings.push({
-      depth: Number(headingEl.tagName.slice(1)) || 1,
-      id,
-      text
-    });
-  });
+  postprocessMarkdownDom(doc, root, { footnotes, abbreviations });
 
-  const tocInnerHtml = buildDocTocInnerHtml(headings);
-  root.querySelectorAll('[data-doc-toc-placeholder="true"]').forEach((placeholder) => {
-    const tocSection = doc.createElement('section');
-    tocSection.className = headings.length ? 'doc-toc' : 'doc-toc doc-toc-empty';
-    tocSection.setAttribute('data-doc-toc', 'true');
-    tocSection.setAttribute('aria-label', '文章目录');
-    tocSection.innerHTML = tocInnerHtml;
-    placeholder.replaceWith(tocSection);
-  });
+  if (hasPlaceholders) {
+    const headings = [];
+    root.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach((headingEl) => {
+      if (headingEl.closest('blockquote, [data-material="true"], [data-doc-toc-placeholder="true"], [data-container], [data-footnotes="true"]')) return;
+      const text = getHeadingPlainLabel(headingEl);
+      if (!text) return;
+      const id = headingEl.id || `easymd-heading-${headings.length}`;
+      headingEl.id = id;
+      headings.push({
+        depth: Number(headingEl.tagName.slice(1)) || 1,
+        id,
+        text
+      });
+    });
+
+    const tocInnerHtml = buildDocTocInnerHtml(headings);
+    root.querySelectorAll('[data-doc-toc-placeholder="true"]').forEach((placeholder) => {
+      const tocSection = doc.createElement('section');
+      tocSection.className = headings.length ? 'doc-toc' : 'doc-toc doc-toc-empty';
+      tocSection.setAttribute('data-doc-toc', 'true');
+      tocSection.setAttribute('aria-label', '文章目录');
+      tocSection.innerHTML = tocInnerHtml;
+      placeholder.replaceWith(tocSection);
+    });
+  }
 
   return root.innerHTML;
 }
-
