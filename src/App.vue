@@ -1,12 +1,12 @@
 <script setup>
-import { ref, computed, onMounted, watch, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import html2canvas from 'html2canvas';
 import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ImageRun, AlignmentType } from 'docx';
 import {
-  Menu, Sparkles, Search, Image, HelpCircle, Link, Upload, Trash2,
-  Link2, Link2Off, Eye, EyeOff, Download, Undo2, Redo2, Palette, Code2,
-  ChevronDown, FileCode, FileText, Globe, Wand2, LayoutGrid, Send, Settings, Check, X,
-  Pencil, History
+  Menu, Sparkles, Search, Image, ImagePlus, BookOpen, Link, Upload, Trash2,
+  Link2, Link2Off, Eye, EyeOff, Download, Undo2, Redo2, Code2,
+  ChevronDown, FileCode, FileText, Globe, Settings, Check, X,
+  Pencil, History, Copy
 } from '@lucide/vue';
 import { applyTheme, getThemeDefaultStyles, getThemeSavedStyles, themes as themePresets } from './utils/themePresets';
 import { codeThemes } from './utils/codeThemes';
@@ -21,7 +21,7 @@ import ConfirmDialog from './components/ConfirmDialog.vue';
 import Sidebar from './components/Sidebar.vue';
 import IconBar from './components/IconBar.vue';
 import DocHistoryModal from './components/DocHistoryModal.vue';
-import { compileToWeChatHtml, cleanEmptyListItems } from './utils/wechatStyles';
+import { compileToWeChatHtml, cleanEmptyListItems, stripOssProcessFromMarkdown } from './utils/wechatStyles';
 import { marked } from 'marked';
 import confetti from 'canvas-confetti';
 import { defaultMarkdown } from './utils/defaultMarkdown';
@@ -60,7 +60,7 @@ import {
   realtimeDeleteCustomTheme
 } from './utils/cloudSync';
 import { filterOutTombstonedEntities } from './utils/syncTombstones';
-import { initStorageDefaultIfAvailable } from './utils/fileStorage';
+import { getActiveStorageSummary, initStorageDefaultIfAvailable } from './utils/fileStorage';
 
 // ── view & document state ──
 const currentView = ref('editor'); // 'home' | 'editor' | 'templates' | 'materials'
@@ -239,6 +239,70 @@ function handleCreateDoc(groupId = null) {
   saveDocuments(documents.value);
   saveActiveDocId(id);
   realtimeSyncDoc(newDoc);
+}
+
+async function handleFillSample() {
+  if (!activeDocument.value) {
+    handleCreateDoc(null);
+  }
+  const hasContent = Boolean((markdownContent.value || '').trim());
+  if (hasContent) {
+    const ok = await showConfirm({
+      title: '填充示例内容',
+      message: '当前文档已有内容，填充示例将覆盖当前文档的全部内容，确定继续吗？',
+      confirmText: '确认覆盖',
+      danger: true
+    });
+    if (!ok) return;
+  }
+  markdownContent.value = defaultMarkdown;
+  soundEngine.playChime();
+}
+
+const toolbarDocCopied = ref(false);
+let toolbarCopyTimer = null;
+
+async function writeTextToClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // Fall back to execCommand when Clipboard API is unavailable or denied
+    }
+  }
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.setAttribute('readonly', '');
+  textarea.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
+  document.body.appendChild(textarea);
+  textarea.select();
+  const ok = document.execCommand('copy');
+  document.body.removeChild(textarea);
+  if (!ok) {
+    throw new Error('Clipboard copy failed');
+  }
+}
+
+async function handleCopyDocContent() {
+  const rawContent = markdownContent.value || '';
+  if (!rawContent.trim()) {
+    triggerAppToast('当前文档内容为空');
+    return;
+  }
+  try {
+    await writeTextToClipboard(stripOssProcessFromMarkdown(rawContent));
+    soundEngine.playChime();
+    toolbarDocCopied.value = true;
+    clearTimeout(toolbarCopyTimer);
+    toolbarCopyTimer = setTimeout(() => {
+      toolbarDocCopied.value = false;
+    }, 1600);
+    triggerAppToast('已复制当前文档内容');
+  } catch (err) {
+    console.error('[NiceMD] Copy doc content failed:', err);
+    triggerAppToast('复制失败，请检查剪贴板权限');
+  }
 }
 
 function handleDuplicateDoc(doc) {
@@ -625,10 +689,49 @@ const activeThemeName = computed(() =>
   themePresets.find(t => t.id === currentTheme.value)?.name || '山海'
 );
 const editorPanelRef = ref(null);
+const showImageMenu = ref(false);
+const imageMenuRef = ref(null);
+const imageStorageSummary = ref(getActiveStorageSummary());
 const showImportMenu = ref(false);
 const showExportMenu = ref(false);
 const showDocThemeMenu = ref(false);
 const showCodeThemeMenu = ref(false);
+
+function refreshImageStorageSummary() {
+  imageStorageSummary.value = getActiveStorageSummary();
+}
+
+function toggleImageMenu() {
+  refreshImageStorageSummary();
+  const next = !showImageMenu.value;
+  showImportMenu.value = false;
+  showExportMenu.value = false;
+  showDocThemeMenu.value = false;
+  showCodeThemeMenu.value = false;
+  showImageMenu.value = next;
+}
+
+function handleToolbarImageUpload() {
+  showImageMenu.value = false;
+  editorPanelRef.value?.handleImageUpload();
+}
+
+function handleOpenImageStorageSettings() {
+  showImageMenu.value = false;
+  openSettings('storage');
+}
+
+function handleImageMenuPointerDown(e) {
+  if (showImageMenu.value && imageMenuRef.value && !imageMenuRef.value.contains(e.target)) {
+    showImageMenu.value = false;
+  }
+}
+
+function handleImageMenuKeyDown(e) {
+  if (e.key === 'Escape' && showImageMenu.value) {
+    showImageMenu.value = false;
+  }
+}
 
 const activeThemeObj = computed(() =>
   themePresets.find(t => t.id === currentTheme.value) || themePresets[0]
@@ -1418,9 +1521,7 @@ async function handleSidebarCloudSync(action) {
   }
 }
 
-// ── Header Capsule Toolbar State & Actions ──
-const showMoreTools = ref(false);
-const showAiModal = ref(false);
+// ── Global App Toast ──
 const appToastText = ref('');
 let appToastTimer = null;
 
@@ -1430,44 +1531,6 @@ const triggerAppToast = (msg) => {
   appToastTimer = setTimeout(() => {
     appToastText.value = '';
   }, 2500);
-};
-
-const handleAiPolish = () => {
-  soundEngine.playChime();
-  showAiModal.value = true;
-};
-
-const applyAiPolishPreset = (presetName) => {
-  showAiModal.value = false;
-  soundEngine.playChime();
-  triggerAppToast(`✨ AI 智能润色【${presetName}】已就绪！`);
-};
-
-// 智能排版 (中英文空格规范化、格式修剪、空行规整)
-const handleAutoFormat = () => {
-  if (!markdownContent.value) {
-    triggerAppToast('当前编辑器内容为空');
-    return;
-  }
-  soundEngine.playChime();
-  let text = markdownContent.value;
-  // 1. 中英文与数字之间添加标准空格 (Pangu style spacing)
-  text = text.replace(/([\u4e00-\u9fa5])([a-zA-Z0-9])/g, '$1 $2');
-  text = text.replace(/([a-zA-Z0-9])([\u4e00-\u9fa5])/g, '$1 $2');
-  // 2. 规范标题前后空格 (#标题 -> # 标题)
-  text = text.replace(/^(#{1,6})([^\s#])/gm, '$1 $2');
-  // 3. 规范无序列表符
-  text = text.replace(/^([ \t]*)\*([ \t]+)/gm, '$1- $2');
-  // 4. 清理多余空行 (最多连续保留两行)
-  text = text.replace(/\n{3,}/g, '\n\n');
-  
-  markdownContent.value = text;
-  triggerAppToast('✨ 智能排版与中英文规范已自动优化！');
-};
-
-const handleCoverGenerate = () => {
-  soundEngine.playChime();
-  isLaunchpadOpen.value = true;
 };
 
 // Renders html content helper for Launchpad
@@ -1580,7 +1643,10 @@ onMounted(async () => {
   try { localStorage.removeItem('nicemd_color_mode'); } catch (e) {}
 
   // Probe server default OSS image storage if available
-  initStorageDefaultIfAvailable().catch(() => {});
+  initStorageDefaultIfAvailable().then(() => refreshImageStorageSummary()).catch(() => {});
+
+  document.addEventListener('mousedown', handleImageMenuPointerDown);
+  document.addEventListener('keydown', handleImageMenuKeyDown);
 
   // 5. Immediate Cloud Sync on boot if enabled
   if (isCloudSyncEnabled()) {
@@ -1656,6 +1722,12 @@ onMounted(async () => {
   }, 1000);
 });
 
+onUnmounted(() => {
+  clearTimeout(toolbarCopyTimer);
+  document.removeEventListener('mousedown', handleImageMenuPointerDown);
+  document.removeEventListener('keydown', handleImageMenuKeyDown);
+});
+
 // ── auto-save watchers ──
 let docSaveTimer = null;
 watch(markdownContent, () => {
@@ -1691,7 +1763,7 @@ watch(customStyles, () => {
       @open-templates="currentView = 'templates'"
       @open-materials="currentView = 'materials'"
       @open-launchpad="isLaunchpadOpen = true"
-      @insert-sample="editorPanelRef?.insertSample(); currentView = 'editor';"
+      @insert-sample="handleFillSample(); currentView = 'editor';"
       @import-file="(file) => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -1717,28 +1789,8 @@ watch(customStyles, () => {
           </button>
         </div>
 
-        <!-- Center Floating Pill Toolbar (AI 润色 / 智能排版 / 插入图片 / 生成封面) -->
+        <!-- Mobile / Tablet View Switcher -->
         <div class="header-center" :class="{ 'is-workspace-centered': sidebarVisible && currentView === 'editor' }">
-          <div class="header-capsule-bar">
-            <button class="capsule-btn is-ai" @click="handleAiPolish" title="AI 智能润色与优化">
-              <Sparkles size="13.5" class="capsule-icon ai-sparkle-icon" />
-              <span>AI 润色</span>
-            </button>
-            <span class="capsule-divider"></span>
-            <button class="capsule-btn" @click="handleAutoFormat" title="智能中英文排版与规范">
-              <Wand2 size="13.5" class="capsule-icon" />
-              <span>智能排版</span>
-            </button>
-            <button class="capsule-btn" @click="editorPanelRef?.handleImageUpload()" title="插入图片">
-              <Image size="13.5" class="capsule-icon" />
-              <span>插入图片</span>
-            </button>
-            <button class="capsule-btn" @click="handleCoverGenerate" title="生成与更换文章封面">
-              <Palette size="13.5" class="capsule-icon" />
-              <span>生成封面</span>
-            </button>
-          </div>
-
           <!-- Segmented View Switcher on Mobile/Tablet -->
           <div class="mobile-view-tabs">
             <button 
@@ -1756,14 +1808,6 @@ watch(customStyles, () => {
               预览
             </button>
           </div>
-        </div>
-
-        <!-- Primary action is anchored to the far right, apart from editing tools -->
-        <div class="header-right">
-          <button class="btn-header-publish" @click="openLaunchpad" title="一键多渠道分发发布">
-            <Send size="12.5" class="publish-send-icon" />
-            <span>发布</span>
-          </button>
         </div>
       </header>
 
@@ -1849,7 +1893,7 @@ watch(customStyles, () => {
               <div
                 class="toolbar-doc-title-box"
                 :class="{ 'is-editing': isRenamingToolbarDoc }"
-                title="双击重命名文档"
+                :title="`${activeDocument?.title || '未命名文档'}（双击重命名）`"
                 @dblclick.stop="startRenameToolbarDoc"
               >
                 <FileText size="14" class="toolbar-doc-icon" />
@@ -1879,6 +1923,33 @@ watch(customStyles, () => {
               <div class="toolbar-btn-group">
                 <button @click="editorPanelRef?.openFindReplace()" class="btn-icon" title="查找与替换"><Search size="14.5" /></button>
                 <button @click="editorPanelRef?.toggleUrlImport()" class="btn-icon" title="URL 文章抓取导入"><Link size="14.5" /></button>
+                <div class="export-trigger-container" ref="imageMenuRef">
+                  <button
+                    @click="toggleImageMenu"
+                    class="btn-icon"
+                    :class="{ 'is-active': showImageMenu }"
+                    title="上传图片与配置图床"
+                  >
+                    <ImagePlus size="14.5" />
+                  </button>
+                  <div class="header-popout-panel align-left image-popout-panel" v-if="showImageMenu">
+                    <div class="popout-status">
+                      <span class="popout-status-dot" :class="{ 'is-enabled': imageStorageSummary.enabled }"></span>
+                      <span class="popout-status-text">
+                        {{ imageStorageSummary.enabled ? `图床：${imageStorageSummary.label}` : '未启用图床（本地插入）' }}
+                      </span>
+                    </div>
+                    <button class="popout-item" @click="handleToolbarImageUpload">
+                      <ImagePlus size="14" />
+                      <span>上传图片</span>
+                    </button>
+                    <div class="popout-divider"></div>
+                    <button class="popout-item" @click="handleOpenImageStorageSettings">
+                      <Settings size="14" />
+                      <span>配置图床</span>
+                    </button>
+                  </div>
+                </div>
                 <div class="export-trigger-container">
                   <button @click="showImportMenu = !showImportMenu" class="btn-icon" :class="{ 'is-active': showImportMenu }" title="导入本地文档"><Upload size="14.5" /></button>
                   <div class="header-popout-panel" v-if="showImportMenu" @mouseleave="showImportMenu = false">
@@ -1888,7 +1959,7 @@ watch(customStyles, () => {
                     <button class="popout-item" @click="editorPanelRef?.triggerFileInput('.txt'); showImportMenu = false"><FileCode size="14" /><span>纯文本 (.txt)</span></button>
                   </div>
                 </div>
-                <button @click="editorPanelRef?.insertSample()" class="btn-icon" title="插入示例模板"><HelpCircle size="14.5" /></button>
+                <button @click="handleFillSample()" class="btn-icon btn-toolbar-sample" title="填充 Markdown 示例内容"><BookOpen size="13.5" /><span>示例</span></button>
               </div>
 
               <span class="toolbar-sep"></span>
@@ -1904,6 +1975,15 @@ watch(customStyles, () => {
 
               <!-- Export & Clean Group -->
               <div class="toolbar-btn-group">
+                <button
+                  @click="handleCopyDocContent()"
+                  class="btn-icon"
+                  :class="{ 'is-copied': toolbarDocCopied }"
+                  title="复制当前文档内容"
+                >
+                  <Check v-if="toolbarDocCopied" size="14.5" />
+                  <Copy v-else size="14.5" />
+                </button>
                 <div class="export-trigger-container">
                   <button class="btn-icon" @click="showExportMenu = !showExportMenu" title="导出文件"><Download size="14.5" /></button>
                   <div class="header-popout-panel" v-if="showExportMenu" @mouseleave="showExportMenu = false">
@@ -2051,7 +2131,7 @@ watch(customStyles, () => {
     <SettingsModal
       :isOpen="isSettingsOpen"
       :initialTab="settingsInitialTab"
-      @close="isSettingsOpen = false; settingsInitialTab = ''"
+      @close="isSettingsOpen = false; settingsInitialTab = ''; refreshImageStorageSummary()"
       @sync-complete="handleSyncComplete"
     />
 
@@ -2067,62 +2147,6 @@ watch(customStyles, () => {
 
     <!-- Global Confirm Dialog -->
     <ConfirmDialog />
-
-    <!-- AI Polish Interactive Modal -->
-    <Teleport to="body">
-      <div v-if="showAiModal" class="ai-polish-modal-backdrop" @click="showAiModal = false">
-        <div class="ai-polish-card" @click.stop>
-          <div class="ai-polish-header">
-            <div class="ai-header-title-wrap">
-              <div class="ai-header-icon-box">
-                <Sparkles size="16" />
-              </div>
-              <div>
-                <h3 class="ai-modal-title">AI 智能创作与润色</h3>
-                <p class="ai-modal-sub">深度调优文章行文质感、逻辑结构与传播吸引力</p>
-              </div>
-            </div>
-            <button class="ai-modal-close-btn" @click="showAiModal = false">
-              <X size="16" />
-            </button>
-          </div>
-
-          <div class="ai-presets-grid">
-            <div class="ai-preset-item" @click="applyAiPolishPreset('文学与优雅润色')">
-              <div class="ai-preset-emoji">✨</div>
-              <div class="ai-preset-text">
-                <div class="ai-preset-name">文学与优雅润色</div>
-                <div class="ai-preset-desc">辞藻华丽升华，通顺优美，适合散文与深度好文</div>
-              </div>
-            </div>
-
-            <div class="ai-preset-item" @click="applyAiPolishPreset('技术严谨与精炼')">
-              <div class="ai-preset-emoji">⚡</div>
-              <div class="ai-preset-text">
-                <div class="ai-preset-name">技术严谨与精炼</div>
-                <div class="ai-preset-desc">去芜存菁，结构紧凑，适合技术干货与架构分享</div>
-              </div>
-            </div>
-
-            <div class="ai-preset-item" @click="applyAiPolishPreset('错别字与语病纠正')">
-              <div class="ai-preset-emoji">🔍</div>
-              <div class="ai-preset-text">
-                <div class="ai-preset-name">错别字与语病纠正</div>
-                <div class="ai-preset-desc">一键校对全文错别字、标点与语病，保持原意</div>
-              </div>
-            </div>
-
-            <div class="ai-preset-item" @click="applyAiPolishPreset('生成 5 个爆款标题')">
-              <div class="ai-preset-emoji">🔥</div>
-              <div class="ai-preset-text">
-                <div class="ai-preset-name">生成 5 个爆款标题</div>
-                <div class="ai-preset-desc">结合微信公众号与知乎高赞逻辑，提高打开率</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </Teleport>
 
     <!-- Global App Floating Toast -->
     <Transition name="toast-fade">
@@ -2278,278 +2302,6 @@ html.dark .wandor-wordmark {
   width: max-content;
   flex: none;
   transform: translate(-50%, -50%);
-}
-
-.header-capsule-bar {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  background: var(--bg-capsule, #F1F5F9);
-  border: 1px solid var(--border-color, #E2E8F0);
-  border-radius: 9999px;
-  padding: 3px 4px;
-  box-shadow: var(--shadow-capsule);
-  position: relative;
-  user-select: none;
-  transition: all 0.25s ease;
-}
-
-.header-right .btn-header-publish {
-  box-shadow: 0 2px 6px rgba(17, 106, 204, 0.16);
-}
-
-.capsule-divider {
-  width: 1px;
-  height: 14px;
-  background: var(--border-color, #E2E8F0);
-  margin: 0 2px;
-  flex-shrink: 0;
-}
-
-.capsule-btn {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  padding: 4px 12px;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary, #334155);
-  font-size: 12.5px;
-  font-weight: 500;
-  border-radius: 9999px;
-  cursor: pointer;
-  transition: all 0.16s cubic-bezier(0.16, 1, 0.3, 1);
-  white-space: nowrap;
-}
-
-.capsule-btn:hover {
-  background: var(--bg-capsule-btn-hover, #FFFFFF);
-  color: var(--text-main, #0F172A);
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
-}
-
-.capsule-btn.is-ai {
-  color: var(--brand-primary, #116ACC);
-  font-weight: 600;
-  background: rgba(17, 106, 204, 0.06);
-}
-
-.capsule-btn.is-ai:hover {
-  background: #FFFFFF;
-  color: var(--brand-primary-hover, #0C4A8F);
-  box-shadow: 0 1px 4px rgba(17, 106, 204, 0.14);
-}
-
-.capsule-btn.is-ai .ai-sparkle-icon {
-  color: var(--brand-primary, #116ACC);
-}
-
-.capsule-btn .capsule-icon {
-  flex-shrink: 0;
-  opacity: 0.85;
-}
-
-.capsule-btn:hover .capsule-icon {
-  opacity: 1;
-}
-
-.capsule-dropdown-wrapper {
-  position: relative;
-}
-
-.capsule-popout {
-  top: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  min-width: 170px;
-  background: var(--bg-popover);
-  border: 1px solid var(--border-color);
-  border-radius: 10px;
-  box-shadow: var(--shadow-popover);
-  padding: 6px;
-  z-index: 1000;
-  transition: background 0.3s ease, border-color 0.3s ease;
-}
-
-/* Right Header Area (placeholder for symmetry) */
-.header-right {
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  min-width: 180px;
-}
-
-.btn-header-publish {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  height: 32px;
-  padding: 0 16px;
-  border: 1px solid var(--btn-primary-border);
-  border-radius: 9999px;
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-text);
-  font-family: inherit;
-  font-size: 12.5px;
-  font-weight: 600;
-  cursor: pointer;
-  box-shadow: var(--btn-primary-shadow);
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  user-select: none;
-  white-space: nowrap;
-}
-
-.btn-header-publish:hover {
-  background: var(--btn-primary-hover);
-  transform: translateY(-1px);
-  box-shadow: var(--btn-primary-hover-shadow);
-}
-
-.btn-header-publish:active {
-  background: var(--btn-primary-active);
-  transform: translateY(0);
-}
-
-html.dark .btn-header-publish {
-  background: var(--btn-primary-bg);
-  color: var(--btn-primary-text);
-  border-color: var(--btn-primary-border);
-}
-
-html.dark .btn-header-publish:hover {
-  background: var(--btn-primary-hover);
-}
-
-.publish-send-icon {
-  transform: rotate(-15deg);
-}
-
-/* AI Polish Modal Popup */
-.ai-polish-modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(15, 23, 42, 0.45);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 99999;
-  animation: fadeIn 0.2s ease;
-}
-
-.ai-polish-card {
-  width: 500px;
-  max-width: 90vw;
-  background: var(--bg-card);
-  border-radius: 16px;
-  box-shadow: var(--shadow-modal);
-  border: 1px solid var(--border-color);
-  overflow: hidden;
-  animation: popIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.ai-polish-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-bottom: 1px solid var(--border-color);
-  background: var(--bg-card);
-}
-
-.ai-header-title-wrap {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.ai-header-icon-box {
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  background: rgba(255, 94, 54, 0.12);
-  color: var(--accent-coral, #ff5e36);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.ai-modal-title {
-  margin: 0;
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-main);
-}
-
-.ai-modal-sub {
-  margin: 2px 0 0 0;
-  font-size: 11px;
-  color: var(--text-muted);
-}
-
-.ai-modal-close-btn {
-  background: transparent;
-  border: none;
-  color: var(--text-muted);
-  cursor: pointer;
-  padding: 4px;
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.15s ease;
-}
-
-.ai-modal-close-btn:hover {
-  background: var(--bg-capsule-btn-hover);
-  color: var(--text-main);
-}
-
-.ai-presets-grid {
-  padding: 16px 20px 20px;
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 10px;
-}
-
-.ai-preset-item {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
-  border-radius: 12px;
-  border: 1px solid var(--border-color);
-  background: var(--bg-app);
-  cursor: pointer;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-}
-
-.ai-preset-item:hover {
-  border-color: var(--accent-coral, #ff5e36);
-  background: var(--bg-capsule-btn-hover);
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(255, 94, 54, 0.12);
-}
-
-.ai-preset-emoji {
-  font-size: 20px;
-  flex-shrink: 0;
-}
-
-.ai-preset-text {
-  flex: 1;
-}
-
-.ai-preset-name {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-main);
-}
-
-.ai-preset-desc {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-top: 2px;
 }
 
 /* Floating Toast */
@@ -2911,10 +2663,10 @@ html.dark .btn-header-publish:hover {
   border-radius: 7px;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
-  width: min(300px, 30vw);
-  max-width: 300px;
-  min-width: 180px;
-  flex: 0 1 300px;
+  width: auto;
+  max-width: min(200px, 22vw);
+  min-width: 96px;
+  flex: 0 1 auto;
   box-sizing: border-box;
   cursor: pointer;
   border: 1px solid transparent;
@@ -2971,6 +2723,8 @@ html.dark .btn-header-publish:hover {
 }
 
 .toolbar-doc-title-box.is-editing {
+  width: min(200px, 22vw);
+  min-width: 160px;
   background: var(--bg-card, #FFFFFF);
   border-color: rgba(17, 106, 204, 0.42);
   box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
@@ -3038,6 +2792,12 @@ html.dark .btn-header-publish:hover {
   border-color: rgba(17, 106, 204, 0.2);
 }
 
+.btn-icon.is-copied {
+  color: #16a34a;
+  background: rgba(22, 163, 74, 0.1);
+  border-color: rgba(22, 163, 74, 0.25);
+}
+
 .btn-icon.btn-danger {
   color: var(--text-muted, #64748B);
 }
@@ -3046,6 +2806,16 @@ html.dark .btn-header-publish:hover {
   background: rgba(239, 68, 68, 0.08);
   border-color: rgba(239, 68, 68, 0.2);
   color: #dc2626;
+}
+
+.btn-toolbar-sample {
+  width: auto;
+  padding: 0 7px;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+  font-family: var(--font-sans);
 }
 
 .export-trigger-container {
@@ -3069,6 +2839,60 @@ html.dark .btn-header-publish:hover {
   min-width: 164px;
   font-family: var(--font-sans);
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.header-popout-panel.align-left {
+  left: 0;
+  right: auto;
+}
+
+.image-popout-panel {
+  min-width: 186px;
+  opacity: 1;
+  visibility: visible;
+}
+
+.popout-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px 6px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted, #64748B);
+  border-bottom: 1px solid var(--border-subtle, #EDF1F7);
+  margin-bottom: 2px;
+  white-space: nowrap;
+}
+
+.popout-status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #94a3b8;
+  flex-shrink: 0;
+}
+
+.popout-status-dot.is-enabled {
+  background: #10b981;
+  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.16);
+}
+
+.popout-divider {
+  height: 1px;
+  background: var(--border-subtle, #EDF1F7);
+  margin: 2px 4px;
+}
+
+[data-color-mode="dark"] .popout-status,
+html.dark .popout-status {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+}
+
+[data-color-mode="dark"] .popout-divider,
+html.dark .popout-divider {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .popout-item {
@@ -3285,11 +3109,6 @@ html.dark .popout-item.is-active {
     display: none;
   }
   
-  .header-capsule-bar,
-  .btn-header-publish {
-    display: none;
-  }
-  
   .btn-menu-toggle {
     display: flex;
   }
@@ -3307,12 +3126,14 @@ html.dark .popout-item.is-active {
     height: 4rem;
   }
 
+  .header-center,
   .header-center.is-workspace-centered {
     position: relative;
     left: auto;
     top: auto;
     width: auto;
     flex: 1;
+    justify-content: flex-end;
     transform: none;
   }
   

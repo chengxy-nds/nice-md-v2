@@ -15,7 +15,6 @@ import {
   Redo2,
   Search,
   Image,
-  HelpCircle,
   Trash2,
   Link2,
   Link2Off,
@@ -32,7 +31,6 @@ import { showConfirm } from '../utils/confirmDialog';
 import mammoth from 'mammoth/mammoth.browser.js';
 import { htmlToMarkdown } from '../utils/htmlToMarkdown';
 import { isStorageEnabled, uploadToOSS } from '../utils/fileStorage';
-import { defaultMarkdown } from '../utils/defaultMarkdown';
 import {
   EditorView,
   lineNumbers as cmLineNumbers,
@@ -1096,13 +1094,6 @@ watch(() => props.scrollPercentage, (percentage) => {
   }
 });
 
-// Initial template sample
-const insertSample = () => {
-  editorText.value = defaultMarkdown;
-  emit('update:modelValue', defaultMarkdown);
-  soundEngine.playChime();
-};
-
 // ── CodeMirror 6 Markdown Syntax Highlighting ──
 const isSyntaxHighlightActive = ref(true);
 const cmContainerRef = ref(null);
@@ -1345,9 +1336,6 @@ function handleGlobalPointerDown(e) {
 onMounted(() => {
   window.addEventListener('nicemd-settings-updated', loadPreferences);
   document.addEventListener('pointerdown', handleGlobalPointerDown);
-  if (!editorText.value) {
-    insertSample();
-  }
   if (isSyntaxHighlightActive.value) {
     nextTick(() => {
       initCodeMirror();
@@ -1364,7 +1352,7 @@ onUnmounted(() => {
   }
 });
 
-defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handleImageUpload, insertSample, toggleUrlImport, triggerFileInput, clearContent })
+defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handleImageUpload, toggleUrlImport, triggerFileInput, clearContent })
 </script>
 
 <template>

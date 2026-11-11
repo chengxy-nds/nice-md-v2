@@ -27,6 +27,16 @@ const defaultConfig = {
 
 const STORAGE_PROVIDERS = Object.keys(defaultConfig.providers);
 
+const STORAGE_PROVIDER_LABELS = {
+  'aliyun-oss': '阿里云 OSS',
+  'tencent-cos': '腾讯云 COS',
+  'qiniu-kodo': '七牛云 Kodo',
+  'upyun-uss': '又拍云 USS',
+  'huawei-obs': '华为云 OBS',
+  github: 'GitHub',
+  'custom-s3': '兼容 S3',
+};
+
 let cachedServerDefaultStatus = null;
 
 // ── Check Server Default OSS Status ──
@@ -151,6 +161,21 @@ export function isStorageEnabled() {
     return true;
   }
   return config.platform === 'aliyun-oss' && Boolean(cachedServerDefaultStatus?.hasDefault);
+}
+
+export function getActiveStorageSummary() {
+  const config = getStorageConfig();
+  const platform = config.platform || 'aliyun-oss';
+  const usingServerDefault =
+    !hasStorageProviderConfig(config) &&
+    platform === 'aliyun-oss' &&
+    Boolean(cachedServerDefaultStatus?.hasDefault);
+
+  return {
+    enabled: isStorageEnabled(),
+    platform,
+    label: usingServerDefault ? '默认云图床' : (STORAGE_PROVIDER_LABELS[platform] || '自定义图床'),
+  };
 }
 
 // ── Utilities ──

@@ -8,7 +8,6 @@ import hljs from 'highlight.js';
 import { compileToWeChatHtml, cleanEmptyListItems } from '../utils/wechatStyles';
 import { themes } from '../utils/themePresets';
 import { getCodeThemeStyles } from '../utils/codeThemes';
-import { defaultMarkdown } from '../utils/defaultMarkdown';
 import MaterialPopup from './MaterialPopup.vue';
 
 marked.setOptions({
@@ -157,7 +156,7 @@ marked.use({
 const props = defineProps({
   markdown: {
     type: String,
-    default: defaultMarkdown
+    default: ''
   },
   docTitle: {
     type: String,

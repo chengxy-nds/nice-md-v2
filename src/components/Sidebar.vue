@@ -19,7 +19,6 @@ import {
   FolderUp,
   FolderDown,
   Settings,
-  FileText,
   ArrowUpDown,
   ChevronsUpDown
 } from '@lucide/vue';
@@ -181,7 +180,9 @@ function toggleSorting() {
 
 const expandableGroupIds = computed(() => {
   if (props.groups.length === 0) return [];
-  return props.groups.map(group => group.id);
+  const ids = props.groups.map(group => group.id);
+  if (filteredUngroupedDocs.value.length > 0) ids.push('__ungrouped__');
+  return ids;
 });
 
 const areAllGroupsExpanded = computed(() =>
@@ -200,9 +201,21 @@ function toggleAllGroups() {
   saveExpandedGroups();
 }
 
+function isDocPinned(doc) {
+  return Boolean(doc && (doc.isPinned === true || doc.isPinned === 1 || doc.isPinned === 'true'));
+}
+
 function sortDocList(list) {
-  if (sortBy.value === 'manual') return list;
-  return [...list].sort((a, b) => {
+  const pinned = [];
+  const unpinned = [];
+  for (const doc of list) {
+    if (isDocPinned(doc)) pinned.push(doc);
+    else unpinned.push(doc);
+  }
+  if (sortBy.value === 'manual') {
+    return [...pinned, ...unpinned];
+  }
+  const compareDocs = (a, b) => {
     if (sortBy.value === 'updatedAt') {
       return (b.updatedAt || b.createdAt || 0) - (a.updatedAt || a.createdAt || 0);
     }
@@ -213,7 +226,8 @@ function sortDocList(list) {
       return (a.title || '').localeCompare(b.title || '', 'zh-CN');
     }
     return 0;
-  });
+  };
+  return [...pinned.sort(compareDocs), ...unpinned.sort(compareDocs)];
 }
 
 function toggleSearch() {
@@ -259,7 +273,7 @@ function loadExpandedGroups() {
     const raw = localStorage.getItem(STORAGE_KEY_EXPANDED);
     if (raw) return new Set(JSON.parse(raw));
   } catch (e) {}
-  return new Set();
+  return new Set(['__ungrouped__']);
 }
 
 const expandedGroups = ref(loadExpandedGroups());
@@ -270,30 +284,30 @@ function saveExpandedGroups() {
   } catch (e) {}
 }
 
+function ensureGroupExpanded(groupKey) {
+  if (!groupKey) return;
+  if (!expandedGroups.value.has(groupKey)) {
+    const s = new Set(expandedGroups.value);
+    s.add(groupKey);
+    expandedGroups.value = s;
+    saveExpandedGroups();
+  }
+}
+
 function handleCreateDoc(explicitGroupId = null) {
   const targetGroupId = explicitGroupId || null;
-  if (targetGroupId) {
-    const s = new Set(expandedGroups.value);
-    if (!s.has(targetGroupId)) {
-      s.add(targetGroupId);
-      expandedGroups.value = s;
-      saveExpandedGroups();
-    }
-  }
+  ensureGroupExpanded(targetGroupId || '__ungrouped__');
   emit('create-doc', targetGroupId);
+}
+
+function handleCreateRootDoc() {
+  handleCreateDoc(null);
 }
 
 function expandActiveGroup() {
   if (!props.activeDocId) return;
   const doc = props.documents.find(d => d.id === props.activeDocId);
-  if (doc?.groupId) {
-    const s = new Set(expandedGroups.value);
-    if (!s.has(doc.groupId)) {
-      s.add(doc.groupId);
-      expandedGroups.value = s;
-      saveExpandedGroups();
-    }
-  }
+  ensureGroupExpanded(doc?.groupId || '__ungrouped__');
   nextTick(() => {
     const activeEl = sidebarBodyRef.value?.querySelector('.file-row.selected');
     activeEl?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -314,6 +328,7 @@ const renameGroupValue = ref('');
 const renameGroupInputRef = ref(null);
 
 function toggleGroup(groupId) {
+  if (groupId === '__trash__' && deletedDocs.value.length === 0) return;
   const s = new Set(expandedGroups.value);
   if (s.has(groupId)) s.delete(groupId); else s.add(groupId);
   expandedGroups.value = s;
@@ -321,8 +336,10 @@ function toggleGroup(groupId) {
 }
 
 function isGroupExpanded(groupId) {
+  if (groupId === '__trash__' && deletedDocs.value.length === 0) return false;
   const q = searchQuery.value.trim();
   if (q) {
+    if (groupId === '__ungrouped__') return filteredUngroupedDocs.value.length > 0;
     if (groupId === '__trash__') return filteredDeletedDocs.value.length > 0;
     return docsInGroup(groupId).length > 0;
   }
@@ -357,7 +374,7 @@ function confirmRenameGroup() {
 async function handleDeleteGroup(group) {
   const ok = await showConfirm({
     title: '删除分组',
-    message: `确定要删除「${group.name}」吗？分组内的文档将移至根目录。`,
+    message: `确定要删除「${group.name}」吗？分组内的文档将移至「未分组」。`,
     confirmText: '删除',
     danger: true
   });
@@ -401,6 +418,40 @@ function docsInGroup(groupId) {
 }
 
 const deletedDocs = computed(() => props.documents.filter(d => isDocDeleted(d)));
+
+watch(() => deletedDocs.value.length, (len) => {
+  if (len === 0 && expandedGroups.value.has('__trash__')) {
+    const s = new Set(expandedGroups.value);
+    s.delete('__trash__');
+    expandedGroups.value = s;
+    saveExpandedGroups();
+  }
+}, { immediate: true });
+
+function formatTrashDocTime(doc) {
+  const timestamp = doc.updatedAt || doc.createdAt;
+  if (!timestamp) return '';
+  const date = new Date(timestamp);
+  const now = new Date();
+  const pad = value => String(value).padStart(2, '0');
+  const time = `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+  if (date.toDateString() === now.toDateString()) return `今天 ${time}`;
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) return `昨天 ${time}`;
+  if (date.getFullYear() === now.getFullYear()) return `${pad(date.getMonth() + 1)}/${pad(date.getDate())} ${time}`;
+  return `${date.getFullYear()}/${pad(date.getMonth() + 1)}/${pad(date.getDate())}`;
+}
+
+function trashDocCharCount(doc) {
+  const raw = doc.content || '';
+  if (!raw) return 0;
+  return raw
+    .replace(/<[^>]+>/g, '')
+    .replace(/```[\s\S]*?```/g, match => match.replace(/```\w*\n?/g, ''))
+    .replace(/[#*`~>\-\[\]()!|]/g, '')
+    .replace(/\s+/g, '').length;
+}
 
 const filteredDeletedDocs = computed(() => {
   const q = searchQuery.value.trim().toLowerCase();
@@ -450,7 +501,6 @@ async function handleEmptyTrashClick() {
 
 // ── Drag & Drop ──
 const dragOverGroupId = ref(null);
-const dragOverRoot = ref(false);
 const dragOverTrash = ref(false);
 const draggingDoc = ref(null);
 
@@ -458,7 +508,6 @@ const isDraggingGroupedDoc = computed(() => Boolean(draggingDoc.value?.groupId))
 
 function resetDragState() {
   dragOverGroupId.value = null;
-  dragOverRoot.value = false;
   dragOverTrash.value = false;
   draggingDoc.value = null;
 }
@@ -475,6 +524,10 @@ function isDocDragEvent(e) {
   return Boolean(e.dataTransfer?.types?.includes('application/nicemd-doc'));
 }
 
+function normalizeGroupId(groupId) {
+  return (!groupId || groupId === '__ungrouped__' || groupId === '__default__') ? null : groupId;
+}
+
 function getActiveDocsInContainer(targetGroupId) {
   return props.documents.filter(d =>
     !isDocDeleted(d) && (targetGroupId === null ? !d.groupId : d.groupId === targetGroupId)
@@ -487,19 +540,7 @@ function onListDragOver(e, groupId) {
   e.stopPropagation();
   e.dataTransfer.dropEffect = 'move';
   dragOverTrash.value = false;
-  if (groupId) {
-    dragOverRoot.value = false;
-    dragOverGroupId.value = groupId;
-  } else {
-    dragOverGroupId.value = null;
-    dragOverRoot.value = true;
-  }
-}
-
-function onRootDragLeave(e) {
-  if (!e.relatedTarget || !e.currentTarget?.contains(e.relatedTarget)) {
-    dragOverRoot.value = false;
-  }
+  dragOverGroupId.value = groupId || '__ungrouped__';
 }
 
 function onListDrop(e, groupId) {
@@ -515,7 +556,8 @@ function onListDrop(e, groupId) {
   e.preventDefault();
   e.stopPropagation();
 
-  const targetGroupId = groupId || null;
+  const targetGroupId = normalizeGroupId(groupId);
+  ensureGroupExpanded(targetGroupId || '__ungrouped__');
   const listDocs = sortDocList(getActiveDocsInContainer(targetGroupId));
   const lastDoc = listDocs[listDocs.length - 1];
   if (lastDoc && lastDoc.id !== docId) {
@@ -536,10 +578,9 @@ function onGroupHeaderDragOver(e, groupId) {
     e.preventDefault();
     e.stopPropagation();
     e.dataTransfer.dropEffect = 'move';
-    dragOverRoot.value = false;
     dragOverTrash.value = false;
     dragOverGroupId.value = groupId;
-  } else if (e.dataTransfer?.types?.includes('application/nicemd-group')) {
+  } else if (groupId !== '__ungrouped__' && e.dataTransfer?.types?.includes('application/nicemd-group')) {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
   }
@@ -556,18 +597,14 @@ function onGroupHeaderDrop(e, groupId) {
   if (docId) {
     e.preventDefault();
     e.stopPropagation();
-    const targetGroupId = groupId || null;
-    if (targetGroupId && !expandedGroups.value.has(targetGroupId)) {
-      const s = new Set(expandedGroups.value);
-      s.add(targetGroupId);
-      expandedGroups.value = s;
-      saveExpandedGroups();
-    }
+    const targetGroupId = normalizeGroupId(groupId);
+    ensureGroupExpanded(targetGroupId || '__ungrouped__');
     emit('move-doc', { docId, groupId: targetGroupId });
     resetDragState();
     return;
   }
   resetDragState();
+  if (groupId === '__ungrouped__') return;
   const draggedGroupId = e.dataTransfer?.getData('application/nicemd-group');
   if (draggedGroupId && draggedGroupId !== groupId) {
     e.preventDefault();
@@ -587,7 +624,6 @@ function onTrashDragOver(e) {
   e.stopPropagation();
   e.dataTransfer.dropEffect = 'move';
   dragOverGroupId.value = null;
-  dragOverRoot.value = false;
   dragOverTrash.value = true;
 }
 
@@ -714,21 +750,21 @@ function resetSidebarWidth() {
             :class="{
               'is-active': cloudSyncInfo.enabled,
               'is-configured': cloudSyncInfo.configured && !cloudSyncInfo.enabled,
-              'is-syncing': props.isCloudSyncing
+              'is-syncing': props.isCloudSyncing,
+              'is-menu-open': showSyncMenu
             }"
             :title="syncButtonTitle"
             :aria-expanded="cloudSyncInfo.configured ? showSyncMenu : undefined"
             :disabled="props.isCloudSyncing"
             @click="handleSyncTriggerClick"
           >
-            <RefreshCw v-if="props.isCloudSyncing" size="12" class="sync-icon is-spinning" />
-            <RefreshCw v-else-if="cloudSyncInfo.enabled" size="12" class="sync-icon" />
-            <Cloud v-else size="12" class="sync-icon" />
+            <RefreshCw v-if="props.isCloudSyncing" size="13" class="sync-icon is-spinning" />
+            <span v-else-if="cloudSyncInfo.enabled" class="dot"></span>
+            <Cloud v-else size="13" class="sync-icon" />
             <span class="sync-label">
               {{ props.isCloudSyncing ? '同步中...' : (cloudSyncInfo.enabled ? '已同步' : (cloudSyncInfo.configured ? '同步' : '云同步')) }}
             </span>
-            <span v-if="cloudSyncInfo.enabled && !props.isCloudSyncing" class="dot"></span>
-            <ChevronDown v-if="cloudSyncInfo.configured" size="11" class="sync-chevron" :class="{ 'is-open': showSyncMenu }" />
+            <ChevronDown v-if="cloudSyncInfo.configured" size="12" class="sync-chevron" :class="{ 'is-open': showSyncMenu }" />
           </button>
 
           <Transition name="sync-dropdown">
@@ -761,7 +797,7 @@ function resetSidebarWidth() {
         </div>
       </div>
       <div class="toolbar-actions">
-        <button class="create-action" @click="handleCreateDoc(null)" title="新建文档" aria-label="新建文档">
+        <button class="create-action" @click="handleCreateRootDoc" title="新建文档" aria-label="新建文档">
           <Plus size="16" stroke-width="2.2" />
         </button>
         <button
@@ -814,6 +850,7 @@ function resetSidebarWidth() {
       class="sidebar-body"
       ref="sidebarBodyRef"
       @dragover="onListDragOver($event, null)"
+      @dragleave="onGroupDragLeave"
       @drop="onListDrop($event, null)"
     >
       <!-- Group Creation Inline Row (at top of list) -->
@@ -839,8 +876,37 @@ function resetSidebarWidth() {
         </div>
       </div>
 
-      <!-- 自定义分组列表 -->
-      <template v-if="groups.length > 0">
+      <!-- Mode A: 无自定义分组时平铺展示文档 -->
+      <div
+        v-if="groups.length === 0"
+        class="doc-list flat-doc-list"
+        @dragover="onListDragOver($event, null)"
+        @drop="onListDrop($event, null)"
+      >
+        <SidebarDocItem
+          v-for="doc in filteredUngroupedDocs"
+          :key="doc.id"
+          :doc="doc"
+          :isActive="doc.id === activeDocId"
+          :searchQuery="searchQuery"
+          @select="id => $emit('select-doc', id)"
+          @rename="payload => $emit('rename-doc', payload)"
+          @delete="id => $emit('delete-doc', id)"
+          @move-doc="handleDocMove"
+          @history="doc => $emit('open-doc-history', doc)"
+          @duplicate="doc => $emit('duplicate-doc', doc)"
+          @toggle-pin="doc => $emit('toggle-pin', doc)"
+          @drag-start="handleDocDragStart"
+          @drag-end="handleDocDragEnd"
+        />
+        <div v-if="filteredUngroupedDocs.length === 0" class="empty-group-drop-hint">
+          <span>{{ searchQuery ? '无匹配文档' : '暂无文档，点击上方「新建文档」开始写作' }}</span>
+        </div>
+      </div>
+
+      <!-- Mode B: 存在自定义分组时显示分组与「未分组」 -->
+      <template v-else>
+        <!-- 自定义分组列表 -->
         <section
           v-for="group in groups"
           :key="group.id"
@@ -932,42 +998,66 @@ function resetSidebarWidth() {
             </div>
           </div>
         </section>
-      </template>
 
-      <!-- 根目录文档列表（无分组文档直接平铺展示在根目录，支持拖拽移出分组到根目录） -->
-      <div
-        class="doc-list flat-doc-list root-doc-list"
-        :class="{
-          'has-groups': groups.length > 0 && filteredUngroupedDocs.length > 0,
-          'is-drop-target': dragOverRoot
-        }"
-        @dragover="onListDragOver($event, null)"
-        @dragleave="onRootDragLeave"
-        @drop="onListDrop($event, null)"
-      >
-        <SidebarDocItem
-          v-for="doc in filteredUngroupedDocs"
-          :key="doc.id"
-          :doc="doc"
-          :isActive="doc.id === activeDocId"
-          :searchQuery="searchQuery"
-          @select="id => $emit('select-doc', id)"
-          @rename="payload => $emit('rename-doc', payload)"
-          @delete="id => $emit('delete-doc', id)"
-          @move-doc="handleDocMove"
-          @history="doc => $emit('open-doc-history', doc)"
-          @duplicate="doc => $emit('duplicate-doc', doc)"
-          @toggle-pin="doc => $emit('toggle-pin', doc)"
-          @drag-start="handleDocDragStart"
-          @drag-end="handleDocDragEnd"
-        />
-        <div v-if="groups.length === 0 && filteredUngroupedDocs.length === 0" class="empty-group-drop-hint">
-          <span>{{ searchQuery ? '无匹配文档' : '暂无文档，点击上方「新建文档」开始写作' }}</span>
-        </div>
-        <div v-else-if="groups.length > 0 && isDraggingGroupedDoc && (filteredUngroupedDocs.length === 0 || dragOverRoot)" class="root-drop-hint">
-          <span>释放移至根目录</span>
-        </div>
-      </div>
+        <!-- 未分组 -->
+        <section
+          v-if="filteredUngroupedDocs.length > 0 || dragOverGroupId === '__ungrouped__' || isDraggingGroupedDoc"
+          class="folder ungrouped-folder"
+        >
+          <div
+            class="folder-row"
+            :class="{ 'is-drop-target': dragOverGroupId === '__ungrouped__' }"
+            @click="toggleGroup('__ungrouped__')"
+            @dragover="onGroupHeaderDragOver($event, '__ungrouped__')"
+            @dragenter="onGroupHeaderDragOver($event, '__ungrouped__')"
+            @dragleave="onGroupDragLeave"
+            @drop="onGroupHeaderDrop($event, '__ungrouped__')"
+          >
+            <span class="chevron">
+              <ChevronRight v-if="!isGroupExpanded('__ungrouped__')" size="13" stroke-width="2.2" />
+              <ChevronDown v-else size="13" stroke-width="2.2" />
+            </span>
+            <span class="folder-icon gray"></span>
+            <span class="folder-name">未分组</span>
+            <div class="folder-right">
+              <span class="count">{{ filteredUngroupedDocs.length }}</span>
+              <div class="folder-actions" @click.stop>
+                <button class="mini-btn" @click="handleCreateRootDoc" title="在未分组新建文档">
+                  <Plus size="12" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div
+            v-show="isGroupExpanded('__ungrouped__') || (filteredUngroupedDocs.length === 0 && isDraggingGroupedDoc)"
+            class="children"
+            @dragover="onListDragOver($event, '__ungrouped__')"
+            @dragleave="onGroupDragLeave"
+            @drop="onListDrop($event, '__ungrouped__')"
+          >
+            <SidebarDocItem
+              v-for="doc in filteredUngroupedDocs"
+              :key="doc.id"
+              :doc="doc"
+              :isActive="doc.id === activeDocId"
+              :searchQuery="searchQuery"
+              @select="id => $emit('select-doc', id)"
+              @rename="payload => $emit('rename-doc', payload)"
+              @delete="id => $emit('delete-doc', id)"
+              @move-doc="handleDocMove"
+              @history="doc => $emit('open-doc-history', doc)"
+              @duplicate="doc => $emit('duplicate-doc', doc)"
+              @toggle-pin="doc => $emit('toggle-pin', doc)"
+              @drag-start="handleDocDragStart"
+              @drag-end="handleDocDragEnd"
+            />
+            <div v-if="filteredUngroupedDocs.length === 0" class="empty-group-drop-hint">
+              <span>{{ searchQuery ? '无匹配文档' : '暂无文档，可拖拽至此' }}</span>
+            </div>
+          </div>
+        </section>
+      </template>
     </div>
 
     <!-- ── 底部固定回收站 ♻️ ── -->
@@ -984,16 +1074,17 @@ function resetSidebarWidth() {
     >
       <div
         class="trash"
+        :class="{ 'is-empty': deletedDocs.length === 0 }"
         @click="toggleGroup('__trash__')"
       >
-        <span class="chevron">
+        <span v-if="deletedDocs.length > 0" class="chevron">
           <ChevronRight v-if="!isGroupExpanded('__trash__')" size="13" stroke-width="2.2" />
           <ChevronDown v-else size="13" stroke-width="2.2" />
         </span>
         <Trash2 size="15" stroke-width="1.8" class="trash-icon" />
         <span class="trash-name">回收站</span>
         <span v-if="dragOverTrash" class="trash-drop-badge">松开移入</span>
-        <span class="count" :class="{ 'is-zero': deletedDocs.length === 0 }">{{ deletedDocs.length }}</span>
+        <span v-if="deletedDocs.length > 0" class="count">{{ deletedDocs.length }}</span>
         <button
           v-if="deletedDocs.length > 0"
           type="button"
@@ -1007,9 +1098,8 @@ function resetSidebarWidth() {
       </div>
 
       <div
-        v-show="isGroupExpanded('__trash__')"
+        v-show="deletedDocs.length > 0 && isGroupExpanded('__trash__')"
         class="trash-doc-list"
-        :class="{ 'is-empty': filteredDeletedDocs.length === 0 }"
       >
         <div
           v-for="doc in filteredDeletedDocs"
@@ -1020,6 +1110,7 @@ function resetSidebarWidth() {
         >
           <div class="file-copy">
             <span class="file-name" :title="doc.title || '未命名文档'">{{ doc.title || '未命名文档' }}</span>
+            <div class="meta">{{ formatTrashDocTime(doc) }} · {{ trashDocCharCount(doc) }}字</div>
           </div>
           <div class="trash-item-actions" @click.stop>
             <button class="trash-action-btn restore-btn" @click="handleRestoreDoc(doc)" title="恢复文档">
@@ -1030,10 +1121,6 @@ function resetSidebarWidth() {
               <Trash2 size="12" />
             </button>
           </div>
-        </div>
-        <div v-if="filteredDeletedDocs.length === 0" class="trash-empty-state">
-          <Trash2 size="13" stroke-width="1.6" class="trash-empty-icon" />
-          <span>{{ searchQuery.trim() ? '没有匹配的文档' : '暂无已删除文档' }}</span>
         </div>
       </div>
     </div>
@@ -1169,58 +1256,56 @@ html.dark .create-action:hover {
 .sync-trigger-btn {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  height: 28px;
+  gap: 6px;
+  height: 30px;
   padding: 0 9px;
-  border-radius: 999px;
-  border: 1px solid #e2e8f0;
-  background: #f8fafc;
-  color: #475569;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #52647d;
   font-family: inherit;
-  font-size: 0.72rem;
-  font-weight: 600;
+  font-size: 0.78125rem;
+  font-weight: 550;
   white-space: nowrap;
   cursor: pointer;
-  transition: all 0.16s ease;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
-.sync-trigger-btn:hover:not(:disabled) {
-  background: #eef4fb;
-  border-color: #cbd5e1;
+.sync-trigger-btn:hover:not(:disabled),
+.sync-trigger-btn.is-menu-open {
+  background: #f0f5fb;
   color: #1e293b;
 }
 
 .sync-trigger-btn.is-configured {
-  border-color: #bfdbfe;
-  background: #eff6ff;
-  color: #1d4ed8;
-}
-
-.sync-trigger-btn.is-configured:hover:not(:disabled) {
-  background: #dbeafe;
-  border-color: #93c5fd;
+  color: #475569;
 }
 
 .sync-trigger-btn.is-active {
-  border-color: rgba(16, 185, 129, 0.28);
-  background: #e9faf4;
-  color: #0ca879;
+  color: #334155;
 }
 
-.sync-trigger-btn.is-active:hover:not(:disabled) {
-  background: #d8f5eb;
-  border-color: rgba(16, 185, 129, 0.45);
+.sync-trigger-btn.is-syncing {
+  background: #edf5ff;
+  color: #2678e8;
 }
 
 .sync-trigger-btn:disabled {
-  opacity: 0.75;
+  opacity: 0.8;
   cursor: wait;
 }
 
-.sync-label { line-height: 1; }
+.sync-label {
+  line-height: 1;
+}
 
 .sync-icon {
   flex-shrink: 0;
+  color: #71839d;
+}
+
+.sync-trigger-btn.is-syncing .sync-icon {
+  color: #2678e8;
 }
 
 .sync-icon.is-spinning {
@@ -1232,8 +1317,14 @@ html.dark .create-action:hover {
 }
 
 .sync-chevron {
-  opacity: 0.7;
-  transition: transform 0.16s ease;
+  color: #94a3b8;
+  margin-left: -1px;
+  transition: transform 0.16s ease, color 0.15s ease;
+}
+
+.sync-trigger-btn:hover .sync-chevron,
+.sync-trigger-btn.is-menu-open .sync-chevron {
+  color: #64748b;
 }
 
 .sync-chevron.is-open {
@@ -1241,16 +1332,12 @@ html.dark .create-action:hover {
 }
 
 .dot {
-  width: 6px;
-  height: 6px;
-  background: #20bd8b;
+  width: 7px;
+  height: 7px;
+  background: #10b981;
   border-radius: 50%;
-  animation: pulse-dot 2s infinite ease-in-out;
-}
-
-@keyframes pulse-dot {
-  0%, 100% { opacity: 0.4; transform: scale(0.85); }
-  50% { opacity: 1; transform: scale(1.15); }
+  flex-shrink: 0;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
 }
 
 /* Sync Dropdown Menu */
@@ -1386,26 +1473,32 @@ html.dark .create-action:hover {
 }
 
 html.dark .sync-trigger-btn {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: rgba(255, 255, 255, 0.12);
-  color: #cbd5e1;
+  background: transparent;
+  color: #94a3b8;
 }
 
-html.dark .sync-trigger-btn:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.1);
+html.dark .sync-trigger-btn:hover:not(:disabled),
+html.dark .sync-trigger-btn.is-menu-open {
+  background: rgba(255, 255, 255, 0.08);
   color: #f8fafc;
 }
 
-html.dark .sync-trigger-btn.is-configured {
-  background: rgba(59, 130, 246, 0.14);
-  border-color: rgba(59, 130, 246, 0.35);
-  color: #93c5fd;
+html.dark .sync-trigger-btn.is-configured,
+html.dark .sync-trigger-btn.is-active {
+  color: #cbd5e1;
 }
 
-html.dark .sync-trigger-btn.is-active {
-  background: rgba(16, 185, 129, 0.16);
-  border-color: rgba(16, 185, 129, 0.35);
-  color: #34d399;
+html.dark .sync-trigger-btn.is-syncing {
+  background: rgba(59, 130, 246, 0.14);
+  color: #60a5fa;
+}
+
+html.dark .sync-trigger-btn .sync-icon {
+  color: #94a3b8;
+}
+
+html.dark .sync-trigger-btn.is-syncing .sync-icon {
+  color: #60a5fa;
 }
 
 html.dark .sync-dropdown-menu {
@@ -1729,6 +1822,26 @@ html.dark .folder-row:hover {
   box-sizing: border-box;
 }
 
+.folder-icon.gray {
+  border-color: #8ea0b8;
+  background: #f7f9fc;
+}
+
+.folder-icon.gray:before {
+  border-color: #8ea0b8;
+  background: #f7f9fc;
+}
+
+html.dark .folder-icon.gray {
+  border-color: #64748b;
+  background: #23252d;
+}
+
+html.dark .folder-icon.gray:before {
+  border-color: #64748b;
+  background: #23252d;
+}
+
 .folder-name {
   flex: 1;
   min-width: 0;
@@ -1847,37 +1960,7 @@ html.dark .children {
   min-height: 14px;
 }
 
-.root-doc-list {
-  flex: 1 0 auto;
-  min-height: 24px;
-  border-radius: 10px;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
-}
-
-.root-doc-list.has-groups {
-  margin-top: 6px;
-  padding-top: 6px;
-  border-top: 1px dashed #e6ecf4;
-  border-radius: 0 0 10px 10px;
-}
-
-html.dark .root-doc-list.has-groups {
-  border-top-color: rgba(255, 255, 255, 0.08);
-}
-
-.root-doc-list.is-drop-target {
-  background: rgba(38, 120, 232, 0.05);
-  box-shadow: inset 0 0 0 1.5px rgba(38, 120, 232, 0.45);
-  border-radius: 10px;
-}
-
-html.dark .root-doc-list.is-drop-target {
-  background: rgba(59, 130, 246, 0.09);
-  box-shadow: inset 0 0 0 1.5px rgba(96, 165, 250, 0.45);
-}
-
-.empty-group-drop-hint,
-.root-drop-hint {
+.empty-group-drop-hint {
   padding: 7px 10px;
   margin: 3px 0 5px;
   font-size: 0.75rem;
@@ -1890,28 +1973,9 @@ html.dark .root-doc-list.is-drop-target {
   transition: all 0.15s ease;
 }
 
-.root-drop-hint {
-  border-color: #cbd5e1;
-  color: #64748b;
-  margin-top: 6px;
-}
-
-.root-doc-list.is-drop-target .root-drop-hint {
-  border-color: #2678e8;
-  background: rgba(38, 120, 232, 0.08);
-  color: #2678e8;
-}
-
-html.dark .empty-group-drop-hint,
-html.dark .root-drop-hint {
+html.dark .empty-group-drop-hint {
   background: transparent;
   border-color: rgba(255, 255, 255, 0.1);
-}
-
-html.dark .root-doc-list.is-drop-target .root-drop-hint {
-  border-color: rgba(96, 165, 250, 0.6);
-  background: rgba(59, 130, 246, 0.14);
-  color: #93c5fd;
 }
 
 /* ── 6. Bottom / Recycle Bin (.bottom / .trash) ── */
@@ -1946,6 +2010,14 @@ html.dark .bottom {
   background: #f5f8fc;
 }
 
+.trash.is-empty {
+  cursor: default;
+}
+
+.trash.is-empty:hover {
+  background: transparent;
+}
+
 .bottom.is-doc-dragging .trash {
   border-style: dashed;
   border-color: #cbd5e1;
@@ -1969,6 +2041,10 @@ html.dark .trash {
 
 html.dark .trash:hover {
   background: rgba(255, 255, 255, 0.05);
+}
+
+html.dark .trash.is-empty:hover {
+  background: transparent;
 }
 
 html.dark .bottom.is-doc-dragging .trash {
@@ -2020,17 +2096,6 @@ html.dark .trash-drop-badge {
   margin-left: auto;
 }
 
-.trash .count.is-zero {
-  background: transparent;
-  color: #94a3b8;
-  font-weight: 500;
-}
-
-html.dark .trash .count.is-zero {
-  background: transparent;
-  color: #64748b;
-}
-
 .trash-clear-btn {
   display: inline-flex;
   align-items: center;
@@ -2071,90 +2136,64 @@ html.dark .trash-clear-btn:hover {
 }
 
 .trash-doc-list {
-  margin-top: 4px;
-  padding: 4px;
-  border-radius: 10px;
-  background: #f8fafc;
-  border: 1px solid #eef2f7;
-  max-height: 180px;
+  margin-top: 3px;
+  padding: 2px 0 2px 21px;
+  max-height: 200px;
   overflow-y: auto;
 }
 
-.trash-doc-list.is-empty {
-  margin-top: 2px;
-  padding: 0;
-  background: transparent;
-  border: none;
-  overflow: visible;
-}
-
 html.dark .trash-doc-list {
-  background: rgba(255, 255, 255, 0.03);
-  border-color: rgba(255, 255, 255, 0.07);
-}
-
-html.dark .trash-doc-list.is-empty {
   background: transparent;
-  border: none;
-}
-
-.trash-empty-state {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 8px 10px 6px;
-  font-size: 0.75rem;
-  color: #94a3b8;
-  user-select: none;
-}
-
-.trash-empty-icon {
-  opacity: 0.7;
-  flex-shrink: 0;
-}
-
-html.dark .trash-empty-state {
-  color: #64748b;
 }
 
 .trash-doc-item {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 7px;
+  gap: 10px;
+  padding: 7px 9px;
+  min-height: 52px;
+  border-radius: 10px;
   cursor: pointer;
-  margin: 1px 0;
+  margin: 2px 0;
   transition: background 0.15s ease, box-shadow 0.15s ease;
   min-width: 0;
   box-sizing: border-box;
 }
 
 .trash-doc-item:hover {
-  background: #ffffff;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  background: #f1f6fd;
+}
+
+.trash-doc-item.selected {
+  background: #f1f6fd;
+  box-shadow: inset 0 0 0 1px #e1eaf7;
 }
 
 html.dark .trash-doc-item:hover {
   background: rgba(255, 255, 255, 0.06);
-  box-shadow: none;
+}
+
+html.dark .trash-doc-item.selected {
+  background: rgba(59, 130, 246, 0.09);
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.18);
 }
 
 .trash-doc-item .file-name {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 4px;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: inherit;
-  font-size: 0.78125rem;
+  font-size: 0.8125rem;
   line-height: 1.35;
-  color: #64748b;
+  color: #1e293b;
 }
 
 html.dark .trash-doc-item .file-name {
-  color: #94a3b8;
+  color: #f1f5f9;
 }
 
 .trash-doc-item .file-copy {
@@ -2163,22 +2202,38 @@ html.dark .trash-doc-item .file-name {
   overflow: hidden;
 }
 
+.trash-doc-item .file-name {
+  display: block;
+}
+
+.trash-doc-item .meta {
+  margin-top: 3px;
+  color: #718198;
+  font-size: 0.6875rem;
+  line-height: 1.2;
+}
+
+html.dark .trash-doc-item .meta {
+  color: #94a3b8;
+}
+
 .trash-item-actions {
-  display: flex;
+  display: none;
   align-items: center;
   gap: 4px;
   margin-left: auto;
   flex: 0 0 auto;
-  opacity: 0;
-  transition: opacity 0.15s ease;
 }
 
-.trash-doc-item:hover .trash-item-actions {
-  opacity: 1;
-}
-
+.trash-doc-item:hover .trash-item-actions,
 .trash-doc-item:focus-within .trash-item-actions {
-  opacity: 1;
+  display: flex;
+}
+
+@media (hover: none) {
+  .trash-item-actions {
+    display: flex;
+  }
 }
 
 .trash-action-btn {
@@ -2198,12 +2253,12 @@ html.dark .trash-doc-item .file-name {
 
 .trash-action-btn.restore-btn {
   color: #10b981;
-  background: rgba(16, 185, 129, 0.08);
+  background: transparent;
   min-height: 24px;
 }
 
 .trash-action-btn.restore-btn:hover {
-  background: rgba(16, 185, 129, 0.18);
+  background: rgba(16, 185, 129, 0.1);
 }
 
 .trash-action-btn.delete-btn {
@@ -2234,9 +2289,15 @@ html.dark .trash-doc-item .file-name {
     min-height: 28px;
   }
 
+  .sync-trigger-btn {
+    height: 28px;
+    padding: 0 7px;
+    font-size: 0.75rem;
+  }
+
   .toolbar-actions {
     margin-left: auto;
-    gap: 3px;
+    gap: 2px;
   }
 
   .create-action,
@@ -2282,7 +2343,6 @@ html.dark .trash-doc-item .file-name {
 
   .trash-item-actions {
     gap: 2px;
-    opacity: 1;
   }
 
   .trash-action-btn {

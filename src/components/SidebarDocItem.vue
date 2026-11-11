@@ -375,7 +375,6 @@ onUnmounted(() => {
       class="more"
       :class="{ 'is-active': isMenuOpen }"
       @click.stop="toggleMenu"
-      title="更多操作（亦可右键）"
     >
       <MoreHorizontal size="15" />
     </button>
@@ -518,8 +517,8 @@ html.dark .meta {
 }
 
 .more {
-  opacity: 0.35;
-  color: #7d91ad;
+  opacity: 0.48;
+  color: #6f829d;
   border: none;
   background: transparent;
   cursor: pointer;

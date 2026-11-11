@@ -11,7 +11,45 @@ import {
 } from './cloudSync';
 
 const HISTORY_PREFIX = 'nicemd_history_';
-const MAX_SNAPSHOTS_PER_DOC = 15;
+export const MAX_SNAPSHOTS_PER_DOC = 10;
+const QUOTA_FALLBACK_LIMIT = Math.max(1, Math.floor(MAX_SNAPSHOTS_PER_DOC / 2));
+
+function readRawDocSnapshots(docId) {
+  if (!docId) return [];
+  try {
+    const raw = localStorage.getItem(HISTORY_PREFIX + docId);
+    if (!raw) return [];
+    const list = JSON.parse(raw);
+    return Array.isArray(list) ? list : [];
+  } catch (e) {
+    console.warn('[NiceMD] Failed to get doc snapshots:', e);
+    return [];
+  }
+}
+
+function pruneDocSnapshots(snapshots = [], maxCount = MAX_SNAPSHOTS_PER_DOC) {
+  const list = (Array.isArray(snapshots) ? snapshots : []).filter(Boolean);
+  const byNewest = (a, b) => (b.createdAt || 0) - (a.createdAt || 0);
+  if (list.length <= maxCount) {
+    return { kept: [...list].sort(byNewest), removed: [] };
+  }
+
+  const manualSnaps = list
+    .filter(s => s.type === 'manual')
+    .sort(byNewest)
+    .slice(0, maxCount);
+  const manualIds = new Set(manualSnaps.map(s => s.id));
+  const autoLimit = Math.max(0, maxCount - manualSnaps.length);
+  const autoSnaps = list
+    .filter(s => !manualIds.has(s.id))
+    .sort(byNewest)
+    .slice(0, autoLimit);
+
+  const kept = [...manualSnaps, ...autoSnaps].sort(byNewest);
+  const keptIds = new Set(kept.map(s => s.id));
+  const removed = list.filter(s => s.id && !keptIds.has(s.id));
+  return { kept, removed };
+}
 
 /**
  * Calculates character and word count statistics
@@ -27,16 +65,7 @@ export function getStats(text = '') {
  * Returns all snapshots for a given document
  */
 export function getDocSnapshots(docId) {
-  if (!docId) return [];
-  try {
-    const raw = localStorage.getItem(HISTORY_PREFIX + docId);
-    if (!raw) return [];
-    const list = JSON.parse(raw);
-    return Array.isArray(list) ? list.slice(0, MAX_SNAPSHOTS_PER_DOC) : [];
-  } catch (e) {
-    console.warn('[NiceMD] Failed to get doc snapshots:', e);
-    return [];
-  }
+  return pruneDocSnapshots(readRawDocSnapshots(docId)).kept;
 }
 
 /**
@@ -52,7 +81,7 @@ export function getAllDocSnapshots() {
         if (raw) {
           const list = JSON.parse(raw);
           if (Array.isArray(list)) {
-            all.push(...list.slice(0, MAX_SNAPSHOTS_PER_DOC));
+            all.push(...pruneDocSnapshots(list).kept);
           }
         }
       }
@@ -68,14 +97,13 @@ export function getAllDocSnapshots() {
  */
 export function saveDocSnapshots(docId, snapshots) {
   if (!docId) return;
-  const limited = (Array.isArray(snapshots) ? snapshots : []).slice(0, MAX_SNAPSHOTS_PER_DOC);
+  const { kept } = pruneDocSnapshots(snapshots);
   try {
-    localStorage.setItem(HISTORY_PREFIX + docId, JSON.stringify(limited));
+    localStorage.setItem(HISTORY_PREFIX + docId, JSON.stringify(kept));
   } catch (e) {
-    // If quota exceeded, prune to manual or top 10 and try again
     try {
-      const pruned = limited.filter((s, idx) => s.type === 'manual' || idx < 10);
-      localStorage.setItem(HISTORY_PREFIX + docId, JSON.stringify(pruned));
+      const { kept: fallbackKept } = pruneDocSnapshots(kept, QUOTA_FALLBACK_LIMIT);
+      localStorage.setItem(HISTORY_PREFIX + docId, JSON.stringify(fallbackKept));
     } catch {}
   }
 }
@@ -95,8 +123,7 @@ export function saveAllDocSnapshots(allHistories = []) {
   }
 
   for (const [docId, list] of map.entries()) {
-    list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-    saveDocSnapshots(docId, list.slice(0, MAX_SNAPSHOTS_PER_DOC));
+    saveDocSnapshots(docId, list);
   }
 }
 
@@ -105,12 +132,13 @@ export function saveAllDocSnapshots(allHistories = []) {
  */
 export function createSnapshot(docId, title, content = '', customStyles = null, type = 'auto', name = '') {
   if (!docId) return null;
-  const snapshots = getDocSnapshots(docId);
+  const rawSnapshots = readRawDocSnapshots(docId);
+  const currentKept = pruneDocSnapshots(rawSnapshots).kept;
   const stats = getStats(content);
 
   // If there's a latest snapshot, check if content has actually changed
-  if (snapshots.length > 0) {
-    const latest = snapshots[0];
+  if (currentKept.length > 0) {
+    const latest = currentKept[0];
     if (latest.content === content && latest.title === title && type === 'auto') {
       return null; // Skip redundant snapshot
     }
@@ -131,17 +159,14 @@ export function createSnapshot(docId, title, content = '', customStyles = null, 
     lineCount: stats.lineCount
   };
 
-  // Prepend to list (latest first)
-  snapshots.unshift(snapshot);
+  const { kept, removed } = pruneDocSnapshots([snapshot, ...rawSnapshots]);
+  if (!kept.some(s => s.id === snapshot.id)) {
+    return null;
+  }
 
-  // Prune if exceeding limit (keep manual snapshots if possible, total capped at MAX_SNAPSHOTS_PER_DOC)
-  if (snapshots.length > MAX_SNAPSHOTS_PER_DOC) {
-    const manualSnaps = snapshots.filter(s => s.type === 'manual');
-    const autoSnaps = snapshots.filter(s => s.type === 'auto').slice(0, Math.max(0, MAX_SNAPSHOTS_PER_DOC - manualSnaps.length));
-    const combined = [...manualSnaps, ...autoSnaps].sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0)).slice(0, MAX_SNAPSHOTS_PER_DOC);
-    saveDocSnapshots(docId, combined);
-  } else {
-    saveDocSnapshots(docId, snapshots);
+  saveDocSnapshots(docId, kept);
+  for (const evicted of removed) {
+    realtimeDeleteHistory(evicted.id);
   }
 
   // Realtime Cloud Sync

@@ -20,6 +20,7 @@ import {
   SlidersHorizontal
 } from 'lucide-vue-next';
 import {
+  MAX_SNAPSHOTS_PER_DOC,
   getDocSnapshots,
   createSnapshot,
   renameSnapshot,
@@ -221,10 +222,6 @@ async function copyHistoricalContent() {
   <Teleport to="body">
     <div v-if="visible" class="history-modal-mask" @click.self="emit('close')">
       <div class="history-modal-container">
-        <!-- Ambient subtle background glow -->
-        <div class="history-glow history-glow-a"></div>
-        <div class="history-glow history-glow-b"></div>
-
         <!-- 1. Header Toolbar -->
         <header class="history-header">
           <div class="header-left">
@@ -234,9 +231,11 @@ async function copyHistoricalContent() {
             <div class="header-title-info">
               <h2 class="modal-title">
                 <span>历史版本与内容比对</span>
-                <span class="doc-badge">{{ props.doc?.title || '当前文档' }}</span>
               </h2>
-              <p class="modal-subtitle">查看历史变更节点，逐行比对内容差异并支持一键回滚（自动保留最近 15 个版本快照）</p>
+              <p class="modal-subtitle">
+                <span class="doc-badge">{{ props.doc?.title || '当前文档' }}</span>
+                <span>逐行查看差异，可恢复到选中的版本 · 自动保留最近 {{ MAX_SNAPSHOTS_PER_DOC }} 个快照</span>
+              </p>
             </div>
           </div>
 
@@ -567,8 +566,8 @@ async function copyHistoricalContent() {
   width: 100vw;
   height: 100vh;
   background: rgba(15, 23, 42, 0.6);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
   z-index: 999999;
   display: flex;
   align-items: center;
@@ -585,13 +584,13 @@ async function copyHistoricalContent() {
 .history-modal-container {
   position: relative;
   width: 96vw;
-  max-width: 1320px;
-  height: 88vh;
-  max-height: 860px;
+  max-width: 1500px;
+  height: 90vh;
+  max-height: 900px;
   background: var(--bg-editor, #ffffff);
   border: 1px solid var(--border-color, rgba(0, 0, 0, 0.1));
-  border-radius: 16px;
-  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  box-shadow: 0 18px 48px -20px rgba(15, 23, 42, 0.4), 0 0 0 1px rgba(15, 23, 42, 0.04);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -603,28 +602,6 @@ html.dark .history-modal-container {
   box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
-/* Ambient glow */
-.history-glow {
-  position: absolute;
-  width: 320px;
-  height: 320px;
-  border-radius: 50%;
-  filter: blur(90px);
-  pointer-events: none;
-  opacity: 0.12;
-  z-index: 0;
-}
-.history-glow-a {
-  top: -100px;
-  left: 20%;
-  background: #3b82f6;
-}
-.history-glow-b {
-  bottom: -100px;
-  right: 20%;
-  background: #10b981;
-}
-
 /* ── 1. Header Toolbar ── */
 .history-header {
   position: relative;
@@ -632,7 +609,8 @@ html.dark .history-modal-container {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 24px;
+  gap: 18px;
+  padding: 12px 18px;
   border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
   background: var(--bg-sidebar, #fafafa);
   flex-shrink: 0;
@@ -647,23 +625,34 @@ html.dark .history-header {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .header-icon-box {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  color: #ffffff;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #2563eb;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+  flex: 0 0 auto;
+}
+
+html.dark .header-icon-box {
+  background: rgba(37, 99, 235, 0.18);
+  color: #93c5fd;
+}
+
+.header-title-info {
+  min-width: 0;
 }
 
 .modal-title {
   margin: 0;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 700;
   color: var(--text-main, #0f172a);
   display: flex;
@@ -672,12 +661,13 @@ html.dark .history-header {
 }
 
 .doc-badge {
-  font-size: 12px;
-  font-weight: 600;
-  padding: 2px 8px;
-  background: rgba(37, 99, 235, 0.1);
-  color: #2563eb;
-  border-radius: 6px;
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 6px;
+  background: #f1f5f9;
+  color: #475569;
+  border-radius: 4px;
   max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -685,14 +675,21 @@ html.dark .history-header {
 }
 
 html.dark .doc-badge {
-  background: rgba(59, 130, 246, 0.2);
-  color: #60a5fa;
+  background: #27272a;
+  color: #cbd5e1;
 }
 
 .modal-subtitle {
-  margin: 2px 0 0 0;
-  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  margin: 4px 0 0;
+  font-size: 11px;
   color: var(--text-muted, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* View mode switcher tabs */
@@ -701,20 +698,23 @@ html.dark .doc-badge {
   align-items: center;
   gap: 2px;
   padding: 3px;
-  background: var(--border-color, rgba(0, 0, 0, 0.06));
-  border-radius: 8px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+  flex: 0 0 auto;
 }
 
 html.dark .view-mode-tabs {
-  background: rgba(255, 255, 255, 0.06);
+  background: #27272a;
+  border-color: rgba(255, 255, 255, 0.08);
 }
 
 .mode-tab-btn {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 5px 12px;
-  border-radius: 6px;
+  padding: 6px 9px;
+  border-radius: 5px;
   border: none;
   background: transparent;
   color: var(--text-muted, #64748b);
@@ -731,7 +731,7 @@ html.dark .view-mode-tabs {
 .mode-tab-btn.active {
   background: var(--bg-editor, #ffffff);
   color: #2563eb;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
 }
 
 html.dark .mode-tab-btn.active {
@@ -743,29 +743,29 @@ html.dark .mode-tab-btn.active {
 .header-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
+  flex: 0 0 auto;
 }
 
 .btn-create-snap {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
-  border-radius: 8px;
-  border: 1px solid rgba(37, 99, 235, 0.3);
-  background: rgba(37, 99, 235, 0.08);
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #cbdcf4;
+  background: transparent;
   color: #2563eb;
-  font-size: 12.5px;
-  font-weight: 600;
+  font-size: 12px;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .btn-create-snap:hover {
-  background: #2563eb;
-  color: #ffffff;
+  background: #eff6ff;
+  color: #1d4ed8;
   border-color: #2563eb;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
 }
 
 .btn-close-modal {
@@ -797,7 +797,7 @@ html.dark .btn-close-modal:hover {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: 310px 1fr;
+  grid-template-columns: 276px minmax(0, 1fr);
   flex: 1;
   min-height: 0;
   overflow: hidden;
@@ -945,11 +945,12 @@ html.dark .search-input {
   position: relative;
   display: flex;
   gap: 10px;
-  padding: 10px;
-  border-radius: 8px;
+  padding: 8px 9px;
+  border: 1px solid transparent;
+  border-radius: 7px;
   cursor: pointer;
   transition: all 0.15s ease;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .timeline-card:hover {
@@ -963,6 +964,7 @@ html.dark .timeline-card:hover {
 .timeline-card.is-active {
   background: rgba(37, 99, 235, 0.08);
   border: 1px solid rgba(37, 99, 235, 0.25);
+  box-sizing: border-box;
 }
 
 html.dark .timeline-card.is-active {
@@ -1186,7 +1188,8 @@ html.dark .history-diff-viewport {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 20px;
+  gap: 12px;
+  padding: 8px 14px;
   border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
   background: var(--bg-sidebar, #fafafa);
   flex-shrink: 0;
@@ -1200,13 +1203,14 @@ html.dark .diff-control-bar {
 .diff-summary-left {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
+  min-width: 0;
 }
 
 .summary-name {
-  font-size: 13.5px;
-  font-weight: 700;
+  font-size: 12.5px;
+  font-weight: 600;
   color: var(--text-main, #0f172a);
 }
 
@@ -1222,10 +1226,10 @@ html.dark .diff-control-bar {
 }
 
 .stat-badge {
-  font-size: 11.5px;
-  font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
   font-family: 'JetBrains Mono', Consolas, monospace;
 }
 
@@ -1262,17 +1266,18 @@ html.dark .stat-unchanged {
 .diff-actions-right {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
+  flex: 0 0 auto;
 }
 
 .btn-copy-history {
   display: flex;
   align-items: center;
   gap: 5px;
-  padding: 6px 12px;
+  padding: 6px 9px;
   font-size: 12px;
-  font-weight: 600;
-  border-radius: 6px;
+  font-weight: 500;
+  border-radius: 5px;
   border: 1px solid var(--border-color, #cbd5e1);
   background: var(--bg-editor, #ffffff);
   color: var(--text-main, #334155);
@@ -1288,22 +1293,19 @@ html.dark .stat-unchanged {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 14px;
-  font-size: 12.5px;
-  font-weight: 700;
-  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 5px;
   border: none;
-  background: #16a34a;
+  background: #2563eb;
   color: #ffffff;
   cursor: pointer;
   transition: all 0.15s ease;
-  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.25);
 }
 
 .btn-restore-version:hover {
-  background: #15803d;
-  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35);
-  transform: translateY(-1px);
+  background: #1d4ed8;
 }
 
 /* ── Split Diff View ── */
@@ -1330,7 +1332,7 @@ html.dark .split-headers-row {
 }
 
 .split-col-header {
-  padding: 8px 16px;
+  padding: 7px 12px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -1373,8 +1375,8 @@ html.dark .header-right-col {
   flex: 1;
   overflow: auto;
   font-family: 'JetBrains Mono', Consolas, Monaco, monospace;
-  font-size: 12.5px;
-  line-height: 1.6;
+  font-size: 12px;
+  line-height: 1.55;
 }
 
 .split-diff-table {
@@ -1387,11 +1389,12 @@ html.dark .header-right-col {
   padding: 1px 6px;
   vertical-align: top;
   white-space: pre-wrap;
-  word-break: break-all;
+  word-break: normal;
+  overflow-wrap: anywhere;
 }
 
 .line-num {
-  width: 44px;
+  width: 38px;
   text-align: right;
   user-select: none;
   font-size: 11px;
@@ -1567,5 +1570,123 @@ html.dark .unified-deleted {
   color: var(--text-main, #1e293b);
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+@media (max-width: 980px) {
+  .history-modal-mask {
+    padding: 12px;
+  }
+
+  .history-header {
+    flex-wrap: wrap;
+    gap: 10px 14px;
+  }
+
+  .header-left {
+    flex-basis: calc(100% - 1px);
+  }
+
+  .view-mode-tabs {
+    margin-left: 44px;
+  }
+
+  .history-body {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 680px) {
+  .history-modal-mask {
+    padding: 0;
+  }
+
+  .history-modal-container {
+    width: 100vw;
+    height: 100vh;
+    max-height: 100vh;
+    border-radius: 0;
+  }
+
+  .history-header {
+    padding: 10px 12px;
+    gap: 8px;
+  }
+
+  .header-icon-box {
+    width: 28px;
+    height: 28px;
+  }
+
+  .modal-title {
+    font-size: 14px;
+  }
+
+  .modal-subtitle {
+    font-size: 10px;
+  }
+
+  .view-mode-tabs {
+    margin-left: 0;
+  }
+
+  .mode-tab-btn {
+    padding: 6px 7px;
+    font-size: 11px;
+  }
+
+  .btn-create-snap span {
+    display: none;
+  }
+
+  .history-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(150px, 30vh) minmax(0, 1fr);
+  }
+
+  .history-sidebar {
+    border-right: 0;
+    border-bottom: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
+  }
+
+  .sidebar-top {
+    padding: 8px 10px;
+  }
+
+  .timeline-list {
+    padding: 6px 8px;
+  }
+
+  .timeline-card {
+    padding: 6px 8px;
+  }
+
+  .sidebar-footer {
+    padding: 6px 10px;
+  }
+
+  .diff-control-bar {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    padding: 8px 10px;
+  }
+
+  .diff-summary-left {
+    gap: 6px;
+  }
+
+  .summary-time {
+    display: none;
+  }
+
+  .diff-actions-right {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .split-col-header {
+    padding: 6px 8px;
+    font-size: 10px;
+  }
 }
 </style>

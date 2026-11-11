@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, nextTick } from 'vue';
+import { ref, computed, watch, nextTick, onUnmounted } from 'vue';
 import { marked } from 'marked';
 import {
   Eye,
@@ -10,7 +10,8 @@ import {
   Check,
   CircleCheck,
   Sparkles,
-  Palette
+  Palette,
+  Send
 } from '@lucide/vue';
 import {
   copyToWeChat,
@@ -382,6 +383,119 @@ const handleCopyMarkdownText = async () => {
     showToast('复制失败');
   }
 };
+
+const POPOUT_VIEWPORT_PADDING = 8;
+const POPOUT_TRIGGER_GAP = 8;
+
+const copyTriggerRef = ref(null);
+const copyPopoutRef = ref(null);
+const showCopyMenu = ref(false);
+const isCopyMenuPinned = ref(false);
+const copyPopoutStyle = ref({});
+let copyHoverCloseTimer = null;
+
+const copyPlatformItems = [
+  { key: 'wechat', label: '微信公众号', icon: '/svg/微信.svg', boxClass: 'wechat-bg', action: handleCopyWeChat },
+  { key: 'zhihu', label: '知乎专栏', icon: '/svg/知乎.svg', boxClass: 'zhihu-bg', action: handleCopyZhihu },
+  { key: 'toutiao', label: '今日头条', icon: '/svg/今日头条.svg', boxClass: 'toutiao-bg', action: handleCopyToutiao }
+];
+
+const clearCopyHoverTimer = () => {
+  if (copyHoverCloseTimer) {
+    clearTimeout(copyHoverCloseTimer);
+    copyHoverCloseTimer = null;
+  }
+};
+
+const handleCopyOutsidePointerDown = (e) => {
+  if (!showCopyMenu.value) return;
+  const target = e.target;
+  if (copyTriggerRef.value?.contains(target) || copyPopoutRef.value?.contains(target)) {
+    return;
+  }
+  closeCopyMenu();
+};
+
+const handleCopyKeyDown = (e) => {
+  if (e.key === 'Escape' && showCopyMenu.value) {
+    closeCopyMenu();
+  }
+};
+
+const attachCopyMenuListeners = () => {
+  window.addEventListener('mousedown', handleCopyOutsidePointerDown, true);
+  window.addEventListener('keydown', handleCopyKeyDown);
+  window.addEventListener('resize', closeCopyMenu);
+};
+
+const detachCopyMenuListeners = () => {
+  window.removeEventListener('mousedown', handleCopyOutsidePointerDown, true);
+  window.removeEventListener('keydown', handleCopyKeyDown);
+  window.removeEventListener('resize', closeCopyMenu);
+};
+
+const updateCopyPopoutPosition = async () => {
+  copyPopoutStyle.value = { top: '-9999px', left: '-9999px', visibility: 'hidden' };
+  await nextTick();
+  if (!showCopyMenu.value || !copyTriggerRef.value || !copyPopoutRef.value) return;
+
+  const anchorRect = copyTriggerRef.value.getBoundingClientRect();
+  const panelRect = copyPopoutRef.value.getBoundingClientRect();
+  const maxTop = Math.max(POPOUT_VIEWPORT_PADDING, window.innerHeight - panelRect.height - POPOUT_VIEWPORT_PADDING);
+  const top = Math.min(Math.max(anchorRect.top, POPOUT_VIEWPORT_PADDING), maxTop);
+  const left = Math.max(POPOUT_VIEWPORT_PADDING, anchorRect.left - panelRect.width - POPOUT_TRIGGER_GAP);
+
+  copyPopoutStyle.value = {
+    top: `${Math.round(top)}px`,
+    left: `${Math.round(left)}px`,
+    visibility: 'visible'
+  };
+};
+
+const openCopyMenu = ({ pinned = false } = {}) => {
+  clearCopyHoverTimer();
+  if (pinned) isCopyMenuPinned.value = true;
+  if (!showCopyMenu.value) {
+    showCopyMenu.value = true;
+    attachCopyMenuListeners();
+    updateCopyPopoutPosition();
+  }
+};
+
+const closeCopyMenu = () => {
+  clearCopyHoverTimer();
+  isCopyMenuPinned.value = false;
+  if (showCopyMenu.value) {
+    showCopyMenu.value = false;
+    detachCopyMenuListeners();
+  }
+};
+
+const scheduleCloseCopyMenu = () => {
+  if (isCopyMenuPinned.value) return;
+  clearCopyHoverTimer();
+  copyHoverCloseTimer = setTimeout(() => {
+    closeCopyMenu();
+  }, 140);
+};
+
+const toggleCopyMenu = () => {
+  if (showCopyMenu.value && isCopyMenuPinned.value) {
+    closeCopyMenu();
+    return;
+  }
+  openCopyMenu({ pinned: true });
+};
+
+const handleSelectCopyAction = (actionFn) => {
+  closeCopyMenu();
+  actionFn();
+};
+
+onUnmounted(() => {
+  clearCopyHoverTimer();
+  detachCopyMenuListeners();
+});
 </script>
 
 <template>
@@ -428,6 +542,38 @@ const handleCopyMarkdownText = async () => {
     <!-- Preview tools -->
     <aside class="preview-right-bar" :class="{ 'is-standalone': !previewVisible }">
       <div class="bar-top">
+        <button
+          class="bar-publish-btn"
+          @click="$emit('open-launchpad')"
+          title="发布与多渠道分发"
+          aria-label="发布文章"
+        >
+          <Send size="16" stroke-width="2" class="bar-publish-icon" />
+        </button>
+
+        <div
+          ref="copyTriggerRef"
+          class="slider-trigger-container"
+          data-no-tooltip="true"
+          @mouseenter="openCopyMenu()"
+          @mouseleave="scheduleCloseCopyMenu"
+        >
+          <button
+            class="bar-action-btn copy-main-btn"
+            :class="{ 'is-active': showCopyMenu }"
+            data-no-tooltip="true"
+            aria-label="复制排版内容"
+            aria-haspopup="menu"
+            :aria-expanded="showCopyMenu"
+            title="复制排版内容"
+            @click.stop="toggleCopyMenu"
+          >
+            <Copy size="19" stroke-width="1.7" />
+          </button>
+        </div>
+
+        <span class="bar-divider"></span>
+
         <div class="preview-mode-group" role="group" aria-label="预览设备">
           <button
             class="bar-action-btn"
@@ -464,56 +610,6 @@ const handleCopyMarkdownText = async () => {
       </div>
 
       <div class="bar-bottom">
-        <div class="slider-trigger-container" data-no-tooltip="true">
-          <button
-            class="bar-action-btn copy-main-btn"
-            data-no-tooltip="true"
-            aria-label="复制排版内容"
-            title="复制排版内容"
-          >
-            <Copy size="19" stroke-width="1.7" />
-          </button>
-
-          <div class="copy-popout-panel">
-            <div class="popout-header">
-              <span class="popout-title">一键复制排版</span>
-            </div>
-            <div class="popout-items">
-              <button class="popout-item" @click="handleCopyWeChat">
-                <div class="popout-icon-box wechat-bg">
-                  <img src="/svg/微信.svg" class="popout-brand-icon" alt="微信" />
-                </div>
-                <span class="popout-item-name">微信公众号</span>
-              </button>
-
-              <button class="popout-item" @click="handleCopyZhihu">
-                <div class="popout-icon-box zhihu-bg">
-                  <img src="/svg/知乎.svg" class="popout-brand-icon" alt="知乎" />
-                </div>
-                <span class="popout-item-name">知乎专栏</span>
-              </button>
-
-              <button class="popout-item" @click="handleCopyToutiao">
-                <div class="popout-icon-box toutiao-bg">
-                  <img src="/svg/今日头条.svg" class="popout-brand-icon" alt="今日头条" />
-                </div>
-                <span class="popout-item-name">今日头条</span>
-              </button>
-
-              <div class="popout-divider"></div>
-
-              <button class="popout-item" @click="handleCopyMarkdownText">
-                <div class="popout-icon-box md-bg">
-                  <img src="/svg/md.svg" class="popout-brand-icon" alt="Markdown" />
-                </div>
-                <span class="popout-item-name">Markdown 源码</span>
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <span class="bar-divider"></span>
-
         <button
           class="bar-action-btn"
           :class="{ 'is-active': themePanelVisible }"
@@ -527,6 +623,43 @@ const handleCopyMarkdownText = async () => {
     </aside>
 
     <Teleport to="body">
+      <div
+        v-if="showCopyMenu"
+        ref="copyPopoutRef"
+        class="copy-popout-panel"
+        :style="copyPopoutStyle"
+        role="menu"
+        @mouseenter="clearCopyHoverTimer"
+        @mouseleave="scheduleCloseCopyMenu"
+      >
+        <div class="popout-header">
+          <span class="popout-title">一键复制排版</span>
+        </div>
+        <div class="popout-items">
+          <button
+            v-for="item in copyPlatformItems"
+            :key="item.key"
+            class="popout-item"
+            role="menuitem"
+            @click="handleSelectCopyAction(item.action)"
+          >
+            <div class="popout-icon-box" :class="item.boxClass">
+              <img :src="item.icon" class="popout-brand-icon" :alt="item.label" />
+            </div>
+            <span class="popout-item-name">{{ item.label }}</span>
+          </button>
+
+          <div class="popout-divider"></div>
+
+          <button class="popout-item" role="menuitem" @click="handleSelectCopyAction(handleCopyMarkdownText)">
+            <div class="popout-icon-box md-bg">
+              <img src="/svg/md.svg" class="popout-brand-icon" alt="Markdown" />
+            </div>
+            <span class="popout-item-name">Markdown 源码</span>
+          </button>
+        </div>
+      </div>
+
       <div class="toast-deck-container">
         <TransitionGroup name="toast-deck">
           <div 
@@ -658,6 +791,36 @@ const handleCopyMarkdownText = async () => {
   background: var(--border-subtle, #EDF1F7);
 }
 
+.bar-publish-btn {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9px;
+  border: 1px solid var(--btn-primary-border, rgba(17, 106, 204, 0.25));
+  background: var(--btn-primary-bg, linear-gradient(180deg, #1d7ae8 0%, #116ACC 100%));
+  color: var(--btn-primary-text, #ffffff);
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 2px 6px rgba(17, 106, 204, 0.24);
+  transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+}
+
+.bar-publish-btn:hover {
+  background: var(--btn-primary-hover, #0f5eb8);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 10px rgba(17, 106, 204, 0.32);
+}
+
+.bar-publish-btn:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.bar-publish-icon {
+  transform: translate(-0.5px, 0.5px) rotate(-12deg);
+}
+
 .bar-action-btn {
   width: 32px;
   height: 32px;
@@ -705,10 +868,7 @@ html.dark .bar-action-btn.is-active {
 }
 
 .copy-popout-panel {
-  position: absolute;
-  right: calc(100% + 8px);
-  top: 50%;
-  transform: translateY(-50%) translateX(-4px);
+  position: fixed;
   background: var(--bg-card, #ffffff);
   border: 1px solid var(--border-color, rgba(0, 0, 0, 0.08));
   border-radius: 10px;
@@ -720,11 +880,7 @@ html.dark .bar-action-btn.is-active {
   flex-direction: column;
   gap: 2px;
   width: 156px;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 100;
+  z-index: 9999;
   font-family: var(--font-sans);
 }
 
@@ -736,14 +892,6 @@ html.dark .bar-action-btn.is-active {
   top: 0;
   width: 12px;
   height: 100%;
-}
-
-/* Trigger display on hover */
-.slider-trigger-container:hover .copy-popout-panel {
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-  transform: translateY(-50%) translateX(0);
 }
 
 .popout-header {
