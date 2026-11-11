@@ -990,10 +990,10 @@ function resetSidebarWidth() {
           <ChevronRight v-if="!isGroupExpanded('__trash__')" size="13" stroke-width="2.2" />
           <ChevronDown v-else size="13" stroke-width="2.2" />
         </span>
-        <Trash2 size="16" stroke-width="1.8" class="trash-icon" />
+        <Trash2 size="15" stroke-width="1.8" class="trash-icon" />
         <span class="trash-name">回收站</span>
         <span v-if="dragOverTrash" class="trash-drop-badge">松开移入</span>
-        <span class="count">{{ deletedDocs.length }}</span>
+        <span class="count" :class="{ 'is-zero': deletedDocs.length === 0 }">{{ deletedDocs.length }}</span>
         <button
           v-if="deletedDocs.length > 0"
           type="button"
@@ -1008,7 +1008,8 @@ function resetSidebarWidth() {
 
       <div
         v-show="isGroupExpanded('__trash__')"
-        class="children trash-doc-list"
+        class="trash-doc-list"
+        :class="{ 'is-empty': filteredDeletedDocs.length === 0 }"
       >
         <div
           v-for="doc in filteredDeletedDocs"
@@ -1030,8 +1031,9 @@ function resetSidebarWidth() {
             </button>
           </div>
         </div>
-        <div v-if="filteredDeletedDocs.length === 0" class="empty-group-drop-hint">
-          <span>{{ searchQuery.trim() ? '没有匹配的文档' : '回收站为空' }}</span>
+        <div v-if="filteredDeletedDocs.length === 0" class="trash-empty-state">
+          <Trash2 size="13" stroke-width="1.6" class="trash-empty-icon" />
+          <span>{{ searchQuery.trim() ? '没有匹配的文档' : '暂无已删除文档' }}</span>
         </div>
       </div>
     </div>
@@ -1876,12 +1878,12 @@ html.dark .root-doc-list.is-drop-target {
 
 .empty-group-drop-hint,
 .root-drop-hint {
-  padding: 8px 10px;
+  padding: 7px 10px;
   margin: 3px 0 5px;
   font-size: 0.75rem;
   color: #94a3b8;
-  border: 1px solid #dfe7f1;
-  background: rgba(27, 55, 90, 0.02);
+  border: 1px dashed #dce5f0;
+  background: transparent;
   border-radius: 8px;
   text-align: center;
   user-select: none;
@@ -1889,7 +1891,6 @@ html.dark .root-doc-list.is-drop-target {
 }
 
 .root-drop-hint {
-  border-style: dashed;
   border-color: #cbd5e1;
   color: #64748b;
   margin-top: 6px;
@@ -1903,8 +1904,8 @@ html.dark .root-doc-list.is-drop-target {
 
 html.dark .empty-group-drop-hint,
 html.dark .root-drop-hint {
-  background: rgba(255, 255, 255, 0.02);
-  border-color: rgba(255, 255, 255, 0.08);
+  background: transparent;
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 html.dark .root-doc-list.is-drop-target .root-drop-hint {
@@ -1915,9 +1916,9 @@ html.dark .root-doc-list.is-drop-target .root-drop-hint {
 
 /* ── 6. Bottom / Recycle Bin (.bottom / .trash) ── */
 .bottom {
-  border-top: 1px solid #e7edf5;
-  padding-top: 10px;
-  margin-top: 10px;
+  border-top: 1px solid #eef2f7;
+  padding-top: 8px;
+  margin-top: 8px;
   flex-shrink: 0;
   transition: border-color 0.15s ease;
 }
@@ -1929,12 +1930,13 @@ html.dark .bottom {
 .trash {
   display: flex;
   align-items: center;
-  gap: 9px;
-  padding: 8px 7px;
+  gap: 8px;
+  padding: 7px 7px;
   border: 1px solid transparent;
   border-radius: 9px;
   color: #52647d;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
+  font-weight: 500;
   cursor: pointer;
   transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
   user-select: none;
@@ -2000,7 +2002,7 @@ html.dark .trash-drop-badge {
 }
 
 .trash-icon {
-  color: #8798ae;
+  color: #94a3b8;
   display: flex;
   align-items: center;
   flex-shrink: 0;
@@ -2016,6 +2018,17 @@ html.dark .trash-drop-badge {
 
 .trash .count {
   margin-left: auto;
+}
+
+.trash .count.is-zero {
+  background: transparent;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+html.dark .trash .count.is-zero {
+  background: transparent;
+  color: #64748b;
 }
 
 .trash-clear-btn {
@@ -2058,8 +2071,51 @@ html.dark .trash-clear-btn:hover {
 }
 
 .trash-doc-list {
+  margin-top: 4px;
+  padding: 4px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #eef2f7;
   max-height: 180px;
   overflow-y: auto;
+}
+
+.trash-doc-list.is-empty {
+  margin-top: 2px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  overflow: visible;
+}
+
+html.dark .trash-doc-list {
+  background: rgba(255, 255, 255, 0.03);
+  border-color: rgba(255, 255, 255, 0.07);
+}
+
+html.dark .trash-doc-list.is-empty {
+  background: transparent;
+  border: none;
+}
+
+.trash-empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 8px 10px 6px;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  user-select: none;
+}
+
+.trash-empty-icon {
+  opacity: 0.7;
+  flex-shrink: 0;
+}
+
+html.dark .trash-empty-state {
+  color: #64748b;
 }
 
 .trash-doc-item {
@@ -2067,20 +2123,22 @@ html.dark .trash-clear-btn:hover {
   align-items: center;
   gap: 8px;
   padding: 6px 8px;
-  border-radius: 8px;
+  border-radius: 7px;
   cursor: pointer;
-  margin: 2px 0;
-  transition: 0.15s background;
+  margin: 1px 0;
+  transition: background 0.15s ease, box-shadow 0.15s ease;
   min-width: 0;
   box-sizing: border-box;
 }
 
 .trash-doc-item:hover {
-  background: #f5f8fc;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
 html.dark .trash-doc-item:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: none;
 }
 
 .trash-doc-item .file-name {
@@ -2090,15 +2148,13 @@ html.dark .trash-doc-item:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-family: inherit;
-  font-size: 0.8125rem;
+  font-size: 0.78125rem;
   line-height: 1.35;
-  color: #1e293b;
-  text-decoration: line-through;
-  opacity: 0.75;
+  color: #64748b;
 }
 
 html.dark .trash-doc-item .file-name {
-  color: #f1f5f9;
+  color: #94a3b8;
 }
 
 .trash-doc-item .file-copy {
