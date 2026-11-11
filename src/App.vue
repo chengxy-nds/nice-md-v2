@@ -22,6 +22,7 @@ import Sidebar from './components/Sidebar.vue';
 import IconBar from './components/IconBar.vue';
 import DocHistoryModal from './components/DocHistoryModal.vue';
 import { compileToWeChatHtml, cleanEmptyListItems, stripOssProcessFromMarkdown } from './utils/wechatStyles';
+import { writeTextToClipboard } from './utils/clipboard';
 import { ensureMarkdownExtensions, stripYamlFrontMatter } from './utils/markdownExtensions';
 import { parseMarkdownWithDocToc, isDocTocToken, extractHeadingsFromTokens } from './utils/markdownToc';
 import { marked } from 'marked';
@@ -548,28 +549,6 @@ async function handleFillSample() {
 
 const toolbarDocCopied = ref(false);
 let toolbarCopyTimer = null;
-
-async function writeTextToClipboard(text) {
-  if (navigator.clipboard?.writeText) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return;
-    } catch {
-      // Fall back to execCommand when Clipboard API is unavailable or denied
-    }
-  }
-  const textarea = document.createElement('textarea');
-  textarea.value = text;
-  textarea.setAttribute('readonly', '');
-  textarea.style.cssText = 'position:fixed;left:-9999px;top:-9999px;opacity:0;';
-  document.body.appendChild(textarea);
-  textarea.select();
-  const ok = document.execCommand('copy');
-  document.body.removeChild(textarea);
-  if (!ok) {
-    throw new Error('Clipboard copy failed');
-  }
-}
 
 async function handleCopyDocContent() {
   const rawContent = markdownContent.value || '';
@@ -2439,6 +2418,7 @@ watch(customStyles, () => {
                 @editor-click="handleEditorClick"
                 @toggleSyncScroll="toggleSyncScroll"
                 @togglePreview="togglePreview"
+                @toast="triggerAppToast"
               />
             </div>
             <div class="workspace-column preview-column">

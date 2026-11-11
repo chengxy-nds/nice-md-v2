@@ -24,10 +24,15 @@ import {
   FileText,
   Globe,
   Palette,
-  Code2
+  Code2,
+  Copy,
+  ExternalLink,
+  ZoomIn
 } from '@lucide/vue';
 import { soundEngine } from '../utils/synthAudio';
 import { showConfirm } from '../utils/confirmDialog';
+import { writeTextToClipboard } from '../utils/clipboard';
+import { detectUrlAtOffset, downloadUrlResource } from '../utils/editorUrlHelper';
 import mammoth from 'mammoth/mammoth.browser.js';
 import { htmlToMarkdown } from '../utils/htmlToMarkdown';
 import { isStorageEnabled, uploadToOSS } from '../utils/fileStorage';
@@ -101,7 +106,7 @@ const props = defineProps({
   }
 });
 
-const emit = defineEmits(['update:modelValue', 'update:currentTheme', 'update:currentCodeTheme', 'import', 'scroll', 'focusActive', 'editor-click', 'toggleSyncScroll', 'togglePreview', 'export-md', 'export-html', 'export-word', 'export-pdf', 'export-pdf-raw', 'export-png']);
+const emit = defineEmits(['update:modelValue', 'update:currentTheme', 'update:currentCodeTheme', 'import', 'scroll', 'focusActive', 'editor-click', 'toggleSyncScroll', 'togglePreview', 'toast', 'export-md', 'export-html', 'export-word', 'export-pdf', 'export-pdf-raw', 'export-png']);
 
 const showDocThemeMenu = ref(false);
 const showCodeThemeMenu = ref(false);
@@ -246,6 +251,7 @@ const toggleMute = () => {
 
 // ── format insertion ──
 const showFloatBar = ref(false);
+const hasFloatSelection = ref(false);
 const floatBarPos = ref({ top: 0, left: 0 });
 const floatBarAbove = ref(true);
 const showTablePicker = ref(false);
@@ -253,6 +259,14 @@ const tableRows = ref(1);
 const tableCols = ref(1);
 const tablePickerPos = ref({ top: 0, left: 0 });
 const tablePickerTriggerRef = ref(null);
+
+const hoveredUrlInfo = ref(null);
+const urlImgStatus = ref('loading');
+const urlImgNaturalSize = ref({ width: 0, height: 0 });
+const lightboxImageUrl = ref('');
+const lightboxImageName = ref('');
+let urlHoverHideTimer = null;
+let isHoveringUrlCard = false;
 
 // Close the table picker whenever the float bar hides (deselect, click away, etc.)
 watch(showFloatBar, (v) => {
@@ -432,7 +446,7 @@ function positionFloatBar(pos, clientEvent = null) {
       floatBarAbove.value = coords.top > 120;
       floatBarPos.value = {
         top: floatBarAbove.value ? coords.top : coords.bottom,
-        left: Math.max(20, Math.min(window.innerWidth - 380, coords.left))
+        left: Math.max(16, Math.min(window.innerWidth - 420, coords.left))
       };
       return;
     }
@@ -440,7 +454,7 @@ function positionFloatBar(pos, clientEvent = null) {
       floatBarAbove.value = clientEvent.clientY > 120;
       floatBarPos.value = {
         top: floatBarAbove.value ? clientEvent.clientY : clientEvent.clientY,
-        left: Math.max(20, Math.min(window.innerWidth - 380, clientEvent.clientX))
+        left: Math.max(16, Math.min(window.innerWidth - 420, clientEvent.clientX))
       };
       return;
     }
@@ -452,7 +466,7 @@ function positionFloatBar(pos, clientEvent = null) {
       floatBarAbove.value = clientEvent.clientY > 120;
       floatBarPos.value = {
         top: floatBarAbove.value ? clientEvent.clientY : clientEvent.clientY,
-        left: Math.max(20, Math.min(window.innerWidth - 380, clientEvent.clientX))
+        left: Math.max(16, Math.min(window.innerWidth - 420, clientEvent.clientX))
       };
     }
     return;
@@ -469,8 +483,32 @@ function positionFloatBar(pos, clientEvent = null) {
   floatBarAbove.value = lineTop > 120;
   floatBarPos.value = {
     top: floatBarAbove.value ? lineTop : lineBottom,
-    left: Math.max(20, Math.min(window.innerWidth - 380, rect.left + 20))
+    left: Math.max(16, Math.min(window.innerWidth - 420, rect.left + 20))
   };
+}
+
+function getSelectedText() {
+  if (cmView) {
+    const sel = cmView.state.selection.main;
+    return sel.empty ? '' : cmView.state.sliceDoc(sel.from, sel.to);
+  }
+  const ta = textareaRef.value;
+  if (!ta) return '';
+  return ta.value.slice(ta.selectionStart, ta.selectionEnd);
+}
+
+async function handleCopySelection() {
+  const selected = getSelectedText();
+  if (!selected) return;
+  try {
+    await writeTextToClipboard(selected);
+    soundEngine.playClick();
+    showFloatBar.value = false;
+    emit('toast', '已复制选中文本');
+  } catch (err) {
+    console.error('[NiceMD] Copy selection failed:', err);
+    emit('toast', '复制失败，请检查剪贴板权限');
+  }
 }
 
 // Show floating bar on text selection
@@ -478,9 +516,12 @@ function onTextSelect(e = null) {
   if (cmView) {
     const sel = cmView.state.selection.main;
     if (sel.empty) {
+      hasFloatSelection.value = false;
       showFloatBar.value = false;
       return;
     }
+    hasFloatSelection.value = true;
+    hideUrlPreviewImmediately();
     positionFloatBar(sel.from, e);
     showFloatBar.value = true;
     return;
@@ -489,7 +530,13 @@ function onTextSelect(e = null) {
   const ta = textareaRef.value;
   if (!ta) return;
   const s = ta.selectionStart, endIdx = ta.selectionEnd;
-  if (s === endIdx) { showFloatBar.value = false; return; }
+  if (s === endIdx) {
+    hasFloatSelection.value = false;
+    showFloatBar.value = false;
+    return;
+  }
+  hasFloatSelection.value = true;
+  hideUrlPreviewImmediately();
   positionFloatBar(s, e);
   showFloatBar.value = true;
 }
@@ -501,8 +548,9 @@ function onContextMenu(e = null) {
   }
   if (cmView) {
     const sel = cmView.state.selection.main;
-    const pos = sel.from;
-    positionFloatBar(pos, e);
+    hasFloatSelection.value = !sel.empty;
+    hideUrlPreviewImmediately();
+    positionFloatBar(sel.from, e);
     showFloatBar.value = true;
     return;
   }
@@ -510,14 +558,180 @@ function onContextMenu(e = null) {
   const ta = textareaRef.value;
   if (!ta) {
     if (e && e.clientY !== undefined) {
+      hasFloatSelection.value = false;
       positionFloatBar(0, e);
       showFloatBar.value = true;
     }
     return;
   }
   const s = ta.selectionStart;
+  hasFloatSelection.value = s !== ta.selectionEnd;
+  hideUrlPreviewImmediately();
   positionFloatBar(s, e);
   showFloatBar.value = true;
+}
+
+// ── editor URL hover preview & download ──
+function clearUrlHoverTimer() {
+  if (urlHoverHideTimer) {
+    clearTimeout(urlHoverHideTimer);
+    urlHoverHideTimer = null;
+  }
+}
+
+function hideUrlPreviewImmediately() {
+  clearUrlHoverTimer();
+  hoveredUrlInfo.value = null;
+  if (cmView?.contentDOM) {
+    cmView.contentDOM.style.cursor = '';
+  }
+}
+
+function scheduleHideUrlPreview() {
+  clearUrlHoverTimer();
+  urlHoverHideTimer = setTimeout(() => {
+    if (!isHoveringUrlCard) {
+      hoveredUrlInfo.value = null;
+      if (cmView?.contentDOM) {
+        cmView.contentDOM.style.cursor = '';
+      }
+    }
+  }, 180);
+}
+
+function handleEditorMouseMove(e) {
+  if (!cmView || e.buttons !== 0 || showFloatBar.value) {
+    return;
+  }
+  const pos = cmView.posAtCoords({ x: e.clientX, y: e.clientY });
+  if (pos === null) {
+    if (cmView.contentDOM) cmView.contentDOM.style.cursor = '';
+    if (hoveredUrlInfo.value && !isHoveringUrlCard) scheduleHideUrlPreview();
+    return;
+  }
+
+  const line = cmView.state.doc.lineAt(pos);
+  const hit = detectUrlAtOffset(line.text, pos - line.from);
+  if (!hit) {
+    if (cmView.contentDOM) cmView.contentDOM.style.cursor = '';
+    if (hoveredUrlInfo.value && !isHoveringUrlCard) scheduleHideUrlPreview();
+    return;
+  }
+
+  const docFrom = line.from + hit.fromOffset;
+  const docTo = line.from + hit.toOffset;
+  const startCoords = cmView.coordsAtPos(docFrom);
+  const endCoords = cmView.coordsAtPos(docTo);
+  if (!startCoords || !endCoords) {
+    if (cmView.contentDOM) cmView.contentDOM.style.cursor = '';
+    return;
+  }
+
+  const singleLine = Math.abs(startCoords.top - endCoords.top) < 8;
+  const withinVertical = e.clientY >= startCoords.top - 4 && e.clientY <= endCoords.bottom + 4;
+  const withinHorizontal = singleLine
+    ? (e.clientX >= startCoords.left - 4 && e.clientX <= endCoords.right + 4)
+    : (
+        (e.clientY > startCoords.bottom + 2 || e.clientX >= startCoords.left - 4) &&
+        (e.clientY < endCoords.top - 2 || e.clientX <= endCoords.right + 4)
+      );
+  if (!withinVertical || !withinHorizontal) {
+    if (cmView.contentDOM) cmView.contentDOM.style.cursor = '';
+    if (hoveredUrlInfo.value && !isHoveringUrlCard) scheduleHideUrlPreview();
+    return;
+  }
+
+  cmView.contentDOM.style.cursor = 'pointer';
+  clearUrlHoverTimer();
+
+  if (
+    hoveredUrlInfo.value &&
+    hoveredUrlInfo.value.from === docFrom &&
+    hoveredUrlInfo.value.to === docTo &&
+    hoveredUrlInfo.value.url === hit.url
+  ) {
+    return;
+  }
+
+  if (hit.type === 'image') {
+    urlImgStatus.value = 'loading';
+    urlImgNaturalSize.value = { width: 0, height: 0 };
+  }
+
+  const cardWidth = hit.type === 'image' ? 284 : 300;
+  const estimatedHeight = hit.type === 'image' ? 245 : 132;
+  const placeBelow = startCoords.top < estimatedHeight + 24;
+  const left = Math.max(12, Math.min(window.innerWidth - cardWidth - 16, startCoords.left));
+  const top = placeBelow ? endCoords.bottom + 8 : startCoords.top - 8;
+
+  hoveredUrlInfo.value = {
+    url: hit.url,
+    from: docFrom,
+    to: docTo,
+    type: hit.type,
+    isDownloadableFile: hit.isDownloadableFile,
+    filename: hit.filename,
+    host: hit.host,
+    top,
+    left,
+    placeBelow
+  };
+}
+
+function onUrlImgLoad(e) {
+  const img = e.target;
+  urlImgStatus.value = 'loaded';
+  urlImgNaturalSize.value = {
+    width: img?.naturalWidth || 0,
+    height: img?.naturalHeight || 0
+  };
+}
+
+function onUrlImgError() {
+  urlImgStatus.value = 'error';
+}
+
+function openHoveredUrl(url) {
+  if (!url) return;
+  soundEngine.playClick();
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
+async function handleDownloadHoveredUrl(url, filename) {
+  if (!url) return;
+  soundEngine.playClick();
+  try {
+    const res = await downloadUrlResource(url, filename);
+    emit('toast', res.method === 'anchor' ? '已在新标签页打开下载链接' : `已触发下载 ${res.filename}`);
+  } catch (err) {
+    console.error('[NiceMD] Download URL failed:', err);
+    emit('toast', '下载失败，可尝试新窗口打开');
+  }
+}
+
+async function handleCopyHoveredUrl(url) {
+  if (!url) return;
+  try {
+    await writeTextToClipboard(url);
+    soundEngine.playClick();
+    emit('toast', '已复制 URL 链接');
+  } catch (err) {
+    console.error('[NiceMD] Copy URL failed:', err);
+    emit('toast', '复制链接失败');
+  }
+}
+
+function openUrlLightbox(url, name = '') {
+  if (!url) return;
+  soundEngine.playClick();
+  lightboxImageUrl.value = url;
+  lightboxImageName.value = name || '图片预览';
+  hideUrlPreviewImmediately();
+}
+
+function closeUrlLightbox() {
+  lightboxImageUrl.value = '';
+  lightboxImageName.value = '';
 }
 
 // ── undo / redo ──
@@ -1203,6 +1417,7 @@ function initCodeMirror() {
 
   const updateListener = EditorView.updateListener.of((update) => {
     if (update.docChanged) {
+      hideUrlPreviewImmediately();
       isUpdatingFromCodeMirror = true;
       const text = update.state.doc.toString();
       editorText.value = text;
@@ -1238,6 +1453,15 @@ function initCodeMirror() {
         focus: () => {
           emit('focusActive', 'editor');
           emit('editor-click');
+        },
+        mousedown: () => {
+          hideUrlPreviewImmediately();
+        },
+        mousemove: (e) => {
+          handleEditorMouseMove(e);
+        },
+        mouseleave: () => {
+          scheduleHideUrlPreview();
         },
         click: (e) => {
           emit('focusActive', 'editor');
@@ -1281,6 +1505,7 @@ function initCodeMirror() {
   // Handle CodeMirror scroll for sync preview
   if (cmView && cmView.scrollDOM) {
     cmView.scrollDOM.addEventListener('scroll', () => {
+      hideUrlPreviewImmediately();
       if (props.activePane === 'editor' && cmView.scrollDOM) {
         const scrollHeight = cmView.scrollDOM.scrollHeight - cmView.scrollDOM.clientHeight;
         if (scrollHeight > 0) {
@@ -1324,8 +1549,11 @@ watch(() => props.modelValue, (newVal) => {
 
 
 function handleGlobalPointerDown(e) {
-  if (!showFloatBar.value) return;
   const target = e.target;
+  if (hoveredUrlInfo.value && (!target || !target.closest('.editor-url-hover-card'))) {
+    hideUrlPreviewImmediately();
+  }
+  if (!showFloatBar.value) return;
   if (target && (target.closest('.float-format-bar') || target.closest('.table-picker'))) {
     return;
   }
@@ -1333,9 +1561,20 @@ function handleGlobalPointerDown(e) {
   showTablePicker.value = false;
 }
 
+function handleGlobalKeydown(e) {
+  if (e.key === 'Escape') {
+    if (lightboxImageUrl.value) {
+      closeUrlLightbox();
+    } else if (hoveredUrlInfo.value) {
+      hideUrlPreviewImmediately();
+    }
+  }
+}
+
 onMounted(() => {
   window.addEventListener('nicemd-settings-updated', loadPreferences);
   document.addEventListener('pointerdown', handleGlobalPointerDown);
+  document.addEventListener('keydown', handleGlobalKeydown);
   if (isSyntaxHighlightActive.value) {
     nextTick(() => {
       initCodeMirror();
@@ -1346,6 +1585,8 @@ onMounted(() => {
 onUnmounted(() => {
   window.removeEventListener('nicemd-settings-updated', loadPreferences);
   document.removeEventListener('pointerdown', handleGlobalPointerDown);
+  document.removeEventListener('keydown', handleGlobalKeydown);
+  clearUrlHoverTimer();
   if (cmView) {
     cmView.destroy();
     cmView = null;
@@ -1406,6 +1647,8 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
         :style="{ top: floatBarPos.top + 'px', left: floatBarPos.left + 'px' }"
         @mousedown.prevent
       >
+        <button v-if="hasFloatSelection" class="float-copy-btn" @click="handleCopySelection" title="复制选中文本"><Copy size="14" /></button>
+        <span v-if="hasFloatSelection" class="float-sep"></span>
         <button @click="insertFormat('bold'); showFloatBar = false" title="粗体"><Bold size="14" /></button>
         <button @click="insertFormat('italic'); showFloatBar = false" title="斜体"><Italic size="14" /></button>
         <button @click="insertFormat('strike'); showFloatBar = false" title="删除线"><Strikethrough size="14" /></button>
@@ -1424,6 +1667,157 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
         <button ref="tablePickerTriggerRef" @click="toggleTablePicker" title="表格">⊞</button>
         <button @click="insertFormat('hr'); showFloatBar = false" title="分隔线">—</button>
       </div>
+
+      <!-- Editor URL Hover Preview / Action Card -->
+      <div
+        v-if="hoveredUrlInfo"
+        class="editor-url-hover-card"
+        :class="{ 'is-below': hoveredUrlInfo.placeBelow, 'is-image-card': hoveredUrlInfo.type === 'image' }"
+        :style="{ top: hoveredUrlInfo.top + 'px', left: hoveredUrlInfo.left + 'px' }"
+        @mouseenter="isHoveringUrlCard = true; clearUrlHoverTimer()"
+        @mouseleave="isHoveringUrlCard = false; scheduleHideUrlPreview()"
+        @mousedown.stop
+      >
+        <template v-if="hoveredUrlInfo.type === 'image'">
+          <div class="url-img-preview-box">
+            <img
+              :src="hoveredUrlInfo.url"
+              :alt="hoveredUrlInfo.filename || '图片预览'"
+              class="url-img-preview-thumb"
+              :class="{ 'is-hidden': urlImgStatus === 'error' }"
+              @load="onUrlImgLoad"
+              @error="onUrlImgError"
+              @click="openUrlLightbox(hoveredUrlInfo.url, hoveredUrlInfo.filename)"
+            />
+            <div v-if="urlImgStatus === 'loading'" class="url-img-status">正在加载图片预览...</div>
+            <div v-else-if="urlImgStatus === 'error'" class="url-img-status is-error">
+              <Image size="18" />
+              <span>图片暂无法预览，可新窗口打开或下载</span>
+            </div>
+          </div>
+          <div class="url-card-footer">
+            <span class="url-meta-label" :title="hoveredUrlInfo.url">
+              <template v-if="urlImgStatus === 'loaded' && urlImgNaturalSize.width">
+                {{ urlImgNaturalSize.width }}×{{ urlImgNaturalSize.height }}
+              </template>
+              <template v-else>
+                {{ hoveredUrlInfo.filename || hoveredUrlInfo.host || '图片资源' }}
+              </template>
+            </span>
+            <div class="url-card-actions">
+              <button
+                class="url-action-btn"
+                title="放大预览"
+                @click="openUrlLightbox(hoveredUrlInfo.url, hoveredUrlInfo.filename)"
+              >
+                <ZoomIn size="13" />
+                <span>预览</span>
+              </button>
+              <button
+                class="url-action-btn"
+                title="新窗口打开"
+                @click="openHoveredUrl(hoveredUrlInfo.url)"
+              >
+                <ExternalLink size="13" />
+              </button>
+              <button
+                class="url-action-btn"
+                title="下载图片"
+                @click="handleDownloadHoveredUrl(hoveredUrlInfo.url, hoveredUrlInfo.filename)"
+              >
+                <Download size="13" />
+              </button>
+              <button
+                class="url-action-btn"
+                title="复制链接"
+                @click="handleCopyHoveredUrl(hoveredUrlInfo.url)"
+              >
+                <Copy size="13" />
+              </button>
+            </div>
+          </div>
+        </template>
+
+        <template v-else>
+          <div class="url-link-card-head">
+            <FileText v-if="hoveredUrlInfo.isDownloadableFile" size="15" class="url-type-icon" />
+            <Globe v-else size="15" class="url-type-icon" />
+            <span class="url-link-title" :title="hoveredUrlInfo.filename || hoveredUrlInfo.host">
+              {{ hoveredUrlInfo.filename || hoveredUrlInfo.host || '外部链接' }}
+            </span>
+            <span v-if="hoveredUrlInfo.host && hoveredUrlInfo.filename" class="url-host-badge">
+              {{ hoveredUrlInfo.host }}
+            </span>
+          </div>
+          <div class="url-link-raw" :title="hoveredUrlInfo.url">{{ hoveredUrlInfo.url }}</div>
+          <div class="url-card-actions is-link-actions">
+            <button
+              class="url-action-btn is-primary"
+              title="在新标签页打开 URL"
+              @click="openHoveredUrl(hoveredUrlInfo.url)"
+            >
+              <ExternalLink size="13" />
+              <span>跳转 URL</span>
+            </button>
+            <button
+              class="url-action-btn"
+              title="下载该资源"
+              @click="handleDownloadHoveredUrl(hoveredUrlInfo.url, hoveredUrlInfo.filename)"
+            >
+              <Download size="13" />
+              <span>下载</span>
+            </button>
+            <button
+              class="url-action-btn is-icon-only"
+              title="复制 URL"
+              @click="handleCopyHoveredUrl(hoveredUrlInfo.url)"
+            >
+              <Copy size="13" />
+            </button>
+          </div>
+        </template>
+      </div>
+
+      <!-- Fullscreen Image Preview Lightbox -->
+      <Teleport to="body">
+        <div
+          v-if="lightboxImageUrl"
+          class="editor-lightbox-backdrop"
+          @click="closeUrlLightbox"
+        >
+          <div class="editor-lightbox-topbar" @click.stop>
+            <span class="editor-lightbox-name">{{ lightboxImageName }}</span>
+            <div class="editor-lightbox-btns">
+              <button
+                class="editor-lightbox-btn"
+                title="新窗口打开"
+                @click="openHoveredUrl(lightboxImageUrl)"
+              >
+                <ExternalLink size="15" />
+                <span>打开</span>
+              </button>
+              <button
+                class="editor-lightbox-btn"
+                title="下载图片"
+                @click="handleDownloadHoveredUrl(lightboxImageUrl, lightboxImageName)"
+              >
+                <Download size="15" />
+                <span>下载</span>
+              </button>
+              <button
+                class="editor-lightbox-close"
+                title="关闭预览 (Esc)"
+                @click="closeUrlLightbox"
+              >
+                <X size="16" />
+              </button>
+            </div>
+          </div>
+          <div class="editor-lightbox-stage" @click.stop>
+            <img :src="lightboxImageUrl" :alt="lightboxImageName" class="editor-lightbox-img" />
+          </div>
+        </div>
+      </Teleport>
 
       <!-- Table size picker (fixed-positioned so it's not clipped by the bar's overflow) -->
       <div
@@ -2238,5 +2632,285 @@ html.dark .btn-submit-url:hover:not(:disabled) {
 
 :deep(.cm-selectionBackground) {
   background-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+/* Editor URL Hover Card */
+.editor-url-hover-card {
+  position: fixed;
+  z-index: 10010;
+  width: 300px;
+  background: var(--bg-editor, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 10px;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.16), 0 2px 8px rgba(15, 23, 42, 0.06);
+  padding: 10px;
+  transform: translateY(-100%);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.editor-url-hover-card.is-image-card {
+  width: 284px;
+}
+
+.editor-url-hover-card.is-below {
+  transform: translateY(0);
+}
+
+.url-img-preview-box {
+  position: relative;
+  width: 100%;
+  min-height: 92px;
+  max-height: 176px;
+  border-radius: 7px;
+  overflow: hidden;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: repeating-conic-gradient(rgba(148, 163, 184, 0.12) 0% 25%, transparent 0% 50%) 50% / 14px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.url-img-preview-thumb {
+  display: block;
+  max-width: 100%;
+  max-height: 174px;
+  object-fit: contain;
+  cursor: zoom-in;
+}
+
+.url-img-preview-thumb.is-hidden {
+  display: none;
+}
+
+.url-img-status {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px;
+  font-size: 11.5px;
+  color: var(--text-muted, #64748b);
+  background: var(--bg-editor, #ffffff);
+  text-align: center;
+}
+
+.url-img-status.is-error {
+  color: var(--text-muted, #64748b);
+}
+
+.url-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.url-meta-label {
+  font-size: 11px;
+  color: var(--text-muted, #64748b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.url-link-card-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.url-type-icon {
+  flex-shrink: 0;
+  color: var(--accent-color, #116acc);
+}
+
+.url-link-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-main, #1e293b);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
+  min-width: 0;
+}
+
+.url-host-badge {
+  font-size: 10.5px;
+  color: var(--text-muted, #64748b);
+  background: var(--bg-capsule, #f1f5f9);
+  padding: 1px 6px;
+  border-radius: 4px;
+  max-width: 110px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.url-link-raw {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--text-muted, #64748b);
+  word-break: break-all;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  background: var(--bg-toolbar, #f8fafc);
+  border-radius: 6px;
+  padding: 5px 7px;
+}
+
+.url-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.url-card-actions.is-link-actions {
+  width: 100%;
+}
+
+.url-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 26px;
+  padding: 0 8px;
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-editor, #ffffff);
+  color: var(--text-main, #334155);
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  white-space: nowrap;
+}
+
+.url-card-actions.is-link-actions .url-action-btn:not(.is-icon-only) {
+  flex: 1;
+}
+
+.url-action-btn.is-icon-only {
+  width: 26px;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+.url-action-btn:hover {
+  border-color: var(--accent-color, #116acc);
+  color: var(--accent-color, #116acc);
+  background: var(--accent-bg, rgba(17, 106, 204, 0.08));
+}
+
+.url-action-btn.is-primary {
+  background: var(--accent-color, #116acc);
+  border-color: var(--accent-color, #116acc);
+  color: #ffffff;
+}
+
+.url-action-btn.is-primary:hover {
+  opacity: 0.92;
+  color: #ffffff;
+}
+</style>
+
+<style>
+.editor-lightbox-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  background: rgba(15, 23, 42, 0.82);
+  backdrop-filter: blur(4px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.editor-lightbox-topbar {
+  position: fixed;
+  top: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  max-width: min(92vw, 720px);
+  width: max-content;
+  padding: 6px 10px 6px 14px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #f8fafc;
+}
+
+.editor-lightbox-name {
+  font-size: 12.5px;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 360px;
+}
+
+.editor-lightbox-btns {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.editor-lightbox-btn,
+.editor-lightbox-close {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.editor-lightbox-close {
+  padding: 0 7px;
+}
+
+.editor-lightbox-btn:hover,
+.editor-lightbox-close:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.editor-lightbox-stage {
+  max-width: 92vw;
+  max-height: 84vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-lightbox-img {
+  max-width: 92vw;
+  max-height: 84vh;
+  border-radius: 8px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
+  object-fit: contain;
 }
 </style>
