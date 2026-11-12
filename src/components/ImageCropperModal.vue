@@ -45,12 +45,10 @@ const flipH = ref(false);
 const selectedRatio = ref('free'); // 'free' | '1:1' | '2.35:1' | ...
 
 // ── Crop Box (Normalized 0..1 relative to oriented image) ──
-const cropBox = ref({ x: 0, y: 0, width: 1, height: 1 });
+const cropBox = ref({ x: 0.05, y: 0.05, width: 0.9, height: 0.9 });
 
 // ── DOM References ──
-const stageWrapperRef = ref(null);
-const displayedImageRef = ref(null);
-const displayedRect = ref({ left: 0, top: 0, width: 0, height: 0 });
+const previewCanvasRef = ref(null);
 
 const isExporting = ref(false);
 const isUploading = ref(false);
@@ -91,7 +89,7 @@ function initImage(src) {
     naturalHeight.value = img.naturalHeight;
     imageLoaded.value = true;
     resetCropBox();
-    nextTick(updateDisplayedGeometry);
+    nextTick(renderPreviewCanvas);
   };
   img.onerror = () => {
     // Retry without anonymous if server doesn't send CORS headers
@@ -103,7 +101,7 @@ function initImage(src) {
         naturalHeight.value = fallback.naturalHeight;
         imageLoaded.value = true;
         resetCropBox();
-        nextTick(updateDisplayedGeometry);
+        nextTick(renderPreviewCanvas);
       };
       fallback.onerror = () => {
         imageLoadError.value = true;
@@ -114,6 +112,34 @@ function initImage(src) {
     }
   };
   img.src = src;
+}
+
+// ── Draw Displayed Preview on Stage Canvas ──
+function renderPreviewCanvas() {
+  if (!previewCanvasRef.value || !imageElement.value) return;
+  const canvas = previewCanvasRef.value;
+  const origW = imageElement.value.naturalWidth;
+  const origH = imageElement.value.naturalHeight;
+  const oriented = getOrientedDimensions(origW, origH, rotation.value);
+  const currentW = oriented.width;
+  const currentH = oriented.height;
+
+  canvas.width = currentW;
+  canvas.height = currentH;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  ctx.clearRect(0, 0, currentW, currentH);
+  ctx.save();
+  ctx.translate(currentW / 2, currentH / 2);
+
+  const normRot = ((rotation.value % 360) + 360) % 360;
+  ctx.rotate((normRot * Math.PI) / 180);
+  if (flipH.value) {
+    ctx.scale(-1, 1);
+  }
+  ctx.drawImage(imageElement.value, -origW / 2, -origH / 2);
+  ctx.restore();
 }
 
 // ── Reset Crop Box based on Ratio ──
@@ -134,14 +160,14 @@ function resetCropBox() {
 
   if (targetRatio > imageAspect) {
     w = 0.92;
-    h = (w * ow) / targetRatio / oh;
+    h = (w * ow) / (targetRatio * oh);
   } else {
     h = 0.92;
     w = (h * oh * targetRatio) / ow;
   }
 
-  w = Math.min(1, Math.max(0.1, w));
-  h = Math.min(1, Math.max(0.1, h));
+  w = Math.min(1, Math.max(0.08, w));
+  h = Math.min(1, Math.max(0.08, h));
 
   cropBox.value = {
     x: (1 - w) / 2,
@@ -151,30 +177,18 @@ function resetCropBox() {
   };
 }
 
-// ── Update Displayed Image Rect for Coordinate Mapping ──
-function updateDisplayedGeometry() {
-  if (!displayedImageRef.value || !stageWrapperRef.value) return;
-  const rect = displayedImageRef.value.getBoundingClientRect();
-  const wrapperRect = stageWrapperRef.value.getBoundingClientRect();
-  displayedRect.value = {
-    left: rect.left - wrapperRect.left,
-    top: rect.top - wrapperRect.top,
-    width: rect.width,
-    height: rect.height
-  };
-}
-
 // ── Rotate & Flip ──
 function rotateClockwise() {
   soundEngine.playClick();
   rotation.value = (rotation.value + 90) % 360;
   resetCropBox();
-  nextTick(updateDisplayedGeometry);
+  nextTick(renderPreviewCanvas);
 }
 
 function toggleFlipHorizontal() {
   soundEngine.playClick();
   flipH.value = !flipH.value;
+  nextTick(renderPreviewCanvas);
 }
 
 function resetAll() {
@@ -183,7 +197,7 @@ function resetAll() {
   flipH.value = false;
   selectedRatio.value = 'free';
   resetCropBox();
-  nextTick(updateDisplayedGeometry);
+  nextTick(renderPreviewCanvas);
 }
 
 function handleRatioSelect(ratioId) {
@@ -209,14 +223,17 @@ function startDrag(action, e) {
 }
 
 function onMouseMove(e) {
-  if (!dragAction || !displayedRect.value.width || !displayedRect.value.height) return;
+  if (!dragAction || !previewCanvasRef.value) return;
 
-  const dx = (e.clientX - dragStartMouse.x) / displayedRect.value.width;
-  const dy = (e.clientY - dragStartMouse.y) / displayedRect.value.height;
+  const rect = previewCanvasRef.value.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return;
+
+  const dx = (e.clientX - dragStartMouse.x) / rect.width;
+  const dy = (e.clientY - dragStartMouse.y) / rect.height;
+
   const ratio = activeRatioObj.value.ratio;
   const ow = orientedDimensions.value.width;
   const oh = orientedDimensions.value.height;
-  const aspectMultiplier = ow / oh;
 
   let { x, y, width, height } = { ...dragStartBox };
 
@@ -227,28 +244,42 @@ function onMouseMove(e) {
     // Handle edge and corner resizing
     if (dragAction.includes('e')) {
       width = Math.max(0.08, Math.min(1 - dragStartBox.x, dragStartBox.width + dx));
-      if (ratio) height = Math.max(0.08, (width * aspectMultiplier) / ratio);
+      if (ratio) {
+        height = Math.max(0.08, Math.min(1 - y, (width * ow) / (ratio * oh)));
+        width = (height * oh * ratio) / ow;
+      }
     }
     if (dragAction.includes('s')) {
       height = Math.max(0.08, Math.min(1 - dragStartBox.y, dragStartBox.height + dy));
-      if (ratio) width = Math.max(0.08, (height * ratio) / aspectMultiplier);
+      if (ratio) {
+        width = Math.max(0.08, Math.min(1 - x, (height * oh * ratio) / ow));
+        height = (width * ow) / (ratio * oh);
+      }
     }
     if (dragAction.includes('w')) {
-      const maxW = dragStartBox.x + dragStartBox.width;
-      const targetW = Math.max(0.08, Math.min(maxW, dragStartBox.width - dx));
-      x = maxW - targetW;
+      const rightEdge = dragStartBox.x + dragStartBox.width;
+      let targetW = Math.max(0.08, Math.min(rightEdge, dragStartBox.width - dx));
+      if (ratio) {
+        height = Math.max(0.08, Math.min(1 - y, (targetW * ow) / (ratio * oh)));
+        targetW = (height * oh * ratio) / ow;
+      }
+      x = rightEdge - targetW;
       width = targetW;
-      if (ratio) height = Math.max(0.08, (width * aspectMultiplier) / ratio);
     }
     if (dragAction.includes('n')) {
-      const maxH = dragStartBox.y + dragStartBox.height;
-      const targetH = Math.max(0.08, Math.min(maxH, dragStartBox.height - dy));
-      y = maxH - targetH;
+      const bottomEdge = dragStartBox.y + dragStartBox.height;
+      let targetH = Math.max(0.08, Math.min(bottomEdge, dragStartBox.height - dy));
+      if (ratio) {
+        width = Math.max(0.08, Math.min(1 - x, (targetH * oh * ratio) / ow));
+        targetH = (width * ow) / (ratio * oh);
+      }
+      y = bottomEdge - targetH;
       height = targetH;
-      if (ratio) width = Math.max(0.08, (height * ratio) / aspectMultiplier);
     }
 
     // Boundary constraints
+    x = Math.max(0, x);
+    y = Math.max(0, y);
     if (x + width > 1) width = 1 - x;
     if (y + height > 1) height = 1 - y;
   }
@@ -394,12 +425,10 @@ watch(() => props.imageUrl, (newUrl) => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown);
-  window.addEventListener('resize', updateDisplayedGeometry);
 });
 
 onUnmounted(() => {
   window.removeEventListener('keydown', handleKeydown);
-  window.removeEventListener('resize', updateDisplayedGeometry);
   onMouseUp();
 });
 </script>
@@ -421,7 +450,7 @@ onUnmounted(() => {
                   <span class="header-badge">{{ cropPixelDimensions.width }} × {{ cropPixelDimensions.height }} px</span>
                 </div>
                 <div class="header-subtitle">
-                  支持自由框选或标准长宽比，可拖拽四角精确取景，支持原地替换文档原图
+                  拖拽四角或边缘自由取景，支持常用平台规范比例与旋转，可直接替换正文原图
                 </div>
               </div>
             </div>
@@ -465,7 +494,7 @@ onUnmounted(() => {
           </div>
 
           <!-- ── Interactive Cropping Stage ── -->
-          <div class="cropper-stage" ref="stageWrapperRef">
+          <div class="cropper-stage">
             <div v-if="!imageLoaded && !imageLoadError" class="cropper-loading">
               <div class="loading-spinner"></div>
               <span>正在加载原始图片...</span>
@@ -475,32 +504,12 @@ onUnmounted(() => {
               <span>图片无法加载或受跨域保护，请尝试下载原图后上传</span>
             </div>
 
-            <div v-else class="stage-image-container">
-              <!-- Oriented Image Display -->
-              <img
-                ref="displayedImageRef"
-                :src="imageUrl"
-                alt="裁剪预览"
-                class="stage-img"
-                :style="{
-                  transform: `rotate(${rotation}deg) scaleX(${flipH ? -1 : 1})`,
-                  maxHeight: rotation % 180 === 90 ? 'min(440px, 55vh)' : 'min(480px, 60vh)',
-                  maxWidth: rotation % 180 === 90 ? 'min(480px, 60vh)' : 'min(760px, 70vw)'
-                }"
-                @load="nextTick(updateDisplayedGeometry)"
-              />
+            <!-- Oriented Canvas Box (Guaranteed 100% overlay alignment) -->
+            <div v-show="imageLoaded && !imageLoadError" class="stage-canvas-box">
+              <canvas ref="previewCanvasRef" class="stage-preview-canvas"></canvas>
 
-              <!-- Overlay Mask & Crop Box -->
-              <div
-                v-if="displayedRect.width > 0"
-                class="crop-overlay-layer"
-                :style="{
-                  left: `${displayedRect.left}px`,
-                  top: `${displayedRect.top}px`,
-                  width: `${displayedRect.width}px`,
-                  height: `${displayedRect.height}px`
-                }"
-              >
+              <!-- Overlay Mask & Crop Box directly on top of the image canvas -->
+              <div class="crop-overlay-layer">
                 <!-- Darkened Surroundings -->
                 <div class="mask-box mask-top" :style="{ height: `${cropBox.y * 100}%` }"></div>
                 <div
@@ -525,7 +534,7 @@ onUnmounted(() => {
                   }"
                 ></div>
 
-                <!-- Active Crop Box (Draggable) -->
+                <!-- Active Crop Box (Draggable & Resizable) -->
                 <div
                   class="interactive-crop-box"
                   :style="{
@@ -809,26 +818,32 @@ onUnmounted(() => {
   position: relative;
   overflow: hidden;
   user-select: none;
+  padding: 20px;
 }
 
-.stage-image-container {
+.stage-canvas-box {
   position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  border-radius: 4px;
+  box-shadow: 0 16px 45px rgba(0, 0, 0, 0.65);
+  line-height: 0;
 }
 
-.stage-img {
+.stage-preview-canvas {
   display: block;
-  object-fit: contain;
-  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  pointer-events: none;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  max-width: min(760px, 72vw);
+  max-height: min(480px, 60vh);
+  width: auto;
+  height: auto;
+  border-radius: 2px;
 }
 
 /* ── Overlay & Crop Box ── */
 .crop-overlay-layer {
   position: absolute;
+  inset: 0;
   overflow: hidden;
   pointer-events: none;
 }
@@ -1031,4 +1046,3 @@ html.dark .btn-footer-secondary {
   color: #F9FAFB;
 }
 </style>
-
