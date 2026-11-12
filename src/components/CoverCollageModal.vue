@@ -14,8 +14,10 @@ import {
   RotateCcw,
   Sparkles,
   Move,
+  Crop,
   Image as ImageIcon
 } from 'lucide-vue-next';
+import ImageCropperModal from './ImageCropperModal.vue';
 import {
   COLLAGE_RATIOS,
   COLLAGE_LAYOUTS,
@@ -185,6 +187,49 @@ function handleResetCellTransform() {
     c.panY = 0;
     triggerRender();
   }
+}
+
+// ── In-modal Cropper Integration ──
+const isCropperOpen = ref(false);
+const cropperTargetUrl = ref('');
+const cropperTargetAlt = ref('');
+const cropperTargetCellIndex = ref(null);
+
+function handleCropActiveCell() {
+  const c = activeCellState.value;
+  if (!c || !c.url) return;
+  soundEngine.playClick();
+  cropperTargetUrl.value = c.url;
+  cropperTargetAlt.value = c.alt || `拼块 #${selectedCellIndex.value + 1}`;
+  cropperTargetCellIndex.value = selectedCellIndex.value;
+  isCropperOpen.value = true;
+}
+
+function handleCropSourceImage(url, alt = '') {
+  soundEngine.playClick();
+  cropperTargetUrl.value = url;
+  cropperTargetAlt.value = alt || '配图';
+  cropperTargetCellIndex.value = null;
+  isCropperOpen.value = true;
+}
+
+function handleCropperComplete({ newUrl, alt }) {
+  if (cropperTargetCellIndex.value !== null) {
+    const idx = cropperTargetCellIndex.value;
+    if (cellStates.value[idx]) {
+      cellStates.value[idx].url = newUrl;
+      cellStates.value[idx].zoom = 1;
+      cellStates.value[idx].panX = 0;
+      cellStates.value[idx].panY = 0;
+    }
+  } else {
+    uploadedImages.value.unshift({ url: newUrl, alt: alt || '裁剪图片' });
+    handleAssignImageToCell(newUrl, alt);
+  }
+  loadImage(newUrl).then(img => {
+    imageMap.set(newUrl, img);
+    triggerRender();
+  }).catch(() => {});
 }
 
 function adjustZoom(delta) {
@@ -493,6 +538,9 @@ onUnmounted(() => {
                     @click="handleAssignImageToCell(img.url, img.alt)"
                   >
                     <img :src="img.url" :alt="img.alt" loading="lazy" />
+                    <button class="card-crop-btn" @click.stop="handleCropSourceImage(img.url, img.alt)" title="裁剪此图">
+                      <Crop size="12" />
+                    </button>
                     <div class="card-overlay">
                       <Plus size="14" />
                   <span>填入 #{{ selectedCellIndex + 1 }}</span>
@@ -533,6 +581,9 @@ onUnmounted(() => {
                     @click="handleAssignImageToCell(img.url, img.alt)"
                   >
                     <img :src="img.url" :alt="img.alt" />
+                    <button class="card-crop-btn" @click.stop="handleCropSourceImage(img.url, img.alt)" title="裁剪此图">
+                      <Crop size="12" />
+                    </button>
                     <div class="card-overlay">
                       <Plus size="14" />
                       <span>填入格 #{{ selectedCellIndex + 1 }}</span>
@@ -561,6 +612,10 @@ onUnmounted(() => {
                     <button class="btn-tool" @click="adjustZoom(0.1)" title="放大图片"><ZoomIn size="13" /></button>
                   </div>
                   <span class="cell-bar-sep"></span>
+                  <button class="btn-tool is-text" @click="handleCropActiveCell" title="精确裁剪此格图片">
+                    <Crop size="12" />
+                    <span>裁剪</span>
+                  </button>
                   <button class="btn-tool is-text" @click="handleResetCellTransform" title="重置居中与缩放">
                     <RotateCcw size="12" />
                     <span>居中</span>
@@ -726,17 +781,57 @@ onUnmounted(() => {
         </div>
       </div>
     </Transition>
+
+    <!-- In-modal Image Cropper for Cell or Source Images -->
+    <ImageCropperModal
+      :isOpen="isCropperOpen"
+      :imageUrl="cropperTargetUrl"
+      :altText="cropperTargetAlt"
+      :canReplace="false"
+      @close="isCropperOpen = false"
+      @replace="handleCropperComplete"
+      @insert="handleCropperComplete"
+      @toast="emit('toast', $event)"
+    />
   </Teleport>
 </template>
 
 <style scoped>
+.card-crop-btn {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  border: none;
+  background: rgba(15, 23, 42, 0.75);
+  color: #FFFFFF;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 5;
+  opacity: 0;
+  transition: all 0.15s ease;
+}
+
+.source-image-card:hover .card-crop-btn {
+  opacity: 1;
+}
+
+.card-crop-btn:hover {
+  background: var(--brand-primary, #116ACC);
+  transform: scale(1.1);
+}
+
 .collage-backdrop {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
+  background: rgba(15, 23, 42, 0.34);
+  backdrop-filter: blur(14px) saturate(115%);
+  -webkit-backdrop-filter: blur(14px) saturate(115%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -749,10 +844,12 @@ onUnmounted(() => {
   height: min(900px, calc(100dvh - 32px));
   min-width: 0;
   min-height: 0;
-  background: var(--bg-card, #FFFFFF);
+  background: rgba(246, 249, 253, 0.76);
+  -webkit-backdrop-filter: blur(28px) saturate(145%);
+  backdrop-filter: blur(28px) saturate(145%);
   border-radius: 16px;
   box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.3);
-  border: 1px solid var(--border-color, #E2E8F0);
+  border: 1px solid rgba(255, 255, 255, 0.72);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -765,7 +862,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--border-subtle, #EDF1F7);
+  border-bottom: 1px solid rgba(203, 213, 225, 0.52);
+  background: rgba(255, 255, 255, 0.34);
   flex-shrink: 0;
 }
 
@@ -862,7 +960,7 @@ onUnmounted(() => {
   border-right: 1px solid var(--border-subtle, #EDF1F7);
   display: flex;
   flex-direction: column;
-  background: var(--bg-sidebar, #F8FAFC);
+  background: rgba(235, 242, 250, 0.46);
   flex-shrink: 0;
 }
 
@@ -891,7 +989,7 @@ onUnmounted(() => {
 }
 
 .source-tab-btn.is-active {
-  background: var(--bg-card, #FFFFFF);
+  background: rgba(255, 255, 255, 0.7);
   color: var(--brand-primary, #116ACC);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
@@ -992,7 +1090,7 @@ onUnmounted(() => {
 .upload-dropzone {
   width: 100%;
   min-height: 84px;
-  border: 1px dashed #B8C7D8;
+  border: 1px dashed rgba(148, 163, 184, 0.72);
   border-radius: 10px;
   padding: 10px;
   display: grid;
@@ -1000,7 +1098,7 @@ onUnmounted(() => {
   align-items: center;
   gap: 9px;
   text-align: left;
-  background: var(--bg-card, #FFFFFF);
+  background: rgba(255, 255, 255, 0.38);
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
 }
@@ -1052,7 +1150,7 @@ onUnmounted(() => {
   padding: 0 9px;
   border: 1px solid var(--border-color, #D8E1EC);
   border-radius: 7px;
-  background: var(--bg-card, #FFFFFF);
+  background: rgba(255, 255, 255, 0.62);
   color: var(--brand-primary, #116ACC);
   font-size: 11px;
   font-weight: 600;
@@ -1071,7 +1169,7 @@ onUnmounted(() => {
   padding: 0 10px;
   border: 1px solid var(--border-color, #D8E1EC);
   border-radius: 8px;
-  background: var(--bg-card, #FFFFFF);
+  background: rgba(255, 255, 255, 0.58);
   color: var(--text-main, #0F172A);
   font: inherit;
   font-size: 12px;
@@ -1108,7 +1206,7 @@ onUnmounted(() => {
   padding: 0 8px;
   border: 1px solid var(--border-color, #D8E1EC);
   border-radius: 7px;
-  background: var(--bg-card, #FFFFFF);
+  background: rgba(255, 255, 255, 0.58);
   color: var(--text-muted, #64748B);
   font-size: 10px;
   font-weight: 500;
@@ -1267,7 +1365,7 @@ onUnmounted(() => {
   border-left: 1px solid var(--border-subtle, #EDF1F7);
   display: flex;
   flex-direction: column;
-  background: var(--bg-card, #FFFFFF);
+  background: rgba(255, 255, 255, 0.36);
   overflow-y: auto;
   padding: 16px;
   gap: 16px;
@@ -1373,7 +1471,7 @@ onUnmounted(() => {
   gap: 3px;
   padding: 3px;
   border-radius: 8px;
-  background: var(--bg-sidebar, #F1F5F9);
+  background: rgba(220, 230, 242, 0.42);
 }
 
 .layout-count-tab {
@@ -1393,7 +1491,7 @@ onUnmounted(() => {
 }
 
 .layout-count-tab.is-selected {
-  background: var(--bg-card, #FFFFFF);
+  background: rgba(255, 255, 255, 0.78);
   color: var(--brand-primary, #116ACC);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
 }
@@ -1409,19 +1507,19 @@ onUnmounted(() => {
   padding: 6px;
   border-radius: 7px;
   border: 1px solid var(--border-color, #E2E8F0);
-  background: var(--bg-card, #FFFFFF);
+  background: rgba(255, 255, 255, 0.32);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .layout-btn:not(.is-selected):hover {
   border-color: #A9B8CA;
-  background: #F8FAFC;
+  background: rgba(255, 255, 255, 0.64);
 }
 
 .layout-btn.is-selected {
   border-color: var(--brand-primary, #116ACC);
-  background: var(--brand-subtle, #EFF6FF);
+  background: rgba(219, 234, 254, 0.48);
 }
 
 .layout-preview-box {
@@ -1510,8 +1608,8 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-top: 1px solid var(--border-subtle, #EDF1F7);
-  background: var(--bg-card, #FFFFFF);
+  border-top: 1px solid rgba(203, 213, 225, 0.52);
+  background: rgba(255, 255, 255, 0.38);
   flex-shrink: 0;
 }
 
@@ -1554,7 +1652,7 @@ onUnmounted(() => {
 
 .btn-footer-action.is-secondary {
   border: 1px solid var(--border-color, #CBD5E1);
-  background: var(--bg-card, #FFFFFF);
+  background: rgba(255, 255, 255, 0.62);
   color: var(--text-main, #0F172A);
 }
 
@@ -1930,16 +2028,16 @@ onUnmounted(() => {
 }
 
 html.dark .collage-modal-container {
-  background: #111827;
-  border-color: #374151;
+  background: rgba(15, 23, 42, 0.78);
+  border-color: rgba(148, 163, 184, 0.22);
 }
 
 html.dark .source-panel,
 html.dark .config-panel,
 html.dark .collage-header,
 html.dark .collage-footer {
-  background: #111827;
-  border-color: #1F2937;
+  background: rgba(15, 23, 42, 0.4);
+  border-color: rgba(148, 163, 184, 0.15);
 }
 
 html.dark .source-tab-btn.is-active,
@@ -1950,8 +2048,8 @@ html.dark .ratio-select,
 html.dark .dimension-input-wrap,
 html.dark .upload-select-btn,
 html.dark .btn-footer-action.is-secondary {
-  background: #1F2937;
-  border-color: #374151;
+  background: rgba(30, 41, 59, 0.58);
+  border-color: rgba(148, 163, 184, 0.2);
   color: #F9FAFB;
 }
 
@@ -1963,15 +2061,15 @@ html.dark .layout-btn.is-selected {
 
 html.dark .layout-btn:not(.is-selected):hover {
   border-color: #64748B;
-  background: #1F2937;
+  background: rgba(51, 65, 85, 0.52);
 }
 
 html.dark .layout-count-tabs {
-  background: #1F2937;
+  background: rgba(15, 23, 42, 0.38);
 }
 
 html.dark .layout-count-tab.is-selected {
-  background: #111827;
+  background: rgba(51, 65, 85, 0.82);
   color: #93C5FD;
 }
 

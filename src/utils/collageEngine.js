@@ -9,7 +9,8 @@ export const COLLAGE_RATIOS = [
   { id: 'square', name: '社交正方形 (1:1)', ratio: 1, width: 1200, height: 1200, badge: '次条/头图' },
   { id: '16:9', name: '横屏宽画幅 (16:9)', ratio: 16 / 9, width: 1920, height: 1080, badge: '高清' },
   { id: '3:4', name: '社交竖版 (3:4)', ratio: 3 / 4, width: 900, height: 1200, badge: '小红书' },
-  { id: '4:3', name: '经典杂志 (4:3)', ratio: 4 / 3, width: 1200, height: 900, badge: '画报' }
+  { id: '4:3', name: '经典杂志 (4:3)', ratio: 4 / 3, width: 1200, height: 900, badge: '画报' },
+  { id: '9:16', name: '手机竖屏 (9:16)', ratio: 9 / 16, width: 1080, height: 1920, badge: '全屏' }
 ];
 
 function makeRowLayout(id, name, rowCounts) {

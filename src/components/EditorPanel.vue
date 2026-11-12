@@ -27,8 +27,10 @@ import {
   ExternalLink,
   ZoomIn,
   ZoomOut,
-  RotateCcw
+  RotateCcw,
+  Crop
 } from '@lucide/vue';
+import ImageCropperModal from './ImageCropperModal.vue';
 import { soundEngine } from '../utils/synthAudio';
 import {
   EDITOR_SETTINGS_UPDATED_EVENT,
@@ -906,6 +908,39 @@ function handleLightboxImgClick() {
   } else {
     resetLightboxView();
   }
+}
+
+// ── In-place Image Cropping Engine Integration ──
+const isCropperOpen = ref(false);
+const cropTargetUrl = ref('');
+const cropTargetName = ref('');
+
+function handleStartCrop(url, name = '') {
+  if (!url) return;
+  soundEngine.playClick();
+  cropTargetUrl.value = url;
+  cropTargetName.value = name || '图片';
+  isCropperOpen.value = true;
+  hideUrlPreviewImmediately();
+}
+
+function handleStartCropFromLightbox() {
+  const url = lightboxRawUrl.value || lightboxImageUrl.value;
+  const name = lightboxImageName.value;
+  closeUrlLightbox();
+  handleStartCrop(url, name);
+}
+
+function handleCropperReplace({ originalUrl, newUrl, alt }) {
+  replaceEditorText(originalUrl, newUrl);
+  soundEngine.playChime();
+  emit('toast', '已成功替换正文中的原图！');
+}
+
+function handleCropperInsert({ newUrl, markdownSnippet }) {
+  insertTextAtCursor(markdownSnippet);
+  soundEngine.playChime();
+  emit('toast', '已将裁剪图片插入文档');
 }
 
 // ── undo / redo ──
@@ -1830,7 +1865,7 @@ onUnmounted(() => {
   }
 });
 
-defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handleImageUpload, toggleUrlImport, triggerFileInput, clearContent, insertTextAtCursor })
+defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handleImageUpload, toggleUrlImport, triggerFileInput, clearContent, insertTextAtCursor, openCropper: handleStartCrop })
 </script>
 
 <template>
@@ -1959,6 +1994,14 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
               </button>
               <button
                 class="url-action-btn"
+                title="裁剪此图片"
+                @click="handleStartCrop(hoveredUrlInfo.url, hoveredUrlInfo.filename)"
+              >
+                <Crop size="13" />
+                <span>裁剪</span>
+              </button>
+              <button
+                class="url-action-btn"
                 title="新窗口打开"
                 @click="openHoveredUrl(hoveredUrlInfo.url)"
               >
@@ -2078,6 +2121,14 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
               >
                 <ExternalLink size="15" />
                 <span>打开</span>
+              </button>
+              <button
+                class="editor-lightbox-btn"
+                title="裁剪此图片"
+                @click="handleStartCropFromLightbox"
+              >
+                <Crop size="15" />
+                <span>裁剪</span>
               </button>
               <button
                 class="editor-lightbox-btn"
@@ -2247,6 +2298,18 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
           <span>{{ editorText.length }} 字符</span>
           <span>{{ lineNumbers.length }} 行</span>
         </div>
+
+    <!-- In-place Image Cropper Modal -->
+    <ImageCropperModal
+      :isOpen="isCropperOpen"
+      :imageUrl="cropTargetUrl"
+      :altText="cropTargetName"
+      :canReplace="true"
+      @close="isCropperOpen = false"
+      @replace="handleCropperReplace"
+      @insert="handleCropperInsert"
+      @toast="emit('toast', $event)"
+    />
   </div>
 </template>
 

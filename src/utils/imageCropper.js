@@ -89,3 +89,4 @@ export function downloadCanvas(canvas, filename = 'cropped-image.png') {
   link.href = canvas.toDataURL('image/png', 0.96);
   link.click();
 }
+
