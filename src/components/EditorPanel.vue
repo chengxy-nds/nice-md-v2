@@ -1830,7 +1830,7 @@ onUnmounted(() => {
   }
 });
 
-defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handleImageUpload, toggleUrlImport, triggerFileInput, clearContent })
+defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handleImageUpload, toggleUrlImport, triggerFileInput, clearContent, insertTextAtCursor })
 </script>
 
 <template>

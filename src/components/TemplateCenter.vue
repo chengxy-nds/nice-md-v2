@@ -10,11 +10,17 @@ import {
   Smartphone,
   Monitor
 } from '@lucide/vue';
-import { themes, getThemeSavedStyles } from '../utils/themePresets';
-import { defaultMarkdown } from '../utils/defaultMarkdown';
+import { themes, getThemeSavedStyles, isBuiltInTheme } from '../utils/themePresets';
 import { soundEngine } from '../utils/synthAudio';
 import ArticlePreview from './ArticlePreview.vue';
 import ThemeCustomizer from './ThemeCustomizer.vue';
+
+const props = defineProps({
+  currentTheme: {
+    type: String,
+    default: 'classic-indigo'
+  }
+});
 
 const emit = defineEmits(['apply-theme', 'back-to-editor', 'save-theme', 'save-custom-theme']);
 
@@ -24,6 +30,30 @@ const showThemePanel = ref(false);
 const selectedCustomStyles = ref({});
 const isWeChatMode = ref(false);
 const themeCustomizerRef = ref(null);
+const themePreviewMarkdown = [
+  '# 好的排版，让内容更好读',
+  '把复杂的信息整理成清晰的层次，让读者更快抓住重点。好的主题会在标题、正文和强调内容之间建立稳定的节奏。',
+  '',
+  '## 先说结论，再展开说明',
+  '使用 **明确的标题** 划分内容，用短段落保持阅读轻松。重要信息可以适度强调，避免整页都在争夺注意力。',
+  '',
+  '> 清楚的结构，让读者把注意力留给内容。',
+  '',
+  '### 用少量层级组织信息',
+  '- 标题说明接下来的内容',
+  '- 引用突出关键观点',
+  '- 代码和表格承载细节',
+  '',
+  '```js',
+  'const readingTime = 5;',
+  'console.log(`约 ${readingTime} 分钟读完`);',
+  '```',
+  '',
+  '| 内容 | 作用 |',
+  '| --- | --- |',
+  '| 标题 | 建立结构 |',
+  '| 强调 | 标记重点 |'
+].join('\n');
 
 // 主题强调色 + 背景色 → 一个渐变圆点,作为列表项色卡。
 function themeDot(theme) {
@@ -61,7 +91,7 @@ const themeGallery = computed(() => {
     ...t,
     description: descriptions[t.id] || t.description || '',
     tag: tags[t.id] || t.tag || '主题',
-    sample: t.sample || defaultMarkdown
+    sample: t.sample || themePreviewMarkdown
   }));
 });
 
@@ -75,13 +105,34 @@ const filteredThemes = computed(() => {
   );
 });
 
+const themeGroups = computed(() => [
+  {
+    id: 'built-in',
+    name: '内置主题',
+    themes: filteredThemes.value.filter(theme => isBuiltInTheme(theme.id))
+  },
+  {
+    id: 'custom',
+    name: '我的主题',
+    themes: filteredThemes.value.filter(theme => !isBuiltInTheme(theme.id))
+  }
+].filter(group => group.themes.length));
+
+const isAppliedTheme = computed(() => selectedTheme.value?.id === props.currentTheme);
+
 watch(filteredThemes, (list) => {
   if (!list.length) { selectedTheme.value = null; return; }
   const stillThere = list.some(t => selectedTheme.value && t.id === selectedTheme.value.id);
   if (!selectedTheme.value || !stillThere) {
-    selectedTheme.value = list[0];
+    selectedTheme.value = list.find(theme => theme.id === props.currentTheme) || list[0];
   }
 }, { immediate: true });
+
+watch(() => props.currentTheme, (themeId) => {
+  if (searchQuery.value.trim()) return;
+  const appliedTheme = themeGallery.value.find(theme => theme.id === themeId);
+  if (appliedTheme) selectedTheme.value = appliedTheme;
+});
 
 watch(selectedTheme, (newTheme) => {
   if (newTheme) {
@@ -97,6 +148,7 @@ function handleSelect(theme) {
 }
 
 function handleApply(theme) {
+  if (!theme || theme.id === props.currentTheme) return;
   soundEngine.playChime();
   const themeToApply = {
     ...theme,
@@ -146,7 +198,7 @@ async function handleElementClick(sectionName) {
             <Sparkles size="14" />
           </span>
           <h1 class="tc-title">主题画廊</h1>
-          <span class="tc-count">{{ filteredThemes.length }} 款主题</span>
+          <span class="tc-count">{{ filteredThemes.length }} 个主题</span>
         </div>
       </div>
 
@@ -167,23 +219,33 @@ async function handleElementClick(sectionName) {
     <main class="tc-content">
       <!-- Left: compact theme list -->
       <aside class="tc-sidebar">
-        <div
-          v-for="theme in filteredThemes"
-          :key="theme.id"
-          class="tc-list-item"
-          :class="{ 'is-active': selectedTheme && selectedTheme.id === theme.id }"
-          @click="handleSelect(theme)"
-        >
-          <span class="tc-list-dot" :style="themeDot(theme)"></span>
-          <div class="tc-list-info">
-            <div class="tc-list-title-row">
-              <span class="tc-list-name">{{ theme.name }}</span>
-              <span class="tc-tag">{{ theme.tag }}</span>
+        <section v-for="group in themeGroups" :key="group.id" class="tc-list-section">
+          <header class="tc-list-section-header">
+            <span>{{ group.name }}</span>
+            <span class="tc-list-section-count">{{ group.themes.length }}</span>
+          </header>
+          <div
+            v-for="theme in group.themes"
+            :key="theme.id"
+            class="tc-list-item"
+            :class="{
+              'is-active': selectedTheme && selectedTheme.id === theme.id,
+              'is-applied': props.currentTheme === theme.id
+            }"
+            @click="handleSelect(theme)"
+          >
+            <span class="tc-list-dot" :style="themeDot(theme)"></span>
+            <div class="tc-list-info">
+              <div class="tc-list-title-row">
+                <span class="tc-list-name">{{ theme.name }}</span>
+                <span class="tc-tag">{{ theme.tag }}</span>
+              </div>
+              <p class="tc-list-desc">{{ theme.description }}</p>
             </div>
-            <p class="tc-list-desc">{{ theme.description }}</p>
+            <span v-if="props.currentTheme === theme.id" class="tc-list-state is-applied">当前使用</span>
+            <span v-else-if="selectedTheme && selectedTheme.id === theme.id" class="tc-list-state">预览中</span>
           </div>
-          <Check v-if="selectedTheme && selectedTheme.id === theme.id" size="15" class="tc-list-check" />
-        </div>
+        </section>
 
         <div v-if="filteredThemes.length === 0" class="tc-empty">
           <Search size="30" class="tc-empty-icon" />
@@ -199,7 +261,9 @@ async function handleElementClick(sectionName) {
               <Palette size="13" />
             </span>
             <span class="tc-preview-name">{{ selectedTheme.name }}</span>
-            <span class="tc-tag">{{ selectedTheme.tag }}</span>
+            <span class="tc-preview-state" :class="{ 'is-applied': isAppliedTheme }">
+              {{ isAppliedTheme ? '当前使用' : '正在预览' }}
+            </span>
           </div>
 
           <div class="tc-header-actions">
@@ -208,7 +272,8 @@ async function handleElementClick(sectionName) {
               class="tc-btn-icon"
               :class="{ 'is-active': isWeChatMode }"
               @click="isWeChatMode = !isWeChatMode"
-              :title="isWeChatMode ? '切换到标准预览' : '切换到微信真机框'"
+              :title="isWeChatMode ? '切换到桌面预览' : '切换到手机预览'"
+              :aria-label="isWeChatMode ? '切换到桌面预览' : '切换到手机预览'"
             >
               <Smartphone v-if="!isWeChatMode" size="15" />
               <Monitor v-else size="15" />
@@ -221,13 +286,13 @@ async function handleElementClick(sectionName) {
               @click="showThemePanel = !showThemePanel"
             >
               <Palette size="13" />
-              <span>{{ showThemePanel ? '关闭编辑' : '自定义主题' }}</span>
+              <span>{{ showThemePanel ? '关闭设置' : '编辑样式' }}</span>
             </button>
 
             <!-- Apply Theme button -->
-            <button class="tc-btn-primary tc-apply-btn" @click="handleApply(selectedTheme)">
+            <button v-if="!isAppliedTheme" class="tc-btn-primary tc-apply-btn" @click="handleApply(selectedTheme)">
               <Check size="13" />
-              <span>套用此主题</span>
+              <span>应用主题</span>
             </button>
           </div>
         </div>
@@ -235,8 +300,8 @@ async function handleElementClick(sectionName) {
         <div v-if="selectedTheme" class="tc-preview-body-container">
           <div class="tc-preview-wrap">
             <ArticlePreview
-              :markdown="selectedTheme.sample || defaultMarkdown"
-              :docTitle="selectedTheme.name || '主题预览'"
+              :markdown="selectedTheme.sample || themePreviewMarkdown"
+              docTitle="主题效果预览"
               :themeId="selectedTheme.id"
               codeThemeId="atom-one-dark"
               :customStyles="selectedCustomStyles"
@@ -346,18 +411,18 @@ async function handleElementClick(sectionName) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
+  width: 1.375rem;
   height: 1.5rem;
-  border-radius: 4px;
-  color: #ffffff;
-  background: #3d3939;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  color: #536982;
+  background: transparent;
+  border: 0;
 }
 
 .tc-title-badge-sm {
-  width: 1.5rem;
+  width: 1.25rem;
   height: 1.5rem;
-  border-radius: 4px;
+  border-radius: 0;
 }
 
 .tc-title {
@@ -371,17 +436,16 @@ async function handleElementClick(sectionName) {
 
 .tc-count {
   font-size: 0.6875rem;
-  font-weight: 600;
-  color: #16a34a;
-  background: #edfdf2;
-  padding: 0.0625rem 0.4375rem;
-  border-radius: 4px;
+  font-weight: 500;
+  color: #718096;
+  background: transparent;
+  padding: 0 0.125rem;
 }
 
 .tc-search-box {
   position: relative;
-  width: 15rem;
-  height: 2rem;
+  width: clamp(15rem, 22vw, 20rem);
+  height: 2.125rem;
   display: flex;
   align-items: center;
 }
@@ -400,7 +464,7 @@ async function handleElementClick(sectionName) {
   padding: 0 1.875rem 0 2rem;
   border-radius: 6px;
   border: 1px solid var(--border-color, #EDEDED);
-  background: var(--bg-card, #ffffff);
+  background: #f8fafc;
   color: var(--text-main, #222222);
   font-size: 0.75rem;
   font-weight: 500;
@@ -413,8 +477,9 @@ async function handleElementClick(sectionName) {
 }
 
 .tc-search-box input:focus {
-  border-color: #3d3939;
+  border-color: #8ab4e8;
   background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(39, 117, 182, 0.09);
 }
 
 .tc-clear-btn {
@@ -444,20 +509,20 @@ async function handleElementClick(sectionName) {
   z-index: 1;
   flex: 1;
   display: flex;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem 1rem 1rem;
+  gap: 0.875rem;
+  padding: 0.875rem 1rem 1rem;
   overflow: hidden;
   min-height: 0;
 }
 
 .tc-sidebar {
-  width: 17.5rem;
+  width: 17rem;
   flex-shrink: 0;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
-  padding: 0.5rem;
+  gap: 0.75rem;
+  padding: 0.625rem;
   background: var(--bg-card, #ffffff);
   border: 1px solid var(--border-color, #EDEDED);
   border-radius: 6px;
@@ -472,14 +537,45 @@ async function handleElementClick(sectionName) {
   border-radius: 0.25rem;
 }
 
+.tc-list-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.tc-list-section-header {
+  min-height: 1.75rem;
+  padding: 0 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #7a8798;
+  font-size: 0.6875rem;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.tc-list-section-count {
+  min-width: 1.25rem;
+  height: 1.25rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  background: #f1f4f8;
+  color: #728198;
+  font-size: 0.625rem;
+  font-weight: 600;
+}
+
 /* ── List item (左侧列表项 4px 微圆角与扁平选中态) ── */
 .tc-list-item {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.625rem;
-  padding: 0.5rem 0.625rem;
-  border-radius: 4px;
+  gap: 0.5rem;
+  padding: 0.5rem 0.5rem;
+  border-radius: 5px;
   cursor: pointer;
   background: transparent;
   border: 1px solid transparent;
@@ -488,18 +584,29 @@ async function handleElementClick(sectionName) {
 }
 
 .tc-list-item:hover {
-  background: #F4F4F5;
+  background: #f7f9fc;
 }
 
 .tc-list-item.is-active {
-  background: #F4F4F5;
-  border-color: #E4E4E7;
+  background: #eef5fd;
+  border-color: #d5e4f5;
+}
+
+.tc-list-item.is-active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  width: 2px;
+  border-radius: 2px;
+  background: #2775b6;
 }
 
 /* Theme color dot */
 .tc-list-dot {
-  width: 1rem;
-  height: 1rem;
+  width: 0.75rem;
+  height: 0.75rem;
   border-radius: 50%;
   flex-shrink: 0;
   border: 1px solid rgba(0, 0, 0, 0.08);
@@ -511,13 +618,14 @@ async function handleElementClick(sectionName) {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.0625rem;
+  gap: 0.125rem;
 }
 
 .tc-list-title-row {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.3125rem;
+  min-width: 0;
 }
 
 .tc-list-name {
@@ -543,19 +651,50 @@ async function handleElementClick(sectionName) {
 }
 
 .tc-list-item.is-active .tc-tag {
-  color: #16a34a;
-  background: #edfdf2;
+  color: #55718e;
+  background: #e1ebf6;
 }
 
 .tc-list-desc {
   font-size: 0.6875rem;
-  color: #71717A;
-  line-height: 1.35;
+  color: #78879a;
+  line-height: 1.4;
   margin: 0;
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
   font-weight: 400;
+}
+
+.tc-list-state {
+  flex-shrink: 0;
+  padding: 0.1875rem 0.3125rem;
+  border-radius: 3px;
+  background: #e7f0fb;
+  color: #3f6f9f;
+  font-size: 0.625rem;
+  font-weight: 600;
+}
+
+.tc-list-state.is-applied {
+  background: #edf1f5;
+  color: #64748b;
+}
+
+.tc-preview-state {
+  flex-shrink: 0;
+  padding: 0.1875rem 0.375rem;
+  border-radius: 3px;
+  background: #eaf2fc;
+  color: #376fAA;
+  font-size: 0.6875rem;
+  font-weight: 600;
+}
+
+.tc-preview-state.is-applied {
+  background: #edf1f5;
+  color: #64748b;
 }
 
 .tc-list-check {
@@ -697,7 +836,19 @@ async function handleElementClick(sectionName) {
   min-width: 0;
   overflow: hidden;
   position: relative;
+  background: #f2f5f8;
+}
+
+.tc-preview-wrap :deep(.preview-body:not(.is-wechat-wrapper)) {
+  background: #f2f5f8 !important;
+}
+
+.tc-preview-wrap :deep(.standard-screen-scroll) {
+  width: min(calc(100% - 3rem), 880px);
+  margin: 1.5rem auto;
   background: var(--bg-preview, #ffffff);
+  border: 1px solid var(--border-color, #e1e4e8);
+  box-sizing: border-box;
 }
 
 .tc-drawer-wrap {
@@ -724,6 +875,90 @@ async function handleElementClick(sectionName) {
   opacity: 0.4;
 }
 
+@media (max-width: 900px) {
+  .tc-sidebar {
+    width: 15rem;
+  }
+
+  .tc-preview-header {
+    padding: 0 0.75rem;
+  }
+
+  .tc-header-actions {
+    gap: 0.3125rem;
+  }
+}
+
+@media (max-width: 760px) {
+  .tc-header {
+    height: auto;
+    min-height: 3.5rem;
+    padding: 0.5rem 0.875rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .tc-header-left {
+    min-width: 0;
+  }
+
+  .tc-search-box {
+    width: 100%;
+  }
+
+  .tc-content {
+    flex-direction: column;
+    gap: 0.625rem;
+    padding: 0.625rem 0.75rem 0.75rem;
+    overflow-y: auto;
+  }
+
+  .tc-sidebar {
+    width: 100%;
+    max-height: 14rem;
+    flex: 0 0 auto;
+    padding: 0.5rem;
+  }
+
+  .tc-list-desc {
+    -webkit-line-clamp: 1;
+  }
+
+  .tc-preview-pane {
+    min-height: 60vh;
+    flex: 1 0 60vh;
+  }
+
+  .tc-preview-header {
+    height: auto;
+    min-height: 3rem;
+    padding: 0.5rem 0.625rem;
+    flex-wrap: wrap;
+  }
+
+  .tc-preview-title {
+    flex: 1 1 auto;
+  }
+
+  .tc-header-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+
+  .tc-preview-wrap :deep(.standard-screen-scroll) {
+    width: calc(100% - 1.25rem);
+    margin: 0.625rem auto;
+  }
+
+  .tc-drawer-wrap {
+    position: absolute;
+    inset: 0 0 0 auto;
+    z-index: 5;
+    width: min(100%, 22rem);
+    box-shadow: -8px 0 24px rgba(15, 23, 42, 0.12);
+  }
+}
+
 /* ── Dark Mode (深色模式同步调整) ── */
 :global(html.dark) .tc-root,
 :global(html[data-color-mode="dark"]) .tc-root {
@@ -739,8 +974,8 @@ async function handleElementClick(sectionName) {
 
 :global(html.dark) .tc-title-badge,
 :global(html[data-color-mode="dark"]) .tc-title-badge {
-  background: #ffffff;
-  color: #0a0a0a;
+  background: transparent;
+  color: #9db3cc;
 }
 
 :global(html.dark) .tc-back-btn,
@@ -780,9 +1015,50 @@ async function handleElementClick(sectionName) {
   border-color: rgba(55, 148, 255, 0.3);
 }
 
+:global(html.dark) .tc-list-section-header,
+:global(html[data-color-mode="dark"]) .tc-list-section-header {
+  color: #9aa8ba;
+}
+
+:global(html.dark) .tc-list-section-count,
+:global(html[data-color-mode="dark"]) .tc-list-section-count {
+  background: #2b3037;
+  color: #aab7c8;
+}
+
 :global(html.dark) .tc-list-name,
 :global(html[data-color-mode="dark"]) .tc-list-name {
   color: var(--text-main, #cccccc);
+}
+
+:global(html.dark) .tc-list-desc,
+:global(html[data-color-mode="dark"]) .tc-list-desc {
+  color: #9aa8ba;
+}
+
+:global(html.dark) .tc-list-state,
+:global(html[data-color-mode="dark"]) .tc-list-state {
+  background: #22364a;
+  color: #a8cff5;
+}
+
+:global(html.dark) .tc-list-state.is-applied,
+:global(html[data-color-mode="dark"]) .tc-list-state.is-applied,
+:global(html.dark) .tc-preview-state.is-applied,
+:global(html[data-color-mode="dark"]) .tc-preview-state.is-applied {
+  background: #2b3037;
+  color: #b2bdca;
+}
+
+:global(html.dark) .tc-preview-state,
+:global(html[data-color-mode="dark"]) .tc-preview-state {
+  background: #22364a;
+  color: #a8cff5;
+}
+
+:global(html.dark) .tc-count,
+:global(html[data-color-mode="dark"]) .tc-count {
+  color: #9aa8ba;
 }
 
 :global(html.dark) .tc-preview-pane,
@@ -843,6 +1119,16 @@ async function handleElementClick(sectionName) {
 :global(html[data-color-mode="dark"]) .tc-drawer-wrap {
   background: var(--bg-card, #1e1e1e);
   border-left-color: var(--border-color, #2d2d2d);
+}
+
+:global(html.dark) .tc-preview-wrap,
+:global(html[data-color-mode="dark"]) .tc-preview-wrap {
+  background: #171a1e;
+}
+
+:global(html.dark) .tc-preview-wrap :deep(.preview-body:not(.is-wechat-wrapper)),
+:global(html[data-color-mode="dark"]) .tc-preview-wrap :deep(.preview-body:not(.is-wechat-wrapper)) {
+  background: #171a1e !important;
 }
 
 /* ── Rendered document (Typora-like, CSS var driven) ── */

@@ -20,9 +20,8 @@ import {
   Code,
   Table,
   Underline,
-  Filter,
-  Tag,
-  RotateCcw
+  RotateCcw,
+  Eye
 } from 'lucide-vue-next';
 import {
   materialCategories,
@@ -40,6 +39,7 @@ const searchQuery = ref('');
 const activeCategory = ref('all');
 const activeStyle = ref('all');
 const copiedId = ref(null);
+const selectedPreview = ref(null);
 
 const categoryIcons = {
   all: Boxes,
@@ -81,13 +81,12 @@ function resetFilters() {
   soundEngine.playClick();
 }
 
-function getStyleBadge(styleKey) {
-  return styleCategoryMap[styleKey] || {
-    name: '精选风格',
-    color: '#475569',
-    bg: '#f8fafc',
-    border: '#e2e8f0'
-  };
+function openPreview(mat) {
+  selectedPreview.value = mat;
+}
+
+function closePreview() {
+  selectedPreview.value = null;
 }
 
 async function handleCopy(mat) {
@@ -125,7 +124,7 @@ function handleApplyBackground(mat) {
 </script>
 
 <template>
-  <div class="mc-root">
+  <div class="mc-root" @keydown.esc.window="closePreview">
     <!-- Ambient subtle space light -->
     <div class="mc-glow mc-glow-a"></div>
     <div class="mc-glow mc-glow-b"></div>
@@ -228,92 +227,53 @@ function handleApplyBackground(mat) {
           :key="mat.id"
           class="mc-card"
         >
-          <!-- Card Header Bar with Badges -->
-          <div class="mc-card-header">
-            <div class="mc-card-badges">
-              <!-- Style Badge -->
-              <span
-                class="mc-badge-style"
-                :style="{
-                  color: getStyleBadge(mat.styleCategory).color,
-                  backgroundColor: getStyleBadge(mat.styleCategory).bg
-                }"
-              >
-                {{ getStyleBadge(mat.styleCategory).name }}
-              </span>
-
-              <!-- Category Badge -->
-              <span class="mc-badge-category">
-                {{ categoryNameMap[mat.category] || mat.category }}
-              </span>
-
-              <!-- Specific Tag Badge -->
-              <span
-                v-if="mat.tag"
-                class="mc-badge-tag"
-                @click.stop="searchQuery = mat.tag"
-                title="点击按此标签快速筛选"
-              >
-                {{ mat.tag }}
-              </span>
+          <!-- Live render is also the entry point to a larger preview. -->
+          <div
+            class="mc-card-preview"
+            role="button"
+            tabindex="0"
+            :aria-label="`预览素材：${mat.title}`"
+            @click="openPreview(mat)"
+            @keydown.enter.prevent="openPreview(mat)"
+            @keydown.space.prevent="openPreview(mat)"
+          >
+            <div class="mc-render-stage">
+              <div class="mc-render-paper" v-html="mat.html"></div>
             </div>
-
+            <span class="mc-preview-trigger" aria-hidden="true">
+              <Eye size="13" />
+              <span>预览</span>
+            </span>
           </div>
 
-          <!-- Pure Material Live Render Area -->
-          <div class="mc-card-preview">
-            <div class="mc-render-paper" v-html="mat.html"></div>
-          </div>
-
-          <!-- Card Metadata Footer (Minimalist & Clean) -->
+          <!-- One quiet metadata line replaces the stack of badges. -->
           <div class="mc-card-footer">
-            <h4 class="mc-card-title" :title="mat.title" data-tooltip-truncated="true">{{ mat.title }}</h4>
-          </div>
-
-          <!-- Actions stay out of the way until the card is hovered or focused. -->
-          <div class="mc-card-overlay">
-            <div class="mc-overlay-actions" @click.stop>
-              <!-- Category is backgrounds -->
-              <template v-if="mat.category === 'backgrounds'">
-                <button
-                  class="mc-overlay-btn primary"
-                  @click="handleApplyBackground(mat)"
-                  title="套用为当前文章整体背景底纹"
-                >
-                  <Palette size="13" />
-                  <span>套用为整体背景</span>
-                </button>
-                <button
-                  class="mc-overlay-btn secondary"
-                  @click="handleCopy(mat)"
-                  title="复制素材 HTML"
-                >
-                  <Check v-if="copiedId === mat.id" size="13" />
-                  <Copy v-else size="13" />
-                  <span>{{ copiedId === mat.id ? '已复制' : '复制' }}</span>
-                </button>
-              </template>
-
-              <!-- Other categories: headings, quotes, callouts, dividers, lists, widgets, etc. -->
-              <template v-else>
-                <button
-                  class="mc-overlay-btn primary"
-                  @click="handleInsert(mat)"
-                  title="插入到当前编辑器"
-                >
-                  <Plus size="13" />
-                  <span>插入编辑器</span>
-                </button>
-                <button
-                  class="mc-overlay-btn secondary"
-                  @click="handleCopy(mat)"
-                  title="复制素材 HTML"
-                >
-                  <Check v-if="copiedId === mat.id" size="13" />
-                  <Copy v-else size="13" />
-                  <span>{{ copiedId === mat.id ? '已复制' : '复制' }}</span>
-                </button>
-              </template>
+            <div class="mc-card-meta">
+              <h4 class="mc-card-title" :title="mat.title" data-tooltip-truncated="true">{{ mat.title }}</h4>
+              <p class="mc-card-kind">
+                <span>{{ categoryNameMap[mat.category] || mat.category }}</span>
+                <span v-if="styleCategoryMap[mat.styleCategory]">· {{ styleCategoryMap[mat.styleCategory].name }}</span>
+              </p>
+            </div>
+            <div class="mc-card-actions" @click.stop>
+              <button
+                class="mc-card-action"
+                :aria-label="mat.category === 'backgrounds' ? '应用背景素材' : '插入到编辑器'"
+                :title="mat.category === 'backgrounds' ? '应用为文章背景' : '插入到编辑器'"
+                @click="mat.category === 'backgrounds' ? handleApplyBackground(mat) : handleInsert(mat)"
+              >
+                <Palette v-if="mat.category === 'backgrounds'" size="14" />
+                <Plus v-else size="15" />
+              </button>
+              <button
+                class="mc-card-action"
+                :aria-label="copiedId === mat.id ? '已复制素材' : '复制素材 HTML'"
+                :title="copiedId === mat.id ? '已复制' : '复制素材 HTML'"
+                @click="handleCopy(mat)"
+              >
+                <Check v-if="copiedId === mat.id" size="14" />
+                <Copy v-else size="14" />
+              </button>
             </div>
           </div>
         </div>
@@ -328,6 +288,61 @@ function handleApplyBackground(mat) {
         </div>
       </div>
     </main>
+
+    <Teleport to="body">
+      <div
+        v-if="selectedPreview"
+        class="mc-preview-modal-backdrop"
+        role="presentation"
+        @click.self="closePreview"
+      >
+        <section
+          class="mc-preview-modal"
+          :class="{
+            'is-wide': ['backgrounds', 'callouts', 'lists', 'tech_cards', 'tables'].includes(selectedPreview.category),
+            'is-compact': ['headings', 'underlines', 'dividers', 'footer_widgets'].includes(selectedPreview.category)
+          }"
+          role="dialog"
+          aria-modal="true"
+          :aria-label="`素材预览：${selectedPreview.title}`"
+        >
+          <header class="mc-preview-modal-header">
+            <div class="mc-preview-modal-heading">
+              <h2>{{ selectedPreview.title }}</h2>
+              <p>
+                {{ categoryNameMap[selectedPreview.category] || selectedPreview.category }}
+                <span v-if="styleCategoryMap[selectedPreview.styleCategory]">· {{ styleCategoryMap[selectedPreview.styleCategory].name }}</span>
+              </p>
+            </div>
+            <button class="mc-preview-modal-close" aria-label="关闭预览" title="关闭预览" @click="closePreview">
+              <X size="17" />
+            </button>
+          </header>
+          <div class="mc-preview-modal-content">
+            <div class="mc-preview-modal-render" v-html="selectedPreview.html"></div>
+          </div>
+          <footer class="mc-preview-modal-footer">
+            <button
+              class="mc-modal-secondary"
+              :class="{ 'is-copied': copiedId === selectedPreview.id }"
+              @click="handleCopy(selectedPreview)"
+            >
+              <Check v-if="copiedId === selectedPreview.id" size="14" />
+              <Copy v-else size="14" />
+              {{ copiedId === selectedPreview.id ? '已复制' : '复制 HTML' }}
+            </button>
+            <button
+              class="mc-modal-primary"
+              @click="selectedPreview.category === 'backgrounds' ? handleApplyBackground(selectedPreview) : handleInsert(selectedPreview)"
+            >
+              <Palette v-if="selectedPreview.category === 'backgrounds'" size="14" />
+              <Plus v-else size="14" />
+              {{ selectedPreview.category === 'backgrounds' ? '应用背景' : '插入编辑器' }}
+            </button>
+          </footer>
+        </section>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -353,12 +368,12 @@ function handleApplyBackground(mat) {
 .mc-header {
   position: relative;
   z-index: 2;
-  height: 3.25rem;
-  padding: 0 1.25rem;
+  height: 3.75rem;
+  padding: 0 1.5rem;
   background: var(--bg-card, #FFFFFF);
   border-bottom: 1px solid var(--border-color, #EDEDED);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   flex-shrink: 0;
 }
@@ -373,12 +388,12 @@ function handleApplyBackground(mat) {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  height: 2rem;
-  padding: 0 0.75rem;
-  border-radius: 6px;
-  border: 1px solid var(--border-color, #EDEDED);
-  background: var(--bg-card, #ffffff);
-  color: var(--text-main, #222222);
+  height: 2.125rem;
+  padding: 0 0.625rem 0 0;
+  border-radius: 5px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: #64748b;
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
@@ -387,8 +402,8 @@ function handleApplyBackground(mat) {
 }
 
 .mc-back-btn:hover {
-  background: #F4F4F5;
-  color: #000000;
+  background: #f5f7fa;
+  color: #1e293b;
 }
 
 .mc-divider {
@@ -407,17 +422,17 @@ function handleApplyBackground(mat) {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 1.5rem;
+  width: 1.25rem;
   height: 1.5rem;
-  border-radius: 4px;
-  color: #ffffff;
-  background: #3d3939;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  color: #52657f;
+  background: transparent;
+  border: 0;
 }
 
 .mc-title {
-  font-size: 0.95rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 650;
   color: var(--text-main, #222222);
   margin: 0;
   letter-spacing: -0.01em;
@@ -425,18 +440,17 @@ function handleApplyBackground(mat) {
 }
 
 .mc-count {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  color: #16a34a;
-  background: #edfdf2;
-  padding: 0.0625rem 0.4375rem;
-  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #718096;
+  background: transparent;
+  padding: 0 0.25rem;
 }
 
 .mc-search-box {
   position: relative;
-  width: 17.5rem;
-  height: 2rem;
+  width: clamp(16rem, 23vw, 22rem);
+  height: 2.25rem;
   display: flex;
   align-items: center;
 }
@@ -454,8 +468,8 @@ function handleApplyBackground(mat) {
   height: 100%;
   padding: 0 1.875rem 0 2rem;
   border-radius: 6px;
-  border: 1px solid var(--border-color, #EDEDED);
-  background: var(--bg-card, #ffffff);
+  border: 1px solid #dce3ec;
+  background: #f8fafc;
   color: var(--text-main, #222222);
   font-size: 0.75rem;
   font-weight: 500;
@@ -468,8 +482,9 @@ function handleApplyBackground(mat) {
 }
 
 .mc-search-box input:focus {
-  border-color: #3d3939;
+  border-color: #8ab4e8;
   background: #ffffff;
+  box-shadow: 0 0 0 3px rgba(37, 112, 204, 0.08);
 }
 
 .mc-clear-btn {
@@ -499,7 +514,7 @@ function handleApplyBackground(mat) {
   z-index: 1;
   flex: 1;
   overflow-y: auto;
-  padding: 1rem 1.25rem 2.5rem 1.25rem;
+  padding: 1.125rem 1.5rem 2.5rem;
 }
 
 .mc-content::-webkit-scrollbar {
@@ -515,29 +530,42 @@ function handleApplyBackground(mat) {
 .mc-filter-panel {
   display: flex;
   flex-direction: column;
-  gap: 0.625rem;
-  margin-bottom: 1.25rem;
-  padding: 0.75rem 1rem;
-  background: var(--bg-card, #FFFFFF);
-  border: 1px solid var(--border-color, #EDEDED);
-  border-radius: 6px;
+  gap: 0;
+  margin-bottom: 1.125rem;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
 }
 
 .mc-filter-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 1rem;
   overflow-x: auto;
+  min-width: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.mc-filter-row + .mc-filter-row {
+  margin-top: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid #e8edf3;
+}
+
+.mc-filter-row::-webkit-scrollbar {
+  display: none;
 }
 
 .mc-filter-label {
   display: inline-flex;
   align-items: center;
-  gap: 0.3125rem;
+  gap: 0;
   font-size: 0.75rem;
-  font-weight: 700;
-  color: #52525B;
-  min-width: 4.5rem;
+  font-weight: 600;
+  color: #718096;
+  min-width: 4rem;
   flex-shrink: 0;
   user-select: none;
 }
@@ -547,12 +575,14 @@ function handleApplyBackground(mat) {
   display: flex;
   align-items: center;
   gap: 0.25rem;
-  padding: 0.1875rem;
-  background: #F4F4F5;
-  border-radius: 6px;
-  width: fit-content;
-  max-width: 100%;
+  padding: 0;
+  background: transparent;
+  border-radius: 0;
+  width: auto;
+  max-width: calc(100% - 5rem);
   overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
 }
 
 .mc-tabs::-webkit-scrollbar {
@@ -563,8 +593,8 @@ function handleApplyBackground(mat) {
   display: inline-flex;
   align-items: center;
   gap: 0.3125rem;
-  padding: 0.3125rem 0.625rem;
-  border-radius: 4px;
+  padding: 0.4375rem 0.625rem;
+  border-radius: 5px;
   border: none;
   background: transparent;
   color: #71717A;
@@ -577,13 +607,13 @@ function handleApplyBackground(mat) {
 }
 
 .mc-tab:hover {
-  color: #18181B;
-  background: #E4E4E7;
+  color: #1f2937;
+  background: #f1f5f9;
 }
 
 .mc-tab.is-active {
-  background: var(--btn-primary-bg, #3d3939);
-  color: #ffffff;
+  background: #eaf2fc;
+  color: #1769bd;
   font-weight: 600;
 }
 
@@ -658,117 +688,197 @@ function handleApplyBackground(mat) {
 /* Grid */
 .mc-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.125rem;
 }
 
-/* Card (6px 扁平克制圆角，1px 精准细边框) */
+/* Compact cards: the rendered material leads, with actions kept in one calm footer. */
 .mc-card {
   position: relative;
   background: #ffffff;
-  border: 1px solid var(--border-color, #EDEDED);
+  border: 1px solid #e1e7ef;
   border-radius: 6px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  min-height: 155px;
-  cursor: pointer;
-  transition: border-color 0.18s ease, transform 0.18s ease;
+  min-width: 0;
+  cursor: default;
+  transition: border-color 0.16s ease;
 }
 
 .mc-card:hover {
-  border-color: #3d3939;
-  transform: translateY(-1px);
+  border-color: #b8cbe2;
 }
 
-/* Card Header with Badges */
-.mc-card-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.4375rem 0.625rem;
-  background: #FAFAFA;
-  border-bottom: 1px solid #EDEDED;
+.mc-card:focus-within {
+  border-color: #8ab4e8;
+  outline: 2px solid rgba(37, 112, 204, 0.12);
+  outline-offset: 1px;
 }
 
-.mc-card-badges {
-  display: flex;
-  align-items: center;
-  gap: 0.3125rem;
-  flex-wrap: wrap;
-}
-
-.mc-badge-style {
-  font-size: 0.6875rem;
-  font-weight: 600;
-  padding: 0.125rem 0.4375rem;
-  border-radius: 3px;
-  border: none;
-  letter-spacing: 0.01em;
-}
-
-.mc-badge-category {
-  font-size: 0.6875rem;
-  font-weight: 500;
-  padding: 0.125rem 0.4375rem;
-  border-radius: 3px;
-  background: #F4F4F5;
-  color: #52525B;
-  border: none;
-}
-
-.mc-badge-tag {
-  font-size: 0.6875rem;
-  font-weight: 500;
-  padding: 0.125rem 0.4375rem;
-  border-radius: 3px;
-  background: #F4F4F5;
-  color: #27272A;
-  border: none;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.mc-badge-tag:hover {
-  background: #E4E4E7;
-  color: #09090B;
-}
-
-.mc-card-quick-id {
-  font-size: 0.625rem;
-  font-family: monospace;
-  color: #A1A1AA;
-}
-
-/* Pure Material Preview Area */
+/* Live preview */
 .mc-card-preview {
-  flex: 1;
+  position: relative;
+  flex: 0 0 11rem;
   width: 100%;
-  padding: 1rem 0.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  height: 11rem;
+  padding: 0;
   box-sizing: border-box;
   background: #ffffff;
+  overflow: hidden;
+  cursor: zoom-in;
+  outline: none;
+}
+
+.mc-card-preview::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  background: rgba(15, 23, 42, 0.5);
+  opacity: 0;
+  transition: opacity 0.16s ease;
+  pointer-events: none;
+}
+
+.mc-card-preview:focus-visible {
+  box-shadow: inset 0 0 0 2px #75a7dc;
+}
+
+.mc-preview-trigger {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 2.25rem;
+  padding: 0 0.875rem;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 5px;
+  background: #ffffff;
+  color: #1e293b;
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0;
+  transform: translate(-50%, calc(-50% + 4px));
+  transition: opacity 0.16s ease, transform 0.16s ease, background 0.15s ease;
+  pointer-events: none;
+}
+
+.mc-card-preview:hover::before,
+.mc-card-preview:focus-visible::before {
+  opacity: 1;
+}
+
+.mc-card-preview:hover .mc-preview-trigger,
+.mc-card-preview:focus-visible .mc-preview-trigger {
+  opacity: 1;
+  transform: translate(-50%, -50%);
+}
+
+.mc-preview-trigger:hover {
+  background: #f1f6fc;
 }
 
 .mc-render-paper {
+  position: relative;
+  z-index: 0;
   width: 100%;
-  background: transparent;
+  min-width: 0;
+  height: 100%;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid #e4e9f0;
+  border-radius: 2px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.035);
+  overflow: hidden;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  justify-content: flex-start;
+  isolation: isolate;
+}
+
+.mc-render-stage {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
   justify-content: center;
+  overflow: hidden;
+  padding: 0.75rem 0.875rem;
+  box-sizing: border-box;
+  background: #f3f5f8;
 }
 
-/* Card Metadata Footer */
+.mc-render-paper :deep([data-material="true"]) {
+  flex: 0 0 auto;
+  max-width: 100%;
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  box-sizing: border-box;
+  overflow: hidden !important;
+}
+
+.mc-render-paper::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: auto 0 0;
+  height: 1rem;
+  pointer-events: none;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), #ffffff 85%);
+}
+
+.mc-render-paper :deep(table) {
+  width: 100% !important;
+  max-width: 100%;
+  table-layout: fixed;
+}
+
+.mc-render-paper :deep(tbody tr:nth-child(n + 3)) {
+  display: none;
+}
+
+.mc-render-paper :deep(th),
+.mc-render-paper :deep(td) {
+  padding: 0.375rem 0.5rem !important;
+  font-size: 0.75rem !important;
+  line-height: 1.35 !important;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.mc-render-paper :deep(img),
+.mc-render-paper :deep(svg) {
+  max-width: 100%;
+  height: auto;
+}
+
+.mc-render-paper :deep(pre) {
+  max-width: 100%;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Title and actions share one footer row. */
 .mc-card-footer {
-  padding: 0.5rem 0.625rem;
+  min-height: 3.75rem;
+  padding: 0.5625rem 0.625rem 0.5625rem 0.75rem;
   background: #ffffff;
-  border-top: 1px solid #EDEDED;
+  border-top: 1px solid #edf1f5;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
-.mc-card-title-row {
-  margin-bottom: 0.125rem;
+.mc-card-meta {
+  flex: 1;
+  min-width: 0;
 }
 
 .mc-card-title {
@@ -781,130 +891,219 @@ function handleApplyBackground(mat) {
   text-overflow: ellipsis;
 }
 
-.mc-card-desc {
-  margin: 0 0 0.3125rem 0;
+.mc-card-kind {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin: 0.1875rem 0 0;
   font-size: 0.6875rem;
-  color: #71717A;
-  line-height: 1.35;
+  color: #7b8797;
+  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.mc-card-tags {
+.mc-card-actions {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 0.25rem;
+  gap: 0.1875rem;
 }
 
-.mc-tag-pill {
-  font-size: 0.625rem;
-  color: #71717A;
-  background: #F4F4F5;
-  border: 1px solid #E4E4E7;
-  padding: 0 0.25rem;
-  border-radius: 3px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.mc-tag-pill:hover {
-  background: #EFF6FF;
-  color: #2563EB;
-  border-color: #BFDBFE;
-}
-
-/* Sleek Dark Frosted Hover Overlay */
-.mc-card-overlay {
-  position: absolute;
-  inset: 0;
-  background: rgba(24, 24, 27, 0.75);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  opacity: 0;
-  pointer-events: none;
-  border-radius: 6px;
-  transition: opacity 0.18s ease;
-  z-index: 10;
-}
-
-.mc-card:hover .mc-card-overlay {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-.mc-overlay-info {
-  text-align: center;
-  margin-bottom: 0.75rem;
-}
-
-.mc-overlay-title {
-  font-size: 0.875rem;
-  font-weight: 700;
-  color: #FFFFFF;
-  margin-bottom: 0.125rem;
-}
-
-.mc-overlay-cat {
-  font-size: 0.6875rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.65);
-}
-
-.mc-overlay-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-/* Flat Overlay Buttons */
-.mc-overlay-btn {
+.mc-card-action {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.3125rem;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: #718096;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease, border-color 0.15s ease;
+}
+
+.mc-card-action:hover,
+.mc-card-action:focus-visible {
+  color: #1769bd;
+  background: #f1f6fc;
+  border-color: #d7e5f4;
+  outline: none;
+}
+
+.mc-preview-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(15, 23, 42, 0.46);
+  backdrop-filter: blur(2px);
+}
+
+.mc-preview-modal {
+  width: min(40rem, 100%);
+  max-height: min(44rem, calc(100vh - 3rem));
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid #dce3ec;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #1e293b;
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.16);
+}
+
+.mc-preview-modal.is-wide {
+  width: min(58rem, 100%);
+}
+
+.mc-preview-modal.is-compact {
+  width: min(34rem, 100%);
+}
+
+.mc-preview-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.875rem 1rem 0.875rem 1.25rem;
+  border-bottom: 1px solid #e8edf3;
+}
+
+.mc-preview-modal-heading {
+  min-width: 0;
+}
+
+.mc-preview-modal-heading h2 {
+  margin: 0;
+  overflow: hidden;
+  color: #1e293b;
+  font-size: 0.9375rem;
+  font-weight: 650;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mc-preview-modal-heading p {
+  margin: 0.25rem 0 0;
+  color: #718096;
+  font-size: 0.75rem;
+}
+
+.mc-preview-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
   height: 2rem;
-  padding: 0 0.875rem;
-  border-radius: 6px;
+  flex: 0 0 auto;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: #718096;
+  cursor: pointer;
+}
+
+.mc-preview-modal-close:hover {
+  background: #f3f6f9;
+  color: #334155;
+}
+
+.mc-preview-modal-content {
+  flex: 0 1 auto;
+  min-height: 0;
+  max-height: min(66vh, 36rem);
+  overflow: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  background: #f5f7fa;
+}
+
+.mc-preview-modal-render {
+  width: 100%;
+  min-height: 9rem;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  padding: 1.25rem;
+  background: #ffffff;
+  border: 1px solid #e4e9ef;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+.mc-preview-modal.is-compact .mc-preview-modal-content {
+  padding: 1.25rem 1.5rem;
+  background: #ffffff;
+}
+
+.mc-preview-modal.is-compact .mc-preview-modal-render {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.mc-preview-modal.is-compact .mc-preview-modal-render :deep([data-material="true"]) {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+.mc-preview-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid #e8edf3;
+  background: #ffffff;
+}
+
+.mc-modal-primary,
+.mc-modal-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.375rem;
+  min-height: 2.125rem;
+  padding: 0 0.75rem;
+  border: 1px solid #dce3ec;
+  border-radius: 4px;
   font-family: inherit;
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  outline: none;
-  white-space: nowrap;
-  transition: all 0.15s ease;
-  user-select: none;
 }
 
-/* Primary Button on Dark Overlay */
-.mc-overlay-btn.primary {
-  background: #FFFFFF;
-  color: #18181B;
-  border: 1px solid rgba(255, 255, 255, 0.3);
+.mc-modal-secondary {
+  background: #ffffff;
+  color: #52657f;
 }
 
-.mc-overlay-btn.primary:hover {
-  background: #F4F4F5;
-  color: #000000;
+.mc-modal-secondary:hover,
+.mc-modal-secondary.is-copied {
+  background: #f5f8fc;
+  color: #1769bd;
 }
 
-/* Secondary Button on Dark Overlay */
-.mc-overlay-btn.secondary {
-  background: rgba(255, 255, 255, 0.15);
-  color: #FFFFFF;
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  backdrop-filter: blur(4px);
+.mc-modal-primary {
+  border-color: #1769bd;
+  background: #1769bd;
+  color: #ffffff;
 }
 
-.mc-overlay-btn.secondary:hover {
-  background: rgba(255, 255, 255, 0.25);
-  color: #FFFFFF;
+.mc-modal-primary:hover {
+  border-color: #12599f;
+  background: #12599f;
 }
 
 .mc-empty {
@@ -943,6 +1142,96 @@ function handleApplyBackground(mat) {
   background: #F4F4F5;
 }
 
+@media (max-width: 760px) {
+  .mc-header {
+    height: auto;
+    min-height: 3.5rem;
+    padding: 0.625rem 0.875rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .mc-header-left {
+    min-width: 0;
+  }
+
+  .mc-search-box {
+    width: 100%;
+    height: 2.25rem;
+  }
+
+  .mc-content {
+    padding: 0.875rem 0.875rem 2rem;
+  }
+
+  .mc-filter-row {
+    gap: 0.5rem;
+  }
+
+  .mc-filter-label {
+    min-width: 3.5rem;
+  }
+
+  .mc-tabs {
+    max-width: calc(100% - 4rem);
+  }
+}
+
+@media (max-width: 1440px) {
+  .mc-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1080px) {
+  .mc-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .mc-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .mc-preview-modal-backdrop {
+    padding: 0.75rem;
+  }
+
+  .mc-preview-modal {
+    max-height: calc(100vh - 1.5rem);
+  }
+
+  .mc-preview-modal-content {
+    padding: 1rem;
+    max-height: 65vh;
+  }
+
+  .mc-preview-modal.is-compact .mc-preview-modal-content {
+    padding: 1rem;
+  }
+
+  .mc-preview-modal-render {
+    padding: 1rem;
+  }
+}
+
+@media (hover: none) {
+  .mc-card-preview::before {
+    display: none;
+  }
+
+  .mc-preview-trigger {
+    top: 0.625rem;
+    left: auto;
+    right: 0.625rem;
+    min-height: 1.75rem;
+    padding: 0 0.5625rem;
+    opacity: 1;
+    transform: none;
+  }
+}
+
 /* ── Dark Mode (深色模式全面适配) ── */
 :global(html.dark) .mc-root,
 :global(html[data-color-mode="dark"]) .mc-root {
@@ -958,8 +1247,8 @@ function handleApplyBackground(mat) {
 
 :global(html.dark) .mc-filter-panel,
 :global(html[data-color-mode="dark"]) .mc-filter-panel {
-  background: var(--bg-card, #252526);
-  border-color: var(--border-color, #2d2d2d);
+  background: transparent;
+  border-color: transparent;
 }
 
 :global(html.dark) .mc-filter-label,
@@ -969,8 +1258,8 @@ function handleApplyBackground(mat) {
 
 :global(html.dark) .mc-title-badge,
 :global(html[data-color-mode="dark"]) .mc-title-badge {
-  background: #ffffff;
-  color: #0a0a0a;
+  background: transparent;
+  color: #a9bfd8;
 }
 
 :global(html.dark) .mc-title,
@@ -980,28 +1269,38 @@ function handleApplyBackground(mat) {
 
 :global(html.dark) .mc-back-btn,
 :global(html[data-color-mode="dark"]) .mc-back-btn {
-  background: var(--bg-toolbar, #2d2d2d);
-  border-color: var(--border-color, #37373d);
-  color: var(--text-main, #cccccc);
+  background: transparent;
+  border-color: transparent;
+  color: #aab7c8;
 }
 
 :global(html.dark) .mc-back-btn:hover,
 :global(html[data-color-mode="dark"]) .mc-back-btn:hover {
-  background: var(--bg-capsule-btn-hover, #37373d);
+  background: #292c31;
   color: #ffffff;
 }
 
 :global(html.dark) .mc-search-box input,
 :global(html[data-color-mode="dark"]) .mc-search-box input {
-  background: var(--bg-card, #252526);
+  background: #23262b;
   border-color: var(--border-color, #37373d);
   color: var(--text-main, #cccccc);
 }
 
+:global(html.dark) .mc-count,
+:global(html[data-color-mode="dark"]) .mc-count {
+  color: #9aa8ba;
+}
+
+:global(html.dark) .mc-filter-row + .mc-filter-row,
+:global(html[data-color-mode="dark"]) .mc-filter-row + .mc-filter-row {
+  border-top-color: #30343a;
+}
+
 :global(html.dark) .mc-tabs,
 :global(html[data-color-mode="dark"]) .mc-tabs {
-  background: var(--bg-toolbar, #1e1e1e);
-  border-color: var(--border-color, #2d2d2d);
+  background: transparent;
+  border-color: transparent;
 }
 
 :global(html.dark) .mc-tab,
@@ -1011,14 +1310,14 @@ function handleApplyBackground(mat) {
 
 :global(html.dark) .mc-tab:hover,
 :global(html[data-color-mode="dark"]) .mc-tab:hover {
-  background: #2d2d2d;
+  background: #2a2f36;
   color: #ffffff;
 }
 
 :global(html.dark) .mc-tab.is-active,
 :global(html[data-color-mode="dark"]) .mc-tab.is-active {
-  background: #ffffff;
-  color: #0a0a0a;
+  background: #203953;
+  color: #9bcaff;
 }
 
 :global(html.dark) .mc-card,
@@ -1027,16 +1326,16 @@ function handleApplyBackground(mat) {
   border-color: var(--border-color, #2d2d2d);
 }
 
-:global(html.dark) .mc-card-header,
-:global(html[data-color-mode="dark"]) .mc-card-header {
-  background: #252526;
-  border-bottom-color: #2d2d2d;
+:global(html.dark) .mc-card:hover,
+:global(html[data-color-mode="dark"]) .mc-card:hover {
+  border-color: #4f6b8b;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 :global(html.dark) .mc-card-footer,
 :global(html[data-color-mode="dark"]) .mc-card-footer {
   background: #1e1e1e;
-  border-top-color: #2d2d2d;
+  border-top-color: #30343a;
 }
 
 :global(html.dark) .mc-card-title,
@@ -1044,25 +1343,9 @@ function handleApplyBackground(mat) {
   color: #f1f5f9;
 }
 
-:global(html.dark) .mc-badge-category,
-:global(html[data-color-mode="dark"]) .mc-badge-category {
-  background: #2d2d2d;
-  color: #94a3b8;
-  border-color: #37373d;
-}
-
-:global(html.dark) .mc-badge-tag,
-:global(html[data-color-mode="dark"]) .mc-badge-tag {
-  background: #2d2d2d;
-  color: #e2e8f0;
-  border-color: #37373d;
-}
-
-:global(html.dark) .mc-tag-pill,
-:global(html[data-color-mode="dark"]) .mc-tag-pill {
-  background: #252526;
-  color: #94a3b8;
-  border-color: #2d2d2d;
+:global(html.dark) .mc-card-kind,
+:global(html[data-color-mode="dark"]) .mc-card-kind {
+  color: #9aa8ba;
 }
 
 :global(html.dark) .mc-card-preview,
@@ -1070,26 +1353,65 @@ function handleApplyBackground(mat) {
   background: var(--bg-card, #1e1e1e);
 }
 
-:global(html.dark) .mc-card-overlay,
-:global(html[data-color-mode="dark"]) .mc-card-overlay {
-  background: rgba(18, 18, 22, 0.88);
-}
-
-:global(html.dark) .mc-overlay-title,
-:global(html[data-color-mode="dark"]) .mc-overlay-title {
-  color: #ffffff;
-}
-
-:global(html.dark) .mc-overlay-btn.primary,
-:global(html[data-color-mode="dark"]) .mc-overlay-btn.primary {
+:global(html.dark) .mc-preview-trigger,
+:global(html[data-color-mode="dark"]) .mc-preview-trigger {
   background: #ffffff;
-  color: #0a0a0a;
+  border-color: rgba(255, 255, 255, 0.72);
+  color: #1e293b;
 }
 
-:global(html.dark) .mc-overlay-btn.secondary,
-:global(html[data-color-mode="dark"]) .mc-overlay-btn.secondary {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.15);
-  color: #e2e8f0;
+:global(html.dark) .mc-card-action,
+:global(html[data-color-mode="dark"]) .mc-card-action {
+  color: #aab7c8;
+}
+
+:global(html.dark) .mc-card-action:hover,
+:global(html[data-color-mode="dark"]) .mc-card-action:hover {
+  background: #203953;
+  border-color: #344c66;
+  color: #9bcaff;
+}
+
+:global(html.dark) .mc-preview-modal,
+:global(html[data-color-mode="dark"]) .mc-preview-modal {
+  background: #1e1e1e;
+  border-color: #37373d;
+  color: #d7dde6;
+}
+
+:global(html.dark) .mc-preview-modal-header,
+:global(html[data-color-mode="dark"]) .mc-preview-modal-header,
+:global(html.dark) .mc-preview-modal-footer,
+:global(html[data-color-mode="dark"]) .mc-preview-modal-footer {
+  border-color: #37373d;
+  background: #1e1e1e;
+}
+
+:global(html.dark) .mc-preview-modal-heading h2,
+:global(html[data-color-mode="dark"]) .mc-preview-modal-heading h2 {
+  color: #f1f5f9;
+}
+
+:global(html.dark) .mc-preview-modal-heading p,
+:global(html[data-color-mode="dark"]) .mc-preview-modal-heading p {
+  color: #9aa8ba;
+}
+
+:global(html.dark) .mc-preview-modal-content,
+:global(html[data-color-mode="dark"]) .mc-preview-modal-content {
+  background: #171a1e;
+}
+
+:global(html.dark) .mc-preview-modal-render,
+:global(html[data-color-mode="dark"]) .mc-preview-modal-render {
+  background: #1e1e1e;
+  border-color: #37373d;
+}
+
+:global(html.dark) .mc-modal-secondary,
+:global(html[data-color-mode="dark"]) .mc-modal-secondary {
+  background: #252a31;
+  border-color: #3a414b;
+  color: #c1ccda;
 }
 </style>

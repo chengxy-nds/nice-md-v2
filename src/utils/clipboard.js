@@ -25,3 +25,16 @@ export async function writeTextToClipboard(text) {
   }
 }
 
+/**
+ * Write an image Blob (PNG) directly to the system clipboard.
+ */
+export async function writeImageBlobToClipboard(blob) {
+  if (!navigator.clipboard?.write) {
+    throw new Error('当前浏览器不支持直接写入图片到剪贴板，请通过下载或另存为使用');
+  }
+  const mimeType = blob.type || 'image/png';
+  const item = new ClipboardItem({ [mimeType]: blob });
+  await navigator.clipboard.write([item]);
+}
+
+

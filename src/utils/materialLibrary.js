@@ -22,7 +22,7 @@ export const materialCategories = [
   { id: 'underlines', name: '下划线' },
   { id: 'dividers', name: '分割线' },
   { id: 'header_widgets', name: '顶部导读' },
-  { id: 'footer_widgets', name: '文末三连' }
+  { id: 'footer_widgets', name: '文末组件' }
 ];
 
 export const styleCategories = [
@@ -53,8 +53,66 @@ export const categoryNameMap = {
   'underlines': '下划线',
   'dividers': '分割线',
   'header_widgets': '顶部导读',
-  'footer_widgets': '文末三连'
+  'footer_widgets': '文末组件'
 };
+
+const buildTripleLikeFooter = (tip = '如果这篇内容对你有帮助') => `<section style="margin: 28px 0 16px; padding: 18px 16px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; text-align: center; box-sizing: border-box;" data-material="true">
+  <p style="margin: 0 0 12px; color: #1e293b; font-size: 15px; font-weight: 600; line-height: 1.5;">${tip}</p>
+  <table style="width: 100%; border-collapse: collapse; table-layout: fixed;">
+    <tbody><tr>
+      <td style="width: 33.33%; padding: 8px 4px; border-right: 1px solid #dbe3ec; color: #334155; font-size: 13px; font-weight: 600;">点赞支持</td>
+      <td style="width: 33.33%; padding: 8px 4px; border-right: 1px solid #dbe3ec; color: #334155; font-size: 13px; font-weight: 600;">点亮在看</td>
+      <td style="width: 33.33%; padding: 8px 4px; color: #334155; font-size: 13px; font-weight: 600;">转发分享</td>
+    </tr></tbody>
+  </table>
+</section>`;
+
+const buildQrFollowFooter = (
+  title = '扫码关注公众号',
+  subTitle = '每周更新实用内容与深度复盘'
+) => `<section style="margin: 28px 0 16px; padding: 16px 18px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box;" data-material="true">
+  <table style="width: 100%; border-collapse: collapse;">
+    <tbody><tr>
+      <td style="padding-right: 14px; vertical-align: middle;">
+        <div style="margin-bottom: 5px; color: #2563eb; font-size: 11px; font-weight: 600; letter-spacing: 0.06em;">公众号 · 持续更新</div>
+        <div style="color: #1e293b; font-size: 16px; font-weight: 600; line-height: 1.45;">${title}</div>
+        <p style="margin: 5px 0 0; color: #64748b; font-size: 12px; line-height: 1.55;">${subTitle}</p>
+      </td>
+      <td style="width: 104px; text-align: right; vertical-align: middle;">
+        <div style="display: inline-table; width: 88px; height: 88px; border: 1px solid #d5dee9; background: #ffffff; color: #64748b; text-align: center; box-sizing: border-box;">
+          <div style="display: table-cell; vertical-align: middle; font-size: 12px; line-height: 1.5;">二维码<br><span style="color: #94a3b8; font-size: 10px;">替换图片</span></div>
+        </div>
+      </td>
+    </tr></tbody>
+  </table>
+</section>`;
+
+const buildAuthorFooter = (
+  author = '程序员小富',
+  desc = '专注分享后端架构、实用工具与创作经验。'
+) => `<section style="margin: 28px 0 16px; padding: 16px 18px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box;" data-material="true">
+  <table style="width: 100%; border-collapse: collapse;">
+    <tbody><tr>
+      <td style="vertical-align: middle;">
+        <div style="margin-bottom: 4px; color: #64748b; font-size: 11px; letter-spacing: 0.04em;">作者专栏</div>
+        <div style="color: #1e293b; font-size: 16px; font-weight: 600; line-height: 1.4;">${author}</div>
+      </td>
+      <td style="padding-left: 10px; text-align: right; vertical-align: middle; white-space: nowrap;">
+        <span style="color: #2563eb; font-size: 12px; font-weight: 600;">关注公众号&nbsp;→</span>
+      </td>
+    </tr><tr>
+      <td colspan="2" style="padding-top: 8px; color: #64748b; font-size: 12px; line-height: 1.6;">${desc}</td>
+    </tr></tbody>
+  </table>
+</section>`;
+
+const buildSocialMatrixFooter = () => `<section style="margin: 28px 0 16px; padding: 16px 12px; border-top: 1px solid #dbe3ec; border-bottom: 1px solid #dbe3ec; text-align: center; box-sizing: border-box;" data-material="true">
+  <div style="color: #1e293b; font-size: 15px; font-weight: 600; line-height: 1.5;">也欢迎在其他平台找到我</div>
+  <p style="margin: 4px 0 10px; color: #64748b; font-size: 12px; line-height: 1.5;">技术文章与创作动态持续更新</p>
+  <div style="margin-top: 8px; color: #334155; font-size: 12px; line-height: 1.9;">
+    微信公众号<span style="color: #a0aec0;">&nbsp; · &nbsp;</span>知乎专栏<span style="color: #a0aec0;">&nbsp; · &nbsp;</span>稀土掘金<span style="color: #a0aec0;">&nbsp; · &nbsp;</span>GitHub
+  </div>
+</section>`;
 
 export const materials = [
   // ── 背景底纹精选素材 (纯底纹展示) ──
@@ -746,51 +804,32 @@ export const materials = [
   {
     id: 'f-135-triple-like',
     category: 'footer_widgets',
-    tag: '互动三连卡',
-    styleCategory: 'fresh',
-    title: '爆款文末三连交互卡片',
-    description: '包含“点赞 · 在看 · 分享”互动提醒',
+    tag: '文末互动',
+    styleCategory: 'minimal',
+    title: '文末互动引导',
+    description: '简洁的点赞、在看与分享提示，适合文章结尾',
     tags: ['互动三连', '点赞在看', '精选爆款'],
-    html: `<section style="margin: 28px 0 16px; padding: 20px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; text-align: center;" data-material="true">
-  <p style="font-size: 14.5px; font-weight: 700; color: #1e293b; margin-bottom: 12px; word-break: break-word;">如果这篇文章对你有启发，欢迎转发分享！</p>
-  <div style="text-align: center; color: #475569; font-size: 13px; font-weight: 600; display: flex; justify-content: center; flex-wrap: wrap; gap: 8px;">
-    <span style="background: #ffffff; padding: 6px 14px; border-radius: 20px; border: 1px solid #e2e8f0; -webkit-box-shadow: 0 2px 6px rgba(0,0,0,0.03); box-shadow: 0 2px 6px rgba(0,0,0,0.03);">👍 点赞</span>
-    <span style="background: #ffffff; padding: 6px 14px; border-radius: 20px; border: 1px solid #e2e8f0; -webkit-box-shadow: 0 2px 6px rgba(0,0,0,0.03); box-shadow: 0 2px 6px rgba(0,0,0,0.03);">👀 在看</span>
-    <span style="background: #ffffff; padding: 6px 14px; border-radius: 20px; border: 1px solid #e2e8f0; -webkit-box-shadow: 0 2px 6px rgba(0,0,0,0.03); box-shadow: 0 2px 6px rgba(0,0,0,0.03);">🚀 分享</span>
-  </div>
-</section>`
+    html: buildTripleLikeFooter()
   },
   {
     id: 'f-135-qrcode-card',
     category: 'footer_widgets',
     tag: '二维码关注卡',
-    styleCategory: 'business',
-    title: '经典二维码关注引导卡片',
-    description: '高转化微信公众号二维码关注框，带有扫码提示手势',
+    styleCategory: 'minimal',
+    title: '公众号二维码卡',
+    description: '简洁的公众号关注引导与二维码替换位',
     tags: ['关注卡片', '二维码', '精选爆款'],
-    html: `<section style="margin: 28px 0 16px; padding: 22px; background: #faf5ff; border: 1px dashed #d8b4fe; border-radius: 16px; text-align: center;" data-material="true">
-  <div style="font-size: 16px; font-weight: 800; color: #6b21a8; margin-bottom: 4px;">👇 长按识别二维码 · 关注公众号</div>
-  <p style="font-size: 13px; color: #7e22ce; margin-bottom: 14px;">每周日晚 20:00 准时推送独家深度复盘</p>
-  <div style="display: inline-block; padding: 10px; background: #ffffff; border-radius: 12px; -webkit-box-shadow: 0 4px 12px rgba(107,33,168,0.08); box-shadow: 0 4px 12px rgba(107,33,168,0.08);">
-    <div style="width: 110px; height: 110px; line-height: 110px; text-align: center; background: #f3e8ff; border: 2px dashed #c084fc; border-radius: 8px; color: #9333ea; font-size: 12px; font-weight: 600;">
-      [ 二维码区域 ]
-    </div>
-  </div>
-</section>`
+    html: buildQrFollowFooter()
   },
   {
     id: 'f-author-cta',
     category: 'footer_widgets',
-    tag: '名片',
-    styleCategory: 'business',
-    title: '壹伴极简作者名片与关注卡片',
-    description: '包含作者介绍、关注引导与高质感圆角边框',
+    tag: '作者介绍',
+    styleCategory: 'minimal',
+    title: '作者简介卡',
+    description: '作者简介与公众号关注入口，适合作为文章署名',
     tags: ['关注卡片', '作者介绍', 'CTA'],
-    html: `<section style="margin: 28px 0 16px; padding: 20px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.03); text-align: center;" data-material="true">
-  <p style="font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">✍️ 程序员小富</p>
-  <p style="font-size: 13px; color: #64748b; margin-bottom: 12px; line-height: 1.5;">专注分享后端高并发架构、前端高颜值排版与职场成长思考</p>
-  <span style="display: inline-block; padding: 8px 22px; background: #2563eb; color: #ffffff; font-size: 13px; font-weight: 600; border-radius: 24px; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">欢迎关注本公众号 · 获取精选深度干货</span>
-</section>`
+    html: buildAuthorFooter()
   },
   {
     id: "h-oriental-seal",
@@ -1983,12 +2022,12 @@ export const materials = [
   {
     id: "fw-social-matrix",
     category: "footer_widgets",
-    tag: "社交矩阵",
-    styleCategory: "business",
-    title: "全网矩阵·微信/掘金/知乎多平台一键关注",
-    description: "极具品质的多社交平台彩色徽标阵列与订阅引导",
+    tag: "多平台关注",
+    styleCategory: "minimal",
+    title: "多平台关注引导",
+    description: "用简洁文字列出公众号、知乎、掘金与 GitHub",
     tags: ["文末", "关注", "社交矩阵", "微信", "知乎", "掘金"],
-    html: "<section style=\"margin: 32px 0 16px; padding: 22px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 4px 18px rgba(0,0,0,0.04); text-align: center;\" data-material=\"true\">\n  <div style=\"font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 6px;\">🚀 与 100,000+ 创作者共同成长</div>\n  <p style=\"font-size: 13px; color: #64748b; margin-bottom: 16px;\">欢迎在各大技术社区关注我的专栏，获取每周独家干货更新</p>\n  <div style=\"display: flex; justify-content: center; flex-wrap: wrap; gap: 8px;\">\n    <span style=\"background: #f0fdf4; color: #166534; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid #bbf7d0;\">💚 微信公众号</span>\n    <span style=\"background: #eff6ff; color: #1e40af; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid #bfdbfe;\">💙 知乎专栏</span>\n    <span style=\"background: #fff7ed; color: #c2410c; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid #fed7aa;\">🧡 稀土掘金</span>\n    <span style=\"background: #f8fafc; color: #0f172a; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid #cbd5e1;\">🖤 GitHub 开源</span>\n  </div>\n</section>"
+    html: buildSocialMatrixFooter()
   }
 ];
 
@@ -4130,77 +4169,49 @@ export const footerWidgetTemplates = [
   },
   {
     id: 'f-135-triple-like',
-    name: '精选文末三连交互卡片',
-    description: '包含“👍 点赞 · 👀 在看 · 🚀 分享”互动按钮',
-    tag: '互动三连卡',
-    styleCategory: 'fresh',
-    previewHtml: `<div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:6px;padding:6px;font-size:11px;text-align:center;color:#334155;">👍 点赞 · 👀 在看 · 🚀 分享</div>`,
+    name: '文末互动引导',
+    description: '简洁的点赞、在看与分享提示，适合文章结尾',
+    tag: '文末互动',
+    styleCategory: 'minimal',
+    previewHtml: `<div style="padding:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;font-size:11px;text-align:center;color:#334155;">点赞支持　·　在看　·　转发分享</div>`,
     render: (options = {}) => {
-      const tip = options.tip || '如果这篇文章对你有启发，欢迎转发分享！';
-      return `<section style="margin: 32px 0 16px; padding: 20px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; text-align: center;" data-material="true">
-  <p style="font-size: 14.5px; font-weight: 700; color: #1e293b; margin-bottom: 12px; word-break: break-word;">${tip}</p>
-  <div style="text-align: center; color: #475569; font-size: 13px; font-weight: 600; display: flex; justify-content: center; flex-wrap: wrap; gap: 8px;">
-    <span style="background: #ffffff; padding: 6px 14px; border-radius: 20px; border: 1px solid #e2e8f0; -webkit-box-shadow: 0 2px 6px rgba(0,0,0,0.03); box-shadow: 0 2px 6px rgba(0,0,0,0.03);">👍 点赞</span>
-    <span style="background: #ffffff; padding: 6px 14px; border-radius: 20px; border: 1px solid #e2e8f0; -webkit-box-shadow: 0 2px 6px rgba(0,0,0,0.03); box-shadow: 0 2px 6px rgba(0,0,0,0.03);">👀 在看</span>
-    <span style="background: #ffffff; padding: 6px 14px; border-radius: 20px; border: 1px solid #e2e8f0; -webkit-box-shadow: 0 2px 6px rgba(0,0,0,0.03); box-shadow: 0 2px 6px rgba(0,0,0,0.03);">🚀 分享</span>
-  </div>
-</section>`;
+      const tip = options.tip || '如果这篇内容对你有帮助';
+      return buildTripleLikeFooter(tip);
     }
   },
   {
     id: 'f-135-qrcode-card',
-    name: '经典二维码关注引导卡片',
-    description: '高转化微信公众号二维码关注框，带有扫码提示手势',
+    name: '公众号二维码卡',
+    description: '简洁的公众号关注引导与二维码替换位',
     tag: '二维码关注卡',
-    styleCategory: 'business',
-    previewHtml: `<div style="background:#faf5ff;border:1px dashed #d8b4fe;border-radius:6px;padding:6px;font-size:11px;text-align:center;color:#6b21a8;">👇 长按识别二维码 · 关注公众号</div>`,
+    styleCategory: 'minimal',
+    previewHtml: `<div style="padding:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;font-size:11px;color:#334155;">扫码关注公众号　　二维码</div>`,
     render: (options = {}) => {
-      const title = options.title || '👇 长按识别二维码 · 关注公众号';
-      const subTitle = options.subTitle || '每周日晚 20:00 准时推送独家深度复盘';
-      return `<section style="margin: 32px 0 16px; padding: 22px; background: #faf5ff; border: 1px dashed #d8b4fe; border-radius: 16px; text-align: center;" data-material="true">
-  <div style="font-size: 16px; font-weight: 800; color: #6b21a8; margin-bottom: 4px;">${title}</div>
-  <p style="font-size: 13px; color: #7e22ce; margin-bottom: 14px;">${subTitle}</p>
-  <div style="display: inline-block; padding: 10px; background: #ffffff; border-radius: 12px; -webkit-box-shadow: 0 4px 12px rgba(107,33,168,0.08); box-shadow: 0 4px 12px rgba(107,33,168,0.08);">
-    <div style="width: 110px; height: 110px; line-height: 110px; text-align: center; background: #f3e8ff; border: 2px dashed #c084fc; border-radius: 8px; color: #9333ea; font-size: 12px; font-weight: 600;">
-      [ 二维码区域 ]
-    </div>
-  </div>
-</section>`;
+      const title = options.title || '扫码关注公众号';
+      const subTitle = options.subTitle || '每周更新实用内容与深度复盘';
+      return buildQrFollowFooter(title, subTitle);
     }
   },
   {
     id: 'fw-social-matrix',
-    name: '全网矩阵·微信/掘金/知乎多平台一键关注',
-    description: '极具品质的多社交平台彩色徽标阵列与订阅引导',
-    tag: '社交矩阵',
-    styleCategory: 'business',
-    previewHtml: `<div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:6px;padding:6px;font-size:11px;text-align:center;color:#0f172a;">🚀 关注全网技术专栏</div>`,
-    render: () => `<section style="margin: 32px 0 16px; padding: 22px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; box-shadow: 0 4px 18px rgba(0,0,0,0.04); text-align: center;" data-material="true">
-  <div style="font-size: 16px; font-weight: 800; color: #0f172a; margin-bottom: 6px;">🚀 与 100,000+ 创作者共同成长</div>
-  <p style="font-size: 13px; color: #64748b; margin-bottom: 16px;">欢迎在各大技术社区关注我的专栏，获取每周独家干货更新</p>
-  <div style="display: flex; justify-content: center; flex-wrap: wrap; gap: 8px;">
-    <span style="background: #f0fdf4; color: #166534; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid #bbf7d0;">💚 微信公众号</span>
-    <span style="background: #eff6ff; color: #1e40af; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid #bfdbfe;">💙 知乎专栏</span>
-    <span style="background: #fff7ed; color: #c2410c; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid #fed7aa;">🧡 稀土掘金</span>
-    <span style="background: #f8fafc; color: #0f172a; font-size: 12px; font-weight: 700; padding: 6px 14px; border-radius: 20px; border: 1px solid #cbd5e1;">🖤 GitHub 开源</span>
-  </div>
-</section>`
+    name: '多平台关注引导',
+    description: '用简洁文字列出公众号、知乎、掘金与 GitHub',
+    tag: '多平台关注',
+    styleCategory: 'minimal',
+    previewHtml: `<div style="padding:6px;border-top:1px solid #dbe3ec;border-bottom:1px solid #dbe3ec;font-size:11px;text-align:center;color:#334155;">微信公众号　·　知乎　·　掘金　·　GitHub</div>`,
+    render: () => buildSocialMatrixFooter()
   },
   {
     id: 'f-author-cta',
-    name: '壹伴极简作者名片',
-    description: '包含作者介绍、关注引导与高质感圆角边框',
+    name: '作者简介卡',
+    description: '作者简介与公众号关注入口，适合作为文章署名',
     tag: '作者名片',
-    styleCategory: 'business',
-    previewHtml: `<div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:6px;padding:6px;font-size:11px;text-align:center;color:#0f172a;">✍️ 作者名片与关注引导</div>`,
+    styleCategory: 'minimal',
+    previewHtml: `<div style="padding:6px;background:#ffffff;border:1px solid #e2e8f0;border-radius:4px;font-size:11px;color:#334155;">作者专栏　程序员小富　关注公众号 →</div>`,
     render: (options = {}) => {
-      const author = options.author || '✍️ 程序员小富';
-      const desc = options.desc || '专注分享后端高并发架构、前端高颜值排版与职场成长思考';
-      return `<section style="margin: 32px 0 16px; padding: 20px; background: #ffffff; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.03); text-align: center;" data-material="true">
-  <p style="font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">${author}</p>
-  <p style="font-size: 13px; color: #64748b; margin-bottom: 12px; line-height: 1.5;">${desc}</p>
-  <span style="display: inline-block; padding: 8px 22px; background: #2563eb; color: #ffffff; font-size: 13px; font-weight: 600; border-radius: 24px; box-shadow: 0 4px 12px rgba(37,99,235,0.25);">欢迎关注本公众号 · 获取精选深度干货</span>
-</section>`;
+      const author = options.author || '程序员小富';
+      const desc = options.desc || '专注分享后端架构、实用工具与创作经验。';
+      return buildAuthorFooter(author, desc);
     }
   }
 ];

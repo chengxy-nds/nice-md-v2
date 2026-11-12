@@ -6,7 +6,8 @@ import {
   Menu, Sparkles, Search, Image, ImagePlus, BookOpen, Link, Upload, Trash2,
   Eye, EyeOff, Download, Undo2, Redo2, Code2,
   ChevronDown, FileCode, FileText, Globe, Settings, Check, X,
-  History, Copy, Plus, ArrowLeftToLine, ArrowRightToLine, CircleX
+  History, Copy, Plus, ArrowLeftToLine, ArrowRightToLine, CircleX,
+  LayoutGrid
 } from '@lucide/vue';
 import { applyTheme, getThemeDefaultStyles, getThemeSavedStyles, themes as themePresets } from './utils/themePresets';
 import { codeThemes } from './utils/codeThemes';
@@ -18,6 +19,7 @@ import PreviewPanel from './components/PreviewPanel.vue';
 import LaunchpadModal from './components/LaunchpadModal.vue';
 import SettingsModal from './components/SettingsModal.vue';
 import ConfirmDialog from './components/ConfirmDialog.vue';
+import CoverCollageModal from './components/CoverCollageModal.vue';
 import Sidebar from './components/Sidebar.vue';
 import IconBar from './components/IconBar.vue';
 import DocHistoryModal from './components/DocHistoryModal.vue';
@@ -1720,6 +1722,26 @@ const closeLaunchpad = () => {
   isLaunchpadOpen.value = false;
 };
 
+const isCollageModalOpen = ref(false);
+
+const openCollageModal = () => {
+  soundEngine.playClick();
+  isCollageModalOpen.value = true;
+};
+
+const closeCollageModal = () => {
+  soundEngine.playClick('backspace');
+  isCollageModalOpen.value = false;
+};
+
+const handleInsertCollageImage = ({ markdown, url }) => {
+  if (editorPanelRef.value?.insertTextAtCursor) {
+    editorPanelRef.value.insertTextAtCursor(markdown);
+  } else {
+    markdownContent.value += '\n' + markdown + '\n';
+  }
+};
+
 const settingsInitialTab = ref('');
 const isSidebarSyncing = ref(false);
 
@@ -2179,6 +2201,7 @@ watch(customStyles, () => {
           <!-- 1. 模板中心 -->
           <TemplateCenter
             v-if="currentView === 'templates'"
+            :current-theme="currentTheme"
             @apply-theme="handleApplyTheme"
             @save-theme="handleSaveTheme"
             @save-custom-theme="handleSaveCustomTheme"
@@ -2299,6 +2322,14 @@ watch(customStyles, () => {
                     </button>
                   </div>
                 </div>
+                <button
+                  @click="openCollageModal"
+                  class="btn-icon"
+                  title="封面拼图制作 (多格拼图与尺寸定制)"
+                  aria-label="封面拼图制作"
+                >
+                  <LayoutGrid size="14.5" />
+                </button>
                 <div class="export-trigger-container">
                   <button @click="showImportMenu = !showImportMenu" class="btn-icon" :class="{ 'is-active': showImportMenu }" title="导入本地文档"><Upload size="14.5" /></button>
                   <div class="header-popout-panel" v-if="showImportMenu" @mouseleave="showImportMenu = false">
@@ -2498,6 +2529,15 @@ watch(customStyles, () => {
       :currentCustomStyles="historyCurrentCustomStyles"
       @close="historyModalVisible = false"
       @restore-version="handleRestoreVersion"
+    />
+
+    <!-- Cover Collage Modal -->
+    <CoverCollageModal
+      :isOpen="isCollageModalOpen"
+      :markdown="markdownContent"
+      @close="closeCollageModal"
+      @insert-image="handleInsertCollageImage"
+      @toast="triggerAppToast"
     />
 
     <!-- Tab Close Context / Hover Menu -->
