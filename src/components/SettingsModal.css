@@ -83,6 +83,7 @@
   max-width: 95vw;
   height: 640px;
   max-height: 90vh;
+  max-height: 90dvh;
 }
 
 .settings-gear {
@@ -2089,6 +2090,7 @@
   .settings-card {
     width: 95vw !important;
     height: 85vh !important;
+    height: 85dvh !important;
   }
   
   .settings-body-container {

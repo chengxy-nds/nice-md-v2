@@ -162,7 +162,7 @@ const emit = defineEmits([
   'move-doc', 'reorder-docs', 'reorder-groups', 'toggle-collapse',
   'open-templates', 'open-materials', 'open-doc-history',
   'duplicate-doc', 'toggle-pin',
-  'cloud-sync-action', 'open-cloud-settings'
+  'cloud-sync-action', 'open-cloud-settings', 'swipe-close'
 ]);
 
 // ── Search, Filter & Sort State ──
@@ -183,6 +183,25 @@ function toggleSorting() {
   lastSortMode.value = sortBy.value;
   sortBy.value = 'manual';
   localStorage.setItem(SORT_STORAGE_KEY, 'manual');
+}
+
+// 手机抽屉左滑关闭：只认“横向为主、左滑 >70px”的手势，竖向滚动不受影响；
+// 不 preventDefault，所以抽屉里的竖滑、点按都照常。桌面端没有触摸，不触发。
+// 父组件收到 swipe-close 后关抽屉（mobileSidebarOpen = false），桌面端它本来就是 false。
+let drawerTouchStart = null;
+function onDrawerTouchStart(e) {
+  if (!e.touches || e.touches.length !== 1) return;
+  drawerTouchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+}
+function onDrawerTouchEnd(e) {
+  if (!drawerTouchStart || !e.changedTouches || e.changedTouches.length !== 1) {
+    drawerTouchStart = null;
+    return;
+  }
+  const dx = e.changedTouches[0].clientX - drawerTouchStart.x;
+  const dy = e.changedTouches[0].clientY - drawerTouchStart.y;
+  drawerTouchStart = null;
+  if (dx < -70 && Math.abs(dx) > Math.abs(dy) * 1.5) emit('swipe-close');
 }
 
 const expandableGroupIds = computed(() => {
@@ -772,6 +791,8 @@ function resetSidebarWidth() {
     class="sidebar-container select-none"
     :class="{ 'is-resizing': isResizing }"
     :style="customSidebarWidth ? { width: `${customSidebarWidth}px`, flex: `0 0 ${customSidebarWidth}px` } : undefined"
+    @touchstart.passive="onDrawerTouchStart"
+    @touchend.passive="onDrawerTouchEnd"
   >
     <!-- Split Resizer Handle -->
     <div
@@ -1306,6 +1327,14 @@ html.dark .sidebar-container {
 .create-action:hover {
   color: #fff;
   background: #347fe5;
+}
+
+/* 触屏：新建按钮 30px 点按热区扩到 36px，视觉图标不变。 */
+@media (hover: none) {
+  .create-action {
+    width: 36px;
+    height: 36px;
+  }
 }
 
 html.dark .create-action {

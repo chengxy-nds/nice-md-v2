@@ -283,6 +283,7 @@ function scrollToChannels() {
   position: relative;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   overflow-x: hidden;
   overflow-y: auto;
   background-color: #fdfbf7;
@@ -303,6 +304,7 @@ html.dark .wandor-landing-wrapper {
   position: relative;
   width: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -1140,6 +1142,7 @@ html.dark .footer-link:hover {
   width: 100%;
   height: 100%;
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
   overflow-y: auto;
   background: #f7f9fc;
@@ -1153,6 +1156,7 @@ html.dark .wandor-landing-wrapper {
 
 .wandor-hero-viewport {
   min-height: min(800px, 100vh);
+  min-height: min(800px, 100dvh);
   padding: 0 32px 64px;
   justify-content: flex-start;
   background: #f7f9fc;
@@ -1877,6 +1881,7 @@ html.dark .wandor-landing-wrapper {
 
 .wandor-hero-viewport {
   min-height: min(820px, 100vh);
+  min-height: min(820px, 100dvh);
   padding: 0 32px 48px;
   background: #fbfbfa;
 }

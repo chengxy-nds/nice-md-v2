@@ -1395,3 +1395,21 @@ html[data-color-mode="dark"] .markdown-body blockquote:not([data-material="true"
   border-width: 0 5px 5px 5px;
   border-color: transparent transparent #242424 transparent;
 }
+
+/* ── 移动端 Web 兼容（feature-mobile-compat）──
+   只在触屏/小屏上起作用，桌面端不受影响。 */
+/* 微信下拉刷新会重载页面丢草稿：禁掉视口级的越界滚动链。 */
+html, body {
+  overscroll-behavior: none;
+}
+.app-container {
+  overscroll-behavior: none;
+}
+/* 防双击缩放、去掉点按高亮：按钮和 tab 都是点按目标。 */
+button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.workspace-tab-item {
+  touch-action: manipulation;
+}

@@ -909,6 +909,69 @@ html.dark .preview-right-bar {
   z-index: 2;
 }
 
+/* ── 移动端：右侧栏改成底部操作行（P1-4）──
+   50px 竖栏在手机预览里白占宽度，文章只剩约 325px；改成横排贴底，
+   文章拿满宽。发布/复制/模式/眼睛/主题五个按钮一个不少，
+   复制菜单是 fixed 定位且左右都钳制在视口内，换行后仍能正常弹出。 */
+@media (max-width: 960px) {
+  .preview-panel {
+    flex-direction: column;
+  }
+  .preview-main-content {
+    order: 1;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  /* 主题侧栏若开着：别再按桌面端的 100% 高挤在竖排里，改成夹在文章和底栏之间。 */
+  .theme-sidebar-wrapper {
+    order: 1;
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    max-height: 45%;
+    flex: 0 0 auto;
+  }
+  .preview-right-bar {
+    order: 2;
+    width: 100%;
+    height: auto;
+    flex: 0 0 auto;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 10px calc(6px + env(safe-area-inset-bottom));
+    border-left: none;
+    border-top: 1px solid var(--border-subtle, #EDEDF0);
+  }
+  .bar-top,
+  .bar-bottom {
+    flex-direction: row;
+    width: auto;
+    gap: 8px;
+  }
+  .bar-divider {
+    width: 1px;
+    height: 24px;
+  }
+  /* 横排后提示条还按“按钮左侧”定位会乱飞，触屏上本来也不靠它：直接藏掉。 */
+  .right-tooltip {
+    display: none;
+  }
+}
+
+/* ── 触屏：液体滑块是 hover/focus 驱动，触屏上点之前不会动，只会
+   停在上一个位置上误导人，直接藏掉；按钮热区扩到 44px，视觉图标不变。 */
+@media (hover: none) {
+  .right-glider {
+    display: none;
+  }
+  .bar-publish-btn,
+  .bar-action-btn {
+    width: 44px;
+    height: 44px;
+  }
+}
+
 /* ★ 右侧栏液体滑块 (Right Liquid Glider) ★ */
 .right-glider {
   position: absolute;
@@ -1507,6 +1570,13 @@ html.dark .toast-deck-card {
   align-items: flex-start;
   overflow-y: auto;
   min-height: 100%;
+}
+
+/* 窄屏：wrapper 左右各 20px padding + 50px 右侧栏，375px 框必溢出；padding 缩到 8px。 */
+@media (max-width: 480px) {
+  .preview-body.is-wechat-wrapper {
+    padding: 12px 8px;
+  }
 }
 
 .wechat-phone-frame {

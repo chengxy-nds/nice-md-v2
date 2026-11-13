@@ -300,6 +300,7 @@ function hasPrefixOption(id) {
   inset: 0;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   z-index: 999990;
   pointer-events: auto;
 }
@@ -327,6 +328,7 @@ function hasPrefixOption(id) {
   width: 32rem;
   max-width: 95vw;
   height: 100vh;
+  height: 100dvh;
   background: #ffffff;
   box-shadow: -4px 0 24px rgba(0, 0, 0, 0.1);
   display: flex;
