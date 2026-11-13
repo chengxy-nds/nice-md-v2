@@ -1,3 +1,4 @@
+import { logger } from './logger.js';
 // Lazy confetti (item 3): canvas-confetti was statically imported in five
 // files although it only fires on celebrations (import success, theme
 // applied, ...). It is now fetched on first use; callers fire-and-forget
@@ -9,6 +10,6 @@ export async function fireConfetti(options) {
     const { default: confetti } = await import('canvas-confetti');
     confetti(options);
   } catch (err) {
-    console.warn('[NiceMD] confetti failed:', err);
+    logger.warn('[NiceMD] confetti failed:', err);
   }
 }

@@ -246,6 +246,12 @@ export default defineConfig({
     // Electron's file:// protocol.
     sourcemap: false,
     chunkSizeWarningLimit: 1000,
+    // Item 10: strip all console.* / debugger calls from production
+    // bundles (src/ routes logging through src/utils/logger.js; the
+    // logger's own console calls are removed here too).
+    esbuild: {
+      drop: ['console', 'debugger'],
+    },
     rolldownOptions: {
       output: {
         manualChunks(id) {

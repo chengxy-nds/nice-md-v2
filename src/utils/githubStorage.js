@@ -14,6 +14,7 @@ import {
   recordDeletedTombstone as recordGithubTombstone,
 } from './syncTombstones.js';
 import { injectCachedSecrets, blankSecretsForSave } from './secureCredentials.js';
+import { logger } from './logger.js';
 
 export { recordGithubTombstone };
 
@@ -103,7 +104,7 @@ export function getGithubConfig() {
       };
     }
   } catch (e) {
-    console.warn('[GitHub Sync] Failed to load config:', e);
+    logger.warn('[GitHub Sync] Failed to load config:', e);
   }
   return {
     enabled: false,
@@ -144,7 +145,7 @@ export function saveGithubConfig(config) {
     localStorage.setItem(GITHUB_CONFIG_KEY, JSON.stringify(toPersist));
     window.dispatchEvent(new CustomEvent('nicemd-github-config-updated', { detail: normalized }));
   } catch (e) {
-    console.error('[GitHub Sync] Failed to save config:', e);
+    logger.error('[GitHub Sync] Failed to save config:', e);
   }
 }
 
@@ -367,6 +368,8 @@ async function fetchBlobText(ctx, blobSha) {
 
 function sanitizePathSegment(rawName, fallback) {
   let cleaned = String(rawName || '')
+    // Intentional: strip control characters (incl. NUL) from file/folder names.
+    // eslint-disable-next-line no-control-regex
     .replace(/[/\\:*?"<>|\x00-\x1F]/g, '-')
     .replace(/\s+/g, ' ')
     .trim()

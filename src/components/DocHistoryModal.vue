@@ -32,6 +32,7 @@ import {
 import { computeLineDiff } from '../utils/diffUtils';
 import { soundEngine } from '../utils/synthAudio';
 import { showConfirm } from '../utils/confirmDialog';
+import { logger } from '../utils/logger.js';
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
@@ -213,7 +214,7 @@ async function copyHistoricalContent() {
       copyToastVisible.value = false;
     }, 2000);
   } catch (e) {
-    console.error('Copy failed:', e);
+    logger.error('Copy failed:', e);
   }
 }
 </script>

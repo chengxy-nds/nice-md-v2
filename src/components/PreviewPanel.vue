@@ -23,6 +23,7 @@ import { soundEngine } from '../utils/synthAudio';
 import ThemeCustomizer from './ThemeCustomizer.vue';
 import ArticlePreview from './ArticlePreview.vue';
 import { fireConfetti } from '../utils/celebrate';
+import { logger } from '../utils/logger.js';
 
 const props = defineProps({
   markdown: {
@@ -223,12 +224,6 @@ const injectedCustomCss = computed(() => {
   });
 });
 
-const activeThemeStyles = computed(() => {
-  const theme = themes.find(t => t.id === props.themeId) || themes[0];
-  return theme.styles;
-});
-
-const codeThemeStyles = computed(() => getCodeThemeStyles(props.codeThemeId));
 const themeCustomizerRef = ref(null);
 
 async function handleElementClick(sectionName) {
@@ -399,7 +394,7 @@ const handleCopyZhihu = async () => {
     await navigator.clipboard.write([item]);
     showToast('已复制知乎专栏排版');
   } catch (err) {
-    console.error('[NiceMD] Zhihu copy failed, falling back to text copy:', err);
+    logger.error('[NiceMD] Zhihu copy failed, falling back to text copy:', err);
     await navigator.clipboard.writeText(cleanMarkdown);
     showToast('已复制 Markdown 源码 (备用)');
   }
@@ -421,7 +416,7 @@ const handleCopyToutiao = async () => {
     await navigator.clipboard.write([item]);
     showToast('已复制今日头条排版');
   } catch (err) {
-    console.error('[NiceMD] Toutiao copy failed, falling back to text copy:', err);
+    logger.error('[NiceMD] Toutiao copy failed, falling back to text copy:', err);
     await navigator.clipboard.writeText(cleanMarkdown);
     showToast('已复制 Markdown 源码 (备用)');
   }
@@ -435,7 +430,7 @@ const handleCopyMarkdownText = async () => {
     await navigator.clipboard.writeText(cleanMarkdown);
     showToast('已复制 Markdown 源码');
   } catch (err) {
-    console.error('[NiceMD] Markdown text copy failed:', err);
+    logger.error('[NiceMD] Markdown text copy failed:', err);
     showToast('复制失败');
   }
 };

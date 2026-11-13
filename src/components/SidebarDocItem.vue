@@ -77,7 +77,7 @@ const docCharCount = computed(() => {
   const cleaned = raw
     .replace(/<[^>]+>/g, '')
     .replace(/```[\s\S]*?```/g, m => m.replace(/```\w*\n?/g, ''))
-    .replace(/[#*`~>\-\[\]()!|]/g, '')
+    .replace(/[#*`~>\-[\]()!|]/g, '')
     .replace(/\s+/g, '');
   return cleaned.length;
 });

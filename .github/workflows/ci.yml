@@ -1,0 +1,35 @@
+# Minimal CI (optimization item 10): install, lint, build, and verify the
+# generated single-source files have not drifted from their sources.
+# NOTE: `npm ci` fails in some sandboxes with EPERM on chown, but works on
+# GitHub-hosted runners.
+name: CI
+
+on:
+  push:
+    branches: [main, muse]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint src/
+        run: npm run lint
+
+      - name: Check generated publish adapters are in sync
+        run: |
+          node scripts/sync-adapters.cjs
+          git diff --exit-code -- electron/publish-adapters.cjs
+
+      - name: Build
+        run: npm run build

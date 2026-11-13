@@ -1,3 +1,4 @@
+import { logger } from './logger.js';
 export const themes = [
   {
     id: 'classic-indigo',
@@ -289,7 +290,7 @@ export function loadCustomThemes() {
       }
     }
   } catch (e) {
-    console.warn('[NiceMD] Failed to load custom themes from localStorage:', e);
+    logger.warn('[NiceMD] Failed to load custom themes from localStorage:', e);
   }
   return [];
 }
@@ -301,7 +302,7 @@ export function saveCustomThemes(customThemes = []) {
       localStorage.setItem('nicemd_custom_themes', JSON.stringify(onlyCustom));
     }
   } catch (e) {
-    console.warn('[NiceMD] Failed to save custom themes to localStorage:', e);
+    logger.warn('[NiceMD] Failed to save custom themes to localStorage:', e);
   }
 }
 

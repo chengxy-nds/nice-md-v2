@@ -7,6 +7,7 @@ import {
   recordDeletedTombstonesBatch
 } from './syncTombstones.js';
 import { injectCachedSecrets, blankSecretsForSave } from './secureCredentials.js';
+import { logger } from './logger.js';
 
 const TIDB_CONFIG_KEY = 'nicemd_tidb_sync_config_v1';
 const TIDB_LAST_SYNC_KEY = 'nicemd_tidb_last_sync_timestamp';
@@ -40,7 +41,7 @@ export function getTidbConfig() {
       };
     }
   } catch (e) {
-    console.warn('[TiDB Sync] Failed to load tidb config', e);
+    logger.warn('[TiDB Sync] Failed to load tidb config', e);
   }
   return {
     enabled: false,
@@ -59,7 +60,7 @@ export async function ensureTidbTables(connectionString) {
     await initTidbTables(conn);
     tablesEnsuredFor = conn;
   } catch (err) {
-    console.warn('[TiDB Sync] Failed to ensure tables:', err);
+    logger.warn('[TiDB Sync] Failed to ensure tables:', err);
   }
 }
 
@@ -75,7 +76,7 @@ export function saveTidbConfig(config) {
     }
     window.dispatchEvent(new CustomEvent('nicemd-tidb-config-updated', { detail: config }));
   } catch (e) {
-    console.error('[TiDB Sync] Failed to save tidb config', e);
+    logger.error('[TiDB Sync] Failed to save tidb config', e);
   }
 }
 
@@ -1057,7 +1058,7 @@ export async function syncSingleDocToTidb(connectionString, doc, debounceMs = 50
           tablesEnsuredFor = conn;
           await executeInsert();
         } catch (retryErr) {
-          console.warn('[TiDB Sync] Fast single doc sync error:', retryErr);
+          logger.warn('[TiDB Sync] Fast single doc sync error:', retryErr);
           resolve(false);
         }
       }
@@ -1110,7 +1111,7 @@ export async function syncSingleGroupToTidb(connectionString, group) {
       tablesEnsuredFor = conn;
       await executeInsert();
     } catch (retryErr) {
-      console.warn('[TiDB Sync] Fast single group sync error:', retryErr);
+      logger.warn('[TiDB Sync] Fast single group sync error:', retryErr);
     }
   }
 }
@@ -1168,7 +1169,7 @@ export async function syncSingleHistoryToTidb(connectionString, history) {
       tablesEnsuredFor = conn;
       await executeInsert();
     } catch (retryErr) {
-      console.warn('[TiDB Sync] Fast single history sync error:', retryErr);
+      logger.warn('[TiDB Sync] Fast single history sync error:', retryErr);
     }
   }
 }
@@ -1226,7 +1227,7 @@ export async function syncSingleCustomThemeToTidb(connectionString, theme) {
       tablesEnsuredFor = conn;
       await executeInsert();
     } catch (retryErr) {
-      console.warn('[TiDB Sync] Fast single custom theme sync error:', retryErr);
+      logger.warn('[TiDB Sync] Fast single custom theme sync error:', retryErr);
     }
   }
 }
@@ -1262,7 +1263,7 @@ export async function deleteDocInTidb(connectionString, docId) {
       tablesEnsuredFor = conn;
       await executeDelete();
     } catch (retryErr) {
-      console.warn('[TiDB Sync] Failed to delete document in cloud:', retryErr);
+      logger.warn('[TiDB Sync] Failed to delete document in cloud:', retryErr);
     }
   }
 }
@@ -1299,7 +1300,7 @@ export async function permanentDeleteDocsInTidb(connectionString, docIds = []) {
       tablesEnsuredFor = conn;
       await executeDelete();
     } catch (retryErr) {
-      console.warn('[TiDB Sync] Failed to permanently delete documents in cloud:', retryErr);
+      logger.warn('[TiDB Sync] Failed to permanently delete documents in cloud:', retryErr);
     }
   }
 }
@@ -1337,7 +1338,7 @@ export async function deleteGroupInTidb(connectionString, groupId) {
       tablesEnsuredFor = conn;
       await executeDelete();
     } catch (retryErr) {
-      console.warn('[TiDB Sync] Failed to delete group in cloud:', retryErr);
+      logger.warn('[TiDB Sync] Failed to delete group in cloud:', retryErr);
     }
   }
 }
@@ -1364,7 +1365,7 @@ export async function deleteHistoryInTidb(connectionString, historyId) {
       tablesEnsuredFor = conn;
       await executeDelete();
     } catch (retryErr) {
-      console.warn('[TiDB Sync] Failed to delete history in cloud:', retryErr);
+      logger.warn('[TiDB Sync] Failed to delete history in cloud:', retryErr);
     }
   }
 }
@@ -1391,7 +1392,7 @@ export async function clearDocHistoriesInTidb(connectionString, docId) {
       tablesEnsuredFor = conn;
       await executeDelete();
     } catch (retryErr) {
-      console.warn('[TiDB Sync] Failed to clear doc histories in cloud:', retryErr);
+      logger.warn('[TiDB Sync] Failed to clear doc histories in cloud:', retryErr);
     }
   }
 }
@@ -1418,7 +1419,7 @@ export async function deleteCustomThemeInTidb(connectionString, themeId) {
       tablesEnsuredFor = conn;
       await executeDelete();
     } catch (retryErr) {
-      console.warn('[TiDB Sync] Failed to delete custom theme in cloud:', retryErr);
+      logger.warn('[TiDB Sync] Failed to delete custom theme in cloud:', retryErr);
     }
   }
 }

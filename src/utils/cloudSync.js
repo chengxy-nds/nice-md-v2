@@ -1,3 +1,4 @@
+import { logger } from './logger.js';
 import {
   getTidbConfig,
   saveTidbConfig,
@@ -239,7 +240,7 @@ export function setActiveCloudProvider(provider, enable = true) {
 
     window.dispatchEvent(new CustomEvent('nicemd-cloud-provider-changed', { detail: { provider, enable } }));
   } catch (e) {
-    console.error('Failed to set active cloud provider', e);
+    logger.error('Failed to set active cloud provider', e);
   }
 }
 
@@ -258,7 +259,7 @@ export function disableAllCloudSync() {
     }
     window.dispatchEvent(new CustomEvent('nicemd-cloud-provider-changed', { detail: { provider: null, enable: false } }));
   } catch (e) {
-    console.error('Failed to disable cloud sync', e);
+    logger.error('Failed to disable cloud sync', e);
   }
 }
 
@@ -546,9 +547,9 @@ export function triggerAutoSyncDebounced(docs, groups, histories = [], customThe
       const errMsg = err?.message || String(err);
       if (isAuthError(errMsg)) {
         cloudAuthErrorProviders.add(provider);
-        console.warn(`[${provider.toUpperCase()} Auto-Sync] 鉴权或权限验证失败 (${errMsg})。后台自动同步已暂停，请在「设置 -> 云端同步」中更新凭证。`);
+        logger.warn(`[${provider.toUpperCase()} Auto-Sync] 鉴权或权限验证失败 (${errMsg})。后台自动同步已暂停，请在「设置 -> 云端同步」中更新凭证。`);
       } else {
-        console.warn(`[${provider.toUpperCase()} Auto-Sync] Sync failed:`, err);
+        logger.warn(`[${provider.toUpperCase()} Auto-Sync] Sync failed:`, err);
       }
       if (typeof onSyncEnd === 'function') onSyncEnd(err);
     }

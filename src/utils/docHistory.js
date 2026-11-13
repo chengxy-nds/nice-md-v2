@@ -1,3 +1,4 @@
+import { logger } from './logger.js';
 /**
  * docHistory.js - Document version snapshot persistence & history manager
  * Handles creating auto/manual snapshots, retrieving timeline, restoring, renaming, and deleting.
@@ -22,7 +23,7 @@ function readRawDocSnapshots(docId) {
     const list = JSON.parse(raw);
     return Array.isArray(list) ? list : [];
   } catch (e) {
-    console.warn('[NiceMD] Failed to get doc snapshots:', e);
+    logger.warn('[NiceMD] Failed to get doc snapshots:', e);
     return [];
   }
 }
@@ -87,7 +88,7 @@ export function getAllDocSnapshots() {
       }
     }
   } catch (e) {
-    console.warn('[NiceMD] Failed to load all doc snapshots:', e);
+    logger.warn('[NiceMD] Failed to load all doc snapshots:', e);
   }
   return all;
 }

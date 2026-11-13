@@ -258,7 +258,7 @@ export function ensureMarkdownExtensions() {
         level: 'inline',
         start(src) { return src.indexOf('!['); },
         tokenizer(src) {
-          const match = src.match(/^!\[((?:\\.|[^\[\]])*)\]\(\s*<?([^\s<>()]+)>?(?:\s+"([^"]*)")?\s+=(\d+(?:%|px)?|auto)?(?:x(\d+(?:%|px)?|auto)?)?\s*\)/);
+          const match = src.match(/^!\[((?:\\.|[^[\]])*)\]\(\s*<?([^\s<>()]+)>?(?:\s+"([^"]*)")?\s+=(\d+(?:%|px)?|auto)?(?:x(\d+(?:%|px)?|auto)?)?\s*\)/);
           if (!match) return;
           const [, alt, href, title, widthRaw, heightRaw] = match;
           if (!widthRaw && !heightRaw) return;
@@ -356,7 +356,7 @@ export function ensureMarkdownExtensions() {
         },
         tokenizer(src) {
           if (src.startsWith('^(')) return;
-          const match = src.match(/^\^([^\^\n\s\[\]]+?)\^/);
+          const match = src.match(/^\^([^^\n\s[\]]+?)\^/);
           if (match) {
             return { type: 'superscript', raw: match[0], text: match[1] };
           }

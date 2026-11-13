@@ -2,6 +2,7 @@
 
 import md5 from 'js-md5';
 import { injectCachedSecrets, blankSecretsForSave } from './secureCredentials.js';
+import { logger } from './logger.js';
 
 const STORAGE_KEY = 'nicemd_file_storage';
 
@@ -312,7 +313,7 @@ async function uploadToCustomOSS(file, rawConfig) {
       body: formData,
     });
   } catch (networkErr) {
-    console.error('[Custom OSS Upload Network Error]', networkErr);
+    logger.error('[Custom OSS Upload Network Error]', networkErr);
     if (networkErr.message?.includes('Failed to fetch') || networkErr.name === 'TypeError') {
       throw new Error(
         '网络请求被阻止 (跨域 CORS)。请在阿里云 OSS 控制台配置跨域规则：\n' +
@@ -328,7 +329,7 @@ async function uploadToCustomOSS(file, rawConfig) {
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => '');
-    console.error('[Custom OSS Upload HTTP Error]', response.status, errorText);
+    logger.error('[Custom OSS Upload HTTP Error]', response.status, errorText);
     throw new Error(`图床上传失败 (${response.status}): ${errorText || response.statusText}`);
   }
 
@@ -373,7 +374,7 @@ async function uploadToServerDefaultOSS(file) {
       body: formData,
     });
   } catch (networkErr) {
-    console.error('[Default OSS Upload Network Error]', networkErr);
+    logger.error('[Default OSS Upload Network Error]', networkErr);
     if (networkErr.message?.includes('Failed to fetch') || networkErr.name === 'TypeError') {
       throw new Error(
         '网络请求被阻止 (跨域 CORS)。请在阿里云 OSS 控制台配置跨域规则：\n' +
@@ -389,7 +390,7 @@ async function uploadToServerDefaultOSS(file) {
 
   if (!response.ok) {
     const errorText = await response.text().catch(() => '');
-    console.error('[Default OSS Upload HTTP Error]', response.status, errorText);
+    logger.error('[Default OSS Upload HTTP Error]', response.status, errorText);
     throw new Error(`默认图床上传失败 (${response.status}): ${errorText || response.statusText}`);
   }
 

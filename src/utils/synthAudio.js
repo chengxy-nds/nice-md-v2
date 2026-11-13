@@ -1,3 +1,4 @@
+import { logger } from './logger.js';
 /**
  * Retro Synth Sound Engine
  * Uses the Web Audio API to synthesize typing clicks and success chimes dynamically.
@@ -72,7 +73,7 @@ export const soundEngine = {
         osc.stop(now + 0.03);
       }
     } catch (e) {
-      console.warn('Audio click failed to play', e);
+      logger.warn('Audio click failed to play', e);
     }
   },
 
@@ -104,7 +105,7 @@ export const soundEngine = {
         osc.stop(now + idx * 0.1 + 0.6);
       });
     } catch (e) {
-      console.warn('Chime failed to play', e);
+      logger.warn('Chime failed to play', e);
     }
   },
 
@@ -133,7 +134,7 @@ export const soundEngine = {
       osc.start(now);
       osc.stop(now + 1.2);
     } catch (e) {
-      console.warn('Launch sound failed to play', e);
+      logger.warn('Launch sound failed to play', e);
     }
   }
 };

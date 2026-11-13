@@ -450,7 +450,7 @@ function trashDocCharCount(doc) {
   return raw
     .replace(/<[^>]+>/g, '')
     .replace(/```[\s\S]*?```/g, match => match.replace(/```\w*\n?/g, ''))
-    .replace(/[#*`~>\-\[\]()!|]/g, '')
+    .replace(/[#*`~>\-[\]()!|]/g, '')
     .replace(/\s+/g, '').length;
 }
 

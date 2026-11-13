@@ -1,4 +1,5 @@
 import { htmlToMarkdown } from './htmlToMarkdown';
+import { logger } from './logger.js';
 
 /**
  * Parses article HTML string into clean Title and Markdown
@@ -19,7 +20,7 @@ export function extractArticleFromHtml(htmlString, url) {
   try {
     host = new URL(url).hostname;
   } catch (e) {
-    console.error('Invalid URL during platform parsing:', url);
+    logger.error('Invalid URL during platform parsing:', url);
   }
 
   if (host.includes('mp.weixin.qq.com')) {

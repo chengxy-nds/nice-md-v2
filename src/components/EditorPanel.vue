@@ -69,6 +69,7 @@ import { history, defaultKeymap, historyKeymap, indentWithTab } from '@codemirro
 import { highlightSelectionMatches, searchKeymap } from '@codemirror/search';
 import { closeBrackets, autocompletion, closeBracketsKeymap, completionKeymap } from '@codemirror/autocomplete';
 import { markdown } from '@codemirror/lang-markdown';
+import { logger } from '../utils/logger.js';
 
 const props = defineProps({
   modelValue: {
@@ -569,7 +570,7 @@ async function handleCopySelection() {
     showFloatBar.value = false;
     emit('toast', '已复制选中文本');
   } catch (err) {
-    console.error('[NiceMD] Copy selection failed:', err);
+    logger.error('[NiceMD] Copy selection failed:', err);
     emit('toast', '复制失败，请检查剪贴板权限');
   }
 }
@@ -775,7 +776,7 @@ async function handleDownloadHoveredUrl(url, filename) {
     const res = await downloadUrlResource(url, filename);
     emit('toast', res.method === 'anchor' ? '已在新标签页打开下载链接' : `已触发下载 ${res.filename}`);
   } catch (err) {
-    console.error('[NiceMD] Download URL failed:', err);
+    logger.error('[NiceMD] Download URL failed:', err);
     emit('toast', '下载失败，可尝试新窗口打开');
   }
 }
@@ -787,7 +788,7 @@ async function handleCopyHoveredUrl(url) {
     soundEngine.playClick();
     emit('toast', '已复制 URL 链接');
   } catch (err) {
-    console.error('[NiceMD] Copy URL failed:', err);
+    logger.error('[NiceMD] Copy URL failed:', err);
     emit('toast', '复制链接失败');
   }
 }
@@ -1233,7 +1234,7 @@ async function processImageInsertion(file) {
       replaceEditorText(placeholder, `![${alt}](${url})`);
       soundEngine.playChime();
     } catch (err) {
-      console.error('[OSS Upload Failed]', err);
+      logger.error('[OSS Upload Failed]', err);
       // Fallback: convert to base64 so user's image is not lost
       const reader = new FileReader();
       reader.onload = (ev) => {
@@ -1431,7 +1432,7 @@ const processFile = async (file) => {
             markdown = res.value.trim();
           }
         } catch (e) {
-          console.warn('[NiceMD] mammoth convertToMarkdown error:', e);
+          logger.warn('[NiceMD] mammoth convertToMarkdown error:', e);
         }
       }
 
@@ -1443,7 +1444,7 @@ const processFile = async (file) => {
             markdown = htmlToMarkdown(res.value);
           }
         } catch (e) {
-          console.warn('[NiceMD] mammoth convertToHtml error:', e);
+          logger.warn('[NiceMD] mammoth convertToHtml error:', e);
         }
       }
 
@@ -1455,7 +1456,7 @@ const processFile = async (file) => {
             markdown = res.value.trim();
           }
         } catch (e) {
-          console.warn('[NiceMD] mammoth extractRawText error:', e);
+          logger.warn('[NiceMD] mammoth extractRawText error:', e);
         }
       }
 
@@ -1475,7 +1476,7 @@ const processFile = async (file) => {
       emit('import', { content: text, type: 'md', filename: file.name });
     }
   } catch (err) {
-    console.error('[NiceMD] Process file failed:', err);
+    logger.error('[NiceMD] Process file failed:', err);
     if (extension === 'docx' || extension === 'doc') {
       alert(`导入失败: ${err.message || '格式解析异常'}`);
     } else {
@@ -1483,7 +1484,7 @@ const processFile = async (file) => {
         const text = await file.text();
         emit('import', { content: text, type: 'md', filename: file.name });
       } catch (fallbackErr) {
-        console.error('[NiceMD] Fallback text read failed:', fallbackErr);
+        logger.error('[NiceMD] Fallback text read failed:', fallbackErr);
       }
     }
   }

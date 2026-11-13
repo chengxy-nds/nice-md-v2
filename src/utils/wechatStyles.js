@@ -33,6 +33,7 @@ import {
   getBackgroundPatternStyle
 } from './materialTemplates';
 import { CONTAINER_CONFIGS } from './markdownExtensions';
+import { logger } from './logger.js';
 
 function isMaterialEl(el) {
   if (!el || el.nodeType !== 1) return false;
@@ -391,6 +392,10 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
               if (strongChild && strongChild.textContent.trim() === text) {
                 extracted = text;
                 prevEl.remove();
+              // The emoji class intentionally matches on UTF-16 code units
+              // (first unit of an astral emoji); adding the `u` flag would
+              // change matching semantics, so leave it for a tested follow-up.
+              // eslint-disable-next-line no-misleading-character-class
               } else if (/^[⭐💡✨🥗📊📋📁💻📝🏷️🎯]/.test(text) && text.length <= 40) {
                 extracted = text;
                 prevEl.remove();
@@ -3090,7 +3095,7 @@ export async function copyToWeChat(htmlContent, plainText, themeId = 'classic-in
     await navigator.clipboard.write([item]);
     return true;
   } catch (err) {
-    console.error('Clipboard copy failed:', err);
+    logger.error('Clipboard copy failed:', err);
     await navigator.clipboard.writeText(cleanPlainText);
     return false;
   }

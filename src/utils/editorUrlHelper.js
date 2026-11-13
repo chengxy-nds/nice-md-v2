@@ -115,7 +115,7 @@ export function detectUrlAtOffset(lineText, offsetInLine) {
   const coveredRanges = [];
 
   // 1. Scan Markdown links and images first so optional "title" or =WxH suffixes are excluded from URL bounds
-  const mdLinkRe = /(!?)\[(?:\\.|[^\[\]])*\]\(([^)\n]+)\)/g;
+  const mdLinkRe = /(!?)\[(?:\\.|[^[\]])*\]\(([^)\n]+)\)/g;
   let match;
   while ((match = mdLinkRe.exec(lineText)) !== null) {
     const fullStart = match.index;

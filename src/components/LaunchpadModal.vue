@@ -26,6 +26,7 @@ import { soundEngine } from '../utils/synthAudio';
 import { compileToWeChatHtml } from '../utils/wechatStyles';
 import { fireConfetti } from '../utils/celebrate';
 import BrandLogo from './BrandLogo.vue';
+import { logger } from '../utils/logger.js';
 
 const props = defineProps({
   isOpen: {
@@ -84,7 +85,7 @@ const presetCovers = [
 const articleImages = computed(() => {
   const list = [];
   if (props.markdown) {
-    const mdRegex = /!\[.*?\]\((https?:\/\/[^\s\)]+|data:image\/[^\s\)]+)\)/g;
+    const mdRegex = /!\[.*?\]\((https?:\/\/[^\s)]+|data:image\/[^\s)]+)\)/g;
     let match;
     while ((match = mdRegex.exec(props.markdown)) !== null) {
       if (match[1] && !list.includes(match[1])) {
@@ -848,7 +849,7 @@ const loadSavedEnabledPlatforms = () => {
       resetDefaultPlatforms();
     }
   } catch (e) {
-    console.error('Failed to load saved platforms', e);
+    logger.error('Failed to load saved platforms', e);
   }
 };
 
@@ -860,7 +861,7 @@ const saveEnabledPlatforms = () => {
     });
     localStorage.setItem(SAVED_ENABLED_KEY, JSON.stringify(enabledMap));
   } catch (e) {
-    console.error('Failed to save platforms', e);
+    logger.error('Failed to save platforms', e);
   }
 };
 
@@ -928,7 +929,7 @@ const loadCachedLogins = () => {
       }
     }
   } catch (e) {
-    console.warn('Failed to load cached logins', e);
+    logger.warn('Failed to load cached logins', e);
   }
   return { hasCache: false, lastChecked: 0, isFresh: false };
 };
@@ -941,7 +942,7 @@ const saveLoginsToCache = (statuses) => {
     };
     localStorage.setItem(SAVED_LOGINS_CACHE_KEY, JSON.stringify(data));
   } catch (e) {
-    console.warn('Failed to save logins cache', e);
+    logger.warn('Failed to save logins cache', e);
   }
 };
 
@@ -1194,11 +1195,11 @@ const publishPlatform = (plat, title, targetHtml) => {
 };
 
 const countArticleImages = (markdown, html) => {
-  const mdMatches = (markdown || '').match(/!\[.*?\]\((https?:\/\/[^\s\)]+)\)/g) || [];
+  const mdMatches = (markdown || '').match(/!\[.*?\]\((https?:\/\/[^\s)]+)\)/g) || [];
   const htmlMatches = (html || '').match(/<img[^>]+src="([^"]+)"/gi) || [];
   const uniqueImages = new Set();
   mdMatches.forEach(m => {
-    const srcMatch = m.match(/\((https?:\/\/[^\s\)]+)\)/);
+    const srcMatch = m.match(/\((https?:\/\/[^\s)]+)\)/);
     if (srcMatch && !srcMatch[1].startsWith('data:')) uniqueImages.add(srcMatch[1]);
   });
   htmlMatches.forEach(m => {
@@ -1366,7 +1367,7 @@ const copyPlatformContent = async (platform) => {
       }
     }
   } catch (e) {
-    console.error(e);
+    logger.error(e);
   }
 };
 

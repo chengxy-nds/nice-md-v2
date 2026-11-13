@@ -50,7 +50,7 @@ export function htmlToMarkdown(htmlString) {
         return `\n${children}\n`;
       case 'ol':
         return `\n${children}\n`;
-      case 'li':
+      case 'li': {
         // Check if ordered list
         const parent = node.parentNode;
         if (parent && parent.tagName.toLowerCase() === 'ol') {
@@ -58,13 +58,16 @@ export function htmlToMarkdown(htmlString) {
           return `${index}. ${children.trim()}\n`;
         }
         return `* ${children.trim()}\n`;
-      case 'a':
+      }
+      case 'a': {
         const href = node.getAttribute('href') || '';
         return `[${children}](${href})`;
-      case 'img':
+      }
+      case 'img': {
         const src = node.getAttribute('src') || '';
         const alt = node.getAttribute('alt') || 'image';
         return `![${alt}](${src})`;
+      }
       case 'br':
         return '\n';
       case 'div':

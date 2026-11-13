@@ -33,6 +33,7 @@ import { materials } from '../utils/materialCatalog';
 import { soundEngine } from '../utils/synthAudio';
 import { fireConfetti } from '../utils/celebrate';
 import { sanitizeWeChatHtml } from '../utils/sanitizeHtml';
+import { logger } from '../utils/logger.js';
 
 const emit = defineEmits(['back-to-editor', 'insert-material', 'apply-background']);
 
@@ -99,7 +100,7 @@ async function handleCopy(mat) {
       if (copiedId.value === mat.id) copiedId.value = null;
     }, 2000);
   } catch (err) {
-    console.error('Failed to copy HTML:', err);
+    logger.error('Failed to copy HTML:', err);
   }
 }
 

@@ -7,6 +7,7 @@ import { parseMarkdownWithDocToc } from '../utils/markdownToc';
 import { themes } from '../utils/themePresets';
 import { getCodeThemeStyles } from '../utils/codeThemes';
 import MaterialPopup from './MaterialPopup.vue';
+import { logger } from '../utils/logger.js';
 
 ensureMarkdownExtensions();
 
@@ -341,7 +342,7 @@ const renderMathAndCharts = async () => {
       });
     }
   } catch (err) {
-    console.warn('[ArticlePreview] KaTeX render error:', err);
+    logger.warn('[ArticlePreview] KaTeX render error:', err);
   }
 
   // 2. Render Mermaid diagrams
@@ -369,13 +370,13 @@ const renderMathAndCharts = async () => {
         if (validNodes.length > 0) {
           const mermaid = await loadMermaid();
           await mermaid.run({ nodes: validNodes }).catch((err) => {
-            console.warn('[ArticlePreview] Mermaid run handled:', err);
+            logger.warn('[ArticlePreview] Mermaid run handled:', err);
           });
         }
       }
     }
   } catch (err) {
-    console.warn('[ArticlePreview] Mermaid render error:', err);
+    logger.warn('[ArticlePreview] Mermaid render error:', err);
   }
 };
 

@@ -7,6 +7,7 @@ import {
   recordDeletedTombstonesBatch
 } from './syncTombstones.js';
 import { injectCachedSecrets, blankSecretsForSave } from './secureCredentials.js';
+import { logger } from './logger.js';
 
 const NEON_CONFIG_KEY = 'nicemd_neon_sync_config_v1';
 const NEON_LAST_SYNC_KEY = 'nicemd_neon_last_sync_timestamp';
@@ -22,7 +23,7 @@ export function getNeonConfig() {
       return injectCachedSecrets(parsed, 'neon');
     }
   } catch (e) {
-    console.warn('Failed to load neon config', e);
+    logger.warn('Failed to load neon config', e);
   }
   return {
     enabled: false,
@@ -42,7 +43,7 @@ export async function ensureNeonTables(connectionString) {
     await initNeonTables(conn);
     tablesEnsuredFor = conn;
   } catch (err) {
-    console.warn('[Neon Sync] Failed to ensure tables:', err);
+    logger.warn('[Neon Sync] Failed to ensure tables:', err);
   }
 }
 
@@ -58,7 +59,7 @@ export function saveNeonConfig(config) {
     }
     window.dispatchEvent(new CustomEvent('nicemd-neon-config-updated', { detail: config }));
   } catch (e) {
-    console.error('Failed to save neon config', e);
+    logger.error('Failed to save neon config', e);
   }
 }
 
@@ -894,7 +895,7 @@ export async function syncSingleDocToNeon(connectionString, doc) {
       tablesEnsuredFor = conn;
       await executeInsert();
     } catch (retryErr) {
-      console.warn('[Neon Sync] Fast doc sync error:', retryErr);
+      logger.warn('[Neon Sync] Fast doc sync error:', retryErr);
     }
   }
 }
@@ -937,7 +938,7 @@ export async function syncSingleGroupToNeon(connectionString, group) {
       tablesEnsuredFor = conn;
       await executeInsert();
     } catch (retryErr) {
-      console.warn('[Neon Sync] Fast group sync error:', retryErr);
+      logger.warn('[Neon Sync] Fast group sync error:', retryErr);
     }
   }
 }
@@ -994,7 +995,7 @@ export async function syncSingleHistoryToNeon(connectionString, history) {
       tablesEnsuredFor = conn;
       await executeInsert();
     } catch (retryErr) {
-      console.warn('[Neon Sync] Fast history sync error:', retryErr);
+      logger.warn('[Neon Sync] Fast history sync error:', retryErr);
     }
   }
 }
@@ -1052,7 +1053,7 @@ export async function syncSingleCustomThemeToNeon(connectionString, theme) {
       tablesEnsuredFor = conn;
       await executeInsert();
     } catch (retryErr) {
-      console.warn('[Neon Sync] Fast custom theme sync error:', retryErr);
+      logger.warn('[Neon Sync] Fast custom theme sync error:', retryErr);
     }
   }
 }
@@ -1128,7 +1129,7 @@ export async function deleteDocInNeon(connectionString, docId) {
       WHERE id = ${docId};
     `;
   } catch (e) {
-    console.warn('[Neon Sync] Failed to delete document in cloud:', e);
+    logger.warn('[Neon Sync] Failed to delete document in cloud:', e);
   }
 }
 
@@ -1150,7 +1151,7 @@ export async function permanentDeleteDocsInNeon(connectionString, docIds = []) {
       `;
     }
   } catch (e) {
-    console.warn('[Neon Sync] Failed to permanently delete documents in cloud:', e);
+    logger.warn('[Neon Sync] Failed to permanently delete documents in cloud:', e);
   }
 }
 
@@ -1178,7 +1179,7 @@ export async function deleteGroupInNeon(connectionString, groupId) {
       WHERE group_id = ${groupId};
     `;
   } catch (e) {
-    console.warn('[Neon Sync] Failed to delete group in cloud:', e);
+    logger.warn('[Neon Sync] Failed to delete group in cloud:', e);
   }
 }
 
@@ -1195,7 +1196,7 @@ export async function deleteHistoryInNeon(connectionString, historyId) {
       WHERE id = ${historyId};
     `;
   } catch (e) {
-    console.warn('[Neon Sync] Failed to delete history in cloud:', e);
+    logger.warn('[Neon Sync] Failed to delete history in cloud:', e);
   }
 }
 
@@ -1212,7 +1213,7 @@ export async function clearDocHistoriesInNeon(connectionString, docId) {
       WHERE doc_id = ${docId};
     `;
   } catch (e) {
-    console.warn('[Neon Sync] Failed to clear doc histories in cloud:', e);
+    logger.warn('[Neon Sync] Failed to clear doc histories in cloud:', e);
   }
 }
 
@@ -1229,7 +1230,7 @@ export async function deleteCustomThemeInNeon(connectionString, themeId) {
       WHERE id = ${themeId};
     `;
   } catch (e) {
-    console.warn('[Neon Sync] Failed to delete custom theme in cloud:', e);
+    logger.warn('[Neon Sync] Failed to delete custom theme in cloud:', e);
   }
 }
 
@@ -1251,7 +1252,7 @@ export function triggerAutoSyncDebounced(docs, groups, histories = [], customThe
       const res = await syncNeonBidirectional(config.connectionString, docs, groups, histories, customThemes);
       if (typeof onSyncEnd === 'function') onSyncEnd(null, res);
     } catch (err) {
-      console.warn('[Neon Auto-Sync] Sync failed:', err);
+      logger.warn('[Neon Auto-Sync] Sync failed:', err);
       if (typeof onSyncEnd === 'function') onSyncEnd(err);
     }
   }, 2000);

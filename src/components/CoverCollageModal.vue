@@ -32,6 +32,7 @@ import {
 import { writeImageBlobToClipboard } from '../utils/clipboard';
 import { isStorageEnabled, uploadToOSS } from '../utils/fileStorage';
 import { soundEngine } from '../utils/synthAudio';
+import { logger } from '../utils/logger.js';
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
@@ -156,7 +157,7 @@ function handleAssignImageToCell(url, alt = '') {
     imageMap.set(url, img);
     triggerRender();
   }).catch(err => {
-    console.warn('[Collage] Image load failed:', err);
+    logger.warn('[Collage] Image load failed:', err);
     triggerRender();
   });
 
@@ -376,7 +377,7 @@ async function handleCopyImage() {
     soundEngine.playChime();
     emit('toast', '已成功复制拼图到剪贴板，可在公众号后台直接 Ctrl+V 粘贴！');
   } catch (err) {
-    console.error('[Collage] Copy failed:', err);
+    logger.error('[Collage] Copy failed:', err);
     emit('toast', '复制失败，请尝试直接下载保存图片');
   } finally {
     isExporting.value = false;
@@ -413,7 +414,7 @@ async function handleInsertToDoc() {
     emit('toast', '已成功将封面拼图插入文档');
     emit('close');
   } catch (err) {
-    console.error('[Collage] Insert failed:', err);
+    logger.error('[Collage] Insert failed:', err);
     emit('toast', '插入图片失败: ' + err.message);
   } finally {
     isUploading.value = false;

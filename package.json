@@ -15,7 +15,9 @@
     "electron:dev": "concurrently -k \"cross-env DISABLE_HMR=false vite --port=3000\" \"wait-on tcp:3000 && electron .\"",
     "electron:build": "vite build && electron-builder --win",
     "electron:build:dir": "vite build && electron-builder --win --dir",
-    "electron:build:portable": "vite build && electron-builder --win portable"
+    "electron:build:portable": "vite build && electron-builder --win portable",
+    "lint": "eslint src/",
+    "format": "prettier --check \"src/**/*.{js,vue}\" \"api/**/*.js\" \"electron/**/*.{cjs,js}\" \"scripts/**/*.cjs\" vite.config.js eslint.config.js"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.3",
@@ -24,6 +26,10 @@
     "cross-env": "^10.1.0",
     "electron": "^43.4.0",
     "electron-builder": "^26.15.3",
+    "eslint": "^9",
+    "eslint-plugin-vue": "^10",
+    "globals": "^16",
+    "prettier": "^3",
     "tailwindcss": "^4.3.3",
     "vite": "^8.0.12",
     "wait-on": "^9.1.0"

@@ -68,6 +68,7 @@ import {
 import { filterOutTombstonedEntities } from './utils/syncTombstones';
 import { getActiveStorageSummary, initStorageDefaultIfAvailable } from './utils/fileStorage';
 import { unlockSecureCredentials } from './utils/secureCredentials';
+import { logger } from './utils/logger.js';
 
 // ── view & document state ──
 const currentView = ref('editor'); // 'home' | 'editor' | 'templates' | 'materials'
@@ -575,7 +576,7 @@ async function handleCopyDocContent() {
     }, 1600);
     triggerAppToast('已复制当前文档内容');
   } catch (err) {
-    console.error('[NiceMD] Copy doc content failed:', err);
+    logger.error('[NiceMD] Copy doc content failed:', err);
     triggerAppToast('复制失败，请检查剪贴板权限');
   }
 }
@@ -1275,7 +1276,7 @@ async function prepareContainerImages(container) {
         });
         break; // converted successfully, stop trying
       } catch (e) {
-        console.warn('[NiceMD] Image Base64 conversion attempt failed for:', url, e);
+        logger.warn('[NiceMD] Image Base64 conversion attempt failed for:', url, e);
       }
     }
   }));
@@ -1549,7 +1550,7 @@ async function exportWord() {
     const blob = await Packer.toBlob(doc);
     downloadBlob(blob, title + '.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
   } catch (err) {
-    console.error('[NiceMD] docx export failed:', err);
+    logger.error('[NiceMD] docx export failed:', err);
     alert('导出 Word 失败：' + (err.message || '未知错误'));
   }
 }
@@ -1587,7 +1588,7 @@ async function exportPNG() {
       if (blob) downloadBlob(blob, title + '.png', 'image/png');
     }, 'image/png');
   } catch (err) {
-    console.error('[NiceMD] html2canvas Web PNG export failed:', err);
+    logger.error('[NiceMD] html2canvas Web PNG export failed:', err);
   } finally {
     if (host && host.parentNode) {
       document.body.removeChild(host);
@@ -1701,7 +1702,7 @@ async function exportPDF(options = {}) {
     await prepareContainerImages(inner);
 
   } catch (err) {
-    console.warn('[NiceMD] PDF prepare failed, falling back to iframe print:', err);
+    logger.warn('[NiceMD] PDF prepare failed, falling back to iframe print:', err);
   } finally {
     if (host && host.parentNode) {
       document.body.removeChild(host);
@@ -2015,7 +2016,7 @@ onMounted(async () => {
     // Connection established (PONG)
     if (event.data && event.data.type === 'NICEMD_PONG') {
       if (!isExtensionConnected.value) {
-        console.log('[NiceMD App] Assistant Extension connection active.');
+        logger.info('[NiceMD App] Assistant Extension connection active.');
         isExtensionConnected.value = true;
         window.postMessage({ type: 'NICEMD_GET_PENDING_IMPORT' }, '*');
       }
@@ -2025,7 +2026,7 @@ onMounted(async () => {
     if (event.data && event.data.type === 'NICEMD_GET_PENDING_IMPORT_RESPONSE') {
       if (event.data.success && event.data.article) {
         const article = event.data.article;
-        console.log('[NiceMD App] Loaded pending import article:', article.title);
+        logger.info('[NiceMD App] Loaded pending import article:', article.title);
 
         markdownContent.value = article.markdown;
 
@@ -2040,7 +2041,7 @@ onMounted(async () => {
 
     // Background notification that a new article has been imported
     if (event.data && event.data.type === 'NICEMD_IMPORT_NOTIFICATION') {
-      console.log('[NiceMD App] Received background import trigger.');
+      logger.info('[NiceMD App] Received background import trigger.');
       window.postMessage({ type: 'NICEMD_GET_PENDING_IMPORT' }, '*');
     }
   });

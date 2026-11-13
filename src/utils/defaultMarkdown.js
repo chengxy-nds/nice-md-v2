@@ -1,3 +1,4 @@
+import { logger } from './logger.js';
 export const defaultMarkdown = `---
 title: EasyMD 全语法 Markdown 排版全集模板
 author: 程序员小富
@@ -137,7 +138,7 @@ function launchConfetti() {
     origin: { y: 0.6 }
   });
 }
-console.log("NiceMD 渲染引擎初始化完成！");
+logger.info("NiceMD 渲染引擎初始化完成！");
 \`\`\`
 
 ### 3. Java 代码块

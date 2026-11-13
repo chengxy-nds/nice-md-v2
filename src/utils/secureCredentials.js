@@ -1,3 +1,4 @@
+import { logger } from './logger.js';
 /**
  * Credential security layer (optimization item 4, non-destructive).
  *
@@ -277,7 +278,7 @@ export async function unlockSecureCredentials() {
       await loadSecret(id);
       result[id] = true;
     } catch (e) {
-      console.warn(`[SecureCredentials] Failed to unlock ${id}:`, e);
+      logger.warn(`[SecureCredentials] Failed to unlock ${id}:`, e);
       result[id] = false;
     }
   }
@@ -369,7 +370,7 @@ export async function prepareSecureSave(id, config) {
       await storeSecret(id, secret);
       return { ...config, __secured: true };
     } catch (e) {
-      console.warn(`[SecureCredentials] Could not encrypt ${id}, keeping legacy save:`, e);
+      logger.warn(`[SecureCredentials] Could not encrypt ${id}, keeping legacy save:`, e);
       return config;
     }
   }

@@ -22,6 +22,7 @@ import {
 import { writeImageBlobToClipboard } from '../utils/clipboard';
 import { isStorageEnabled, uploadToOSS } from '../utils/fileStorage';
 import { soundEngine } from '../utils/synthAudio';
+import { logger } from '../utils/logger.js';
 
 const props = defineProps({
   isOpen: { type: Boolean, default: false },
@@ -326,7 +327,7 @@ async function handleCopy() {
     soundEngine.playChime();
     emit('toast', '已成功复制裁剪图片到剪贴板！');
   } catch (err) {
-    console.error('[Cropper] Copy failed:', err);
+    logger.error('[Cropper] Copy failed:', err);
     emit('toast', '复制失败，请尝试直接下载保存');
   } finally {
     isExporting.value = false;
@@ -366,7 +367,7 @@ async function handleReplaceOriginal() {
     emit('toast', '已成功替换正文中的原图！');
     emit('close');
   } catch (err) {
-    console.error('[Cropper] Replace failed:', err);
+    logger.error('[Cropper] Replace failed:', err);
     emit('toast', '替换图片失败: ' + err.message);
   } finally {
     isUploading.value = false;
@@ -397,7 +398,7 @@ async function handleInsertNew() {
     emit('toast', '已将裁剪图片插入当前文档');
     emit('close');
   } catch (err) {
-    console.error('[Cropper] Insert failed:', err);
+    logger.error('[Cropper] Insert failed:', err);
     emit('toast', '插入图片失败: ' + err.message);
   } finally {
     isUploading.value = false;
