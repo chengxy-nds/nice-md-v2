@@ -532,6 +532,78 @@ html.dark .workspace-tabs {
   overflow-y: hidden;
   scrollbar-width: none;
   -ms-overflow-style: none;
+  /* 滑块与离开中标签的定位基准（见 .workspace-tab-glider / .nx-tab-leave-active） */
+  position: relative;
+}
+
+/* 标签组（TransitionGroup 根节点）：只包标签本身，滚动容器仍是外层，
+   所以拖拽滚动 / wheel / scrollIntoView 不受影响。 */
+.workspace-tabs-group {
+  display: flex;
+  align-items: stretch;
+  flex-shrink: 0;
+  min-height: 100%;
+}
+
+/* ── 标签激活指示滑块 ── 2px 顶部高亮条，唯一一块，用 transform 在激活
+   标签之间滑动（JS 量测 + rAF，见 App.vue 的 moveTabGlider）；宽按激活
+   标签的实际宽走，宽窄标签切换时跟着伸缩。放在滚动容器内部、按内容
+   坐标定位，随标签一起滚动。 */
+.workspace-tab-glider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 2px;
+  width: 0;
+  background: #2678e8;
+  border-radius: 0 0 2px 2px;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 3;
+  transition: transform var(--motion-slow) var(--ease-glide), width var(--motion-slow) var(--ease-glide), opacity var(--motion-base) var(--ease-out);
+  will-change: transform, width;
+}
+
+.workspace-tab-glider.is-visible {
+  opacity: 1;
+}
+
+/* 首屏挂载时直接落位，不从 0 宽滑过去 */
+.workspace-tab-glider.is-instant {
+  transition: none;
+}
+
+html.dark .workspace-tab-glider {
+  background: #60a5fa;
+}
+
+/* ── 标签栏过渡（nx-tab / TransitionGroup）──
+   新增：弹簧入场（fade + scale(.96) + 2px 上滑）；关闭：200ms 快收淡出 +
+   轻微缩小的同时向右滑 8px；剩余标签 FLIP 平移 250ms 弹簧跟进。
+   只用 opacity / transform。离开中的标签 position: absolute 脱离 flex 流
+   （宽高由 @before-leave 的 fixTabLeaveSize 写死），剩余标签才能立刻
+   平移而不是等它淡出完再跳过去。 */
+.nx-tab-enter-active {
+  transition: opacity var(--motion-base) var(--ease-enter), transform var(--motion-base) var(--ease-enter);
+}
+
+.nx-tab-leave-active {
+  transition: opacity 200ms var(--ease-exit), transform 200ms var(--ease-exit);
+  position: absolute;
+}
+
+.nx-tab-enter-from {
+  opacity: 0;
+  transform: scale(.96) translateY(2px);
+}
+
+.nx-tab-leave-to {
+  opacity: 0;
+  transform: scale(.96) translateX(8px);
+}
+
+.nx-tab-move {
+  transition: transform 250ms var(--ease-spring);
 }
 
 .workspace-tabs-scroll::-webkit-scrollbar {
@@ -564,7 +636,7 @@ html.dark .workspace-tabs {
   font-family: var(--font-sans);
   cursor: pointer;
   box-sizing: border-box;
-  transition: background 0.14s ease, color 0.14s ease;
+  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out);
 }
 
 .workspace-tab-item:hover:not(.is-active) {
@@ -591,15 +663,8 @@ html.dark .workspace-tab-item:hover:not(.is-active) {
   z-index: 2;
 }
 
-.workspace-tab-item.is-active::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: #2678e8;
-}
+/* 激活态顶部高亮改由 .workspace-tab-glider 滑动承担（见上），这里不再
+   用静态 ::before，否则滑块和静态条会重叠成两条。 */
 
 html.dark .workspace-tab-item.is-active {
   background: #252936;
@@ -607,14 +672,10 @@ html.dark .workspace-tab-item.is-active {
   color: #f8fafc;
 }
 
-html.dark .workspace-tab-item.is-active::before {
-  background: #60a5fa;
-}
-
 .workspace-tab-icon {
   flex-shrink: 0;
   color: #8b9bb0;
-  transition: color 0.14s ease;
+  transition: color var(--motion-fast) var(--ease-out);
 }
 
 .workspace-tab-item:hover:not(.is-active) .workspace-tab-icon {
@@ -679,8 +740,10 @@ html.dark .workspace-tab-input {
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;
-  opacity: 0.65;
-  transition: opacity 0.14s ease, background 0.14s ease, color 0.14s ease;
+  /* × 默认藏起来（只改透明度）：按钮本身是固定 18px 宽的槽位，出现/消失
+     不挤标题；滑过标签、激活标签、键盘聚焦到它时再淡出。 */
+  opacity: 0;
+  transition: opacity var(--motion-fast) var(--ease-out), transform var(--motion-fast) var(--ease-out), background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out);
 }
 
 .workspace-tab-item.is-active .workspace-tab-close {
@@ -689,13 +752,19 @@ html.dark .workspace-tab-input {
 }
 
 .workspace-tab-item:hover .workspace-tab-close,
-.workspace-tab-item.is-active .workspace-tab-close:hover {
+.workspace-tab-item:focus-within .workspace-tab-close,
+.workspace-tab-close:focus-visible {
   opacity: 1;
 }
 
 .workspace-tab-close:hover {
   background: #edf4ff;
   color: #2678e8;
+  opacity: 1;
+}
+
+.workspace-tab-close:active {
+  transform: scale(.9);
 }
 
 html.dark .workspace-tab-close:hover {
@@ -716,12 +785,16 @@ html.dark .workspace-tab-close:hover {
   color: #64748b;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.14s ease, color 0.14s ease;
+  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), transform var(--motion-fast) var(--ease-out);
 }
 
 .workspace-tab-add:hover {
   background: #edf4ff;
   color: #2678e8;
+}
+
+.workspace-tab-add:active {
+  transform: scale(.97);
 }
 
 html.dark .workspace-tab-add:hover {
