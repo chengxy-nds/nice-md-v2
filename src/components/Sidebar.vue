@@ -411,11 +411,27 @@ const filteredUngroupedDocs = computed(() => {
   return sortDocList(matched);
 });
 
-function docsInGroup(groupId) {
-  const all = props.documents.filter(d => !isDocDeleted(d) && d.groupId === groupId);
+// P0-4: 按 groupId 缓存的分组文档表。模板里每组原来调 3–4 次
+// docsInGroup()，每次都全量 filter + 排序；现在一次 computed 建表，
+// 模板只读缓存，documents / searchQuery / sortBy 变化时才重算。
+const docsByGroup = computed(() => {
+  const map = new Map();
   const q = searchQuery.value.trim().toLowerCase();
-  const matched = q ? all.filter(d => matchesSearch(d, q)) : all;
-  return sortDocList(matched);
+  for (const doc of props.documents) {
+    if (isDocDeleted(doc)) continue;
+    const gid = doc.groupId || null;
+    if (!map.has(gid)) map.set(gid, []);
+    map.get(gid).push(doc);
+  }
+  for (const [gid, list] of map) {
+    const matched = q ? list.filter(d => matchesSearch(d, q)) : list;
+    map.set(gid, sortDocList(matched));
+  }
+  return map;
+});
+
+function docsInGroup(groupId) {
+  return docsByGroup.value.get(groupId) || [];
 }
 
 const deletedDocs = computed(() => props.documents.filter(d => isDocDeleted(d)));
@@ -1158,6 +1174,14 @@ function resetSidebarWidth() {
   user-select: none !important;
 }
 
+/* P0-3: 滑入/滑出期间去掉 backdrop-filter: blur(18px)，否则 0.36s 内
+   每帧重算背景模糊。过渡类由 Vue 加在根元素上，scoped 选择器
+   优先级高于 .sidebar-container 的 blur 声明。 */
+.sidebar-container.sidebar-slide-enter-active,
+.sidebar-container.sidebar-slide-leave-active {
+  backdrop-filter: none;
+}
+
 .sidebar-resizer {
   position: absolute;
   top: 0;
@@ -1807,13 +1831,10 @@ html.dark .create-group-input {
   box-sizing: border-box;
 }
 
+/* P0-2: hover 只改背景色。原来的 translateX(1.5px) 会让整行在鼠标
+   滑过时横移，悬停边缘反复进出 hover；:active 的 scale 同理去掉。 */
 .folder-row:hover {
-  background: #f5f8fc;
-  transform: translateX(1.5px);
-}
-
-.folder-row:active {
-  transform: scale(0.985);
+  background: var(--sidebar-hover, #f5f8fc);
 }
 
 .folder-row:focus-visible,
@@ -1921,11 +1942,25 @@ html.dark .group-rename-input {
   color: #f1f5f9;
 }
 
+/* P0-1: 右侧区域定宽，计数与操作按钮绝对定位叠放，只切换
+   opacity / visibility，不再 display: none ↔ flex。原来 hover 瞬间
+   右侧从 ~30px 的计数跳成 ~70px 的 3 个按钮，整行重排导致抖动。
+   定宽 88px 是按 P1 的 28px 按钮算的：3×28 + 2×2 gap = 88。 */
 .folder-right {
   margin-left: auto;
-  display: flex;
-  align-items: center;
+  position: relative;
+  width: 88px;
+  height: 28px;
   flex-shrink: 0;
+}
+
+.folder-right .count,
+.folder-right .folder-actions {
+  position: absolute;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: opacity 0.12s var(--ease-glide), visibility 0.12s var(--ease-glide);
 }
 
 .count {
@@ -1953,17 +1988,35 @@ html.dark .count {
 }
 
 .folder-actions {
-  display: none;
+  display: flex;
   align-items: center;
   gap: 2px;
+  opacity: 0;
+  visibility: hidden;
 }
 
-.folder-row:hover .count {
-  display: none;
+.folder-row:hover .count,
+.folder-row:focus-within .count {
+  opacity: 0;
+  visibility: hidden;
 }
 
-.folder-row:hover .folder-actions {
-  display: flex;
+.folder-row:hover .folder-actions,
+.folder-row:focus-within .folder-actions {
+  opacity: 1;
+  visibility: visible;
+}
+
+@media (hover: none) {
+  /* 触屏没有 hover，操作按钮常显，否则分组操作够不着。 */
+  .folder-right .folder-actions {
+    opacity: 1;
+    visibility: visible;
+  }
+  .folder-right .count {
+    opacity: 0;
+    visibility: hidden;
+  }
 }
 
 .mini-btn {
@@ -2267,22 +2320,29 @@ html.dark .trash-doc-item .meta {
   color: #94a3b8;
 }
 
+/* P0-1 同理：回收站操作区常驻布局，只切换透明度。原来 hover 才
+   display: flex，文件名会被突然出现的按钮挤压。 */
 .trash-item-actions {
-  display: none;
+  display: flex;
   align-items: center;
   gap: 4px;
   margin-left: auto;
   flex: 0 0 auto;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.12s var(--ease-glide), visibility 0.12s var(--ease-glide);
 }
 
 .trash-doc-item:hover .trash-item-actions,
 .trash-doc-item:focus-within .trash-item-actions {
-  display: flex;
+  opacity: 1;
+  visibility: visible;
 }
 
 @media (hover: none) {
   .trash-item-actions {
-    display: flex;
+    opacity: 1;
+    visibility: visible;
   }
 }
 

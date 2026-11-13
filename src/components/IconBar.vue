@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted, watch, nextTick } from 'vue';
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { House, Files, Palette, Boxes, Settings, CircleHelp } from '@lucide/vue';
 import BrandLogo from './BrandLogo.vue';
 
@@ -24,42 +24,70 @@ const materialsBtnRef = ref(null);
 const settingsBtnRef = ref(null);
 const helpBtnRef = ref(null);
 
-let stretchTimer = null;
 const GLIDE_DURATION = 380; // ms
+let gliderRaf = 0;
+let gliderRetractRaf = 0;
+let gliderObserver = null;
 
 /**
  * 液体滑块移动核心算法 (Muse Glider Motion)
  * 全栏仅保留唯一一块高亮层，通过 transform 滑动，带 380ms 弹性曲线与物理过冲。
  * 距离越远，纵向液体拉伸越明显 (scaleY)，落位后弹性回缩。
+ *
+ * P0-5: 原来每次 hover 都同步读两次 getBoundingClientRect 再写
+ * style.width/height/transform，且拉伸回缩用单个全局 setTimeout，
+ * 快速划过多个图标时会 clearTimeout 导致滑块卡在拉伸态。
+ * 现在：① 读写合并进同一帧 rAF；② 滑块固定 38×38（所有按钮都
+ * 是 38px），不再写 width/height，也不再过渡它们，只用 transform；
+ * ③ 回缩用 rAF 时间戳循环，不再用单一定时器；④ ResizeObserver +
+ * resize 监听，窗口缩放/字体加载后重定位。
  */
-function moveGliderToEl(btn, stretch = true) {
-  if (!btn || !gliderRef.value || !iconBarRef.value) return;
-
-  const barRect = iconBarRef.value.getBoundingClientRect();
-  const btnRect = btn.getBoundingClientRect();
-
-  const top = btnRect.top - barRect.top;
-  const left = btnRect.left - barRect.left;
-
-  const prevY = parseFloat(gliderRef.value.dataset.y || top);
-  const dist = Math.abs(top - prevY);
-  gliderRef.value.dataset.y = top;
-
-  // 纵向物理拉伸计算（上限 1.16 倍）
-  const stretchY = stretch ? 1 + Math.min(dist / 650, 0.16) : 1;
-
-  gliderRef.value.style.width = `${btnRect.width}px`;
-  gliderRef.value.style.height = `${btnRect.height}px`;
+function applyGliderTransform(left, top, stretchY) {
+  if (!gliderRef.value) return;
   gliderRef.value.style.transform = `translate(${left}px, ${top}px) scaleY(${stretchY})`;
   gliderRef.value.classList.add('is-visible');
+}
 
-  clearTimeout(stretchTimer);
-  if (stretchY > 1.01) {
-    stretchTimer = setTimeout(() => {
-      if (gliderRef.value) {
-        gliderRef.value.style.transform = `translate(${left}px, ${top}px) scaleY(1)`;
-      }
-    }, GLIDE_DURATION * 0.55);
+function moveGliderToEl(btn, stretch = true) {
+  if (!btn || !gliderRef.value || !iconBarRef.value) return;
+  cancelAnimationFrame(gliderRaf);
+  cancelAnimationFrame(gliderRetractRaf);
+  gliderRaf = requestAnimationFrame(() => {
+    if (!btn || !gliderRef.value || !iconBarRef.value) return;
+    const barRect = iconBarRef.value.getBoundingClientRect();
+    const btnRect = btn.getBoundingClientRect();
+    const top = btnRect.top - barRect.top;
+    const left = btnRect.left - barRect.left;
+
+    const prevY = parseFloat(gliderRef.value.dataset.y || String(top));
+    const dist = Math.abs(top - prevY);
+    gliderRef.value.dataset.y = String(top);
+
+    // 纵向物理拉伸计算（上限 1.16 倍）
+    const stretchY = stretch ? 1 + Math.min(dist / 650, 0.16) : 1;
+    applyGliderTransform(left, top, stretchY);
+
+    if (stretchY > 1.01) {
+      const start = performance.now();
+      const tick = (now) => {
+        if (!gliderRef.value) return;
+        if (now - start >= GLIDE_DURATION * 0.55) {
+          applyGliderTransform(left, top, 1);
+          return;
+        }
+        gliderRetractRaf = requestAnimationFrame(tick);
+      };
+      gliderRetractRaf = requestAnimationFrame(tick);
+    }
+  });
+}
+
+function repositionGlider() {
+  const activeBtn = getActiveButtonEl();
+  if (activeBtn) {
+    moveGliderToEl(activeBtn, false);
+  } else if (gliderRef.value) {
+    gliderRef.value.classList.remove('is-visible');
   }
 }
 
@@ -107,6 +135,21 @@ onMounted(() => {
       moveGliderToEl(activeBtn, false);
     }
   });
+  // P0-5: 窗口缩放、字体加载、栏宽变化后滑块重定位。
+  // 原来全文件没有任何 resize 监听，滑块会停在旧位置直到下次 hover。
+  if (typeof ResizeObserver !== 'undefined' && iconBarRef.value) {
+    gliderObserver = new ResizeObserver(() => repositionGlider());
+    gliderObserver.observe(iconBarRef.value);
+  }
+  window.addEventListener('resize', repositionGlider);
+});
+
+onUnmounted(() => {
+  cancelAnimationFrame(gliderRaf);
+  cancelAnimationFrame(gliderRetractRaf);
+  gliderObserver?.disconnect();
+  gliderObserver = null;
+  window.removeEventListener('resize', repositionGlider);
 });
 </script>
 
@@ -319,11 +362,11 @@ html.dark .icon-bar {
   opacity: 0;
   pointer-events: none;
   z-index: 1; /* 处于按钮下方，背景之上 */
+  /* P0-5: 只过渡 transform + opacity。原来 width/height/border-radius
+     也参与过渡，且 JS 每 hover 一次就写 width/height，布局属性与
+     380ms 的 transform 不同步。所有按钮都是 38×38，滑块尺寸固定即可。 */
   transition: transform 380ms var(--ease-glide),
-              width 300ms var(--ease-glide),
-              height 300ms var(--ease-glide),
-              border-radius 300ms var(--ease-glide),
-              opacity 200ms ease;
+              opacity 0.2s var(--ease-out);
   will-change: transform;
 }
 

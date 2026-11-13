@@ -436,13 +436,10 @@ onUnmounted(() => {
   box-sizing: border-box;
 }
 
+/* P0-2: hover 只改背景色，去掉 translateX(2px) / :active scale，
+   与文件夹行同理，避免悬停横移抖动。 */
 .file-row:hover {
-  background: #f5f8fc;
-  transform: translateX(2px);
-}
-
-.file-row:active {
-  transform: scale(0.985) translateX(1px);
+  background: var(--sidebar-hover, #f5f8fc);
 }
 
 html.dark .file-row:hover {

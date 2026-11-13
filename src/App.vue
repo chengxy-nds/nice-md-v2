@@ -2185,11 +2185,16 @@ watch(customStyles, () => {
           <div v-if="mobileSidebarOpen" class="sidebar-backdrop" @click="mobileSidebarOpen = false"></div>
 
           <!-- 左侧抽屉平滑滑入/滑出过渡 (Muse Glide Transition) -->
+          <!-- P0-3: v-if 改 v-show。原来每次点“文档”都销毁重建整个
+               Sidebar（重读 localStorage、重注册 7 个监听、每篇文档
+               全文算字数），展开卡顿主因之一。v-show 只切换显示，
+               组件常驻，状态与滚动位置都保留。移动端抽屉仍由
+               mobile-drawer-open 类控制，不受影响。 -->
           <Transition name="sidebar-slide">
             <Sidebar
               ref="sidebarRef"
               :class="{ 'mobile-drawer-open': mobileSidebarOpen }"
-              v-if="(sidebarVisible || mobileSidebarOpen) && currentView === 'editor'"
+              v-show="(sidebarVisible || mobileSidebarOpen) && currentView === 'editor'"
               :documents="documents"
               :groups="groups"
               :activeDocId="activeDocId"

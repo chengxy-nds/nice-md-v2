@@ -452,18 +452,22 @@ html.dark .wandor-wordmark {
 }
 
 /* ── 左侧文档侧边栏平滑展开/折叠过渡 (Muse Ease-Glide) ── */
+/* P0-3: 只留 transform + opacity。原来 margin-left: -320px 是布局
+   属性，每帧重排整个编辑区/预览区，而且 -320px 是写死的，与真实
+   宽度 clamp(17rem, 20vw, 24rem) 及拖拽后的 220–640px 都对不上。
+   改为 translateX(-100%)，按自身宽度滑出，走合成器。代价：展开/
+   收起时工作区不再被平滑推动，侧边栏以抽屉方式滑入滑出，收起完
+   成瞬间工作区扩展一次。 */
 .sidebar-slide-enter-active,
 .sidebar-slide-leave-active {
   transition: transform 0.36s var(--ease-glide),
-              opacity 0.22s ease,
-              margin-left 0.36s var(--ease-glide);
+              opacity 0.2s var(--ease-out);
 }
 
 .sidebar-slide-enter-from,
 .sidebar-slide-leave-to {
-  transform: translateX(-14px);
+  transform: translateX(-100%);
   opacity: 0;
-  margin-left: -320px;
 }
 
 .workspace-grid {
