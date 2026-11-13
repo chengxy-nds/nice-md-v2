@@ -440,6 +440,23 @@ function docsInGroup(groupId) {
   return docsByGroup.value.get(groupId) || [];
 }
 
+// ── 全局连续错峰序号 ── .nx-stagger-item 的 --nx-i 必须全列表连续，
+// 不能按分组重置（笔记页 artifact 的毛病：每组从 0ms 重排，并行出现）。
+// 顺序与模板一致：自定义分组按 groups 顺序，其次未分组；回收站是独立
+// 列表，用自己的 docIndex，不走这里。
+const staggerIndexById = computed(() => {
+  const map = new Map();
+  let i = 0;
+  for (const group of props.groups) {
+    for (const doc of docsInGroup(group.id)) map.set(doc.id, i++);
+  }
+  for (const doc of filteredUngroupedDocs.value) map.set(doc.id, i++);
+  return map;
+});
+function staggerIndex(docId) {
+  return staggerIndexById.value.get(docId) ?? 0;
+}
+
 const deletedDocs = computed(() => props.documents.filter(d => isDocDeleted(d)));
 
 watch(() => deletedDocs.value.length, (len) => {
@@ -916,23 +933,28 @@ function resetSidebarWidth() {
         @dragover="onListDragOver($event, null)"
         @drop="onListDrop($event, null)"
       >
-        <SidebarDocItem
-          v-for="(doc, docIndex) in filteredUngroupedDocs"
-          :key="doc.id"
-          :style="{ '--nx-i': docIndex }" class="nx-stagger-item"
-          :doc="doc"
-          :isActive="doc.id === activeDocId"
-          :searchQuery="searchQuery"
-          @select="id => $emit('select-doc', id)"
-          @rename="payload => $emit('rename-doc', payload)"
-          @delete="id => $emit('delete-doc', id)"
-          @move-doc="handleDocMove"
-          @history="doc => $emit('open-doc-history', doc)"
-          @duplicate="doc => $emit('duplicate-doc', doc)"
-          @toggle-pin="doc => $emit('toggle-pin', doc)"
-          @drag-start="handleDocDragStart"
-          @drag-end="handleDocDragEnd"
-        />
+        <!-- 搜索过滤是原位显隐（TransitionGroup + :key 复用节点），
+             不重建 DOM、不丢滚动/悬停状态；不匹配的行淡出+缩放离开，
+             匹配的行淡入+缩放进入，剩余行 FLIP 平移。 -->
+        <TransitionGroup name="nx-search-filter" tag="div">
+          <SidebarDocItem
+            v-for="doc in filteredUngroupedDocs"
+            :key="doc.id"
+            :style="{ '--nx-i': staggerIndex(doc.id) }" class="nx-stagger-item"
+            :doc="doc"
+            :isActive="doc.id === activeDocId"
+            :searchQuery="searchQuery"
+            @select="id => $emit('select-doc', id)"
+            @rename="payload => $emit('rename-doc', payload)"
+            @delete="id => $emit('delete-doc', id)"
+            @move-doc="handleDocMove"
+            @history="doc => $emit('open-doc-history', doc)"
+            @duplicate="doc => $emit('duplicate-doc', doc)"
+            @toggle-pin="doc => $emit('toggle-pin', doc)"
+            @drag-start="handleDocDragStart"
+            @drag-end="handleDocDragEnd"
+          />
+        </TransitionGroup>
         <div v-if="filteredUngroupedDocs.length === 0" class="empty-group-drop-hint">
           <span>{{ searchQuery ? '无匹配文档' : '暂无文档，点击上方「新建文档」开始写作' }}</span>
         </div>
@@ -1020,10 +1042,11 @@ function resetSidebarWidth() {
             @drop="onListDrop($event, group.id)"
           >
             <div class="children-inner">
+            <TransitionGroup name="nx-search-filter" tag="div">
             <SidebarDocItem
-              v-for="(doc, docIndex) in docsInGroup(group.id)"
+              v-for="doc in docsInGroup(group.id)"
               :key="doc.id"
-          :style="{ '--nx-i': docIndex }" class="nx-stagger-item"
+          :style="{ '--nx-i': staggerIndex(doc.id) }" class="nx-stagger-item"
               :doc="doc"
               :isActive="doc.id === activeDocId"
               :searchQuery="searchQuery"
@@ -1037,6 +1060,7 @@ function resetSidebarWidth() {
               @drag-start="handleDocDragStart"
               @drag-end="handleDocDragEnd"
             />
+            </TransitionGroup>
             <div v-if="docsInGroup(group.id).length === 0" class="empty-group-drop-hint">
               <span>{{ searchQuery ? '无匹配文档' : '暂无文档，可拖拽至此' }}</span>
             </div>
@@ -1082,10 +1106,11 @@ function resetSidebarWidth() {
             @drop="onListDrop($event, '__ungrouped__')"
           >
             <div class="children-inner">
+            <TransitionGroup name="nx-search-filter" tag="div">
             <SidebarDocItem
-              v-for="(doc, docIndex) in filteredUngroupedDocs"
+              v-for="doc in filteredUngroupedDocs"
               :key="doc.id"
-          :style="{ '--nx-i': docIndex }" class="nx-stagger-item"
+          :style="{ '--nx-i': staggerIndex(doc.id) }" class="nx-stagger-item"
               :doc="doc"
               :isActive="doc.id === activeDocId"
               :searchQuery="searchQuery"
@@ -1099,6 +1124,7 @@ function resetSidebarWidth() {
               @drag-start="handleDocDragStart"
               @drag-end="handleDocDragEnd"
             />
+            </TransitionGroup>
             <div v-if="filteredUngroupedDocs.length === 0" class="empty-group-drop-hint">
               <span>{{ searchQuery ? '无匹配文档' : '暂无文档，可拖拽至此' }}</span>
             </div>
@@ -2107,6 +2133,27 @@ html.dark .children {
   min-height: 14px;
 }
 
+/* ── 5b. 搜索过滤原位过渡（nx-search-filter / TransitionGroup）──
+   不重建 DOM：匹配行淡入+缩放进入，不匹配行淡出+缩放离开，剩余行
+   FLIP 平移；只用 opacity / transform。搜索框本身已有 focus-within
+   3px 光圈（.search:focus-within），保持不变。
+   另：分组计数用的 docsInGroup().length 本来就是过滤后的长度（见
+   docsByGroup），搜索时自动显示过滤后计数，无需再改。 */
+.nx-search-filter-enter-active {
+  transition: opacity .25s var(--ease-spring), transform .25s var(--ease-spring);
+}
+.nx-search-filter-leave-active {
+  transition: opacity .2s var(--ease-exit), transform .2s var(--ease-exit);
+}
+.nx-search-filter-enter-from,
+.nx-search-filter-leave-to {
+  opacity: 0;
+  transform: scale(.96) translateY(2px);
+}
+.nx-search-filter-move {
+  transition: transform .25s var(--ease-spring);
+}
+
 .empty-group-drop-hint {
   padding: 7px 10px;
   margin: 3px 0 5px;
@@ -2118,6 +2165,12 @@ html.dark .children {
   text-align: center;
   user-select: none;
   transition: background 0.12s var(--ease-glide), color 0.12s var(--ease-glide), border-color 0.12s var(--ease-glide);
+  /* 无结果提示淡入（搜索切到“无匹配文档”时不再生硬出现） */
+  animation: nx-empty-fade-in .25s var(--ease-out) both;
+}
+@keyframes nx-empty-fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 html.dark .empty-group-drop-hint {

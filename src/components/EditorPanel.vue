@@ -1370,6 +1370,50 @@ const lineNumbers = computed(() => {
   return Array.from({ length: Math.max(lines, 1) }, (_, i) => i + 1);
 });
 
+// ── 底部统计 countUp（笔记页 artifact 的做法）──
+// 切换文档时，单词/字符/行数从 0 用 650ms 立方缓出（1-(1-p)^3）数到目标值；
+// 打字时不重播，直接显示实时值。isCountingStats 为真时显示动画值，否则显示实时值。
+const liveStats = computed(() => ({
+  words: editorText.value.split(/\s+/).filter(Boolean).length,
+  chars: editorText.value.length,
+  lines: lineNumbers.value.length
+}));
+const animatedStats = ref({ words: 0, chars: 0, lines: 0 });
+const isCountingStats = ref(false);
+let statCountRaf = 0;
+function startStatCountUp() {
+  cancelAnimationFrame(statCountRaf);
+  const target = liveStats.value;
+  if (!target.words && !target.chars && !target.lines) {
+    animatedStats.value = { words: 0, chars: 0, lines: 0 };
+    isCountingStats.value = false;
+    return;
+  }
+  isCountingStats.value = true;
+  const start = performance.now();
+  const DURATION = 650;
+  const tick = (now) => {
+    const p = Math.min((now - start) / DURATION, 1);
+    const eased = 1 - Math.pow(1 - p, 3);
+    animatedStats.value = {
+      words: Math.round(target.words * eased),
+      chars: Math.round(target.chars * eased),
+      lines: Math.round(target.lines * eased)
+    };
+    if (p < 1) {
+      statCountRaf = requestAnimationFrame(tick);
+    } else {
+      isCountingStats.value = false;
+    }
+  };
+  statCountRaf = requestAnimationFrame(tick);
+}
+const displayStats = computed(() => (isCountingStats.value ? animatedStats.value : liveStats.value));
+watch(() => props.docId, (newId, oldId) => {
+  if (newId !== oldId) nextTick(startStatCountUp);
+});
+onUnmounted(() => cancelAnimationFrame(statCountRaf));
+
 // Handle Drag & Drop
 const onDragOver = (e) => {
   e.preventDefault();
@@ -2296,9 +2340,9 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
     </div>
 
         <div class="editor-footer">
-          <span>{{ editorText.split(/\s+/).filter(Boolean).length }} 单词</span>
-          <span>{{ editorText.length }} 字符</span>
-          <span>{{ lineNumbers.length }} 行</span>
+          <span>{{ displayStats.words }} 单词</span>
+          <span>{{ displayStats.chars }} 字符</span>
+          <span>{{ displayStats.lines }} 行</span>
         </div>
 
     <!-- In-place Image Cropper Modal -->

@@ -5,7 +5,7 @@ import {
   Eye, EyeOff, Download, Undo2, Redo2, Code2,
   ChevronDown, FileCode, FileText, Globe, Settings, Check, X,
   History, Copy, Plus, ArrowLeftToLine, ArrowRightToLine, CircleX,
-  LayoutGrid
+  LayoutGrid, Maximize, Minimize
 } from '@lucide/vue';
 import { applyTheme, getThemeDefaultStyles, getThemeSavedStyles, themes as themePresets } from './utils/themePresets';
 import { codeThemes } from './utils/codeThemes';
@@ -352,8 +352,18 @@ watch(activeDocId, (newId, oldId) => {
 // ── CRUD handlers ──
 function handleSelectDoc(id) {
   soundEngine.playClick();
-  activeDocId.value = id;
-  saveActiveDocId(id);
+  if (!id || id === activeDocId.value) return;
+  clearTimeout(docSwapTimer);
+  clearTimeout(docSwapEnterTimer);
+  docSwapEnter.value = false;
+  docSwapLeaving.value = true;
+  docSwapTimer = setTimeout(() => {
+    activeDocId.value = id;
+    saveActiveDocId(id);
+    docSwapLeaving.value = false;
+    docSwapEnter.value = true;
+    docSwapEnterTimer = setTimeout(() => { docSwapEnter.value = false; }, 520);
+  }, 120);
 }
 
 function closeTabList(nextIds, fallbackFocusId = null) {
@@ -1880,6 +1890,34 @@ const togglePreview = () => {
   localStorage.setItem('nicemd_preview_visible', previewVisible.value.toString());
 };
 
+// ── 专注模式（笔记页 artifact 的做法）──
+// 进入：记下侧边栏原来的开/关，收起侧边栏（走已有的 sidebar-slide 抽屉
+// 过渡），预览栏用 grid-template-columns .55s 弹簧收到 0 并淡出
+// （opacity 0 + translateY(8px) scale(.985)，见 App.css 的 .is-focus）；
+// 退出：恢复侧边栏。移动端（≤960px）进入时强制切到编辑视图，避免
+// 预览视图下编辑栏与预览栏同时被藏掉而出现空白。
+const focusMode = ref(false);
+let focusPrevSidebarVisible = true;
+function toggleFocusMode() {
+  soundEngine.playClick();
+  focusMode.value = !focusMode.value;
+  if (focusMode.value) {
+    focusPrevSidebarVisible = sidebarVisible.value;
+    sidebarVisible.value = false;
+    if (window.innerWidth <= 960) mobileActiveView.value = 'editor';
+  } else {
+    sidebarVisible.value = focusPrevSidebarVisible;
+  }
+}
+
+// ── 文档切换：先 120ms 快退再换内容（.nx-doc-leaving），换完重播
+// .5s 弹簧入场（.nx-doc-swap-in），避免“瞬间切掉、再淡入”的跳变。
+// 快速连续点选时清掉待执行的切换，只执行最后一次。
+const docSwapLeaving = ref(false);
+const docSwapEnter = ref(false);
+let docSwapTimer = 0;
+let docSwapEnterTimer = 0;
+
 const toggleMobileSidebar = () => {
   soundEngine.playClick();
   mobileSidebarOpen.value = !mobileSidebarOpen.value;
@@ -2096,7 +2134,7 @@ watch(customStyles, () => {
 </script>
 
 <template>
-  <div class="app-container" :class="{ 'is-standalone-home': currentView === 'home' }" data-color-mode="light">
+  <div class="app-container" :class="{ 'is-standalone-home': currentView === 'home', 'is-focus': focusMode }" data-color-mode="light">
     <!-- 0. 官方独立全屏首页 (Wandor Liquid Glass Full Viewport Landing Page) -->
     <HomeLandingView
       v-if="currentView === 'home'"
@@ -2170,7 +2208,8 @@ watch(customStyles, () => {
             @toggle-tab="(tab) => {
               if (tab === 'home') { currentView = 'home'; }
               if (tab === 'docs') {
-                if (currentView !== 'editor') currentView = 'editor';
+                if (focusMode.value) { toggleFocusMode(); }
+                else if (currentView !== 'editor') currentView = 'editor';
                 else sidebarVisible = !sidebarVisible;
               }
               if (tab === 'templates') { currentView = 'templates'; }
@@ -2245,7 +2284,7 @@ watch(customStyles, () => {
           />
 
           <!-- 3. 编辑与排版双栏工作台 -->
-          <div v-else class="workspace-grid" :class="[`active-view-${mobileActiveView}`, { 'preview-hidden': !previewVisible, 'theme-panel-open': showThemePanel }]">
+          <div v-else class="workspace-grid" :class="[`active-view-${mobileActiveView}`, { 'preview-hidden': !previewVisible, 'theme-panel-open': showThemePanel, 'is-focus': focusMode, 'nx-doc-leaving': docSwapLeaving, 'nx-doc-swap-in': docSwapEnter }]">
           <!-- Document Tabs Bar -->
           <div class="workspace-tabs" role="tablist" aria-label="已打开文档标签">
             <div
@@ -2377,6 +2416,25 @@ watch(customStyles, () => {
                 <button @click="editorPanelRef?.handleUndo()" class="btn-icon" title="撤销 (Ctrl+Z)"><Undo2 size="14.5" /></button>
                 <button @click="editorPanelRef?.handleRedo()" class="btn-icon" title="重做 (Ctrl+Y)"><Redo2 size="14.5" /></button>
                 <button @click="openDocHistory(activeDocument)" class="btn-icon" title="历史版本与内容比对"><History size="14.5" /></button>
+              </div>
+
+              <span class="toolbar-sep"></span>
+
+              <!-- 专注模式：收起侧边栏与预览，只留编辑区；再点一次退出。
+                   按钮本身有 is-active 按压态（图标 Maximize/Minimize 切换 +
+                   .btn-icon.is-active 背景色），不只是文字切换。 -->
+              <div class="toolbar-btn-group">
+                <button
+                  @click="toggleFocusMode"
+                  class="btn-icon"
+                  :class="{ 'is-active': focusMode }"
+                  :title="focusMode ? '退出专注模式' : '专注模式（隐藏侧边栏与预览）'"
+                  :aria-label="focusMode ? '退出专注模式' : '进入专注模式'"
+                  :aria-pressed="focusMode"
+                >
+                  <Minimize v-if="focusMode" size="14.5" />
+                  <Maximize v-else size="14.5" />
+                </button>
               </div>
 
               <span class="toolbar-sep"></span>

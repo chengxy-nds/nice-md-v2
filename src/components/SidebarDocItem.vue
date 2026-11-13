@@ -82,6 +82,29 @@ const docCharCount = computed(() => {
   return cleaned.length;
 });
 
+// 标题匹配高亮：把标题按搜索词切成片段渲染（纯文本插值，无 v-html，
+// 避免标题里的 HTML 被执行）。无搜索词时只有一个片段，渲染与原来一致。
+const titleParts = computed(() => {
+  const title = props.doc.title || '';
+  const q = (props.searchQuery || '').trim();
+  if (!q) return [{ text: title, isMatch: false }];
+  const lower = title.toLowerCase();
+  const needle = q.toLowerCase();
+  const parts = [];
+  let idx = 0;
+  for (;;) {
+    const found = lower.indexOf(needle, idx);
+    if (found === -1) {
+      if (idx < title.length) parts.push({ text: title.slice(idx), isMatch: false });
+      break;
+    }
+    if (found > idx) parts.push({ text: title.slice(idx, found), isMatch: false });
+    parts.push({ text: title.slice(found, found + needle.length), isMatch: true });
+    idx = found + needle.length;
+  }
+  return parts.length ? parts : [{ text: title, isMatch: false }];
+});
+
 const searchSnippet = computed(() => {
   const q = (props.searchQuery || '').trim().toLowerCase();
   if (!q) return '';
@@ -344,7 +367,7 @@ onUnmounted(() => {
         :title="doc.title || '未命名文档'"
         data-tooltip-truncated="true"
       >
-        <span>{{ doc.title }}</span>
+        <span class="title-text"><span v-for="(part, i) in titleParts" :key="i" :class="{ 'search-match': part.isMatch }">{{ part.text }}</span></span>
         <!-- P1-3: 置顶徽标用 Lucide Pin，不再用 emoji 📌（菜单里本来
              就是 Pin，同一功能两种画风，且 emoji 在深色/不同系统字体
              下大小颜色都不可控）。 -->
@@ -432,18 +455,20 @@ onUnmounted(() => {
   margin: 2px 0;
   border-radius: 10px;
   cursor: pointer;
-  transition: background 0.22s var(--ease-glide),
-              transform 0.22s var(--ease-glide),
-              box-shadow 0.2s var(--ease-glide);
+  transition: background .25s var(--ease-spring),
+              transform .25s var(--ease-spring),
+              box-shadow .2s var(--ease-spring);
   background: transparent;
   user-select: none;
   box-sizing: border-box;
 }
 
-/* P0-2: hover 只改背景色，去掉 translateX(2px) / :active scale，
-   与文件夹行同理，避免悬停横移抖动。 */
+/* 悬停：背景 + translateX(2px)，.25s 弹簧（只用 transform，不产生布局抖动；
+   P0 时为避文件夹行的宽度跳变删过这里的横移，文件夹行已用固定宽度修好，
+   文档行本身宽度固定，横移是安全的）。 */
 .file-row:hover {
   background: var(--sidebar-hover, #f5f8fc);
+  transform: translateX(2px);
 }
 
 html.dark .file-row:hover {
@@ -451,15 +476,38 @@ html.dark .file-row:hover {
 }
 
 /* P1-4: 选中态加左侧 2px 指示条，不再只靠背景色区分。
+   指示条用 ::before，scaleY(0→1) .3s 弹簧长出（笔记页 artifact 的做法），
+   代替原来静态的 inset box-shadow。 */
+.file-row::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 2px;
+  border-radius: 2px;
+  background: #2678e8;
+  opacity: 0;
+  transform: scaleY(0);
+  transition: opacity .3s var(--ease-spring), transform .3s var(--ease-spring);
+  pointer-events: none;
+}
+.file-row.selected::before {
+  opacity: 1;
+  transform: scaleY(1);
+}
+html.dark .file-row::before {
+  background: #60a5fa;
+}
+
+/* P1-4: 选中态加左侧 2px 指示条，不再只靠背景色区分。
    原来浅色 hover #f5f8fc 与选中 #f1f6fd 几乎看不出差别。 */
 .file-row.selected {
   background: var(--sidebar-selected, #eaf3ff);
-  box-shadow: inset 2px 0 0 #2678e8;
 }
 
 html.dark .file-row.selected {
   background: var(--sidebar-selected, rgba(59, 130, 246, 0.12));
-  box-shadow: inset 2px 0 0 #60a5fa;
 }
 
 .file-row.is-dragging-before {
@@ -489,16 +537,30 @@ html.dark .file-row.selected {
   gap: 4px;
 }
 
-.file-name > span:first-child {
+.file-name > .title-text {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
+/* 搜索匹配高亮（只在搜索时出现，纯文本片段，无 v-html） */
+.search-match {
+  background: rgba(38, 120, 232, 0.16);
+  color: #1d4ed8;
+  border-radius: 3px;
+  padding: 0 1px;
+}
+
+html.dark .search-match {
+  background: rgba(96, 165, 250, 0.25);
+  color: #bfdbfe;
+}
+
+/* 选中只改标题颜色，不改字重：500→700 / 400→500 的字重变化会改字形
+   宽度引起回流（笔记页 artifact 的毛病），这里直接删掉。 */
 .file-row.selected .file-name {
   color: #1e293b;
-  font-weight: 500;
 }
 
 html.dark .file-name {
