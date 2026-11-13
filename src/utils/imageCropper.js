@@ -76,17 +76,34 @@ export function cropImageToCanvas(image, cropBox, options = {}) {
 export function canvasToBlob(canvas, quality = 0.95) {
   return new Promise((resolve, reject) => {
     if (!canvas) return reject(new Error('Canvas 不存在'));
-    canvas.toBlob((blob) => {
-      if (blob) resolve(blob);
-      else reject(new Error('生成裁剪图片失败'));
-    }, 'image/png', quality);
+    try {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error('图片导出失败：画布包含不支持跨域导出的图片，请先下载到本地再上传，或换一张图'));
+      }, 'image/png', quality);
+    } catch (err) {
+      const msg = String(err?.message || '');
+      if (err?.name === 'SecurityError' || /taint/i.test(msg)) {
+        reject(new Error('图片导出失败：画布包含不支持跨域导出的图片，请先下载到本地再上传，或换一张图'));
+      } else {
+        reject(err);
+      }
+    }
   });
 }
 
 export function downloadCanvas(canvas, filename = 'cropped-image.png') {
   const link = document.createElement('a');
   link.download = filename;
-  link.href = canvas.toDataURL('image/png', 0.96);
+  try {
+    link.href = canvas.toDataURL('image/png', 0.96);
+  } catch (err) {
+    const msg = String(err?.message || '');
+    if (err?.name === 'SecurityError' || /taint/i.test(msg)) {
+      throw new Error('图片导出失败：画布包含不支持跨域导出的图片，请先下载到本地再上传，或换一张图');
+    }
+    throw err;
+  }
   link.click();
 }
 

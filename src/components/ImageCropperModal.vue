@@ -19,6 +19,7 @@ import {
   canvasToBlob,
   downloadCanvas
 } from '../utils/imageCropper';
+import { loadImage } from '../utils/collageEngine';
 import { writeImageBlobToClipboard } from '../utils/clipboard';
 import { isStorageEnabled, uploadToOSS } from '../utils/fileStorage';
 import { soundEngine } from '../utils/synthAudio';
@@ -37,6 +38,7 @@ const emit = defineEmits(['close', 'replace', 'insert', 'toast']);
 const imageElement = ref(null);
 const imageLoaded = ref(false);
 const imageLoadError = ref(false);
+const imageLoadErrorMessage = ref('');
 const naturalWidth = ref(0);
 const naturalHeight = ref(0);
 
@@ -75,44 +77,29 @@ const cropPixelDimensions = computed(() => {
 });
 
 // ── Initialize & Load Image ──
+// Shared loader from collageEngine: only ever resolves CLEAN images
+// (fetch-as-blob, then crossOrigin='anonymous'). A host without CORS
+// headers is rejected with a friendly error instead of silently falling
+// back to a non-CORS image that would taint the canvas and fail export.
 function initImage(src) {
   if (!src) return;
   imageLoaded.value = false;
   imageLoadError.value = false;
+  imageLoadErrorMessage.value = '';
 
-  const img = new window.Image();
-  if (!src.startsWith('data:') && !src.startsWith('blob:')) {
-    img.crossOrigin = 'anonymous';
-  }
-  img.onload = () => {
+  loadImage(src).then((img) => {
     imageElement.value = img;
     naturalWidth.value = img.naturalWidth;
     naturalHeight.value = img.naturalHeight;
     imageLoaded.value = true;
     resetCropBox();
     nextTick(renderPreviewCanvas);
-  };
-  img.onerror = () => {
-    // Retry without anonymous if server doesn't send CORS headers
-    if (img.crossOrigin) {
-      const fallback = new window.Image();
-      fallback.onload = () => {
-        imageElement.value = fallback;
-        naturalWidth.value = fallback.naturalWidth;
-        naturalHeight.value = fallback.naturalHeight;
-        imageLoaded.value = true;
-        resetCropBox();
-        nextTick(renderPreviewCanvas);
-      };
-      fallback.onerror = () => {
-        imageLoadError.value = true;
-      };
-      fallback.src = src;
-    } else {
-      imageLoadError.value = true;
-    }
-  };
-  img.src = src;
+  }).catch((err) => {
+    logger.warn('[Cropper] Image load failed:', err);
+    imageLoadError.value = true;
+    imageLoadErrorMessage.value = err?.message || '图片无法加载，请尝试下载原图后上传';
+    emit('toast', imageLoadErrorMessage.value);
+  });
 }
 
 // ── Draw Displayed Preview on Stage Canvas ──
@@ -328,7 +315,8 @@ async function handleCopy() {
     emit('toast', '已成功复制裁剪图片到剪贴板！');
   } catch (err) {
     logger.error('[Cropper] Copy failed:', err);
-    emit('toast', '复制失败，请尝试直接下载保存');
+    const msg = String(err?.message || '');
+    emit('toast', /跨域|污染|导出失败/.test(msg) ? msg : '复制失败，请尝试直接下载保存');
   } finally {
     isExporting.value = false;
   }
@@ -337,10 +325,15 @@ async function handleCopy() {
 function handleDownload() {
   const canvas = getRenderedCanvas();
   if (!canvas) return;
-  soundEngine.playChime();
-  const filename = `cropped-${Date.now()}.png`;
-  downloadCanvas(canvas, filename);
-  emit('toast', `裁剪图片已下载为 ${filename}`);
+  try {
+    soundEngine.playChime();
+    const filename = `cropped-${Date.now()}.png`;
+    downloadCanvas(canvas, filename);
+    emit('toast', `裁剪图片已下载为 ${filename}`);
+  } catch (err) {
+    logger.error('[Cropper] Download failed:', err);
+    emit('toast', err?.message || '下载失败，请换一张图再试');
+  }
 }
 
 async function handleReplaceOriginal() {
@@ -504,7 +497,7 @@ onUnmounted(() => {
             </div>
 
             <div v-else-if="imageLoadError" class="cropper-error">
-              <span>图片无法加载或受跨域保护，请尝试下载原图后上传</span>
+              <span>{{ imageLoadErrorMessage || '图片无法加载或受跨域保护，请尝试下载原图后上传' }}</span>
             </div>
 
             <!-- Oriented Canvas Box (Guaranteed 100% overlay alignment) -->
