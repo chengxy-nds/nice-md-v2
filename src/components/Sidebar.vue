@@ -1,5 +1,12 @@
 <script setup>
 import { ref, computed, nextTick, watch, onMounted, onUnmounted } from 'vue';
+/* P1-2: 图标语义修正（均已核对 @lucide/vue 存在）。
+   - 删 Cloud（同步按钮统一用 RefreshCw，状态靠颜色/转速/绿点区分）
+     与 FolderUp/FolderDown（易误读为移动文件夹，改 Upload/Download）
+     与 ChevronsUpDown/ChevronsDownUp（两个方向几乎一样，改
+     FoldVertical/UnfoldVertical）。
+   - Folder/FolderOpen 现在真的用上了（替代手绘 CSS 文件夹）；
+     GripVertical 留着，手动排序模式时用它表示可拖拽顺序。 */
 import {
   Plus,
   FolderPlus,
@@ -7,21 +14,20 @@ import {
   Folder,
   FolderOpen,
   ChevronRight,
-  ChevronDown,
   Pencil,
   Trash2,
+  Trash,
   GripVertical,
   Check,
   X,
-  Cloud,
   RotateCcw,
   RefreshCw,
-  FolderUp,
-  FolderDown,
+  Upload,
+  Download,
   Settings,
-  ArrowUpDown,
-  ChevronsUpDown,
-  ChevronsDownUp
+  ArrowDownWideNarrow,
+  FoldVertical,
+  UnfoldVertical
 } from '@lucide/vue';
 import { showConfirm } from '../utils/confirmDialog';
 import SidebarDocItem from './SidebarDocItem.vue';
@@ -63,14 +69,14 @@ const syncMenuOptions = computed(() => {
       action: 'push',
       title: isGithub ? '推送到仓库' : '备份到云端',
       desc: `将本地文档与分组备份到${targetName}`,
-      icon: FolderUp,
+      icon: Upload,
       colorClass: 'icon-green',
     },
     {
       action: 'pull',
       title: isGithub ? '从仓库拉取' : '从云端恢复',
       desc: `将${targetName}内容拉取还原到本地`,
-      icon: FolderDown,
+      icon: Download,
       colorClass: 'icon-purple',
     },
   ];
@@ -775,9 +781,10 @@ function resetSidebarWidth() {
             :disabled="props.isCloudSyncing"
             @click="handleSyncTriggerClick"
           >
-            <RefreshCw v-if="props.isCloudSyncing" size="13" class="sync-icon is-spinning" />
-            <span v-else-if="cloudSyncInfo.enabled" class="dot"></span>
-            <Cloud v-else size="13" class="sync-icon" />
+            <!-- P1-2: 同步按钮统一用 RefreshCw，不再三种视觉语言混用：
+                 未配置/已配置都是同一个图标，状态靠颜色、转速和绿点区分。 -->
+            <RefreshCw size="13" class="sync-icon" :class="{ 'is-spinning': props.isCloudSyncing }" />
+            <span v-if="cloudSyncInfo.enabled && !props.isCloudSyncing" class="dot"></span>
             <span class="sync-label">
               {{ props.isCloudSyncing ? '同步中...' : (cloudSyncInfo.enabled ? '已同步' : (cloudSyncInfo.configured ? '同步' : '云同步')) }}
             </span>
@@ -789,7 +796,7 @@ function resetSidebarWidth() {
               <div class="sync-dropdown-header">
                 <span class="sync-channel-name">{{ currentProviderLabel }}</span>
                 <button type="button" class="sync-settings-link" @click="handleOpenCloudSettings" title="打开云端同步设置">
-                  <Settings size="11" />
+                  <Settings size="13" />
                   <span>配置</span>
                 </button>
               </div>
@@ -828,19 +835,24 @@ function resetSidebarWidth() {
           :disabled="Boolean(searchQuery.trim())"
         >
           <Transition name="toggle-icon-swap" mode="out-in">
-            <ChevronsDownUp v-if="areAllGroupsExpanded" key="collapse" size="15" stroke-width="2" />
-            <ChevronsUpDown v-else key="expand" size="15" stroke-width="2" />
+            <!-- P1-2: 展开/折叠全部改用 FoldVertical/UnfoldVertical，
+                 原来两个 Chevrons 方向几乎一样，分不清哪个是展开。 -->
+            <FoldVertical v-if="areAllGroupsExpanded" key="collapse" size="15" stroke-width="2" />
+            <UnfoldVertical v-else key="expand" size="15" stroke-width="2" />
           </Transition>
         </button>
         <button
           class="sidebar-toolbar-btn"
           :class="{ 'is-active': sortBy !== 'manual' }"
           @click="toggleSorting"
-          :title="sortBy === 'manual' ? '启用按修改时间排序' : '取消排序，恢复手动顺序'"
+          :title="sortBy === 'manual' ? '手动顺序（可拖拽），点击按修改时间排序' : '已按时间排序，点击恢复手动顺序'"
           :aria-label="sortBy === 'manual' ? '启用排序' : '取消排序'"
           :aria-pressed="sortBy !== 'manual'"
         >
-          <ArrowUpDown size="15" stroke-width="2" />
+          <!-- P1-2: 图标按当前模式切换。手动模式用 GripVertical 表示
+               可拖拽顺序；已排序时用 ArrowDownWideNarrow 表示按时间
+               从新到旧。原来 ArrowUpDown 不表达当前模式。 -->
+          <component :is="sortBy === 'manual' ? GripVertical : ArrowDownWideNarrow" size="15" stroke-width="2" />
         </button>
         <button class="sidebar-toolbar-btn" @click="handleCreateGroupClick" title="新建文件夹" aria-label="新建文件夹">
           <FolderPlus size="16" stroke-width="2" />
@@ -876,7 +888,7 @@ function resetSidebarWidth() {
     >
       <!-- Group Creation Inline Row (at top of list) -->
       <div v-if="isCreatingGroup" class="create-group-row">
-        <span class="folder-icon create-icon"></span>
+        <Folder size="16" stroke-width="2" class="folder-lucide create-icon" />
         <input
           v-model="newGroupName"
           ref="newGroupInputRef"
@@ -947,11 +959,16 @@ function resetSidebarWidth() {
             @dragleave="onGroupDragLeave"
             @drop="onGroupHeaderDrop($event, group.id)"
           >
-            <span class="chevron">
-              <ChevronRight v-if="!isGroupExpanded(group.id)" size="13" stroke-width="2.2" />
-              <ChevronDown v-else size="13" stroke-width="2.2" />
+            <!-- P1-5: chevron 改单个 ChevronRight + 旋转 90° 过渡。
+                 原来 v-if 在两个图标间切换，.chevron 的 0.28s 过渡是死代码。 -->
+            <span class="chevron" :class="{ 'is-open': isGroupExpanded(group.id) }">
+              <ChevronRight size="13" stroke-width="2.2" />
             </span>
-            <span class="folder-icon"></span>
+            <!-- P1-2: 文件夹改回 Lucide Folder/FolderOpen，展开态切换。
+                 原来是手绘 CSS 文件夹，与 Lucide 描边风格不一致，深色
+                 模式还漏了琥珀色版。 -->
+            <FolderOpen v-if="isGroupExpanded(group.id)" size="16" stroke-width="2" class="folder-lucide" />
+            <Folder v-else size="16" stroke-width="2" class="folder-lucide" />
 
             <!-- group name display -->
             <span
@@ -980,25 +997,28 @@ function resetSidebarWidth() {
               <span class="count">{{ docsInGroup(group.id).length }}</span>
               <div class="folder-actions" @click.stop>
                 <button class="mini-btn" @click="handleCreateDoc(group.id)" title="在此分组新建文档">
-                  <Plus size="12" />
+                  <Plus size="14" stroke-width="2" />
                 </button>
                 <button class="mini-btn" @click="startRenameGroup(group)" title="重命名分组">
-                  <Pencil size="12" />
+                  <Pencil size="14" stroke-width="2" />
                 </button>
                 <button class="mini-btn" @click="handleDeleteGroup(group)" title="删除分组">
-                  <Trash2 size="12" />
+                  <Trash2 size="14" stroke-width="2" />
                 </button>
               </div>
             </div>
           </div>
 
+          <!-- P1-5: v-show 改 class 控制的 grid-template-rows 0fr→1fr
+               过渡，展开/折叠有动画；内容包在 .children-inner 里裁剪。 -->
           <div
-            v-show="isGroupExpanded(group.id)"
             class="children"
+            :class="{ 'is-expanded': isGroupExpanded(group.id) }"
             @dragover="onListDragOver($event, group.id)"
             @dragleave="onGroupDragLeave"
             @drop="onListDrop($event, group.id)"
           >
+            <div class="children-inner">
             <SidebarDocItem
               v-for="doc in docsInGroup(group.id)"
               :key="doc.id"
@@ -1018,6 +1038,7 @@ function resetSidebarWidth() {
             <div v-if="docsInGroup(group.id).length === 0" class="empty-group-drop-hint">
               <span>{{ searchQuery ? '无匹配文档' : '暂无文档，可拖拽至此' }}</span>
             </div>
+            </div>
           </div>
         </section>
 
@@ -1035,29 +1056,30 @@ function resetSidebarWidth() {
             @dragleave="onGroupDragLeave"
             @drop="onGroupHeaderDrop($event, '__ungrouped__')"
           >
-            <span class="chevron">
-              <ChevronRight v-if="!isGroupExpanded('__ungrouped__')" size="13" stroke-width="2.2" />
-              <ChevronDown v-else size="13" stroke-width="2.2" />
+            <span class="chevron" :class="{ 'is-open': isGroupExpanded('__ungrouped__') }">
+              <ChevronRight size="13" stroke-width="2.2" />
             </span>
-            <span class="folder-icon gray"></span>
+            <FolderOpen v-if="isGroupExpanded('__ungrouped__')" size="16" stroke-width="2" class="folder-lucide gray" />
+            <Folder v-else size="16" stroke-width="2" class="folder-lucide gray" />
             <span class="folder-name">未分组</span>
             <div class="folder-right">
               <span class="count">{{ filteredUngroupedDocs.length }}</span>
               <div class="folder-actions" @click.stop>
                 <button class="mini-btn" @click="handleCreateRootDoc" title="在未分组新建文档">
-                  <Plus size="12" />
+                  <Plus size="14" stroke-width="2" />
                 </button>
               </div>
             </div>
           </div>
 
           <div
-            v-show="isGroupExpanded('__ungrouped__') || (filteredUngroupedDocs.length === 0 && isDraggingGroupedDoc)"
             class="children"
+            :class="{ 'is-expanded': isGroupExpanded('__ungrouped__') || (filteredUngroupedDocs.length === 0 && isDraggingGroupedDoc) }"
             @dragover="onListDragOver($event, '__ungrouped__')"
             @dragleave="onGroupDragLeave"
             @drop="onListDrop($event, '__ungrouped__')"
           >
+            <div class="children-inner">
             <SidebarDocItem
               v-for="doc in filteredUngroupedDocs"
               :key="doc.id"
@@ -1077,12 +1099,13 @@ function resetSidebarWidth() {
             <div v-if="filteredUngroupedDocs.length === 0" class="empty-group-drop-hint">
               <span>{{ searchQuery ? '无匹配文档' : '暂无文档，可拖拽至此' }}</span>
             </div>
+            </div>
           </div>
         </section>
       </template>
     </div>
 
-    <!-- ── 底部固定回收站 ♻️ ── -->
+    <!-- ── 底部固定回收站 ── -->
     <div
       class="bottom"
       :class="{
@@ -1099,9 +1122,8 @@ function resetSidebarWidth() {
         :class="{ 'is-empty': deletedDocs.length === 0 }"
         @click="toggleGroup('__trash__')"
       >
-        <span v-if="deletedDocs.length > 0" class="chevron">
-          <ChevronRight v-if="!isGroupExpanded('__trash__')" size="13" stroke-width="2.2" />
-          <ChevronDown v-else size="13" stroke-width="2.2" />
+        <span v-if="deletedDocs.length > 0" class="chevron" :class="{ 'is-open': isGroupExpanded('__trash__') }">
+          <ChevronRight size="13" stroke-width="2.2" />
         </span>
         <Trash2 size="15" stroke-width="1.8" class="trash-icon" />
         <span class="trash-name">回收站</span>
@@ -1114,7 +1136,9 @@ function resetSidebarWidth() {
           @click.stop="handleEmptyTrashClick"
           title="永久删除回收站中的全部文档"
         >
-          <Trash2 size="12" />
+          <!-- P1-2: 清空是永久删除，用 Trash（张开的垃圾桶）与
+               “移至回收站”的 Trash2 区分开，且本身已是红色。 -->
+          <Trash size="14" stroke-width="2" />
           <span>清空</span>
         </button>
       </div>
@@ -1136,11 +1160,11 @@ function resetSidebarWidth() {
           </div>
           <div class="trash-item-actions" @click.stop>
             <button class="trash-action-btn restore-btn" @click="handleRestoreDoc(doc)" title="恢复文档">
-              <RotateCcw size="12" />
+              <RotateCcw size="14" stroke-width="2" />
               <span>恢复</span>
             </button>
             <button class="trash-action-btn delete-btn" @click="handlePermanentDeleteDoc(doc)" title="彻底删除">
-              <Trash2 size="12" />
+              <Trash size="14" stroke-width="2" />
             </button>
           </div>
         </div>
@@ -1166,7 +1190,7 @@ function resetSidebarWidth() {
   z-index: 4;
   box-sizing: border-box;
   backdrop-filter: blur(18px);
-  transition: background 0.2s ease, border-color 0.2s ease;
+  transition: background 0.2s var(--ease-glide), border-color 0.2s var(--ease-glide);
 }
 
 .sidebar-container.is-resizing {
@@ -1201,7 +1225,7 @@ function resetSidebarWidth() {
   left: 2px;
   width: 2px;
   background: transparent;
-  transition: background 0.15s ease;
+  transition: background 0.12s var(--ease-glide);
 }
 
 .sidebar-resizer:hover::after,
@@ -1233,7 +1257,7 @@ html.dark .sidebar-container {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.12s;
+  transition: background 0.2s var(--ease-glide), color 0.2s var(--ease-glide), transform 0.12s var(--ease-glide);
 }
 
 .create-action svg {
@@ -1311,7 +1335,7 @@ html.dark .create-action:hover {
   font-weight: 550;
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+  transition: background 0.12s var(--ease-glide), color 0.12s var(--ease-glide), border-color 0.12s var(--ease-glide);
 }
 
 .sync-trigger-btn:hover:not(:disabled),
@@ -1362,7 +1386,7 @@ html.dark .create-action:hover {
 .sync-chevron {
   color: #94a3b8;
   margin-left: -1px;
-  transition: transform 0.16s ease, color 0.15s ease;
+  transition: transform 0.16s ease, color 0.12s var(--ease-glide);
 }
 
 .sync-trigger-btn:hover .sync-chevron,
@@ -1429,7 +1453,7 @@ html.dark .create-action:hover {
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.15s ease;
+  transition: background 0.12s var(--ease-glide);
 }
 
 .sync-settings-link:hover {
@@ -1448,7 +1472,7 @@ html.dark .create-action:hover {
   text-align: left;
   font-family: inherit;
   cursor: pointer;
-  transition: background 0.14s ease;
+  transition: background 0.12s var(--ease-glide);
 }
 
 .sync-dropdown-item:hover {
@@ -1506,7 +1530,7 @@ html.dark .create-action:hover {
 
 .sync-dropdown-enter-active,
 .sync-dropdown-leave-active {
-  transition: opacity 0.14s ease, transform 0.14s ease;
+  transition: opacity 0.12s var(--ease-glide), transform 0.12s var(--ease-glide);
 }
 
 .sync-dropdown-enter-from,
@@ -1579,7 +1603,7 @@ html.dark .sync-channel-name {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 0.2s ease, color 0.2s ease, transform 0.12s;
+  transition: background 0.2s var(--ease-glide), color 0.2s var(--ease-glide), transform 0.12s var(--ease-glide);
 }
 
 .sidebar-toolbar-btn:hover,
@@ -1652,7 +1676,7 @@ html.dark .icon-btn.is-active {
   margin-bottom: 10px;
   flex-shrink: 0;
   box-sizing: border-box;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.12s var(--ease-glide), box-shadow 0.12s var(--ease-glide);
 }
 
 .search:focus-within {
@@ -1762,17 +1786,17 @@ html.dark .create-group-input {
 }
 
 .action-btn {
-  width: 22px;
-  height: 22px;
+  width: 28px;
+  height: 28px;
   display: flex;
   align-items: center;
   justify-content: center;
   border: none;
   background: transparent;
   color: #71839d;
-  border-radius: 4px;
+  border-radius: var(--sidebar-radius-sm, 8px);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.12s var(--ease-glide), color 0.12s var(--ease-glide), border-color 0.12s var(--ease-glide);
   flex-shrink: 0;
 }
 
@@ -1823,7 +1847,7 @@ html.dark .create-group-input {
   gap: 8px;
   font-size: 0.875rem;
   color: #1e293b;
-  border-radius: 10px;
+  border-radius: var(--sidebar-radius, 10px);
   cursor: pointer;
   transition: background 0.2s var(--ease-glide), transform 0.2s var(--ease-glide);
   background: transparent;
@@ -1865,53 +1889,30 @@ html.dark .folder-row:hover {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: transform 0.28s var(--ease-spring);
+  transition: transform 0.2s var(--ease-spring);
 }
 
-/* CSS Folder Icon from Demo */
-.folder-icon {
-  width: 17px;
-  height: 14px;
-  border: 1.6px solid #f0a13b;
-  border-radius: 3px;
-  position: relative;
+/* P1-5: 单个 ChevronRight 旋转 90° 表示展开。 */
+.chevron.is-open {
+  transform: rotate(90deg);
+}
+
+/* P1-2: 文件夹图标改回 Lucide Folder/FolderOpen。原来是手绘 CSS
+   文件夹（1.6px 描边 + 奶油填充），与全站 Lucide 线条风格不一致，
+   深色模式还漏了琥珀色版。Lucide 是描边图标，深色下无需另配底色。 */
+.folder-lucide {
+  color: #f0a13b;
   flex: none;
-  background: #fff9ef;
-  box-sizing: border-box;
+  display: flex;
+  align-items: center;
 }
 
-.folder-icon:before {
-  content: "";
-  position: absolute;
-  left: 1px;
-  top: -5px;
-  width: 7px;
-  height: 4px;
-  border: 1.5px solid #f0a13b;
-  border-bottom: 0;
-  border-radius: 3px 3px 0 0;
-  background: #fff9ef;
-  box-sizing: border-box;
+.folder-lucide.gray {
+  color: #8ea0b8;
 }
 
-.folder-icon.gray {
-  border-color: #8ea0b8;
-  background: #f7f9fc;
-}
-
-.folder-icon.gray:before {
-  border-color: #8ea0b8;
-  background: #f7f9fc;
-}
-
-html.dark .folder-icon.gray {
-  border-color: #64748b;
-  background: #23252d;
-}
-
-html.dark .folder-icon.gray:before {
-  border-color: #64748b;
-  background: #23252d;
+html.dark .folder-lucide.gray {
+  color: #94a3b8;
 }
 
 .folder-name {
@@ -2023,14 +2024,14 @@ html.dark .count {
   background: transparent;
   border: none;
   color: #78879b;
-  width: 22px;
-  height: 22px;
-  border-radius: 4px;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--sidebar-radius-sm, 8px);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.12s var(--ease-glide), color 0.12s var(--ease-glide), border-color 0.12s var(--ease-glide);
   padding: 0;
 }
 
@@ -2045,12 +2046,30 @@ html.dark .mini-btn:hover {
 }
 
 /* Children tree indentation line */
+/* P1-5: 展开/折叠用 grid-template-rows 0fr→1fr 过渡。原来是 v-show
+   瞬间跳变。内容包在 .children-inner 里做 overflow 裁剪；收起时
+   visibility 延迟隐藏，避免收起过程中内容闪现。 */
 .children {
+  display: grid;
+  grid-template-rows: 0fr;
+  visibility: hidden;
   margin-left: 16px;
   padding-left: 9px;
   border-left: 1px solid #e4ebf4;
-  min-height: 10px;
+  min-height: 0;
+  transition: grid-template-rows 0.36s var(--ease-glide), visibility 0s linear 0.36s;
+}
+
+.children.is-expanded {
+  grid-template-rows: 1fr;
+  visibility: visible;
   padding-bottom: 4px;
+  transition: grid-template-rows 0.36s var(--ease-glide), visibility 0s;
+}
+
+.children-inner {
+  overflow: hidden;
+  min-height: 0;
 }
 
 html.dark .children {
@@ -2072,7 +2091,7 @@ html.dark .children {
   border-radius: 8px;
   text-align: center;
   user-select: none;
-  transition: all 0.15s ease;
+  transition: background 0.12s var(--ease-glide), color 0.12s var(--ease-glide), border-color 0.12s var(--ease-glide);
 }
 
 html.dark .empty-group-drop-hint {
@@ -2086,7 +2105,7 @@ html.dark .empty-group-drop-hint {
   padding-top: 8px;
   margin-top: 8px;
   flex-shrink: 0;
-  transition: border-color 0.15s ease;
+  transition: border-color 0.12s var(--ease-glide);
 }
 
 html.dark .bottom {
@@ -2104,7 +2123,7 @@ html.dark .bottom {
   font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease, color 0.15s ease;
+  transition: background 0.12s var(--ease-glide), border-color 0.12s var(--ease-glide), box-shadow 0.12s var(--ease-glide), color 0.12s var(--ease-glide);
   user-select: none;
 }
 
@@ -2215,7 +2234,7 @@ html.dark .trash-drop-badge {
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease;
+  transition: background 0.12s var(--ease-glide), border-color 0.12s var(--ease-glide);
 }
 
 .trash-clear-btn:hover {
@@ -2257,27 +2276,27 @@ html.dark .trash-doc-list {
   border-radius: 10px;
   cursor: pointer;
   margin: 2px 0;
-  transition: background 0.15s ease, box-shadow 0.15s ease;
+  transition: background 0.12s var(--ease-glide), box-shadow 0.12s var(--ease-glide);
   min-width: 0;
   box-sizing: border-box;
 }
 
 .trash-doc-item:hover {
-  background: #f1f6fd;
+  background: var(--sidebar-hover, #f5f8fc);
 }
 
 .trash-doc-item.selected {
-  background: #f1f6fd;
-  box-shadow: inset 0 0 0 1px #e1eaf7;
+  background: var(--sidebar-selected, #eaf3ff);
+  box-shadow: inset 2px 0 0 #2678e8, inset 0 0 0 1px #e1eaf7;
 }
 
 html.dark .trash-doc-item:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--sidebar-hover, rgba(255, 255, 255, 0.06));
 }
 
 html.dark .trash-doc-item.selected {
-  background: rgba(59, 130, 246, 0.09);
-  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.18);
+  background: var(--sidebar-selected, rgba(59, 130, 246, 0.12));
+  box-shadow: inset 2px 0 0 #60a5fa, inset 0 0 0 1px rgba(96, 165, 250, 0.18);
 }
 
 .trash-doc-item .file-name {
@@ -2352,11 +2371,11 @@ html.dark .trash-doc-item .meta {
   gap: 3px;
   padding: 2px 6px;
   font-size: 0.6875rem;
-  border-radius: 4px;
+  border-radius: var(--sidebar-radius-sm, 8px);
   border: none;
   background: transparent;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.12s var(--ease-glide), color 0.12s var(--ease-glide), border-color 0.12s var(--ease-glide);
   flex: 0 0 auto;
   white-space: nowrap;
 }
@@ -2364,7 +2383,7 @@ html.dark .trash-doc-item .meta {
 .trash-action-btn.restore-btn {
   color: #10b981;
   background: transparent;
-  min-height: 24px;
+  min-height: 28px;
 }
 
 .trash-action-btn.restore-btn:hover {

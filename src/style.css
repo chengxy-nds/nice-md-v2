@@ -80,6 +80,14 @@ html[data-color-mode="light"] {
   --border-strong: #CBD5E1;
   --border-focus: #116ACC;
 
+  /* Sidebar Tokens (P1-4)：hover/选中/文字/圆角统一走这里，
+     选中态不再只靠背景色区分（另有左侧 2px 指示条）。 */
+  --sidebar-hover: #f5f8fc;
+  --sidebar-selected: #eaf3ff;
+  --sidebar-text: #475569;
+  --sidebar-radius: 10px;
+  --sidebar-radius-sm: 8px;
+
   /* Elevation / Shadow Tokens (Figma UI Kit Depth Scale) */
   --shadow-header: 0 1px 2px rgba(15, 23, 42, 0.03);
   --shadow-sidebar-left: 1px 0 0 #E2E8F0;
@@ -184,6 +192,13 @@ body.dark {
   /* Borders & Dividers */
   --border-color: rgba(255, 255, 255, 0.08) !important;
   --border-strong: rgba(255, 255, 255, 0.15) !important;
+
+  /* Sidebar Tokens (P1-4) */
+  --sidebar-hover: rgba(255, 255, 255, 0.06) !important;
+  --sidebar-selected: rgba(59, 130, 246, 0.12) !important;
+  --sidebar-text: #cbd5e1 !important;
+  --sidebar-radius: 10px !important;
+  --sidebar-radius-sm: 8px !important;
 
   /* Elevation / Shadows */
   --shadow-header: 0 2px 10px rgba(0, 0, 0, 0.35) !important;

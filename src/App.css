@@ -6,7 +6,9 @@
   width: 100vw;
   background-color: var(--bg-app);
   color: var(--text-main);
-  transition: all 0.3s ease;
+  /* P1-6: transition: all 会把任何属性变化都拉进过渡，改为只过渡主题切换
+     实际改的背景色/文字色。 */
+  transition: background-color 0.2s var(--ease-glide), color 0.2s var(--ease-glide);
   overflow: hidden;
 }
 
@@ -1146,7 +1148,7 @@ html.dark .popout-item.is-active {
   min-height: 0;
   width: 100%;
   overflow: hidden;
-  transition: grid-template-columns 0.48s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: grid-template-columns 0.36s var(--ease-glide);
 }
 
 .workspace-column {

@@ -345,7 +345,10 @@ onUnmounted(() => {
         data-tooltip-truncated="true"
       >
         <span>{{ doc.title }}</span>
-        <span v-if="doc.isPinned" class="pin-badge" title="已置顶">📌</span>
+        <!-- P1-3: 置顶徽标用 Lucide Pin，不再用 emoji 📌（菜单里本来
+             就是 Pin，同一功能两种画风，且 emoji 在深色/不同系统字体
+             下大小颜色都不可控）。 -->
+        <Pin v-if="doc.isPinned" size="11" stroke-width="2" class="pin-badge" title="已置顶" />
       </div>
 
       <input
@@ -377,7 +380,8 @@ onUnmounted(() => {
       :class="{ 'is-active': isMenuOpen }"
       @click.stop="toggleMenu"
     >
-      <MoreHorizontal size="15" />
+      <!-- P1-3/P1-4: “···”按钮 16px，按钮本身 28px（见 .more 样式）。 -->
+      <MoreHorizontal size="16" />
     </button>
 
     <!-- Floating Context Dropdown Menu (teleported to avoid scroll-area clipping) -->
@@ -392,24 +396,24 @@ onUnmounted(() => {
         @click.stop
       >
         <button class="menu-item" role="menuitem" @click="handleTogglePin">
-          <Pin size="12" class="menu-item-icon" />
+          <Pin size="14" stroke-width="2" class="menu-item-icon" />
           <span>{{ doc.isPinned ? '取消置顶' : '置顶文档' }}</span>
         </button>
         <button class="menu-item" role="menuitem" @click="startRenameFromMenu">
-          <Pencil size="12" class="menu-item-icon" />
+          <Pencil size="14" stroke-width="2" class="menu-item-icon" />
           <span>重命名 (双击)</span>
         </button>
         <button class="menu-item" role="menuitem" @click="handleDuplicate">
-          <Copy size="12" class="menu-item-icon" />
+          <Copy size="14" stroke-width="2" class="menu-item-icon" />
           <span>创建副本</span>
         </button>
         <button class="menu-item" role="menuitem" @click="handleHistory">
-          <History size="12" class="menu-item-icon" />
+          <History size="14" stroke-width="2" class="menu-item-icon" />
           <span>历史版本与比对</span>
         </button>
         <div class="menu-divider"></div>
         <button class="menu-item text-danger" role="menuitem" @click="handleDelete">
-          <Trash2 size="12" class="menu-item-icon" />
+          <Trash2 size="14" stroke-width="2" class="menu-item-icon" />
           <span>移至回收站</span>
         </button>
       </div>
@@ -430,7 +434,7 @@ onUnmounted(() => {
   cursor: pointer;
   transition: background 0.22s var(--ease-glide),
               transform 0.22s var(--ease-glide),
-              box-shadow 0.22s ease;
+              box-shadow 0.2s var(--ease-glide);
   background: transparent;
   user-select: none;
   box-sizing: border-box;
@@ -446,12 +450,16 @@ html.dark .file-row:hover {
   background: rgba(255, 255, 255, 0.05);
 }
 
+/* P1-4: 选中态加左侧 2px 指示条，不再只靠背景色区分。
+   原来浅色 hover #f5f8fc 与选中 #f1f6fd 几乎看不出差别。 */
 .file-row.selected {
-  background: #f1f6fd;
+  background: var(--sidebar-selected, #eaf3ff);
+  box-shadow: inset 2px 0 0 #2678e8;
 }
 
 html.dark .file-row.selected {
-  background: rgba(59, 130, 246, 0.09);
+  background: var(--sidebar-selected, rgba(59, 130, 246, 0.12));
+  box-shadow: inset 2px 0 0 #60a5fa;
 }
 
 .file-row.is-dragging-before {
@@ -474,7 +482,7 @@ html.dark .file-row.selected {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: #6c7688;
+  color: var(--sidebar-text, #6c7688);
   line-height: 1.35;
   display: flex;
   align-items: center;
@@ -494,7 +502,7 @@ html.dark .file-row.selected {
 }
 
 html.dark .file-name {
-  color: #f1f5f9;
+  color: var(--sidebar-text, #cbd5e1);
 }
 
 html.dark .file-row.selected .file-name {
@@ -502,8 +510,12 @@ html.dark .file-row.selected .file-name {
 }
 
 .pin-badge {
-  font-size: 0.625rem;
-  line-height: 1;
+  flex-shrink: 0;
+  color: #d97706;
+}
+
+html.dark .pin-badge {
+  color: #fbbf24;
 }
 
 .meta {
@@ -527,8 +539,10 @@ html.dark .meta {
   border: none;
   background: transparent;
   cursor: pointer;
-  padding: 3px;
-  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: var(--sidebar-radius-sm, 8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -584,7 +598,7 @@ html.dark .meta {
   outline: none;
   box-sizing: border-box;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition: border-color 0.12s var(--ease-glide), box-shadow 0.12s var(--ease-glide), background 0.12s var(--ease-glide);
 }
 
 .rename-input:focus {
@@ -646,10 +660,10 @@ html.dark .rename-input:focus {
   color: #334155;
   background: transparent;
   border: none;
-  border-radius: 6px;
+  border-radius: var(--sidebar-radius-sm, 8px);
   cursor: pointer;
   text-align: left;
-  transition: all 0.12s ease;
+  transition: background 0.12s var(--ease-glide), color 0.12s var(--ease-glide);
   box-sizing: border-box;
 }
 

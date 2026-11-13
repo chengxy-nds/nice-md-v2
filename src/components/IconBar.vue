@@ -1,11 +1,19 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
-import { House, Files, Palette, Boxes, Settings, CircleHelp } from '@lucide/vue';
+/* P1-1: 图标语义修正（均已核对 @lucide/vue 存在）。
+   Files → FileText（文档列表是单文档/写作为主）、Palette → LayoutTemplate
+   （模板是版式不是调色板）、Boxes → Image（素材以图片为主）、
+   CircleHelp → Rocket：该按钮实际触发 toggle-tab('launch')，打开的是
+   启动台分发弹窗（App.vue:2177），不是帮助文档。 */
+import { House, FileText, LayoutTemplate, Image, Settings, Rocket } from '@lucide/vue';
 import BrandLogo from './BrandLogo.vue';
 
 const props = defineProps({
   sidebarVisible: { type: Boolean, default: true },
-  currentView: { type: String, default: 'editor' }
+  currentView: { type: String, default: 'editor' },
+  // P1-1: 设置 / 启动台打开期间，滑块与激活态停在对应按钮上。
+  settingsOpen: { type: Boolean, default: false },
+  launchpadOpen: { type: Boolean, default: false }
 });
 
 defineEmits(['toggle-tab']);
@@ -93,6 +101,10 @@ function repositionGlider() {
 
 function getActiveButtonEl() {
   if (!iconBarRef.value) return null;
+  // P1-1: 设置 / 启动台是瞬时操作，原来没有 is-active 态，鼠标移开
+  // 滑块直接消失；现在打开期间算作激活态。
+  if (props.settingsOpen) return settingsBtnRef.value;
+  if (props.launchpadOpen) return helpBtnRef.value;
   if (props.currentView === 'home') return homeBtnRef.value;
   if (props.currentView === 'editor' && props.sidebarVisible) return docsBtnRef.value;
   if (props.currentView === 'templates') return templatesBtnRef.value;
@@ -118,7 +130,7 @@ function onButtonHover(e) {
   }
 }
 
-watch([() => props.currentView, () => props.sidebarVisible], async () => {
+watch([() => props.currentView, () => props.sidebarVisible, () => props.settingsOpen, () => props.launchpadOpen], async () => {
   await nextTick();
   const activeBtn = getActiveButtonEl();
   if (activeBtn) {
@@ -201,7 +213,8 @@ onUnmounted(() => {
         aria-label="官方首页"
       >
         <span class="nav-glyph ic-house">
-          <House size="20" :stroke-width="currentView === 'home' ? 2.1 : 1.75" />
+          <!-- P1-1: stroke-width 统一 2，激活态只改颜色不改粗细，避免描边跳变。 -->
+          <House size="20" stroke-width="2" />
         </span>
         <div class="nav-tooltip" role="tooltip">
           <span class="nav-tooltip-label">官方首页</span>
@@ -221,7 +234,7 @@ onUnmounted(() => {
         aria-label="我的文档"
       >
         <span class="nav-glyph ic-files">
-          <Files size="20" :stroke-width="currentView === 'editor' && sidebarVisible ? 2.1 : 1.75" />
+          <FileText size="20" stroke-width="2" />
         </span>
         <div class="nav-tooltip" role="tooltip">
           <span class="nav-tooltip-label">我的文档</span>
@@ -242,7 +255,7 @@ onUnmounted(() => {
         aria-label="模板中心"
       >
         <span class="nav-glyph ic-palette">
-          <Palette size="20" :stroke-width="currentView === 'templates' ? 2.1 : 1.75" />
+          <LayoutTemplate size="20" stroke-width="2" />
         </span>
         <div class="nav-tooltip" role="tooltip">
           <span class="nav-tooltip-label">模板中心</span>
@@ -262,7 +275,7 @@ onUnmounted(() => {
         aria-label="素材中心"
       >
         <span class="nav-glyph ic-boxes">
-          <Boxes size="20" :stroke-width="currentView === 'materials' ? 2.1 : 1.75" />
+          <Image size="20" stroke-width="2" />
         </span>
         <div class="nav-tooltip" role="tooltip">
           <span class="nav-tooltip-label">素材中心</span>
@@ -279,6 +292,7 @@ onUnmounted(() => {
         ref="settingsBtnRef"
         class="icon-btn nav-target"
         data-key="settings"
+        :class="{ 'is-active': settingsOpen }"
         @click="$emit('toggle-tab', 'settings')"
         @mouseenter="onButtonHover"
         @focus="onButtonHover"
@@ -286,29 +300,31 @@ onUnmounted(() => {
         aria-label="偏好设置"
       >
         <span class="nav-glyph ic-settings">
-          <Settings size="20" stroke-width="1.75" />
+          <Settings size="20" stroke-width="2" />
         </span>
         <div class="nav-tooltip" role="tooltip">
           <span class="nav-tooltip-label">偏好设置</span>
         </div>
       </button>
 
-      <!-- 6. 快捷键与帮助 -->
+      <!-- 6. 启动台：实际打开多渠道分发启动台（LaunchpadModal），
+           不是帮助文档，所以图标用 Rocket，文案同步改掉。 -->
       <button
         ref="helpBtnRef"
         class="icon-btn icon-btn-subtle nav-target"
         data-key="help"
+        :class="{ 'is-active': launchpadOpen }"
         @click="$emit('toggle-tab', 'launch')"
         @mouseenter="onButtonHover"
         @focus="onButtonHover"
         data-no-tooltip
-        aria-label="快捷键与帮助"
+        aria-label="启动台"
       >
         <span class="nav-glyph ic-help">
-          <CircleHelp size="20" stroke-width="1.75" />
+          <Rocket size="20" stroke-width="2" />
         </span>
         <div class="nav-tooltip" role="tooltip">
-          <span class="nav-tooltip-label">快捷键与帮助</span>
+          <span class="nav-tooltip-label">启动台</span>
           <span class="nav-tooltip-shortcut">{{ helpShortcut }}</span>
         </div>
       </button>
@@ -330,7 +346,7 @@ onUnmounted(() => {
   z-index: 100;
   box-sizing: border-box;
   border-right: 1px solid var(--border-subtle, #EDEDF0);
-  transition: background 0.25s ease, border-color 0.25s ease;
+  transition: background 0.2s var(--ease-glide), border-color 0.2s var(--ease-glide);
   position: relative;
 }
 
@@ -391,7 +407,7 @@ html.dark .nav-glider {
   background: transparent;
   outline: none;
   z-index: 2;
-  transition: transform 0.12s;
+  transition: transform 0.12s var(--ease-glide);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -450,7 +466,7 @@ html.dark .icon-bar-divider {
   padding: 0;
   outline: none !important;
   z-index: 2;
-  transition: color 0.2s ease, transform 0.12s;
+  transition: color 0.2s var(--ease-glide), transform 0.12s var(--ease-glide);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -522,7 +538,7 @@ html.dark .icon-btn.is-active {
   animation: houseBounce 0.6s var(--ease-out);
 }
 
-/* 2. 文档 (Files) - 书页 3D 翻动效果 */
+/* 2. 文档 (FileText) - 书页 3D 翻动效果 */
 @keyframes docPageFlip {
   0% { transform: perspective(120px) rotateY(0deg); }
   40% { transform: perspective(120px) rotateY(-32deg) skewY(-4deg); }
@@ -535,7 +551,7 @@ html.dark .icon-btn.is-active {
   transform-origin: left center;
 }
 
-/* 3. 模板中心 (Palette) - 艺术画板摇摆与微晃 */
+/* 3. 模板中心 (LayoutTemplate) - 版式摇摆与微晃 */
 @keyframes paletteSwing {
   0%, 100% { transform: rotate(0deg); }
   25% { transform: rotate(-14deg); }
@@ -548,7 +564,7 @@ html.dark .icon-btn.is-active {
   transform-origin: 50% 15%;
 }
 
-/* 4. 素材中心 (Boxes) - 多组件依次蹦跳 (Hop) */
+/* 4. 素材中心 (Image) - 依次蹦跳 (Hop) */
 @keyframes boxHop {
   0%, 100% { transform: translateY(0) scale(1, 1); }
   30% { transform: translateY(-3.5px) scale(0.92, 1.08); }
@@ -570,7 +586,7 @@ html.dark .icon-btn.is-active {
   transform: rotate(90deg);
 }
 
-/* 6. 帮助与快捷键 (CircleHelp) - 探询微弹动 */
+/* 6. 启动台 (Rocket) - 微弹动 */
 @keyframes helpHop {
   0%, 100% { transform: rotate(0deg) scale(1); }
   30% { transform: rotate(-14deg) scale(1.18); }
@@ -602,7 +618,7 @@ html.dark .icon-btn.is-active {
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.15s ease 60ms, transform 0.3s var(--ease-spring) 60ms;
+  transition: opacity 0.12s var(--ease-glide) 60ms, transform 0.3s var(--ease-spring) 60ms;
   z-index: 200;
   display: flex;
   align-items: center;

@@ -2165,6 +2165,8 @@ watch(customStyles, () => {
           <IconBar
             :sidebarVisible="sidebarVisible"
             :currentView="currentView"
+            :settingsOpen="isSettingsOpen"
+            :launchpadOpen="isLaunchpadOpen"
             @toggle-tab="(tab) => {
               if (tab === 'home') { currentView = 'home'; }
               if (tab === 'docs') {
