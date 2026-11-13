@@ -16,30 +16,10 @@ export default async function handler(req, res) {
   return handleEdge(req);
 }
 
+import { resolveTidbConfig, isTidbCloudHost, isAllowedProxyHeader } from './lib/proxy-shared.js';
+
 function resolveDefaultTidbConfig() {
-  const envUrl = process.env.TIDB_DATABASE_URL || process.env.TIDB_URI || process.env.DATABASE_URL;
-  if (!envUrl) return null;
-  try {
-    const parsed = new URL(envUrl);
-    const user = decodeURIComponent(parsed.username || '');
-    const pass = decodeURIComponent(parsed.password || '');
-    const host = parsed.hostname;
-    if (!host) return null;
-    const db = (parsed.pathname || '').replace(/^\//, '');
-    const httpHost = host.startsWith('http-') ? host : `http-${host}`;
-    const authString = `${user}:${pass}`;
-    const base64Auth = typeof btoa !== 'undefined'
-      ? btoa(authString)
-      : Buffer.from(authString).toString('base64');
-    return {
-      targetUrl: `https://${httpHost}/v1beta/sql`,
-      authorization: `Basic ${base64Auth}`,
-      database: db || 'easymd',
-      host: httpHost
-    };
-  } catch {
-    return null;
-  }
+  return resolveTidbConfig(process.env.TIDB_DATABASE_URL || process.env.TIDB_URI || process.env.DATABASE_URL);
 }
 
 /**
@@ -106,21 +86,9 @@ async function handleEdge(req) {
     defaultDatabase = defaultCfg.database;
   }
 
-  // 4. Security validation: only proxy to tidbcloud.com
+  // 4. Security validation: only proxy to tidbcloud.com (shared helper)
   try {
-    const parsed = new URL(targetUrl);
-    if (!parsed.hostname.endsWith('.tidbcloud.com')) {
-      return new Response(
-        JSON.stringify({ error: 'Target URL host must be *.tidbcloud.com' }),
-        {
-          status: 403,
-          headers: {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-          },
-        }
-      );
-    }
+    new URL(targetUrl);
   } catch {
     return new Response(
       JSON.stringify({ error: 'Invalid target URL format' }),
@@ -133,19 +101,24 @@ async function handleEdge(req) {
       }
     );
   }
+  if (!isTidbCloudHost(targetUrl)) {
+    return new Response(
+      JSON.stringify({ error: 'Target URL host must be *.tidbcloud.com' }),
+      {
+        status: 403,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      }
+    );
+  }
 
   // 5. Forward headers
   const fetchHeaders = new Headers();
   for (const [k, v] of req.headers.entries()) {
     const lower = k.toLowerCase();
-    if (
-      lower.startsWith('tidb-') ||
-      lower === 'authorization' ||
-      lower === 'content-type' ||
-      lower === 'accept-encoding' ||
-      lower === 'user-agent' ||
-      lower.startsWith('x-')
-    ) {
+    if (isAllowedProxyHeader(lower)) {
       fetchHeaders.set(k, v);
     }
   }
@@ -250,17 +223,17 @@ async function handleNode(req, res) {
   }
 
   try {
-    const parsed = new URL(targetUrl);
-    if (!parsed.hostname.endsWith('.tidbcloud.com')) {
-      res.statusCode = 403;
-      res.setHeader('Content-Type', 'application/json');
-      res.end(JSON.stringify({ error: 'Target URL host must be *.tidbcloud.com' }));
-      return;
-    }
+    new URL(targetUrl);
   } catch {
     res.statusCode = 400;
     res.setHeader('Content-Type', 'application/json');
     res.end(JSON.stringify({ error: 'Invalid target URL format' }));
+    return;
+  }
+  if (!isTidbCloudHost(targetUrl)) {
+    res.statusCode = 403;
+    res.setHeader('Content-Type', 'application/json');
+    res.end(JSON.stringify({ error: 'Target URL host must be *.tidbcloud.com' }));
     return;
   }
 
@@ -289,14 +262,7 @@ async function handleNode(req, res) {
     const fetchHeaders = {};
     for (const [k, v] of Object.entries(req.headers)) {
       const lower = k.toLowerCase();
-      if (
-        lower.startsWith('tidb-') ||
-        lower === 'authorization' ||
-        lower === 'content-type' ||
-        lower === 'accept-encoding' ||
-        lower === 'user-agent' ||
-        lower.startsWith('x-')
-      ) {
+      if (isAllowedProxyHeader(lower)) {
         fetchHeaders[k] = v;
       }
     }

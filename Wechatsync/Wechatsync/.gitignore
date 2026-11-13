@@ -27,6 +27,12 @@ packages/*/src/**/*.d.ts.map
 !packages/extension/src/lib/reader/reader.js
 !packages/extension/src/lib/reader/Readability.js
 
+# Generated copies of the reader library (item 9): public/lib is
+# regenerated from src/lib/reader by scripts/sync-reader-lib.cjs
+# (predev/prebuild) — do not commit copies by hand.
+packages/extension/public/lib/reader.js
+packages/extension/public/lib/Readability.js
+
 # Lock files (use pnpm)
 package-lock.json
 yarn-error.log

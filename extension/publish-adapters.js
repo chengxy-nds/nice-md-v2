@@ -1,6 +1,11 @@
 /**
  * NiceMD Publish Adapters
  * Implements direct HTTP API publishing and image uploading for supported platforms.
+ *
+ * SINGLE SOURCE OF TRUTH (item 9): electron/publish-adapters.cjs is
+ * generated from this file by scripts/sync-adapters.cjs (run by the
+ * prebuild hook and by scripts/package-extension.cjs). Do not edit the
+ * .cjs copy by hand — it will be overwritten.
  */
 
 // AWS4 Signature and CRC32 helpers for Juejin ImageX upload

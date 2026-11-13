@@ -3,22 +3,11 @@ import vue from '@vitejs/plugin-vue'
 
 import fs from 'node:fs'
 import path from 'node:path'
-import crypto from 'node:crypto'
+import { resolveOssConfig, generateSignedUploadParams, resolveTidbConfig, isTidbCloudHost, isAllowedProxyHeader } from './api/lib/proxy-shared.js'
 
 function resolveLocalDefaultOssConfig() {
-  const env = { ...process.env, ...loadEnv('development', process.cwd(), '') };
-  const ak = (env.OSS_ACCESS_KEY_ID || env.ALIYUN_OSS_ACCESS_KEY_ID || env.OSS_AK || '').trim();
-  const sk = (env.OSS_ACCESS_KEY_SECRET || env.ALIYUN_OSS_ACCESS_KEY_SECRET || env.OSS_SK || '').trim();
-  const bucket = (env.OSS_BUCKET || env.ALIYUN_OSS_BUCKET || env.OSS_BUCKET_NAME || '').trim();
-  const endpoint = (env.OSS_ENDPOINT || env.ALIYUN_OSS_ENDPOINT || env.OSS_REGION || '').trim();
-  const domain = (env.OSS_DOMAIN || env.ALIYUN_OSS_DOMAIN || '').trim();
-  const basePath = (env.OSS_BASE_PATH || env.ALIYUN_OSS_BASE_PATH || '').trim();
-
-  if (!ak || !sk || !bucket || !endpoint) {
-    return null;
-  }
-
-  return { accessKeyId: ak, accessKeySecret: sk, bucket, endpoint, domain, basePath };
+  // Single implementation lives in api/lib/proxy-shared.js (item 9).
+  return resolveOssConfig({ ...process.env, ...loadEnv('development', process.cwd(), '') });
 }
 
 function createOssProxyMiddleware() {
@@ -68,52 +57,11 @@ function createOssProxyMiddleware() {
             const body = bodyStr ? JSON.parse(bodyStr) : {};
             const filename = body?.filename || 'image.png';
 
-            const ext = (filename.split('.').pop() || 'png').toLowerCase();
-            const now = new Date();
-            const pad2 = n => String(n).padStart(2, '0');
-            const uuid = crypto.randomUUID ? crypto.randomUUID().replace(/-/g, '').slice(0, 16) : Math.random().toString(36).substring(2, 18);
-            const datePath = `${now.getFullYear()}/${pad2(now.getMonth() + 1)}/${uuid}.${ext}`;
-            const rawBase = (ossConfig.basePath || '').trim().replace(/^\/+/, '').replace(/\/+$/, '');
-            const cleanBase = (rawBase === '1' || rawBase === '0' || rawBase.toLowerCase() === 'none' || rawBase.toLowerCase() === 'null') ? '' : rawBase;
-            const objectName = cleanBase ? `${cleanBase}/${datePath}` : datePath;
-
-            let bucketHost = (ossConfig.endpoint || '').replace(/^https?:\/\//i, '').replace(/\/+$/, '').trim();
-            if (!bucketHost.startsWith(`${ossConfig.bucket}.`)) {
-              bucketHost = `${ossConfig.bucket}.${bucketHost}`;
-            }
-
-            const expiration = new Date(Date.now() + 3600 * 1000);
-            const policyObj = {
-              expiration: expiration.toISOString(),
-              conditions: [
-                { bucket: ossConfig.bucket },
-                ['starts-with', '$key', ''],
-                ['content-length-range', 0, 100 * 1024 * 1024]
-              ]
-            };
-            const policyBase64 = Buffer.from(JSON.stringify(policyObj)).toString('base64');
-            const signature = crypto.createHmac('sha1', ossConfig.accessKeySecret).update(policyBase64).digest('base64');
-
-            const rawDomain = (ossConfig.domain || '').trim();
-            const isInvalidDomain = !rawDomain || rawDomain === '1' || rawDomain === '0' || !rawDomain.includes('.');
-            const effectiveDomain = isInvalidDomain ? `https://${bucketHost}` : (rawDomain.startsWith('http://') || rawDomain.startsWith('https://') ? rawDomain : `https://${rawDomain}`).replace(/\/+$/, '');
-            const fileUrl = `${effectiveDomain}/${objectName}`;
-            const uploadUrl = `https://${bucketHost}/`;
+            const params = await generateSignedUploadParams(ossConfig, filename);
 
             res.statusCode = 200;
             res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify({
-              success: true,
-              uploadUrl,
-              fileUrl,
-              formData: {
-                key: objectName,
-                policy: policyBase64,
-                OSSAccessKeyId: ossConfig.accessKeyId,
-                success_action_status: '200',
-                Signature: signature
-              }
-            }));
+            res.end(JSON.stringify(params));
           } catch (err) {
             res.statusCode = 500;
             res.setHeader('Content-Type', 'application/json');
@@ -128,26 +76,9 @@ function createOssProxyMiddleware() {
 }
 
 function resolveLocalDefaultTidbConfig() {
+  // Single implementation lives in api/lib/proxy-shared.js (item 9).
   const env = { ...process.env, ...loadEnv('development', process.cwd(), '') };
-  const envUrl = env.TIDB_DATABASE_URL || env.TIDB_URI || env.DATABASE_URL;
-  if (!envUrl) return null;
-  try {
-    const parsed = new URL(envUrl);
-    const user = decodeURIComponent(parsed.username || '');
-    const pass = decodeURIComponent(parsed.password || '');
-    const host = parsed.hostname;
-    if (!host) return null;
-    const db = (parsed.pathname || '').replace(/^\//, '');
-    const httpHost = host.startsWith('http-') ? host : `http-${host}`;
-    return {
-      targetUrl: `https://${httpHost}/v1beta/sql`,
-      authorization: 'Basic ' + Buffer.from(`${user}:${pass}`).toString('base64'),
-      database: db || 'easymd',
-      host: httpHost
-    };
-  } catch {
-    return null;
-  }
+  return resolveTidbConfig(env.TIDB_DATABASE_URL || env.TIDB_URI || env.DATABASE_URL);
 }
 
 function createTidbProxyMiddleware() {
@@ -197,6 +128,23 @@ function createTidbProxyMiddleware() {
         defaultDatabase = defaultCfg.database;
       }
 
+      // Security validation (item 9): only proxy to tidbcloud.com, same as
+      // the production proxy in api/tidb-proxy.js.
+      try {
+        new URL(targetUrl);
+      } catch {
+        res.statusCode = 400;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ error: 'Invalid target URL format' }));
+        return;
+      }
+      if (!isTidbCloudHost(targetUrl)) {
+        res.statusCode = 403;
+        res.setHeader('Content-Type', 'application/json');
+        res.end(JSON.stringify({ error: 'Target URL host must be *.tidbcloud.com' }));
+        return;
+      }
+
       const chunks = [];
       req.on('data', chunk => chunks.push(chunk));
       req.on('end', async () => {
@@ -205,14 +153,7 @@ function createTidbProxyMiddleware() {
           const fetchHeaders = {};
           for (const [k, v] of Object.entries(req.headers)) {
             const lower = k.toLowerCase();
-            if (
-              lower.startsWith('tidb-') ||
-              lower === 'authorization' ||
-              lower === 'content-type' ||
-              lower === 'accept-encoding' ||
-              lower === 'user-agent' ||
-              lower.startsWith('x-')
-            ) {
+            if (isAllowedProxyHeader(lower)) {
               fetchHeaders[k] = v;
             }
           }

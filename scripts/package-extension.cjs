@@ -2,6 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const JSZip = require('jszip');
 
+// Item 9: keep electron/publish-adapters.cjs in sync with the single
+// source of truth (extension/publish-adapters.js) before packaging.
+require('./sync-adapters.cjs');
+
 async function packageExtension() {
   const extensionDir = path.resolve(__dirname, '../extension');
   const distDir = path.resolve(__dirname, '../dist_extension');

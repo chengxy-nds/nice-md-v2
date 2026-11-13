@@ -1,6 +1,11 @@
 /**
  * NiceMD Publish Adapters
  * Implements direct HTTP API publishing and image uploading for supported platforms.
+ *
+ * SINGLE SOURCE OF TRUTH (item 9): electron/publish-adapters.cjs is
+ * generated from this file by scripts/sync-adapters.cjs (run by the
+ * prebuild hook and by scripts/package-extension.cjs). Do not edit the
+ * .cjs copy by hand — it will be overwritten.
  */
 
 // AWS4 Signature and CRC32 helpers for Juejin ImageX upload
@@ -3248,6 +3253,24 @@ class LeetcodeAdapter extends CodeAdapter {
   }
 }
 
+// 29. Xiaohongshu (小红书) Adapter
+class XiaohongshuAdapter extends CodeAdapter {
+  constructor() {
+    super('xiaohongshu');
+  }
+
+  async publish(article) {
+    const { title, markdown, html, cover } = article || {};
+    return this.createResult(true, {
+      postUrl: 'https://creator.xiaohongshu.com/publish/publish?source=official',
+      draftOnly: true,
+      markdown,
+      html,
+      cover
+    });
+  }
+}
+
 const publishAdapters = {
   csdn: new CsdnAdapter(),
   juejin: new JuejinAdapter(),
@@ -3257,6 +3280,8 @@ const publishAdapters = {
   weibo: new WeiboAdapter(),
   baijiahao: new BaijiahaoAdapter(),
   bilibili: new BilibiliAdapter(),
+  xiaohongshu: new XiaohongshuAdapter(),
+  xhs: new XiaohongshuAdapter(), // alias
   cnblogs: new CnblogsAdapter(),
   yuque: new YuqueAdapter(),
   segmentfault: new SegmentfaultAdapter(),
