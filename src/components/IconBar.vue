@@ -188,13 +188,9 @@ onUnmounted(() => {
         data-no-tooltip
         role="button"
         tabindex="0"
-        aria-label="墨滴 NiceMD"
       >
         <div class="brand-inner">
           <BrandLogo :size="26" />
-        </div>
-        <div class="nav-tooltip" role="tooltip">
-          <span class="nav-tooltip-label">墨滴 NiceMD</span>
         </div>
       </div>
 
