@@ -6,6 +6,7 @@ import {
   styleCategories,
   styleCategoryMap
 } from '../utils/materialLibrary';
+import { sanitizeWeChatHtml } from '../utils/sanitizeHtml';
 
 const props = defineProps({
   visible: {
@@ -278,7 +279,7 @@ function hasPrefixOption(id) {
             </span>
 
             <!-- High-Fidelity Material Canvas -->
-            <div class="stream-material-canvas" v-html="getRenderHtml(item)"></div>
+            <div class="stream-material-canvas" v-html="sanitizeWeChatHtml(getRenderHtml(item))"></div>
 
             <!-- Bottom-Right "应用此样式" Action Button on Hover (Only for non-selected items) -->
             <div v-if="(props.currentMaterialId || 'none') !== item.id" class="stream-apply-btn-wrap">

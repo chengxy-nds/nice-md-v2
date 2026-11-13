@@ -17,6 +17,7 @@ const wechatTheme = {
 import { codeThemes } from './codeThemes';
 import { themes } from './themePresets';
 import { buildWechatTypo } from './themeTypography';
+import { sanitizeWeChatHtml } from './sanitizeHtml';
 import {
   allMaterialTemplatesMap,
   headingTemplatesMap,
@@ -2291,7 +2292,12 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
   finalHtml = finalHtml.replace(/(<\/li>|<\/ol>|<\/ul>|<ol[^>]*>|<ul[^>]*>)\s+(<li>|<ol[^>]*>|<ul[^>]*>|<\/ol>|<\/ul>)/gi, '$1$2');
   finalHtml = finalHtml.replace(/(<\/li>|<\/ol>|<\/ul>|<ol[^>]*>|<ul[^>]*>)\s+(<li>|<ol[^>]*>|<ul[^>]*>|<\/ol>|<\/ul>)/gi, '$1$2');
 
-  return finalHtml;
+  // Item 5: sanitize the compiled HTML before it reaches any sink — the
+  // preview's v-html, the export containers' innerHTML, or the clipboard.
+  // DOMPurify's defaults preserve everything this compiler emits (inline
+  // style attributes, <section> wrappers, data-* attributes); see
+  // utils/sanitizeHtml.js for the full rationale.
+  return sanitizeWeChatHtml(finalHtml);
 }
 
 

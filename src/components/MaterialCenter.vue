@@ -32,6 +32,7 @@ import {
 } from '../utils/materialLibrary';
 import { soundEngine } from '../utils/synthAudio';
 import { fireConfetti } from '../utils/celebrate';
+import { sanitizeWeChatHtml } from '../utils/sanitizeHtml';
 
 const emit = defineEmits(['back-to-editor', 'insert-material', 'apply-background']);
 
@@ -238,7 +239,7 @@ function handleApplyBackground(mat) {
             @keydown.space.prevent="openPreview(mat)"
           >
             <div class="mc-render-stage">
-              <div class="mc-render-paper" v-html="mat.html"></div>
+              <div class="mc-render-paper" v-html="sanitizeWeChatHtml(mat.html)"></div>
             </div>
             <span class="mc-preview-trigger" aria-hidden="true">
               <Eye size="13" />
@@ -319,7 +320,7 @@ function handleApplyBackground(mat) {
             </button>
           </header>
           <div class="mc-preview-modal-content">
-            <div class="mc-preview-modal-render" v-html="selectedPreview.html"></div>
+            <div class="mc-preview-modal-render" v-html="sanitizeWeChatHtml(selectedPreview.html)"></div>
           </div>
           <footer class="mc-preview-modal-footer">
             <button
