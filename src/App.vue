@@ -2226,6 +2226,7 @@ watch(customStyles, () => {
           </Transition>
 
           <!-- 1. 模板中心 -->
+          <Transition name="nx-view" mode="out-in">
           <TemplateCenter
             v-if="currentView === 'templates'"
             :current-theme="currentTheme"
@@ -2525,6 +2526,7 @@ watch(customStyles, () => {
             </div>
           </div>
         </div>
+          </Transition>
       </main>
     </div>
   </template>

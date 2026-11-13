@@ -1530,13 +1530,19 @@ html.dark .create-action:hover {
 
 .sync-dropdown-enter-active,
 .sync-dropdown-leave-active {
-  transition: opacity 0.12s var(--ease-glide), transform 0.12s var(--ease-glide);
+  /* B. 同步下拉按触发角（左上）缩放长出，入场弹簧、出场 150ms 快收 */
+  transition: opacity var(--motion-base) var(--ease-enter), transform var(--motion-base) var(--ease-enter);
+  transform-origin: top left;
+}
+
+.sync-dropdown-leave-active {
+  transition: opacity 150ms var(--ease-exit), transform 150ms var(--ease-exit);
 }
 
 .sync-dropdown-enter-from,
 .sync-dropdown-leave-to {
   opacity: 0;
-  transform: translateY(-4px) scale(0.98);
+  transform: translateY(-4px) scale(.96);
 }
 
 html.dark .sync-trigger-btn {

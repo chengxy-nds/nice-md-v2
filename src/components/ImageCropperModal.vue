@@ -439,9 +439,9 @@ onUnmounted(() => {
 
 <template>
   <Teleport to="body">
-    <Transition name="cropper-modal-fade">
+    <Transition name="nx-modal-lg">
       <div v-if="isOpen" class="cropper-backdrop" @click.self="$emit('close')">
-        <div class="cropper-modal-container">
+        <div class="cropper-modal-container nx-modal-card">
           <!-- ── Header ── -->
           <div class="cropper-header">
             <div class="header-left">
@@ -1194,15 +1194,7 @@ onUnmounted(() => {
   }
 }
 
-/* ── Transitions & Dark Mode ── */
-.cropper-modal-fade-enter-active,
-.cropper-modal-fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.cropper-modal-fade-enter-from,
-.cropper-modal-fade-leave-to {
-  opacity: 0;
-}
+/* B. 弹窗过渡改走 style.css 的共享 nx-modal-lg。 */
 
 html.dark .cropper-modal-container {
   background: rgba(15, 23, 42, 0.78);

@@ -287,6 +287,8 @@ function scrollToChannels() {
   overflow-y: auto;
   background-color: #fdfbf7;
   color: var(--wandor-text, #1a1a1a);
+  /* C. 首页挂载入场动画（见 style.css 的 nx-view-in 说明） */
+  animation: nx-view-in var(--motion-slow) var(--ease-out) both;
   font-family: var(--font-sans, 'Geist', -apple-system, BlinkMacSystemFont, sans-serif);
   box-sizing: border-box;
 }

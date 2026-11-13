@@ -629,7 +629,9 @@ html.dark .rename-input:focus {
   padding: 4px;
   box-shadow: 0 10px 25px rgba(27, 55, 90, 0.14), 0 2px 6px rgba(27, 55, 90, 0.05);
   transform-origin: top right;
-  animation: menuFadeIn 0.12s cubic-bezier(0.16, 1, 0.3, 1);
+  /* B. 下拉按触发角缩放长出：transform-origin 已按翻转方向设为 top/bottom right */
+  animation: menuFadeIn var(--motion-base) var(--ease-enter);
+  will-change: transform, opacity;
   user-select: none;
   box-sizing: border-box;
 }
@@ -640,12 +642,12 @@ html.dark .rename-input:focus {
 }
 
 @keyframes menuFadeIn {
-  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  from { opacity: 0; transform: translateY(-4px) scale(.96); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 @keyframes menuFadeInUp {
-  from { opacity: 0; transform: translateY(4px) scale(0.97); }
+  from { opacity: 0; transform: translateY(4px) scale(.96); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 

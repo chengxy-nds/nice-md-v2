@@ -16,8 +16,9 @@ function cancel() {
 </script>
 
 <template>
+  <Transition name="nx-modal-sm">
   <div v-if="state.open" class="dialog-overlay" @click.self="cancel">
-    <div class="dialog-card">
+    <div class="dialog-card nx-modal-card">
       <div class="dialog-header">
         <div v-if="state.danger" class="danger-icon-box">
           <AlertCircle size="14" stroke-width="2.2" />
@@ -26,15 +27,16 @@ function cancel() {
       </div>
       <p class="dialog-message">{{ state.message }}</p>
       <div class="dialog-actions">
-        <button class="btn-cancel" @click="cancel">{{ state.cancelText }}</button>
+        <button class="btn-cancel nx-press" @click="cancel">{{ state.cancelText }}</button>
         <button
-          class="btn-confirm"
+          class="btn-confirm nx-press"
           :class="{ 'is-danger': state.danger }"
           @click="confirm"
         >{{ state.confirmText }}</button>
       </div>
     </div>
   </div>
+</Transition>
 </template>
 
 <style scoped>
@@ -48,12 +50,6 @@ function cancel() {
   align-items: center;
   justify-content: center;
   z-index: 2000;
-  animation: fadeIn 0.18s ease-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 
 /* Figma UI Kit Dialog Card */
@@ -71,13 +67,7 @@ function cancel() {
   flex-direction: column;
   gap: 12px;
   font-family: var(--font-sans);
-  animation: scaleIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
-}
-
-@keyframes scaleIn {
-  from { transform: scale(0.95) translateY(6px); opacity: 0; }
-  to { transform: scale(1) translateY(0); opacity: 1; }
 }
 
 .dialog-header {

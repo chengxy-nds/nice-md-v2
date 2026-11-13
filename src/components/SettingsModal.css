@@ -14,17 +14,8 @@
   z-index: 1000;
 }
 
-/* Vue <Transition name="modal"> classes */
-.modal-enter-active {
-  transition: opacity 0.2s ease;
-}
-.modal-leave-active {
-  transition: opacity 0.15s ease;
-}
-.modal-enter-from,
-.modal-leave-to {
-  opacity: 0;
-}
+/* B. 弹窗过渡改走 style.css 的共享 nx-modal（遮罩淡入+blur、卡片弹簧），
+   这里只留卡片本体样式，不再各写一套。 */
 
 /* UI Kit Modal Card */
 .modal-card {
@@ -38,21 +29,6 @@
   flex-direction: column;
   overflow: hidden;
   font-family: var(--font-sans);
-}
-/* Card slides up inside the fading overlay */
-.modal-enter-active .modal-card {
-  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s ease;
-}
-.modal-leave-active .modal-card {
-  transition: transform 0.15s ease, opacity 0.15s ease;
-}
-.modal-enter-from .modal-card {
-  transform: translateY(12px) scale(0.97);
-  opacity: 0;
-}
-.modal-leave-to .modal-card {
-  transform: translateY(8px) scale(0.98);
-  opacity: 0;
 }
 
 .modal-header {

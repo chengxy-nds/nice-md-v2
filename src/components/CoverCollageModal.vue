@@ -476,9 +476,9 @@ onUnmounted(() => {
 
 <template>
   <Teleport to="body">
-    <Transition name="collage-modal-fade">
+    <Transition name="nx-modal-lg">
       <div v-if="isOpen" class="collage-backdrop" @click.self="$emit('close')">
-        <div class="collage-modal-container">
+        <div class="collage-modal-container nx-modal-card">
           <!-- ── Header ── -->
           <div class="collage-header">
             <div class="header-left">
@@ -2018,15 +2018,7 @@ onUnmounted(() => {
   }
 }
 
-/* ── Transitions & Dark Mode ── */
-.collage-modal-fade-enter-active,
-.collage-modal-fade-leave-active {
-  transition: opacity 0.2s ease;
-}
-.collage-modal-fade-enter-from,
-.collage-modal-fade-leave-to {
-  opacity: 0;
-}
+/* B. 弹窗过渡改走 style.css 的共享 nx-modal-lg。 */
 
 html.dark .collage-modal-container {
   background: rgba(15, 23, 42, 0.78);

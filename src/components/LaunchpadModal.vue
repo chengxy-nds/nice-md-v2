@@ -1414,6 +1414,7 @@ onMounted(() => {
 </script>
 
 <template>
+  <Transition name="nx-drawer">
   <div v-if="isOpen" class="modal-overlay" @click.self="emit('close')">
     <aside class="right-drawer-panel">
       <!-- Drawer header -->
@@ -2083,6 +2084,7 @@ onMounted(() => {
       </div>
     </Teleport>
   </div>
+</Transition>
 </template>
 
 <style scoped src="./LaunchpadModal.css"></style>

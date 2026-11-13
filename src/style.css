@@ -6,6 +6,152 @@
   --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
   --ease-glide: cubic-bezier(.32, 1.28, .36, 1);
   --ease-out: cubic-bezier(.22, 1, .36, 1);
+  /* ── A. 动效系统令牌 ──
+     入场带过冲（弹簧），出场快且不带过冲；快=微交互，中=弹窗/下拉，慢=抽屉/视图。
+     本次只把动到的文件改成令牌，其余裸 ease 留待后续增量替换。 */
+  --ease-enter: var(--ease-spring);
+  --ease-exit: var(--ease-out);
+  --ease-standard: cubic-bezier(.16, 1, .3, 1);
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-slow: 360ms;
+}
+
+/* ── A+B. 共享弹窗过渡（nx-modal / nx-modal-sm / nx-modal-lg / nx-drawer）──
+   遮罩淡入 + blur 0→8px；卡片弹簧 scale(.96)→1.02→1 + translateY(12px)→0；
+   出场 150ms 快收、不带过冲。只用 transform / opacity，全部走合成器。
+   各弹窗把 Transition name 改成这里的名字，并在卡片根节点加 .nx-modal-card。 */
+@keyframes nx-modal-spring-in {
+  0% { opacity: 0; transform: translateY(12px) scale(.96); }
+  60% { opacity: 1; transform: translateY(-1px) scale(1.015); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes nx-modal-lg-spring-in {
+  0% { opacity: 0; transform: translateY(16px) scale(.98); }
+  60% { opacity: 1; transform: translateY(-1px) scale(1.008); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.nx-modal-enter-active,
+.nx-modal-sm-enter-active,
+.nx-modal-lg-enter-active {
+  transition: opacity var(--motion-base) var(--ease-out);
+}
+.nx-modal-leave-active,
+.nx-modal-sm-leave-active,
+.nx-modal-lg-leave-active {
+  transition: opacity 150ms var(--ease-exit);
+}
+.nx-modal-enter-from,
+.nx-modal-sm-enter-from,
+.nx-modal-lg-enter-from,
+.nx-modal-leave-to,
+.nx-modal-sm-leave-to,
+.nx-modal-lg-leave-to {
+  opacity: 0;
+}
+.nx-modal-enter-active .nx-modal-card {
+  animation: nx-modal-spring-in var(--motion-slow) var(--ease-enter) both;
+}
+.nx-modal-sm-enter-active .nx-modal-card {
+  animation: nx-modal-spring-in var(--motion-base) var(--ease-enter) both;
+}
+.nx-modal-lg-enter-active .nx-modal-card {
+  animation: nx-modal-lg-spring-in var(--motion-slow) var(--ease-enter) both;
+}
+.nx-modal-leave-active .nx-modal-card,
+.nx-modal-sm-leave-active .nx-modal-card,
+.nx-modal-lg-leave-active .nx-modal-card {
+  transition: transform 150ms var(--ease-exit), opacity 150ms var(--ease-exit);
+  transform: translateY(8px) scale(.98);
+  opacity: 0;
+}
+.nx-modal-enter-active .nx-modal-card,
+.nx-modal-sm-enter-active .nx-modal-card,
+.nx-modal-lg-enter-active .nx-modal-card {
+  will-change: transform, opacity;
+}
+/* 遮罩 blur 只在入场时渐变，出场直接跟 opacity 走，避免每帧重算模糊 */
+.nx-modal-enter-active,
+.nx-modal-sm-enter-active,
+.nx-modal-lg-enter-active {
+  backdrop-filter: blur(0);
+}
+.nx-modal-enter-active { animation: nx-modal-blur-in var(--motion-base) var(--ease-out) both; }
+@keyframes nx-modal-blur-in {
+  from { backdrop-filter: blur(0); }
+  to { backdrop-filter: blur(8px); }
+}
+
+/* ── B. 右侧抽屉（Launchpad）── 遮罩淡入，面板用 glide 滑入，出场 200ms 快收 */
+.nx-drawer-enter-active {
+  transition: opacity var(--motion-base) var(--ease-out);
+}
+.nx-drawer-leave-active {
+  transition: opacity 200ms var(--ease-exit);
+}
+.nx-drawer-enter-from,
+.nx-drawer-leave-to { opacity: 0; }
+.nx-drawer-enter-active .right-drawer-panel {
+  transition: transform var(--motion-slow) var(--ease-glide);
+}
+.nx-drawer-leave-active .right-drawer-panel {
+  transition: transform 200ms var(--ease-exit);
+}
+.nx-drawer-enter-from .right-drawer-panel,
+.nx-drawer-leave-to .right-drawer-panel { transform: translateX(100%); }
+/* 抽屉内编排：头部先到，内容随后（只做透明度+位移，不改布局） */
+.nx-drawer-enter-active .drawer-top-bar {
+  animation: nx-fade-slide-in var(--motion-base) var(--ease-out) 60ms both;
+}
+.nx-drawer-enter-active .drawer-body {
+  animation: nx-fade-slide-in var(--motion-base) var(--ease-out) 120ms both;
+}
+@keyframes nx-fade-slide-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+/* C. 首页挂载入场（App.vue 里首页是 v-if，与 <template v-else> 成链，
+   不能包 Transition，否则会隔断 v-else 链导致编译失败；改用挂载动画） */
+@keyframes nx-view-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── D. 列表/卡片依次入场 ── 只用 transform / opacity；
+   --nx-i 由模板按 index 传入并截断到 7（前 8 项），避免长列表总时长过长 */
+@keyframes nx-list-in {
+  from { opacity: 0; transform: translateY(8px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.nx-stagger-item {
+  animation: nx-list-in var(--motion-base) var(--ease-out) both;
+  animation-delay: calc(min(var(--nx-i, 0), 7) * 25ms);
+}
+
+/* ── E. 微交互工具类 ── 按压只给主按钮/工具栏按钮，不给文字链接 */
+.nx-press { transition: transform var(--motion-fast) var(--ease-out); }
+.nx-press:active { transform: scale(.97); }
+.nx-lift { transition: transform var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out); }
+.nx-lift:hover { transform: translateY(-2px); }
+/* 对勾描绘（复制/导出成功时给图标加 .nx-check-draw） */
+.nx-check-draw { stroke-dasharray: 24; stroke-dashoffset: 24; animation: nx-check-draw 320ms var(--ease-out) 40ms forwards; }
+@keyframes nx-check-draw { to { stroke-dashoffset: 0; } }
+/* 保存/同步轻反馈：绿点脉冲，不弹 Toast */
+@keyframes nx-dot-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, .45); }
+  100% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+}
+.nx-dot-pulse { animation: nx-dot-pulse 900ms var(--ease-out) 1; }
+
+/* ── A. 全局减弱动效兜底 ── 一处统一处理，覆盖本次新增与历史动效 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: .01ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
 @media (min-width: 2560px) {

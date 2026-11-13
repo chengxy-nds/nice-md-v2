@@ -6,7 +6,7 @@
   display: flex;
   justify-content: flex-end;
   z-index: 2000;
-  animation: fadeInOverlay 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  /* B. 遮罩淡入改走 style.css 的共享 nx-drawer Transition，不再用挂载动画（原来无出场）。 */
 }
 
 @keyframes fadeInOverlay {
@@ -28,7 +28,7 @@
   flex-direction: column;
   position: relative;
   overflow: hidden;
-  animation: slideDrawer 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  /* B. 面板滑入改走 style.css 的共享 nx-drawer Transition（glide 曲线，出场 200ms 快收）。 */
   user-select: none;
   font-family: var(--font-sans);
 }
@@ -1154,7 +1154,7 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
   justify-content: center;
   z-index: 3000;
   padding: 1.25rem;
-  animation: fadeInOverlay 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  /* B. 遮罩淡入改走 style.css 的共享 nx-drawer Transition，不再用挂载动画（原来无出场）。 */
 }
 
 .manage-modal-card {

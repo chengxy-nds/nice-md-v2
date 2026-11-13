@@ -1310,9 +1310,9 @@ const supportsSilent = (id) => {
 </script>
 
 <template>
-  <Transition name="modal">
+  <Transition name="nx-modal">
     <div v-if="isOpen" class="modal-overlay" @click.self="emit('close')">
-    <div class="modal-card settings-card">
+    <div class="modal-card settings-card nx-modal-card">
       <div class="modal-header">
         <div class="title-area">
           <Settings class="settings-gear" size="18" />
