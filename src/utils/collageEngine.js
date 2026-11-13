@@ -275,44 +275,139 @@ export function extractImagesFromMarkdown(markdown) {
 }
 
 /**
- * Load an image from URL into an HTMLImageElement
+ * Host of an image URL, for user-facing CORS errors (never the full URL,
+ * which may contain tokens / signed query strings).
+ */
+export function getImageHost(src) {
+  try {
+    return new URL(src, window.location.href).host || '该图片';
+  } catch {
+    return '该图片';
+  }
+}
+
+/**
+ * Friendly, user-facing error for an image that cannot be exported because
+ * its host does not allow cross-origin canvas export.
+ */
+export function corsExportError(src) {
+  return new Error(`图片不支持跨域导出: ${getImageHost(src)}，请先下载到本地再上传，或换一张图`);
+}
+
+/**
+ * Load a single Image element from a URL. Resolves only with a CLEAN image
+ * (one that can be drawn to canvas without tainting it). Never resolves a
+ * tainted image.
+ */
+function loadImageElement(src, { crossOrigin = false } = {}) {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    if (crossOrigin) img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      if (img.naturalWidth > 0) resolve(img);
+      else reject(new Error('图片为空: ' + getImageHost(src)));
+    };
+    img.onerror = () => reject(new Error('无法加载图片: ' + getImageHost(src)));
+    img.src = src;
+  });
+}
+
+/**
+ * Load an image from URL into an HTMLImageElement.
+ *
+ * Invariant: this function only ever resolves CLEAN images that are safe to
+ * draw to a canvas and export with toBlob()/toDataURL(). The old silent
+ * fallback (retry without crossOrigin when the server sent no CORS headers)
+ * is deliberately gone: that retry image displayed fine but tainted the
+ * canvas, so export failed later with a cryptic "Tainted canvases" error.
+ *
+ * Load order for remote http(s) URLs:
+ *   (a) fetch(mode: 'cors', 15s timeout) -> blob -> same-origin object URL;
+ *   (b) Image with crossOrigin='anonymous';
+ *   (c) reject with a friendly error naming the host.
+ * data:/blob: URLs and same-origin/relative URLs load directly and are clean.
  */
 const imageCache = new Map();
 
-export function loadImage(src) {
-  if (!src) return Promise.reject(new Error('图片地址为空'));
-  if (imageCache.has(src)) {
-    const cached = imageCache.get(src);
-    if (cached.complete && cached.naturalWidth > 0) {
-      return Promise.resolve(cached);
+export async function loadImage(src) {
+  if (!src) throw new Error('图片地址为空');
+  const cached = imageCache.get(src);
+  if (cached && cached.complete && cached.naturalWidth > 0 && cached.__clean) {
+    return cached;
+  }
+
+  const isRemote = /^https?:\/\//i.test(src);
+  let img;
+
+  if (!isRemote) {
+    // data:/blob:/same-origin/relative URLs: no crossOrigin needed, clean.
+    img = await loadImageElement(src);
+  } else {
+    // (a) Fetch as a blob first: a same-origin blob URL never taints.
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 15000);
+      let blob;
+      try {
+        const res = await fetch(src, { mode: 'cors', signal: controller.signal });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        blob = await res.blob();
+      } finally {
+        clearTimeout(timer);
+      }
+      if (!blob || !blob.type.startsWith('image/')) {
+        throw new Error('返回的不是图片');
+      }
+      const blobUrl = URL.createObjectURL(blob);
+      try {
+        img = await loadImageElement(blobUrl);
+      } catch (e) {
+        URL.revokeObjectURL(blobUrl);
+        throw e;
+      }
+      // Keep the blob URL alive while the image is cached; it is the
+      // image's backing store. It is revoked only if loading fails above.
+    } catch {
+      // (b) Fall back to an anonymous CORS image load.
+      try {
+        img = await loadImageElement(src, { crossOrigin: true });
+      } catch {
+        // (c) Never resolve a tainted image: reject with the host named.
+        throw corsExportError(src);
+      }
     }
   }
 
-  return new Promise((resolve, reject) => {
-    const img = new window.Image();
-    if (!src.startsWith('data:') && !src.startsWith('blob:')) {
-      img.crossOrigin = 'anonymous';
+  img.__clean = true;
+  imageCache.set(src, img);
+  return img;
+}
+
+/**
+ * Check whether the used cells of a collage can be exported.
+ * A cell is exportable only if its image was loaded cleanly via loadImage()
+ * (present in imageMap and flagged __clean). Returns { ok, badUrls } where
+ * badUrls lists { url, host, cellIndex } (1-based) for every bad used cell.
+ * Use before canvasToBlob()/downloadCanvas() so the user gets a clear
+ * message naming the culprit instead of a raw "Tainted canvases" throw.
+ */
+export function checkCollageExportable(cellStates = [], imageMap = new Map()) {
+  const badUrls = [];
+  (cellStates || []).forEach((cellState, index) => {
+    const url = cellState?.url;
+    if (!url) return;
+    const img = imageMap?.get(url);
+    if (!img || !img.__clean || !img.complete || img.naturalWidth <= 0) {
+      badUrls.push({ url, host: getImageHost(url), cellIndex: index + 1 });
     }
-    img.onload = () => {
-      imageCache.set(src, img);
-      resolve(img);
-    };
-    img.onerror = () => {
-      // Retry without anonymous in case server prohibits CORS but allows canvas drawing
-      if (img.crossOrigin) {
-        const retryImg = new window.Image();
-        retryImg.onload = () => {
-          imageCache.set(src, retryImg);
-          resolve(retryImg);
-        };
-        retryImg.onerror = (err) => reject(err);
-        retryImg.src = src;
-      } else {
-        reject(new Error('无法加载图片: ' + src));
-      }
-    };
-    img.src = src;
   });
+  return { ok: badUrls.length === 0, badUrls };
+}
+
+export function collageExportErrorMessage(badUrls = []) {
+  if (!badUrls.length) return '图片导出失败：画布包含不支持跨域导出的图片，请先下载到本地再上传，或换一张图';
+  const parts = badUrls.map(({ host, cellIndex }) => `拼块 #${cellIndex}（${host}）`);
+  return `无法导出：${parts.join('、')} 不支持跨域导出，请先下载到本地再上传，或换一张图`;
 }
 
 /**
@@ -498,15 +593,27 @@ export function renderCollageToCanvas(canvas, config, imageMap = new Map()) {
 }
 
 /**
- * Export canvas to PNG Blob
+ * Export canvas to PNG Blob.
+ * A tainted canvas throws synchronously from toBlob(); translate that into
+ * the same friendly message the export guard uses, instead of the raw
+ * "Tainted canvases may not be exported" error.
  */
 export function canvasToBlob(canvas) {
   return new Promise((resolve, reject) => {
     if (!canvas) return reject(new Error('Canvas 不存在'));
-    canvas.toBlob((blob) => {
-      if (blob) resolve(blob);
-      else reject(new Error('生成图片失败'));
-    }, 'image/png', 0.96);
+    try {
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error('图片导出失败：画布包含不支持跨域导出的图片，请先下载到本地再上传，或换一张图'));
+      }, 'image/png', 0.96);
+    } catch (err) {
+      const msg = String(err?.message || '');
+      if (err?.name === 'SecurityError' || /taint/i.test(msg)) {
+        reject(new Error('图片导出失败：画布包含不支持跨域导出的图片，请先下载到本地再上传，或换一张图'));
+      } else {
+        reject(err);
+      }
+    }
   });
 }
 
@@ -516,7 +623,15 @@ export function canvasToBlob(canvas) {
 export function downloadCanvas(canvas, filename = 'cover-collage.png') {
   const link = document.createElement('a');
   link.download = filename;
-  link.href = canvas.toDataURL('image/png', 0.96);
+  try {
+    link.href = canvas.toDataURL('image/png', 0.96);
+  } catch (err) {
+    const msg = String(err?.message || '');
+    if (err?.name === 'SecurityError' || /taint/i.test(msg)) {
+      throw new Error('图片导出失败：画布包含不支持跨域导出的图片，请先下载到本地再上传，或换一张图');
+    }
+    throw err;
+  }
   link.click();
 }
 

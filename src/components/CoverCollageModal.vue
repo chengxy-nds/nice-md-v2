@@ -24,6 +24,8 @@ import {
   COLLAGE_BG_COLORS,
   extractImagesFromMarkdown,
   loadImage,
+  checkCollageExportable,
+  collageExportErrorMessage,
   computeCellGeometry,
   renderCollageToCanvas,
   canvasToBlob,
@@ -157,7 +159,19 @@ function handleAssignImageToCell(url, alt = '') {
     imageMap.set(url, img);
     triggerRender();
   }).catch(err => {
+    // The image cannot be exported (e.g. its host sends no CORS headers).
+    // Clear the cell instead of leaving a seemingly-assigned image that
+    // would poison the canvas and fail only at export time.
     logger.warn('[Collage] Image load failed:', err);
+    if (cellStates.value[index]) {
+      cellStates.value[index].url = '';
+      cellStates.value[index].alt = '';
+      cellStates.value[index].zoom = 1;
+      cellStates.value[index].panX = 0;
+      cellStates.value[index].panY = 0;
+    }
+    imageMap.delete(url);
+    emit('toast', err?.message || '该图片无法使用，请换一张图');
     triggerRender();
   });
 
@@ -230,7 +244,20 @@ function handleCropperComplete({ newUrl, alt }) {
   loadImage(newUrl).then(img => {
     imageMap.set(newUrl, img);
     triggerRender();
-  }).catch(() => {});
+  }).catch(err => {
+    logger.warn('[Collage] Cropped image load failed:', err);
+    if (cropperTargetCellIndex.value !== null && cellStates.value[cropperTargetCellIndex.value]) {
+      const idx = cropperTargetCellIndex.value;
+      cellStates.value[idx].url = '';
+      cellStates.value[idx].alt = '';
+      cellStates.value[idx].zoom = 1;
+      cellStates.value[idx].panX = 0;
+      cellStates.value[idx].panY = 0;
+    }
+    imageMap.delete(newUrl);
+    emit('toast', err?.message || '裁剪后的图片无法使用，请换一张图');
+    triggerRender();
+  });
 }
 
 function adjustZoom(delta) {
@@ -368,8 +395,18 @@ function handleCanvasWheel(e) {
 }
 
 // ── Export Actions ──
+function guardExportable() {
+  const { ok, badUrls } = checkCollageExportable(cellStates.value, imageMap);
+  return ok ? null : collageExportErrorMessage(badUrls);
+}
+
 async function handleCopyImage() {
   if (!canvasRef.value) return;
+  const blocked = guardExportable();
+  if (blocked) {
+    emit('toast', blocked);
+    return;
+  }
   isExporting.value = true;
   try {
     const blob = await canvasToBlob(canvasRef.value);
@@ -378,7 +415,8 @@ async function handleCopyImage() {
     emit('toast', '已成功复制拼图到剪贴板，可在公众号后台直接 Ctrl+V 粘贴！');
   } catch (err) {
     logger.error('[Collage] Copy failed:', err);
-    emit('toast', '复制失败，请尝试直接下载保存图片');
+    const msg = String(err?.message || '');
+    emit('toast', /跨域|污染|导出失败/.test(msg) ? msg : '复制失败，请尝试直接下载保存图片');
   } finally {
     isExporting.value = false;
   }
@@ -386,14 +424,29 @@ async function handleCopyImage() {
 
 function handleDownloadImage() {
   if (!canvasRef.value) return;
-  soundEngine.playChime();
-  const filename = `collage-cover-${Date.now()}.png`;
-  downloadCanvas(canvasRef.value, filename);
-  emit('toast', `封面拼图已保存为 ${filename}`);
+  const blocked = guardExportable();
+  if (blocked) {
+    emit('toast', blocked);
+    return;
+  }
+  try {
+    soundEngine.playChime();
+    const filename = `collage-cover-${Date.now()}.png`;
+    downloadCanvas(canvasRef.value, filename);
+    emit('toast', `封面拼图已保存为 ${filename}`);
+  } catch (err) {
+    logger.error('[Collage] Download failed:', err);
+    emit('toast', err?.message || '下载失败，请换一张图再试');
+  }
 }
 
 async function handleInsertToDoc() {
   if (!canvasRef.value) return;
+  const blocked = guardExportable();
+  if (blocked) {
+    emit('toast', blocked);
+    return;
+  }
   isUploading.value = true;
   try {
     const blob = await canvasToBlob(canvasRef.value);
