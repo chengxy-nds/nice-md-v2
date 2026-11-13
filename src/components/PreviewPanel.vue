@@ -249,9 +249,65 @@ watch(isWeChatMode, (newVal) => {
   localStorage.setItem('nicemd_wechat_mode', newVal.toString());
 });
 
-watch(() => props.themePanelVisible, (visible) => {
+// ── Right Bar Liquid Glider (Muse Motion) ──
+const rightBarRef = ref(null);
+const rightGliderRef = ref(null);
+const rightPaletteBtnRef = ref(null);
+let rightStretchTimer = null;
+
+function moveRightGliderToEl(btn, stretch = true) {
+  if (!btn || !rightGliderRef.value || !rightBarRef.value) return;
+  const barRect = rightBarRef.value.getBoundingClientRect();
+  const btnRect = btn.getBoundingClientRect();
+
+  const top = btnRect.top - barRect.top;
+  const left = btnRect.left - barRect.left;
+
+  const prevY = parseFloat(rightGliderRef.value.dataset.y || top);
+  const dist = Math.abs(top - prevY);
+  rightGliderRef.value.dataset.y = top;
+
+  const stretchY = stretch ? 1 + Math.min(dist / 500, 0.16) : 1;
+
+  rightGliderRef.value.style.width = `${btnRect.width}px`;
+  rightGliderRef.value.style.height = `${btnRect.height}px`;
+  rightGliderRef.value.style.transform = `translate(${left}px, ${top}px) scaleY(${stretchY})`;
+  rightGliderRef.value.classList.add('is-visible');
+
+  clearTimeout(rightStretchTimer);
+  if (stretchY > 1.01) {
+    rightStretchTimer = setTimeout(() => {
+      if (rightGliderRef.value) {
+        rightGliderRef.value.style.transform = `translate(${left}px, ${top}px) scaleY(1)`;
+      }
+    }, 380 * 0.55);
+  }
+}
+
+function handleRightBarHover(e) {
+  const target = e.currentTarget;
+  if (target) {
+    moveRightGliderToEl(target, true);
+  }
+}
+
+function handleRightBarMouseLeave() {
+  if (props.themePanelVisible && rightPaletteBtnRef.value) {
+    moveRightGliderToEl(rightPaletteBtnRef.value, true);
+  } else if (rightGliderRef.value) {
+    rightGliderRef.value.classList.remove('is-visible');
+  }
+}
+
+watch(() => props.themePanelVisible, async (visible) => {
   if (!visible) {
     document.querySelectorAll('.preview-active-target').forEach(el => el.classList.remove('preview-active-target'));
+    if (rightGliderRef.value) rightGliderRef.value.classList.remove('is-visible');
+  } else {
+    await nextTick();
+    if (rightPaletteBtnRef.value) {
+      moveRightGliderToEl(rightPaletteBtnRef.value, true);
+    }
   }
 });
 
@@ -523,32 +579,50 @@ onUnmounted(() => {
     </div>
 
     <!-- Theme Customizer Panel (between preview and slider) -->
-    <div v-if="themePanelVisible" class="theme-sidebar-wrapper">
-      <ThemeCustomizer
-        ref="themeCustomizerRef"
-        :modelValue="activeCustomStyles"
-        :themeId="props.themeId"
-        :codeThemeId="props.codeThemeId"
-        :open="true"
-        @update:modelValue="handleLiveStyleUpdate"
-        @update:codeThemeId="val => emit('update:codeThemeId', val)"
-        @save-custom-styles="handleSaveCustomStyles"
-        @save-theme="v => emit('save-theme', v)"
-        @save-custom-theme="v => emit('save-custom-theme', v)"
-        @close="$emit('update:themePanelVisible', false)"
-      />
-    </div>
+    <Transition name="theme-slide">
+      <div v-if="themePanelVisible" class="theme-sidebar-wrapper">
+        <ThemeCustomizer
+          ref="themeCustomizerRef"
+          :modelValue="activeCustomStyles"
+          :themeId="props.themeId"
+          :codeThemeId="props.codeThemeId"
+          :open="true"
+          @update:modelValue="handleLiveStyleUpdate"
+          @update:codeThemeId="val => emit('update:codeThemeId', val)"
+          @save-custom-styles="handleSaveCustomStyles"
+          @save-theme="v => emit('save-theme', v)"
+          @save-custom-theme="v => emit('save-custom-theme', v)"
+          @close="$emit('update:themePanelVisible', false)"
+        />
+      </div>
+    </Transition>
 
-    <!-- Preview tools -->
-    <aside class="preview-right-bar" :class="{ 'is-standalone': !previewVisible }">
+    <!-- Preview tools (Right Sidebar with Muse Glider & Micro-interactions) -->
+    <aside
+      class="preview-right-bar"
+      ref="rightBarRef"
+      :class="{ 'is-standalone': !previewVisible }"
+      data-no-tooltip="true"
+      @mouseleave="handleRightBarMouseLeave"
+    >
+      <!-- ★ 右侧栏液体滑块 ★ -->
+      <span class="right-glider" ref="rightGliderRef" aria-hidden="true"></span>
+
       <div class="bar-top">
         <button
-          class="bar-publish-btn"
+          class="bar-publish-btn right-nav-target"
           @click="$emit('open-launchpad')"
-          title="发布与多渠道分发"
+          @mouseenter="handleRightBarHover"
+          @focus="handleRightBarHover"
+          data-no-tooltip="true"
           aria-label="发布文章"
         >
-          <Send size="18" stroke-width="1.8" class="bar-publish-icon" />
+          <span class="right-btn-icon ic-plane">
+            <Send size="18" stroke-width="1.8" class="bar-publish-icon" />
+          </span>
+          <div class="right-tooltip" role="tooltip">
+            <span class="right-tooltip-label">发布与多渠道分发</span>
+          </div>
         </button>
 
         <div
@@ -559,16 +633,23 @@ onUnmounted(() => {
           @mouseleave="scheduleCloseCopyMenu"
         >
           <button
-            class="bar-action-btn copy-main-btn"
+            class="bar-action-btn copy-main-btn right-nav-target"
             :class="{ 'is-active': showCopyMenu }"
             data-no-tooltip="true"
             aria-label="复制排版内容"
             aria-haspopup="menu"
             :aria-expanded="showCopyMenu"
-            title="复制排版内容"
+            @mouseenter="handleRightBarHover"
+            @focus="handleRightBarHover"
             @click.stop="toggleCopyMenu"
           >
-            <Copy size="18" stroke-width="1.7" />
+            <span class="right-btn-icon ic-copy">
+              <Copy size="18" stroke-width="1.7" />
+            </span>
+            <div class="right-tooltip" role="tooltip">
+              <span class="right-tooltip-label">复制排版内容</span>
+              <span class="right-tooltip-shortcut">一键格式化</span>
+            </div>
           </button>
         </div>
 
@@ -576,40 +657,64 @@ onUnmounted(() => {
 
         <button
           type="button"
-          class="bar-action-btn preview-mode-toggle-btn"
+          class="bar-action-btn preview-mode-toggle-btn right-nav-target"
           :class="{ 'is-active': isWeChatMode, 'is-current-mode': !isWeChatMode }"
           :aria-pressed="isWeChatMode"
-          :aria-label="isWeChatMode ? '手机模拟预览（点击切换电脑预览）' : '电脑预览（点击切换手机预览）'"
-          :data-tooltip="isWeChatMode ? '手机模拟预览（点击切换电脑预览）' : '电脑预览（点击切换手机预览）'"
+          :aria-label="isWeChatMode ? '切换为电脑预览' : '切换为手机模拟预览'"
+          data-no-tooltip="true"
+          @mouseenter="handleRightBarHover"
+          @focus="handleRightBarHover"
           @click="isWeChatMode = !isWeChatMode"
         >
-          <Transition name="mode-icon-swap" mode="out-in">
-            <Smartphone v-if="isWeChatMode" key="mobile" size="18" stroke-width="1.7" />
-            <Monitor v-else key="desktop" size="18" stroke-width="1.7" />
-          </Transition>
+          <span class="right-btn-icon ic-device">
+            <Transition name="mode-icon-swap" mode="out-in">
+              <Smartphone v-if="isWeChatMode" key="mobile" size="18" stroke-width="1.7" />
+              <Monitor v-else key="desktop" size="18" stroke-width="1.7" />
+            </Transition>
+          </span>
+          <div class="right-tooltip" role="tooltip">
+            <span class="right-tooltip-label">{{ isWeChatMode ? '切换为电脑预览' : '切换为手机模拟预览' }}</span>
+          </div>
         </button>
 
         <button
-          class="bar-action-btn"
+          class="bar-action-btn right-nav-target"
           :class="{ 'is-active': previewVisible }"
           :aria-pressed="previewVisible"
+          data-no-tooltip="true"
+          @mouseenter="handleRightBarHover"
+          @focus="handleRightBarHover"
           @click="$emit('togglePreview')"
-          :title="previewVisible ? '隐藏预览区' : '显示预览区'"
+          :aria-label="previewVisible ? '隐藏预览区' : '显示预览区'"
         >
-          <Eye v-if="previewVisible" size="18" stroke-width="1.7" />
-          <EyeOff v-else size="18" stroke-width="1.7" />
+          <span class="right-btn-icon ic-eye">
+            <Eye v-if="previewVisible" size="18" stroke-width="1.7" />
+            <EyeOff v-else size="18" stroke-width="1.7" />
+          </span>
+          <div class="right-tooltip" role="tooltip">
+            <span class="right-tooltip-label">{{ previewVisible ? '隐藏预览区' : '显示预览区' }}</span>
+          </div>
         </button>
       </div>
 
       <div class="bar-bottom">
         <button
-          class="bar-action-btn"
+          ref="rightPaletteBtnRef"
+          class="bar-action-btn right-nav-target"
           :class="{ 'is-active': themePanelVisible }"
           :aria-pressed="themePanelVisible"
+          data-no-tooltip="true"
+          @mouseenter="handleRightBarHover"
+          @focus="handleRightBarHover"
           @click="$emit('update:themePanelVisible', !themePanelVisible)"
-          title="自定义主题"
+          aria-label="自定义主题"
         >
-          <Palette size="18" stroke-width="1.7" />
+          <span class="right-btn-icon ic-theme">
+            <Palette size="18" stroke-width="1.7" />
+          </span>
+          <div class="right-tooltip" role="tooltip">
+            <span class="right-tooltip-label">自定义主题与排版</span>
+          </div>
         </button>
       </div>
     </aside>
@@ -718,6 +823,18 @@ onUnmounted(() => {
   transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
+/* 抽屉平滑滑入动效 (Muse Ease Glide Drawer) */
+.theme-slide-enter-active,
+.theme-slide-leave-active {
+  transition: transform 0.42s var(--ease-glide), opacity 0.3s ease;
+}
+
+.theme-slide-enter-from,
+.theme-slide-leave-to {
+  transform: translateX(100%);
+  opacity: 0;
+}
+
 .preview-header {
   display: flex;
   justify-content: space-between;
@@ -742,20 +859,26 @@ onUnmounted(() => {
   font-family: var(--font-sans);
 }
 
-/* Right-side slider / bar styling — independent, pinned to the right edge, matching left sidebar */
+/* ── 右侧侧边栏 (Right Navigation Bar with Muse Glider) ── */
 .preview-right-bar {
-  width: 48px;
+  width: 50px;
   flex-shrink: 0;
-  background: var(--bg-rail, #F8FAFC);
-  border-left: 1px solid var(--border-subtle, #EDF1F7);
+  background: var(--bg-card, #FFFFFF);
+  border-left: 1px solid var(--border-subtle, #EDEDF0);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   align-items: center;
-  padding: 12px 0;
+  padding: 12px 0 14px;
   box-sizing: border-box;
-  z-index: 7;
-  transition: background 0.3s ease, border-color 0.3s ease;
+  z-index: 70;
+  position: relative;
+  transition: background 0.25s ease, border-color 0.25s ease;
+}
+
+html.dark .preview-right-bar {
+  background: var(--bg-rail, #18181B);
+  border-left-color: var(--border-subtle, #27272A);
 }
 
 .bar-top,
@@ -763,8 +886,38 @@ onUnmounted(() => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 7px;
+  gap: 10px;
   width: 100%;
+  position: relative;
+  z-index: 2;
+}
+
+/* ★ 右侧栏液体滑块 (Right Liquid Glider) ★ */
+.right-glider {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: #ECEFF2;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 1;
+  transition: transform 380ms var(--ease-glide),
+              width 300ms var(--ease-glide),
+              height 300ms var(--ease-glide),
+              border-radius 300ms var(--ease-glide),
+              opacity 200ms ease;
+  will-change: transform;
+}
+
+.right-glider.is-visible {
+  opacity: 1;
+}
+
+html.dark .right-glider {
+  background: rgba(255, 255, 255, 0.12);
 }
 
 .mode-icon-swap-enter-active,
@@ -782,94 +935,185 @@ onUnmounted(() => {
   width: 22px;
   height: 1px;
   flex: none;
-  background: var(--border-subtle, #EDF1F7);
+  background: var(--border-color, #E2E8F0);
   margin: 2px 0;
+  opacity: 0.8;
+  border-radius: 1px;
+}
+
+html.dark .bar-divider {
+  background: rgba(255, 255, 255, 0.12);
+}
+
+/* 按钮通用原型（圆形几何、透明底、滑块供给背景） */
+.bar-publish-btn,
+.bar-action-btn {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #555770);
+  cursor: pointer;
+  padding: 0;
+  z-index: 2;
+  outline: none;
+  transition: color 0.2s ease, transform 0.12s;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .bar-publish-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  border: 1px solid rgba(17, 106, 204, 0.1);
-  background: rgba(17, 106, 204, 0.09);
   color: var(--brand-primary, #116ACC);
-  cursor: pointer;
-  padding: 0;
-  box-shadow: none;
-  box-sizing: border-box;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
 }
 
-.bar-publish-btn:hover {
-  background: rgba(17, 106, 204, 0.15);
-  border-color: rgba(17, 106, 204, 0.18);
-}
-
-.bar-publish-btn:active {
-  background: rgba(17, 106, 204, 0.2);
-}
-
-.bar-publish-icon {
-  transform: none;
-}
-
-.bar-action-btn {
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 8px;
-  background: transparent;
-  border: 1px solid transparent;
-  color: var(--text-muted, #64748b);
-  cursor: pointer;
-  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
-  padding: 0;
-  position: relative;
-  box-sizing: border-box;
-}
-
+.bar-publish-btn:hover,
 .bar-action-btn:hover {
-  color: var(--brand-primary, #116ACC);
-  border-color: rgba(17, 106, 204, 0.1);
-  background: rgba(17, 106, 204, 0.06);
+  color: var(--text-main, #0F172A);
 }
 
+html.dark .bar-publish-btn:hover,
 html.dark .bar-action-btn:hover {
-  background: rgba(96, 165, 250, 0.1);
-  color: #93c5fd;
+  color: #FFFFFF;
 }
 
+/* 按下回弹 (Press Bounce) */
+.bar-publish-btn:active,
 .bar-action-btn:active {
-  transform: scale(0.96);
+  transform: scale(0.93);
 }
 
 .bar-action-btn.is-active {
-  color: var(--brand-primary, #116ACC);
-  border-color: rgba(17, 106, 204, 0.1);
-  background: rgba(17, 106, 204, 0.09);
-  box-shadow: none;
-}
-
-.bar-action-btn.is-current-mode {
-  color: var(--brand-primary, #116ACC);
-  border-color: rgba(17, 106, 204, 0.1);
-  background: rgba(17, 106, 204, 0.09);
-}
-
-.bar-action-btn:focus-visible,
-.bar-publish-btn:focus-visible {
-  outline: 2px solid rgba(17, 106, 204, 0.5);
-  outline-offset: 2px;
+  color: var(--text-main, #0F172A);
 }
 
 html.dark .bar-action-btn.is-active {
-  color: #93c5fd;
-  background: rgba(96, 165, 250, 0.15);
+  color: #FFFFFF;
+}
+
+/* ── 右侧图标微动效 (Icon Micro-motions) ── */
+.right-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  will-change: transform;
+}
+
+/* 发布图标：纸飞机航行起飞 */
+@keyframes planeFly {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  35% { transform: translate(3px, -3px) rotate(-14deg); }
+  70% { transform: translate(-1px, 1px) rotate(4deg); }
+}
+
+.bar-publish-btn:hover .ic-plane {
+  animation: planeFly 0.65s var(--ease-out);
+}
+
+/* 复制图标：副本轻弹 */
+@keyframes copyBounce {
+  0%, 100% { transform: scale(1, 1); }
+  35% { transform: scale(1.18, 0.88); }
+  65% { transform: scale(0.95, 1.06); }
+  85% { transform: scale(1.04, 0.98); }
+}
+
+.bar-action-btn:hover .ic-copy {
+  animation: copyBounce 0.55s var(--ease-out);
+}
+
+/* 手机/电脑图标：3D 微侧向翻动 */
+@keyframes deviceWiggle {
+  0%, 100% { transform: rotate(0deg) scale(1, 1); }
+  30% { transform: rotate(-12deg) scale(1.12); }
+  60% { transform: rotate(10deg) scale(1.04); }
+}
+
+.bar-action-btn:hover .ic-device {
+  animation: deviceWiggle 0.6s var(--ease-out);
+}
+
+/* 预览显隐图标：眨眼动效 */
+@keyframes eyeWink {
+  0%, 86%, 100% { transform: scaleY(1); }
+  92% { transform: scaleY(0.12); }
+}
+
+.bar-action-btn:hover .ic-eye {
+  animation: eyeWink 1.8s ease-in-out infinite;
+}
+
+/* 主题调色板：画板轻微摇摆 */
+@keyframes paletteWiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-14deg); }
+  50% { transform: rotate(10deg); }
+  75% { transform: rotate(-5deg); }
+}
+
+.bar-action-btn:hover .ic-theme {
+  animation: paletteWiggle 0.75s ease-in-out;
+  transform-origin: 50% 15%;
+}
+
+/* ── ★ 右侧 Tooltip 弹簧弹出 (Spring Tooltip pointing Left) ── */
+.right-tooltip {
+  position: absolute;
+  right: calc(100% + 14px);
+  top: 50%;
+  transform: translateY(-50%) translateX(8px) scale(0.92);
+  background: var(--bg-card, #FFFFFF);
+  color: var(--text-main, #1F2937);
+  font-family: var(--font-sans);
+  font-size: 13.5px;
+  font-weight: 500;
+  line-height: 1.35;
+  padding: 8px 13px;
+  border-radius: 9px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 4px rgba(0, 0, 0, 0.06);
+  border: 1px solid var(--border-subtle, #EDEDF0);
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease 60ms, transform 0.3s var(--ease-spring) 60ms;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.right-nav-target:hover .right-tooltip,
+.right-nav-target:focus-visible .right-tooltip {
+  opacity: 1;
+  transform: translateY(-50%) translateX(0) scale(1);
+}
+
+html.dark .right-tooltip {
+  background: #242429;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #F3F4F6;
+  box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.5), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
+}
+
+.right-tooltip-label {
+  font-weight: 500;
+}
+
+.right-tooltip-shortcut {
+  font-family: var(--font-mono, monospace);
+  font-size: 11.5px;
+  font-weight: 400;
+  color: #6B7280;
+  letter-spacing: -0.2px;
+}
+
+html.dark .right-tooltip-shortcut {
+  color: #9CA3AF;
 }
 
 .slider-trigger-container {

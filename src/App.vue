@@ -2167,36 +2167,39 @@ watch(customStyles, () => {
           <!-- Sidebar Backdrop on Mobile -->
           <div v-if="mobileSidebarOpen" class="sidebar-backdrop" @click="mobileSidebarOpen = false"></div>
 
-          <Sidebar
-            ref="sidebarRef"
-            :class="{ 'mobile-drawer-open': mobileSidebarOpen }"
-            v-if="(sidebarVisible || mobileSidebarOpen) && currentView === 'editor'"
-            :documents="documents"
-            :groups="groups"
-            :activeDocId="activeDocId"
-            :currentView="currentView"
-            :isCloudSyncing="isSidebarSyncing"
-            @select-doc="(id) => { handleSelectDoc(id); currentView = 'editor'; mobileSidebarOpen = false; }"
-            @create-doc="(groupId) => { handleCreateDoc(groupId); currentView = 'editor'; }"
-            @open-templates="currentView = 'templates'"
-            @open-materials="currentView = 'materials'"
-            @open-doc-history="openDocHistory"
-            @rename-doc="handleRenameDoc"
-            @delete-doc="handleDeleteDoc"
-            @restore-doc="handleRestoreDoc"
-            @permanent-delete-doc="handlePermanentDeleteDoc"
-            @empty-recycle-bin="handleEmptyRecycleBin"
-            @create-group="handleCreateGroup"
-            @rename-group="handleRenameGroup"
-            @delete-group="handleDeleteGroup"
-            @move-doc="handleMoveDoc"
-            @reorder-docs="handleReorderDocs"
-            @reorder-groups="handleReorderGroups"
-            @duplicate-doc="handleDuplicateDoc"
-            @toggle-pin="handleTogglePinDoc"
-            @cloud-sync-action="handleSidebarCloudSync"
-            @open-cloud-settings="openSettings('cloud')"
-          />
+          <!-- 左侧抽屉平滑滑入/滑出过渡 (Muse Glide Transition) -->
+          <Transition name="sidebar-slide">
+            <Sidebar
+              ref="sidebarRef"
+              :class="{ 'mobile-drawer-open': mobileSidebarOpen }"
+              v-if="(sidebarVisible || mobileSidebarOpen) && currentView === 'editor'"
+              :documents="documents"
+              :groups="groups"
+              :activeDocId="activeDocId"
+              :currentView="currentView"
+              :isCloudSyncing="isSidebarSyncing"
+              @select-doc="(id) => { handleSelectDoc(id); currentView = 'editor'; mobileSidebarOpen = false; }"
+              @create-doc="(groupId) => { handleCreateDoc(groupId); currentView = 'editor'; }"
+              @open-templates="currentView = 'templates'"
+              @open-materials="currentView = 'materials'"
+              @open-doc-history="openDocHistory"
+              @rename-doc="handleRenameDoc"
+              @delete-doc="handleDeleteDoc"
+              @restore-doc="handleRestoreDoc"
+              @permanent-delete-doc="handlePermanentDeleteDoc"
+              @empty-recycle-bin="handleEmptyRecycleBin"
+              @create-group="handleCreateGroup"
+              @rename-group="handleRenameGroup"
+              @delete-group="handleDeleteGroup"
+              @move-doc="handleMoveDoc"
+              @reorder-docs="handleReorderDocs"
+              @reorder-groups="handleReorderGroups"
+              @duplicate-doc="handleDuplicateDoc"
+              @toggle-pin="handleTogglePinDoc"
+              @cloud-sync-action="handleSidebarCloudSync"
+              @open-cloud-settings="openSettings('cloud')"
+            />
+          </Transition>
 
           <!-- 1. 模板中心 -->
           <TemplateCenter
@@ -3035,6 +3038,21 @@ html.dark .wandor-wordmark {
   gap: 0;
 }
 
+/* ── 左侧文档侧边栏平滑展开/折叠过渡 (Muse Ease-Glide) ── */
+.sidebar-slide-enter-active,
+.sidebar-slide-leave-active {
+  transition: transform 0.36s var(--ease-glide),
+              opacity 0.22s ease,
+              margin-left 0.36s var(--ease-glide);
+}
+
+.sidebar-slide-enter-from,
+.sidebar-slide-leave-to {
+  transform: translateX(-14px);
+  opacity: 0;
+  margin-left: -320px;
+}
+
 .workspace-grid {
   position: relative;
   flex: 1;
@@ -3482,7 +3500,7 @@ html.dark .empty-tabs-title {
   flex: 1;
 }
 
-.btn-icon {
+.workspace-toolbar .btn-icon {
   background: transparent;
   border: 1px solid transparent;
   color: var(--text-muted, #64748B);
@@ -3496,30 +3514,30 @@ html.dark .empty-tabs-title {
   transition: all 0.15s ease;
 }
 
-.btn-icon:hover {
+.workspace-toolbar .btn-icon:hover {
   color: var(--text-main, #0F172A);
   background: var(--bg-card, #FFFFFF);
   border-color: var(--border-color, #E2E8F0);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
 }
 
-.btn-icon.is-active {
+.workspace-toolbar .btn-icon.is-active {
   color: var(--brand-primary, #116ACC);
   background: var(--brand-primary-subtle, rgba(17, 106, 204, 0.08));
   border-color: rgba(17, 106, 204, 0.2);
 }
 
-.btn-icon.is-copied {
+.workspace-toolbar .btn-icon.is-copied {
   color: #16a34a;
   background: rgba(22, 163, 74, 0.1);
   border-color: rgba(22, 163, 74, 0.25);
 }
 
-.btn-icon.btn-danger {
+.workspace-toolbar .btn-icon.btn-danger {
   color: var(--text-muted, #64748B);
 }
 
-.btn-icon.btn-danger:hover {
+.workspace-toolbar .btn-icon.btn-danger:hover {
   background: rgba(239, 68, 68, 0.08);
   border-color: rgba(239, 68, 68, 0.2);
   color: #dc2626;

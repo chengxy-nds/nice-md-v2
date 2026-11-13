@@ -218,8 +218,10 @@ function startDrag(action, e) {
   dragStartMouse = { x: e.clientX, y: e.clientY };
   dragStartBox = { ...cropBox.value };
 
-  window.addEventListener('mousemove', onMouseMove);
-  window.addEventListener('mouseup', onMouseUp);
+  e.currentTarget?.setPointerCapture?.(e.pointerId);
+  window.addEventListener('pointermove', onMouseMove);
+  window.addEventListener('pointerup', onMouseUp);
+  window.addEventListener('pointercancel', onMouseUp);
 }
 
 function onMouseMove(e) {
@@ -289,8 +291,9 @@ function onMouseMove(e) {
 
 function onMouseUp() {
   dragAction = null;
-  window.removeEventListener('mousemove', onMouseMove);
-  window.removeEventListener('mouseup', onMouseUp);
+  window.removeEventListener('pointermove', onMouseMove);
+  window.removeEventListener('pointerup', onMouseUp);
+  window.removeEventListener('pointercancel', onMouseUp);
 }
 
 // ── Export Canvas Generation ──
@@ -446,11 +449,10 @@ onUnmounted(() => {
               </div>
               <div class="header-title-box">
                 <div class="header-title">
-                  <span>图片精细裁剪与微调</span>
-                  <span class="header-badge">{{ cropPixelDimensions.width }} × {{ cropPixelDimensions.height }} px</span>
+                  <span>图片裁剪</span>
                 </div>
                 <div class="header-subtitle">
-                  拖拽四角或边缘自由取景，支持常用平台规范比例与旋转，可直接替换正文原图
+                  拖动取景 · 调整比例、旋转与翻转
                 </div>
               </div>
             </div>
@@ -480,11 +482,11 @@ onUnmounted(() => {
             <div class="transform-actions">
               <button class="btn-transform" @click="rotateClockwise" title="顺时针旋转 90°">
                 <RotateCw size="14" />
-                <span>旋转 90°</span>
+                <span>旋转</span>
               </button>
               <button class="btn-transform" :class="{ 'is-active': flipH }" @click="toggleFlipHorizontal" title="水平翻转">
                 <FlipHorizontal size="14" />
-                <span>水平翻转</span>
+                <span>翻转</span>
               </button>
               <button class="btn-transform" @click="resetAll" title="重置全部变换与裁剪框">
                 <RotateCcw size="14" />
@@ -543,7 +545,7 @@ onUnmounted(() => {
                     width: `${cropBox.width * 100}%`,
                     height: `${cropBox.height * 100}%`
                   }"
-                  @mousedown="startDrag('move', $event)"
+                  @pointerdown="startDrag('move', $event)"
                 >
                   <!-- Rule of Thirds Grid Lines -->
                   <div class="grid-line line-h1"></div>
@@ -552,14 +554,14 @@ onUnmounted(() => {
                   <div class="grid-line line-v2"></div>
 
                   <!-- 8 Anchor Drag Handles -->
-                  <div class="crop-handle handle-nw" @mousedown="startDrag('nw', $event)"></div>
-                  <div class="crop-handle handle-n" @mousedown="startDrag('n', $event)"></div>
-                  <div class="crop-handle handle-ne" @mousedown="startDrag('ne', $event)"></div>
-                  <div class="crop-handle handle-e" @mousedown="startDrag('e', $event)"></div>
-                  <div class="crop-handle handle-se" @mousedown="startDrag('se', $event)"></div>
-                  <div class="crop-handle handle-s" @mousedown="startDrag('s', $event)"></div>
-                  <div class="crop-handle handle-sw" @mousedown="startDrag('sw', $event)"></div>
-                  <div class="crop-handle handle-w" @mousedown="startDrag('w', $event)"></div>
+                  <div class="crop-handle handle-nw" @pointerdown="startDrag('nw', $event)"></div>
+                  <div class="crop-handle handle-n" @pointerdown="startDrag('n', $event)"></div>
+                  <div class="crop-handle handle-ne" @pointerdown="startDrag('ne', $event)"></div>
+                  <div class="crop-handle handle-e" @pointerdown="startDrag('e', $event)"></div>
+                  <div class="crop-handle handle-se" @pointerdown="startDrag('se', $event)"></div>
+                  <div class="crop-handle handle-s" @pointerdown="startDrag('s', $event)"></div>
+                  <div class="crop-handle handle-sw" @pointerdown="startDrag('sw', $event)"></div>
+                  <div class="crop-handle handle-w" @pointerdown="startDrag('w', $event)"></div>
 
                   <!-- Floating Size Tooltip Badge -->
                   <div class="crop-size-badge">
@@ -619,22 +621,27 @@ onUnmounted(() => {
   position: fixed;
   inset: 0;
   z-index: 10000;
-  background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: rgba(15, 23, 42, 0.34);
+  backdrop-filter: blur(14px) saturate(115%);
+  -webkit-backdrop-filter: blur(14px) saturate(115%);
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding: clamp(8px, 2vw, 24px);
 }
 
 .cropper-modal-container {
-  width: min(1040px, 94vw);
-  height: min(760px, 92vh);
-  background: var(--bg-card, #FFFFFF);
+  width: min(1280px, 100%);
+  height: min(820px, calc(100vh - 32px));
+  height: min(820px, calc(100dvh - 32px));
+  min-width: 0;
+  min-height: 0;
+  background: rgba(246, 249, 253, 0.76);
+  -webkit-backdrop-filter: blur(28px) saturate(145%);
+  backdrop-filter: blur(28px) saturate(145%);
   border-radius: 16px;
   box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.35);
-  border: 1px solid var(--border-color, #E2E8F0);
+  border: 1px solid rgba(255, 255, 255, 0.72);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -642,12 +649,13 @@ onUnmounted(() => {
 
 /* ── Header ── */
 .cropper-header {
-  height: 60px;
-  padding: 0 20px;
+  min-height: 64px;
+  padding: 10px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--border-subtle, #EDF1F7);
+  border-bottom: 1px solid rgba(203, 213, 225, 0.52);
+  background: rgba(255, 255, 255, 0.34);
   flex-shrink: 0;
 }
 
@@ -655,6 +663,7 @@ onUnmounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+  min-width: 0;
 }
 
 .header-icon-box {
@@ -671,6 +680,7 @@ onUnmounted(() => {
 .header-title-box {
   display: flex;
   flex-direction: column;
+  min-width: 0;
 }
 
 .header-title {
@@ -696,6 +706,9 @@ onUnmounted(() => {
   font-size: 12px;
   color: var(--text-muted, #64748B);
   margin-top: 1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .btn-close {
@@ -719,21 +732,28 @@ onUnmounted(() => {
 
 /* ── Toolbar ── */
 .cropper-toolbar {
-  height: 48px;
-  padding: 0 20px;
+  min-height: 48px;
+  padding: 6px 20px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  border-bottom: 1px solid var(--border-subtle, #EDF1F7);
-  background: var(--bg-sidebar, #F8FAFC);
+  border-bottom: 1px solid rgba(203, 213, 225, 0.5);
+  background: rgba(235, 242, 250, 0.46);
   flex-shrink: 0;
 }
 
 .ratio-pills {
+  min-width: 0;
+  flex: 1;
   display: flex;
   align-items: center;
   gap: 4px;
   overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.ratio-pills::-webkit-scrollbar {
+  display: none;
 }
 
 .ratio-pill-btn {
@@ -756,7 +776,7 @@ onUnmounted(() => {
 }
 
 .ratio-pill-btn.is-active {
-  background: var(--bg-card, #FFFFFF);
+  background: rgba(255, 255, 255, 0.78);
   border-color: var(--brand-primary, #116ACC);
   color: var(--brand-primary, #116ACC);
   font-weight: 600;
@@ -771,6 +791,7 @@ onUnmounted(() => {
 }
 
 .transform-actions {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -781,7 +802,7 @@ onUnmounted(() => {
   padding: 0 9px;
   border-radius: 6px;
   border: 1px solid var(--border-color, #E2E8F0);
-  background: var(--bg-card, #FFFFFF);
+  background: rgba(255, 255, 255, 0.58);
   color: var(--text-main, #0F172A);
   font-size: 11.5px;
   font-weight: 500;
@@ -805,13 +826,14 @@ onUnmounted(() => {
 
 /* ── Cropper Stage ── */
 .cropper-stage {
-  flex: 1;
-  background: #0B0F17;
+  flex: 1 1 0;
+  min-height: 0;
+  background: #111720;
   background-image:
-    radial-gradient(circle at 50% 50%, rgba(30, 41, 59, 0.5) 0%, transparent 85%),
-    linear-gradient(#1E293B 1px, transparent 1px),
-    linear-gradient(90deg, #1E293B 1px, transparent 1px);
-  background-size: 100% 100%, 20px 20px, 20px 20px;
+    radial-gradient(circle at 50% 50%, rgba(30, 41, 59, 0.2) 0%, transparent 85%),
+    linear-gradient(rgba(148, 163, 184, 0.075) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.075) 1px, transparent 1px);
+  background-size: 100% 100%, 24px 24px, 24px 24px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -824,6 +846,8 @@ onUnmounted(() => {
 .stage-canvas-box {
   position: relative;
   display: inline-flex;
+  max-width: 100%;
+  max-height: 100%;
   align-items: center;
   justify-content: center;
   border-radius: 4px;
@@ -833,8 +857,8 @@ onUnmounted(() => {
 
 .stage-preview-canvas {
   display: block;
-  max-width: min(760px, 72vw);
-  max-height: min(480px, 60vh);
+  max-width: min(900px, 100%);
+  max-height: min(600px, calc(100dvh - 280px));
   width: auto;
   height: auto;
   border-radius: 2px;
@@ -862,9 +886,10 @@ onUnmounted(() => {
   position: absolute;
   box-sizing: border-box;
   border: 1.5px solid #3B82F6;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 20px rgba(59, 130, 246, 0.35);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 8px rgba(59, 130, 246, 0.16);
   cursor: move;
   pointer-events: auto;
+  touch-action: none;
 }
 
 /* Rule of Thirds Grid Lines */
@@ -886,6 +911,7 @@ onUnmounted(() => {
   border: 2px solid #2563EB;
   border-radius: 2px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  touch-action: none;
 }
 
 .handle-nw { top: -6px; left: -6px; width: 12px; height: 12px; cursor: nwse-resize; }
@@ -1016,6 +1042,157 @@ onUnmounted(() => {
   transform: none;
 }
 
+@media (max-width: 720px) {
+  .cropper-backdrop {
+    padding: 0;
+  }
+
+  .cropper-modal-container {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .cropper-header {
+    min-height: 56px;
+    padding: 8px 12px;
+  }
+
+  .header-icon-box {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+  }
+
+  .header-left {
+    gap: 9px;
+  }
+
+  .header-title {
+    font-size: 14px;
+  }
+
+  .header-subtitle {
+    max-width: calc(100vw - 88px);
+    font-size: 10.5px;
+  }
+
+  .cropper-toolbar {
+    min-height: 0;
+    padding: 6px 10px;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+
+  .ratio-pills {
+    flex: 1 1 100%;
+    order: 1;
+  }
+
+  .ratio-pill-btn {
+    height: 27px;
+    padding: 0 9px;
+    font-size: 11px;
+  }
+
+  .toolbar-sep {
+    display: none;
+  }
+
+  .transform-actions {
+    flex: 1 1 100%;
+    order: 2;
+    justify-content: flex-end;
+  }
+
+  .btn-transform {
+    height: 30px;
+  }
+
+  .cropper-stage {
+    min-height: clamp(120px, 28vh, 220px);
+    padding: 10px;
+  }
+
+  .stage-preview-canvas {
+    max-width: calc(100vw - 20px);
+    max-height: calc(100dvh - 300px);
+  }
+
+  .cropper-footer {
+    min-height: 0;
+    padding: 9px 12px max(10px, env(safe-area-inset-bottom));
+    align-items: stretch;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .footer-meta {
+    flex-wrap: wrap;
+    gap: 4px;
+    font-size: 11px;
+  }
+
+  .footer-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .btn-footer-secondary,
+  .btn-footer-primary {
+    min-width: 0;
+    height: 38px;
+    justify-content: center;
+    padding: 0 8px;
+    font-size: 11.5px;
+    white-space: nowrap;
+  }
+
+  .btn-footer-primary {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 420px) {
+  .header-subtitle {
+    display: none;
+  }
+
+  .transform-actions {
+    gap: 5px;
+  }
+
+  .btn-transform {
+    flex: 1;
+    justify-content: center;
+    padding: 0 6px;
+    font-size: 10.5px;
+  }
+
+  .crop-size-badge {
+    right: 5px;
+    bottom: 5px;
+    font-size: 9px;
+  }
+}
+
+@media (max-height: 640px) and (min-width: 721px) {
+  .cropper-modal-container {
+    height: calc(100dvh - 16px);
+  }
+
+  .cropper-stage {
+    padding: 10px 16px;
+  }
+
+  .stage-preview-canvas {
+    max-height: calc(100dvh - 210px);
+  }
+}
+
 /* ── Transitions & Dark Mode ── */
 .cropper-modal-fade-enter-active,
 .cropper-modal-fade-leave-active {
@@ -1027,22 +1204,22 @@ onUnmounted(() => {
 }
 
 html.dark .cropper-modal-container {
-  background: #111827;
-  border-color: #374151;
+  background: rgba(15, 23, 42, 0.78);
+  border-color: rgba(148, 163, 184, 0.22);
 }
 
 html.dark .cropper-header,
 html.dark .cropper-toolbar,
 html.dark .cropper-footer {
-  background: #111827;
-  border-color: #1F2937;
+  background: rgba(15, 23, 42, 0.4);
+  border-color: rgba(148, 163, 184, 0.15);
 }
 
 html.dark .ratio-pill-btn.is-active,
 html.dark .btn-transform,
 html.dark .btn-footer-secondary {
-  background: #1F2937;
-  border-color: #374151;
+  background: rgba(30, 41, 59, 0.58);
+  border-color: rgba(148, 163, 184, 0.2);
   color: #F9FAFB;
 }
 </style>

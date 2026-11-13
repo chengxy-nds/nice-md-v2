@@ -803,7 +803,7 @@ function resetSidebarWidth() {
         </button>
         <button
           v-if="groups.length > 0"
-          class="icon-btn"
+          class="sidebar-toolbar-btn"
           :class="{ 'is-active': areAllGroupsExpanded }"
           @click="toggleAllGroups"
           :title="areAllGroupsExpanded ? '折叠全部文件夹' : '展开全部文件夹'"
@@ -817,7 +817,7 @@ function resetSidebarWidth() {
           </Transition>
         </button>
         <button
-          class="icon-btn"
+          class="sidebar-toolbar-btn"
           :class="{ 'is-active': sortBy !== 'manual' }"
           @click="toggleSorting"
           :title="sortBy === 'manual' ? '启用按修改时间排序' : '取消排序，恢复手动顺序'"
@@ -826,7 +826,7 @@ function resetSidebarWidth() {
         >
           <ArrowUpDown size="15" stroke-width="2" />
         </button>
-        <button class="icon-btn" @click="handleCreateGroupClick" title="新建文件夹" aria-label="新建文件夹">
+        <button class="sidebar-toolbar-btn" @click="handleCreateGroupClick" title="新建文件夹" aria-label="新建文件夹">
           <FolderPlus size="16" stroke-width="2" />
         </button>
       </div>
@@ -1209,7 +1209,20 @@ html.dark .sidebar-container {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.12s;
+}
+
+.create-action svg {
+  transition: transform 0.45s var(--ease-spring);
+  transform-origin: center;
+}
+
+.create-action:hover svg {
+  transform: rotate(90deg);
+}
+
+.create-action:active {
+  transform: scale(0.93);
 }
 
 .create-action:hover {
@@ -1530,6 +1543,7 @@ html.dark .sync-channel-name {
   color: #94a3b8;
 }
 
+.sidebar-toolbar-btn,
 .icon-btn {
   width: 30px;
   height: 30px;
@@ -1541,16 +1555,18 @@ html.dark .sync-channel-name {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition: background 0.2s ease, color 0.2s ease, transform 0.12s;
 }
 
+.sidebar-toolbar-btn:hover,
 .icon-btn:hover {
   background: #f0f5fb;
   color: #2678e8;
 }
 
+.sidebar-toolbar-btn:active,
 .icon-btn:active {
-  transform: scale(0.94);
+  transform: scale(0.93);
 }
 
 .toggle-icon-swap-enter-active,
@@ -1568,26 +1584,31 @@ html.dark .sync-channel-name {
   transform: scale(0.8);
 }
 
+.sidebar-toolbar-btn.is-active,
 .icon-btn.is-active {
   background: #edf5ff;
   color: #2678e8;
 }
 
+.sidebar-toolbar-btn:disabled,
 .icon-btn:disabled {
   opacity: 0.45;
   cursor: not-allowed;
 }
 
+.sidebar-toolbar-btn:disabled:hover,
 .icon-btn:disabled:hover {
   background: transparent;
   color: #71839d;
 }
 
+html.dark .sidebar-toolbar-btn:hover,
 html.dark .icon-btn:hover {
   background: rgba(255, 255, 255, 0.08);
   color: #60a5fa;
 }
 
+html.dark .sidebar-toolbar-btn.is-active,
 html.dark .icon-btn.is-active {
   background: rgba(59, 130, 246, 0.14);
   color: #60a5fa;
@@ -1780,21 +1801,32 @@ html.dark .create-group-input {
   color: #1e293b;
   border-radius: 10px;
   cursor: pointer;
-  transition: 0.15s background;
+  transition: background 0.2s var(--ease-glide), transform 0.2s var(--ease-glide);
   background: transparent;
   user-select: none;
   box-sizing: border-box;
 }
 
+.folder-row:hover {
+  background: #f5f8fc;
+  transform: translateX(1.5px);
+}
+
+.folder-row:active {
+  transform: scale(0.985);
+}
+
 .folder-row:focus-visible,
 .trash:focus-visible,
+.sidebar-toolbar-btn:focus-visible,
 .icon-btn:focus-visible {
   outline: 2px solid #2678e8;
   outline-offset: 1px;
 }
 
-.folder-row:hover {
-  background: #f5f8fc;
+.folder-row.is-drop-target {
+  background: #eaf3ff;
+  box-shadow: inset 0 0 0 1.5px #2678e8;
 }
 
 html.dark .folder-row {
@@ -1805,11 +1837,6 @@ html.dark .folder-row:hover {
   background: rgba(255, 255, 255, 0.05);
 }
 
-.folder-row.is-drop-target {
-  background: #eaf3ff;
-  box-shadow: inset 0 0 0 1.5px #2678e8;
-}
-
 .chevron {
   width: 14px;
   color: #72849e;
@@ -1817,7 +1844,7 @@ html.dark .folder-row:hover {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  transition: transform 0.15s;
+  transition: transform 0.28s var(--ease-spring);
 }
 
 /* CSS Folder Icon from Demo */
@@ -2324,6 +2351,7 @@ html.dark .trash-doc-item .meta {
   }
 
   .create-action,
+  .sidebar-toolbar-btn,
   .icon-btn {
     width: 28px;
     height: 28px;

@@ -428,7 +428,9 @@ onUnmounted(() => {
   margin: 2px 0;
   border-radius: 10px;
   cursor: pointer;
-  transition: 0.15s background, 0.15s box-shadow;
+  transition: background 0.22s var(--ease-glide),
+              transform 0.22s var(--ease-glide),
+              box-shadow 0.22s ease;
   background: transparent;
   user-select: none;
   box-sizing: border-box;
@@ -436,6 +438,11 @@ onUnmounted(() => {
 
 .file-row:hover {
   background: #f5f8fc;
+  transform: translateX(2px);
+}
+
+.file-row:active {
+  transform: scale(0.985) translateX(1px);
 }
 
 html.dark .file-row:hover {
