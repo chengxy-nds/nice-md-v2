@@ -13,6 +13,7 @@ import {
   recordEntityTimestamps as recordKnownTimestamps,
   recordDeletedTombstone as recordGithubTombstone,
 } from './syncTombstones.js';
+import { injectCachedSecrets, blankSecretsForSave } from './secureCredentials.js';
 
 export { recordGithubTombstone };
 
@@ -88,7 +89,9 @@ export function getGithubConfig() {
     const raw = localStorage.getItem(GITHUB_CONFIG_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
+      injectCachedSecrets(parsed, 'github');
       return {
+        __secured: parsed.__secured === true,
         enabled: Boolean(parsed.enabled),
         token: String(parsed.token || ''),
         owner: String(parsed.owner || ''),
@@ -132,8 +135,13 @@ export function saveGithubConfig(config) {
       basePath: sanitizeBasePath(config.basePath || ''),
       autoSync: config.autoSync !== false,
       lastSyncTime: Number(config.lastSyncTime) || getGithubLastSyncTime(),
+      __secured: Boolean(config.__secured),
     };
-    localStorage.setItem(GITHUB_CONFIG_KEY, JSON.stringify(normalized));
+    // Item 4: a __secured config is never persisted with its token in
+    // plaintext again (blanked only when the encrypted envelope exists).
+    const toPersist = { ...normalized };
+    blankSecretsForSave(toPersist, 'github');
+    localStorage.setItem(GITHUB_CONFIG_KEY, JSON.stringify(toPersist));
     window.dispatchEvent(new CustomEvent('nicemd-github-config-updated', { detail: normalized }));
   } catch (e) {
     console.error('[GitHub Sync] Failed to save config:', e);

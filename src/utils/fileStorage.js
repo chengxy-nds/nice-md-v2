@@ -1,6 +1,7 @@
 /** Browser-side upload adapters for supported image storage providers. */
 
 import md5 from 'js-md5';
+import { injectCachedSecrets, blankSecretsForSave } from './secureCredentials.js';
 
 const STORAGE_KEY = 'nicemd_file_storage';
 
@@ -89,7 +90,9 @@ export function getStorageConfig() {
         basePath: parsed.basePath || '',
         ...(parsed.providers?.['aliyun-oss'] || {}),
       };
-      return { ...defaultConfig, ...parsed, providers };
+      // Item 4: a __secured config gets its OSS keys injected from the
+      // session cache (populated by unlockSecureCredentials at startup).
+      return injectCachedSecrets({ ...defaultConfig, ...parsed, providers }, 'oss');
     }
   } catch (e) { /* corrupted data — fall through */ }
   return {
@@ -114,6 +117,9 @@ export function saveStorageConfig(config) {
     domain: normalized.domain || '',
     basePath: normalized.basePath || '',
   };
+  // Item 4: a __secured config is never persisted with its OSS keys in
+  // plaintext again (blanked only when the encrypted envelope exists).
+  blankSecretsForSave(normalized, 'oss');
   localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
 }
 

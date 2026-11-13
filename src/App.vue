@@ -67,6 +67,7 @@ import {
 } from './utils/cloudSync';
 import { filterOutTombstonedEntities } from './utils/syncTombstones';
 import { getActiveStorageSummary, initStorageDefaultIfAvailable } from './utils/fileStorage';
+import { unlockSecureCredentials } from './utils/secureCredentials';
 
 // ── view & document state ──
 const currentView = ref('editor'); // 'home' | 'editor' | 'templates' | 'materials'
@@ -1899,6 +1900,11 @@ const handleEditorClick = () => {
 };
 
 onMounted(async () => {
+  // Item 4: decrypt stored credential envelopes into the session cache
+  // BEFORE any cloud-sync init reads the configs (step 5 below). Legacy
+  // plaintext configs are unaffected if unlock finds nothing to decrypt.
+  try { await unlockSecureCredentials(); } catch { /* legacy path still works */ }
+
   // 1. Load persisted state
   documents.value = loadDocuments();
   groups.value = loadGroups();

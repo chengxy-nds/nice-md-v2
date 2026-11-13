@@ -6,6 +6,7 @@ import {
   recordDeletedTombstone,
   recordDeletedTombstonesBatch
 } from './syncTombstones.js';
+import { injectCachedSecrets, blankSecretsForSave } from './secureCredentials.js';
 
 const NEON_CONFIG_KEY = 'nicemd_neon_sync_config_v1';
 const NEON_LAST_SYNC_KEY = 'nicemd_neon_last_sync_timestamp';
@@ -17,7 +18,8 @@ export function getNeonConfig() {
   try {
     const raw = localStorage.getItem(NEON_CONFIG_KEY);
     if (raw) {
-      return JSON.parse(raw);
+      const parsed = JSON.parse(raw);
+      return injectCachedSecrets(parsed, 'neon');
     }
   } catch (e) {
     console.warn('Failed to load neon config', e);
@@ -46,7 +48,11 @@ export async function ensureNeonTables(connectionString) {
 
 export function saveNeonConfig(config) {
   try {
-    localStorage.setItem(NEON_CONFIG_KEY, JSON.stringify(config));
+    // Item 4: a __secured config is never persisted with its connection
+    // string in plaintext again (blanked only when the envelope exists).
+    const toPersist = { ...config };
+    blankSecretsForSave(toPersist, 'neon');
+    localStorage.setItem(NEON_CONFIG_KEY, JSON.stringify(toPersist));
     if (config.enabled && config.connectionString) {
       ensureNeonTables(config.connectionString);
     }

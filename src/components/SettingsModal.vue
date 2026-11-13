@@ -94,6 +94,13 @@ import {
   getGithubLastSyncTime
 } from '../utils/githubStorage';
 import { loadDocuments, saveDocuments, loadGroups, saveGroups } from '../utils/docStorage';
+import {
+  unlockSecureCredentials,
+  prepareSecureSave,
+  getCredentialSecurityStatus,
+  migrateLegacySecrets,
+  clearSecureSecret
+} from '../utils/secureCredentials';
 import { getAllDocSnapshots, saveAllDocSnapshots } from '../utils/docHistory';
 import { loadCustomThemes, saveCustomThemes, mergeCustomThemes } from '../utils/themePresets';
 
@@ -595,6 +602,43 @@ function refreshCloudState() {
   isCloudSyncActive.value = isCloudSyncEnabled();
 }
 
+// ── Item 4: 凭证安全状态与迁移 ──
+const credentialSecurity = ref(getCredentialSecurityStatus());
+const isMigratingCredentials = ref(false);
+const credentialMigrateMsg = ref('');
+const hasPlaintextCredentials = computed(() =>
+  credentialSecurity.value.some(item => item.legacyPlaintext)
+);
+function refreshCredentialSecurity() {
+  credentialSecurity.value = getCredentialSecurityStatus();
+}
+async function handleMigrateCredentials() {
+  if (isMigratingCredentials.value) return;
+  soundEngine.playClick();
+  isMigratingCredentials.value = true;
+  credentialMigrateMsg.value = '';
+  try {
+    const results = await migrateLegacySecrets();
+    const migrated = results.filter(r => r.migrated);
+    const failed = results.filter(r => !r.migrated && r.reason === 'encrypt-failed');
+    // Re-read configs so the form shows the (cache-injected) secrets again.
+    loadStorageConfig();
+    loadTidbConfig();
+    loadNeonConfig();
+    loadGithubConfig();
+    refreshCredentialSecurity();
+    refreshCloudState();
+    credentialMigrateMsg.value = failed.length > 0
+      ? `迁移失败：${failed.map(f => f.label).join('、')}，明文配置未动，可稍后重试。`
+      : migrated.length > 0
+        ? `已加密迁移：${migrated.map(m => m.label).join('、')}。旧明文已清除，同步不受影响。`
+        : '没有需要迁移的明文密钥。';
+    if (migrated.length > 0) soundEngine.playChime();
+  } finally {
+    isMigratingCredentials.value = false;
+  }
+}
+
 function setCloudProvider(p) {
   cloudProvider.value = p;
   soundEngine.playClick();
@@ -806,6 +850,10 @@ function handleClearCloudProvider(p) {
       meta.configRef.value.connectionString = '';
     }
     meta.configRef.value.enabled = false;
+    // Item 4: clearing a provider also drops its encrypted envelope and
+    // the `__secured` marker, so no stale secret survives the clear.
+    meta.configRef.value.__secured = false;
+    clearSecureSecret(p);
     meta.saveConfig({ ...meta.configRef.value });
   } finally {
     isLoadingCloudConfigs = false;
@@ -952,6 +1000,17 @@ const loadConfigFromExtension = () => {
 };
 
 onMounted(() => {
+  // Item 4: decrypt stored credential envelopes into the session cache,
+  // then re-read the configs so secured secrets are injected into the form.
+  // Legacy plaintext configs are unaffected if there is nothing to unlock.
+  unlockSecureCredentials().then(() => {
+    loadStorageConfig();
+    loadTidbConfig();
+    loadNeonConfig();
+    loadGithubConfig();
+    refreshCredentialSecurity();
+  }).catch(() => {});
+
   window.addEventListener('message', (event) => {
     if (event.source !== window) return;
     
@@ -1110,17 +1169,22 @@ const openPlatformManagement = () => {
   selectPlatform(currentIsPlatform ? activeTab.value : (platforms.value[0]?.id || 'wechat'));
 };
 
-const handleSave = () => {
+const handleSave = async () => {
   soundEngine.playClick();
   commitFontSizeInput();
   saveStatus.value = 'saving';
-  
+
+  // Item 4: new credential writes go through the secure layer first —
+  // the secret is moved into the encrypted envelope and the persisted
+  // config only keeps a `__secured` marker (the storage modules blank
+  // the secret on save). Old plaintext configs stay readable as-is.
   if (storageConfig.value) {
-    saveStorageConfig({ ...storageConfig.value });
+    saveStorageConfig(await prepareSecureSave('oss', { ...storageConfig.value }));
   }
-  if (tidbConfig.value) saveTidbConfig({ ...tidbConfig.value });
-  if (neonConfig.value) saveNeonConfig({ ...neonConfig.value });
-  if (githubConfig.value) saveGithubConfig({ ...githubConfig.value });
+  if (tidbConfig.value) saveTidbConfig(await prepareSecureSave('tidb', { ...tidbConfig.value }));
+  if (neonConfig.value) saveNeonConfig(await prepareSecureSave('neon', { ...neonConfig.value }));
+  if (githubConfig.value) saveGithubConfig(await prepareSecureSave('github', { ...githubConfig.value }));
+  refreshCredentialSecurity();
 
   if (isExtensionConnected.value) {
     // Send to extension via message bridge
@@ -1528,6 +1592,29 @@ const supportsSilent = (id) => {
                 </div>
               </button>
             </div>
+          </div>
+
+          <!-- Item 4: 凭证安全状态与迁移 -->
+          <div class="credential-security-card">
+            <div class="credential-security-title">🔐 凭证安全</div>
+            <div class="credential-security-desc">
+              密钥不再以明文保存在浏览器中：新保存的密钥会加密存放（桌面端用系统密钥库，网页端用浏览器加密）；旧的明文密钥仍可正常使用，建议一键迁移，迁移后同步不受影响。
+            </div>
+            <div class="credential-security-rows">
+              <div v-for="item in credentialSecurity" :key="item.id" class="credential-security-row">
+                <span class="credential-security-label">{{ item.label }}</span>
+                <span v-if="!item.configured" class="credential-security-state is-unset">未配置</span>
+                <span v-else-if="item.secured && !item.legacyPlaintext" class="credential-security-state is-secured">已加密保存</span>
+                <span v-else class="credential-security-state is-plaintext">明文保存 · 建议迁移</span>
+              </div>
+            </div>
+            <div class="credential-security-actions">
+              <button type="button" class="credential-migrate-btn" :disabled="isMigratingCredentials || !hasPlaintextCredentials" @click="handleMigrateCredentials">
+                {{ isMigratingCredentials ? '迁移中…' : '一键迁移明文密钥' }}
+              </button>
+              <span v-if="credentialMigrateMsg" class="credential-migrate-msg">{{ credentialMigrateMsg }}</span>
+            </div>
+            <div class="credential-security-warn">⚠️ Neon 是浏览器直连数据库：连接串密码会直接发往 Neon 服务器。网页端建议优先用 TiDB（走本站 /api/tidb-proxy 代理）或 GitHub 同步；服务端默认配置（Vercel 环境变量）的密钥始终只留在服务端。</div>
           </div>
 
           <div class="cloud-body-section">

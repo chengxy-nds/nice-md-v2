@@ -6,6 +6,7 @@ import {
   recordDeletedTombstone,
   recordDeletedTombstonesBatch
 } from './syncTombstones.js';
+import { injectCachedSecrets, blankSecretsForSave } from './secureCredentials.js';
 
 const TIDB_CONFIG_KEY = 'nicemd_tidb_sync_config_v1';
 const TIDB_LAST_SYNC_KEY = 'nicemd_tidb_last_sync_timestamp';
@@ -28,8 +29,10 @@ export function getTidbConfig() {
     const raw = localStorage.getItem(TIDB_CONFIG_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
+      injectCachedSecrets(parsed, 'tidb');
       const connectionString = String(parsed.connectionString || '').trim();
       return {
+        __secured: parsed.__secured === true,
         enabled: Boolean(parsed.enabled && connectionString),
         connectionString,
         autoSync: parsed.autoSync !== false,
@@ -62,7 +65,11 @@ export async function ensureTidbTables(connectionString) {
 
 export function saveTidbConfig(config) {
   try {
-    localStorage.setItem(TIDB_CONFIG_KEY, JSON.stringify(config));
+    // Item 4: a __secured config is never persisted with its connection
+    // string in plaintext again (blanked only when the envelope exists).
+    const toPersist = { ...config };
+    blankSecretsForSave(toPersist, 'tidb');
+    localStorage.setItem(TIDB_CONFIG_KEY, JSON.stringify(toPersist));
     if (config.enabled && String(config.connectionString || '').trim()) {
       ensureTidbTables(config.connectionString);
     }

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, shell, ipcMain, session } = require('electron');
+const { app, BrowserWindow, shell, ipcMain, session, safeStorage } = require('electron');
 const path = require('path');
 const { setupWebRequestRules, openLoginWindow, checkAllLogins } = require('./desktop-bridge.cjs');
 
@@ -85,6 +85,41 @@ app.whenReady().then(() => {
       return null;
     } catch (e) {
       return null;
+    }
+  });
+
+  // Item 4: OS-level credential encryption via safeStorage (DPAPI on
+  // Windows, Keychain on macOS, libsecret on Linux). The renderer never
+  // sees the OS key — only base64 ciphertext crosses the IPC bridge.
+  ipcMain.handle('nicemd-secure-storage-available', () => {
+    try {
+      return safeStorage.isEncryptionAvailable();
+    } catch {
+      return false;
+    }
+  });
+
+  ipcMain.handle('nicemd-secure-encrypt', async (event, plaintext) => {
+    try {
+      if (!safeStorage.isEncryptionAvailable()) {
+        return { success: false, error: 'OS secure storage unavailable' };
+      }
+      const buf = safeStorage.encryptString(String(plaintext ?? ''));
+      return { success: true, data: buf.toString('base64') };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  });
+
+  ipcMain.handle('nicemd-secure-decrypt', async (event, data) => {
+    try {
+      if (!safeStorage.isEncryptionAvailable()) {
+        return { success: false, error: 'OS secure storage unavailable' };
+      }
+      const plain = safeStorage.decryptString(Buffer.from(String(data || ''), 'base64'));
+      return { success: true, data: plain };
+    } catch (e) {
+      return { success: false, error: e.message };
     }
   });
 

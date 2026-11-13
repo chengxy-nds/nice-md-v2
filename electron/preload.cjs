@@ -18,7 +18,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   checkLogins: (platforms) => ipcRenderer.invoke('nicemd-check-logins', platforms),
   openLoginWindow: (url, platformId) => ipcRenderer.invoke('nicemd-open-login-window', { url, platformId }),
   fetchUrl: (url) => ipcRenderer.invoke('nicemd-fetch-url', url),
-  getCookie: (url, name, domain) => ipcRenderer.invoke('nicemd-get-cookie', { url, name, domain })
+  getCookie: (url, name, domain) => ipcRenderer.invoke('nicemd-get-cookie', { url, name, domain }),
+  // Item 4: OS secure storage (safeStorage) for credentials; falls back to
+  // AES-GCM in the renderer when unavailable (see secureCredentials.js).
+  secureStorageAvailable: () => ipcRenderer.invoke('nicemd-secure-storage-available'),
+  secureEncrypt: (plaintext) => ipcRenderer.invoke('nicemd-secure-encrypt', plaintext),
+  secureDecrypt: (data) => ipcRenderer.invoke('nicemd-secure-decrypt', data)
 });
 
 // Automatic Bridge: Bridge window.postMessage with Electron IPC & Publish Adapters
