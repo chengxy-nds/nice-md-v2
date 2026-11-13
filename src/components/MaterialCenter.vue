@@ -27,9 +27,9 @@ import {
   materialCategories,
   styleCategories,
   styleCategoryMap,
-  categoryNameMap,
-  materials
-} from '../utils/materialLibrary';
+  categoryNameMap
+} from '../utils/materialTemplates';
+import { materials } from '../utils/materialCatalog';
 import { soundEngine } from '../utils/synthAudio';
 import { fireConfetti } from '../utils/celebrate';
 import { sanitizeWeChatHtml } from '../utils/sanitizeHtml';

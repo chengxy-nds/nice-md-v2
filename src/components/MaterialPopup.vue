@@ -1,11 +1,7 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue';
 import { X, Check, Search, ChevronDown, Sparkles } from '@lucide/vue';
-import {
-  getMaterialTemplatesForKey,
-  styleCategories,
-  styleCategoryMap
-} from '../utils/materialLibrary';
+import { getMaterialTemplatesForKey, styleCategories, styleCategoryMap } from '../utils/materialTemplates';
 import { sanitizeWeChatHtml } from '../utils/sanitizeHtml';
 
 const props = defineProps({

@@ -31,7 +31,7 @@ import {
   footerWidgetTemplatesMap,
   backgroundTemplatesMap,
   getBackgroundPatternStyle
-} from './materialLibrary';
+} from './materialTemplates';
 import { CONTAINER_CONFIGS } from './markdownExtensions';
 
 function isMaterialEl(el) {
