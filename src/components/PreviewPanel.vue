@@ -1173,7 +1173,7 @@ html.dark .right-tooltip-shortcut {
   border-radius: 6px;
   cursor: pointer;
   text-align: left;
-  transition: all 0.14s ease;
+  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), transform var(--motion-fast) var(--ease-out);
   width: 100%;
   box-sizing: border-box;
 }
@@ -1270,6 +1270,8 @@ html.dark .toast-deck-card {
 .toast-check-icon {
   color: #10b981;
   flex-shrink: 0;
+  /* E. 复制/导出成功：对勾弹出 + 现有 toast-deck 堆叠 */
+  animation: nx-check-pop 320ms var(--ease-out) both;
 }
 
 .toast-text {
@@ -1282,7 +1284,7 @@ html.dark .toast-deck-card {
 /* Toast Deck Vue Transitions */
 .toast-deck-enter-active,
 .toast-deck-leave-active {
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.35s var(--ease-standard), opacity 0.35s var(--ease-standard), box-shadow 0.35s var(--ease-standard);
 }
 
 .toast-deck-enter-from {

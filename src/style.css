@@ -133,6 +133,14 @@
 .nx-press:active { transform: scale(.97); }
 .nx-lift { transition: transform var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out); }
 .nx-lift:hover { transform: translateY(-2px); }
+/* 对勾弹出（复制成功时 Check 图标从小放大弹一下，代替描边绘制——
+   Lucide svg 根节点做 stroke-dasharray 不可靠，改用整体缩放弹出） */
+@keyframes nx-check-pop {
+  0% { transform: scale(.5); opacity: 0; }
+  60% { transform: scale(1.18); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.nx-check-pop { animation: nx-check-pop 320ms var(--ease-out) both; }
 /* 对勾描绘（复制/导出成功时给图标加 .nx-check-draw） */
 .nx-check-draw { stroke-dasharray: 24; stroke-dashoffset: 24; animation: nx-check-draw 320ms var(--ease-out) 40ms forwards; }
 @keyframes nx-check-draw { to { stroke-dashoffset: 0; } }

@@ -225,9 +225,10 @@ async function handleElementClick(sectionName) {
             <span class="tc-list-section-count">{{ group.themes.length }}</span>
           </header>
           <div
-            v-for="theme in group.themes"
+            v-for="(theme, themeIndex) in group.themes"
             :key="theme.id"
-            class="tc-list-item"
+            class="tc-list-item nx-stagger-item"
+            :style="{ '--nx-i': themeIndex }"
             :class="{
               'is-active': selectedTheme && selectedTheme.id === theme.id,
               'is-applied': props.currentTheme === theme.id
@@ -386,7 +387,7 @@ async function handleElementClick(sectionName) {
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out), transform var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out), opacity var(--motion-fast) var(--ease-out);
   user-select: none;
 }
 
@@ -469,7 +470,7 @@ async function handleElementClick(sectionName) {
   font-size: 0.75rem;
   font-weight: 500;
   outline: none;
-  transition: all 0.15s ease;
+  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out), transform var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out), opacity var(--motion-fast) var(--ease-out);
 }
 
 .tc-search-box input::placeholder {
@@ -495,7 +496,7 @@ async function handleElementClick(sectionName) {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out), transform var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out), opacity var(--motion-fast) var(--ease-out);
 }
 
 .tc-clear-btn:hover {
@@ -579,12 +580,15 @@ async function handleElementClick(sectionName) {
   cursor: pointer;
   background: transparent;
   border: 1px solid transparent;
-  transition: all 0.15s ease;
+  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out), transform var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out), opacity var(--motion-fast) var(--ease-out);
   user-select: none;
 }
 
 .tc-list-item:hover {
   background: #f7f9fc;
+}
+.tc-list-item:active {
+  transform: scale(.99);
 }
 
 .tc-list-item.is-active {
@@ -758,7 +762,7 @@ async function handleElementClick(sectionName) {
   background: var(--bg-card, #ffffff);
   color: var(--text-muted, #71717A);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out), transform var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out), opacity var(--motion-fast) var(--ease-out);
 }
 
 .tc-btn-icon:hover {
@@ -785,7 +789,7 @@ async function handleElementClick(sectionName) {
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out), transform var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out), opacity var(--motion-fast) var(--ease-out);
   user-select: none;
 }
 
@@ -812,7 +816,7 @@ async function handleElementClick(sectionName) {
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out), transform var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out), opacity var(--motion-fast) var(--ease-out);
   user-select: none;
 }
 

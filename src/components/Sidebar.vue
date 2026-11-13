@@ -917,8 +917,9 @@ function resetSidebarWidth() {
         @drop="onListDrop($event, null)"
       >
         <SidebarDocItem
-          v-for="doc in filteredUngroupedDocs"
+          v-for="(doc, docIndex) in filteredUngroupedDocs"
           :key="doc.id"
+          :style="{ '--nx-i': docIndex }" class="nx-stagger-item"
           :doc="doc"
           :isActive="doc.id === activeDocId"
           :searchQuery="searchQuery"
@@ -1020,8 +1021,9 @@ function resetSidebarWidth() {
           >
             <div class="children-inner">
             <SidebarDocItem
-              v-for="doc in docsInGroup(group.id)"
+              v-for="(doc, docIndex) in docsInGroup(group.id)"
               :key="doc.id"
+          :style="{ '--nx-i': docIndex }" class="nx-stagger-item"
               :doc="doc"
               :isActive="doc.id === activeDocId"
               :searchQuery="searchQuery"
@@ -1081,8 +1083,9 @@ function resetSidebarWidth() {
           >
             <div class="children-inner">
             <SidebarDocItem
-              v-for="doc in filteredUngroupedDocs"
+              v-for="(doc, docIndex) in filteredUngroupedDocs"
               :key="doc.id"
+          :style="{ '--nx-i': docIndex }" class="nx-stagger-item"
               :doc="doc"
               :isActive="doc.id === activeDocId"
               :searchQuery="searchQuery"
@@ -1148,9 +1151,10 @@ function resetSidebarWidth() {
         class="trash-doc-list"
       >
         <div
-          v-for="doc in filteredDeletedDocs"
+          v-for="(doc, docIndex) in filteredDeletedDocs"
           :key="doc.id"
-          class="trash-doc-item"
+          class="trash-doc-item nx-stagger-item"
+          :style="{ '--nx-i': docIndex }"
           :class="{ 'selected': doc.id === activeDocId }"
           @click="handleSelectTrashDoc(doc)"
         >
@@ -1369,6 +1373,7 @@ html.dark .create-action:hover {
 .sync-icon {
   flex-shrink: 0;
   color: #71839d;
+  transition: transform var(--motion-base) var(--ease-out);
 }
 
 .sync-trigger-btn.is-syncing .sync-icon {
@@ -1389,6 +1394,10 @@ html.dark .create-action:hover {
   transition: transform 0.16s ease, color 0.12s var(--ease-glide);
 }
 
+.sync-trigger-btn:hover .sync-icon:not(.is-spinning) {
+  transform: rotate(45deg);
+}
+
 .sync-trigger-btn:hover .sync-chevron,
 .sync-trigger-btn.is-menu-open .sync-chevron {
   color: #64748b;
@@ -1405,6 +1414,8 @@ html.dark .create-action:hover {
   border-radius: 50%;
   flex-shrink: 0;
   box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  /* E. 同步完成轻反馈：绿点出现时脉冲一次，不弹 Toast */
+  animation: nx-dot-pulse 900ms var(--ease-out) 1;
 }
 
 /* Sync Dropdown Menu */
@@ -2039,6 +2050,15 @@ html.dark .count {
   cursor: pointer;
   transition: background 0.12s var(--ease-glide), color 0.12s var(--ease-glide), border-color 0.12s var(--ease-glide);
   padding: 0;
+}
+
+/* E. 按钮按压 scale(.97)，只给工具栏/操作按钮，不给文字链接 */
+.create-action:active,
+.sidebar-toolbar-btn:active,
+.icon-btn:active,
+.mini-btn:active,
+.action-btn:active {
+  transform: scale(.97);
 }
 
 .mini-btn:hover {

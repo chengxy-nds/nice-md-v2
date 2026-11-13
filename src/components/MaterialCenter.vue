@@ -225,9 +225,10 @@ function handleApplyBackground(mat) {
       <!-- Materials Grid -->
       <div class="mc-grid">
         <div
-          v-for="mat in filteredMaterials"
+          v-for="(mat, matIndex) in filteredMaterials"
           :key="mat.id"
-          class="mc-card"
+          class="mc-card nx-stagger-item"
+          :style="{ '--nx-i': matIndex }"
         >
           <!-- Live render is also the entry point to a larger preview. -->
           <div
@@ -273,7 +274,7 @@ function handleApplyBackground(mat) {
                 :title="copiedId === mat.id ? '已复制' : '复制素材 HTML'"
                 @click="handleCopy(mat)"
               >
-                <Check v-if="copiedId === mat.id" size="14" />
+                <Check v-if="copiedId === mat.id" size="14" class="nx-check-pop" />
                 <Copy v-else size="14" />
               </button>
             </div>
@@ -329,7 +330,7 @@ function handleApplyBackground(mat) {
               :class="{ 'is-copied': copiedId === selectedPreview.id }"
               @click="handleCopy(selectedPreview)"
             >
-              <Check v-if="copiedId === selectedPreview.id" size="14" />
+              <Check v-if="copiedId === selectedPreview.id" size="14" class="nx-check-pop" />
               <Copy v-else size="14" />
               {{ copiedId === selectedPreview.id ? '已复制' : '复制 HTML' }}
             </button>
@@ -399,7 +400,7 @@ function handleApplyBackground(mat) {
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out), transform var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out), opacity var(--motion-fast) var(--ease-out);
   user-select: none;
 }
 
@@ -476,7 +477,7 @@ function handleApplyBackground(mat) {
   font-size: 0.75rem;
   font-weight: 500;
   outline: none;
-  transition: all 0.15s ease;
+  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out), transform var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out), opacity var(--motion-fast) var(--ease-out);
 }
 
 .mc-search-box input::placeholder {
@@ -502,7 +503,7 @@ function handleApplyBackground(mat) {
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.15s ease;
+  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out), transform var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out), opacity var(--motion-fast) var(--ease-out);
 }
 
 .mc-clear-btn:hover {
@@ -603,7 +604,7 @@ function handleApplyBackground(mat) {
   font-size: 0.75rem;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out), transform var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out), opacity var(--motion-fast) var(--ease-out);
   white-space: nowrap;
   user-select: none;
 }
@@ -678,7 +679,7 @@ function handleApplyBackground(mat) {
   padding: 0.1875rem 0.5rem;
   border-radius: 4px;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out), transform var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out), opacity var(--motion-fast) var(--ease-out);
 }
 
 .mc-reset-btn:hover {
@@ -705,11 +706,14 @@ function handleApplyBackground(mat) {
   flex-direction: column;
   min-width: 0;
   cursor: default;
-  transition: border-color 0.16s ease;
+  /* E. 卡片 hover 上浮 2px + 阴影加深；transition 已显式化（见 F） */
+  transition: border-color var(--motion-fast) var(--ease-out), transform var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out);
 }
 
 .mc-card:hover {
   border-color: #b8cbe2;
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, .08);
 }
 
 .mc-card:focus-within {
@@ -911,6 +915,10 @@ function handleApplyBackground(mat) {
   flex-shrink: 0;
   align-items: center;
   gap: 0.1875rem;
+}
+
+.mc-card-action:active {
+  transform: scale(.9);
 }
 
 .mc-card-action {
@@ -1137,7 +1145,7 @@ function handleApplyBackground(mat) {
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out), transform var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out), opacity var(--motion-fast) var(--ease-out);
 }
 
 .mc-empty-reset-btn:hover {
