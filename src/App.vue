@@ -1912,6 +1912,8 @@ function toggleFocusMode() {
 
 // ── 文档切换：先 120ms 快退再换内容（.nx-doc-leaving），换完重播
 // .5s 弹簧入场（.nx-doc-swap-in），避免“瞬间切掉、再淡入”的跳变。
+// 动画只落在内容后代上（编辑器正文 textarea / .cm-content、预览文章
+// .preview-body），行号、右侧栏、标签栏、工具栏都不动——见 style.css D2。
 // 快速连续点选时清掉待执行的切换，只执行最后一次。
 const docSwapLeaving = ref(false);
 const docSwapEnter = ref(false);

@@ -250,7 +250,13 @@ const rightGliderRef = ref(null);
 const rightPaletteBtnRef = ref(null);
 let rightStretchTimer = null;
 
+// 预览显隐切换时冻结液体滑块：网格收起/展开的 .36s 里按钮的
+// getBoundingClientRect 每帧都在变，滑块按旧位置追会抖；切换完 420ms 再解冻。
+let rightGliderSuppressed = false;
+let rightGliderSuppressTimer = 0;
+
 function moveRightGliderToEl(btn, stretch = true) {
+  if (rightGliderSuppressed) return;
   if (!btn || !rightGliderRef.value || !rightBarRef.value) return;
   const barRect = rightBarRef.value.getBoundingClientRect();
   const btnRect = btn.getBoundingClientRect();
@@ -304,6 +310,18 @@ watch(() => props.themePanelVisible, async (visible) => {
       moveRightGliderToEl(rightPaletteBtnRef.value, true);
     }
   }
+});
+
+// 预览显隐切换时冻结液体滑块：点“隐藏/显示预览区”后，右侧栏随网格
+// 收起/展开平移，鼠标还停在眼睛按钮上——此时按旧 rect 定位滑块会追着
+// 按钮来回晃。切换瞬间先藏起滑块、冻结 420ms（盖过 .36s 的网格过渡），
+// 再解冻；解冻后下次 hover 重新定位。
+watch(() => props.previewVisible, () => {
+  if (rightGliderRef.value) rightGliderRef.value.classList.remove('is-visible');
+  clearTimeout(rightStretchTimer);
+  rightGliderSuppressed = true;
+  clearTimeout(rightGliderSuppressTimer);
+  rightGliderSuppressTimer = setTimeout(() => { rightGliderSuppressed = false; }, 420);
 });
 
 const toastList = ref([]);
@@ -545,6 +563,8 @@ const handleSelectCopyAction = (actionFn) => {
 
 onUnmounted(() => {
   clearCopyHoverTimer();
+  clearTimeout(rightStretchTimer);
+  clearTimeout(rightGliderSuppressTimer);
   detachCopyMenuListeners();
 });
 </script>
@@ -790,12 +810,14 @@ onUnmounted(() => {
   background: var(--bg-preview);
   opacity: 1;
   transform: translateX(0);
-  transition: background 0.3s ease, opacity 0.3s ease, transform 0.46s cubic-bezier(0.22, 1, 0.36, 1);
+  /* 收起只做淡出（.36s，与网格收起同速同曲线），不再 translateX(12px) 平移：
+     以前 .46s 的平移和 .36s 的网格收起不同步，预览内容一边右滑一边被压窄，
+     末尾的右侧栏跟着来回晃。 */
+  transition: background 0.3s ease, opacity 0.36s var(--ease-glide);
 }
 
 .preview-main-content.is-collapsed {
   opacity: 0;
-  transform: translateX(12px);
   pointer-events: none;
 }
 

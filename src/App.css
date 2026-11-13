@@ -1181,7 +1181,10 @@ html.dark .popout-item.is-active {
 }
 
 .workspace-grid.preview-hidden .workspace-columns {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 46px);
+  /* 收起后的预览列宽度必须等于右侧栏本身的宽度（50px，border-box）。
+     以前是 46px，列比栏窄 4px：网格收起的 .36s 里栏被 overflow:hidden
+     持续挤压裁切，按钮跟着左右晃；改成 50px 后栏不再被挤。 */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 50px);
 }
 
 .workspace-grid.preview-hidden .workspace-column.editor-column {
@@ -1193,7 +1196,8 @@ html.dark .popout-item.is-active {
 }
 
 .workspace-grid.theme-panel-open.preview-hidden .workspace-columns {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 46px);
+  /* 同上：收起宽度与右侧栏 50px 对齐，不挤栏。 */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 50px);
 }
 
 /* ── 专注模式（笔记页 artifact 的做法）──
