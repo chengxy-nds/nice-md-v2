@@ -2284,7 +2284,7 @@ watch(customStyles, () => {
           />
 
           <!-- 3. 编辑与排版双栏工作台 -->
-          <div v-else class="workspace-grid" :class="[`active-view-${mobileActiveView}`, { 'preview-hidden': !previewVisible, 'theme-panel-open': showThemePanel, 'is-focus': focusMode, 'nx-doc-leaving': docSwapLeaving, 'nx-doc-swap-in': docSwapEnter }]">
+          <div v-else class="workspace-grid" :class="[`active-view-${mobileActiveView}`, { 'preview-hidden': !previewVisible, 'theme-panel-open': showThemePanel, 'is-focus': focusMode }]">
           <!-- Document Tabs Bar -->
           <div class="workspace-tabs" role="tablist" aria-label="已打开文档标签">
             <div
@@ -2529,7 +2529,7 @@ watch(customStyles, () => {
           </div>
 
           <!-- Split Workspace Columns below Toolbar -->
-          <div class="workspace-columns">
+          <div class="workspace-columns" :class="{ 'nx-doc-leaving': docSwapLeaving, 'nx-doc-swap-in': docSwapEnter }">
             <div class="workspace-column editor-column" @click="handleEditorClick">
               <EditorPanel
                 ref="editorPanelRef"

@@ -134,7 +134,9 @@
 
 /* ── D2. 文档切换：先 120ms 快退（.nx-doc-leaving，见 App.vue 的
    handleSelectDoc），再用 viewIn 式弹簧入场（translateY(14px) scale(.995)→1，
-   .5s），避免“瞬间切掉、再淡入”的跳变。只用 transform / opacity。 */
+   .5s），避免“瞬间切掉、再淡入”的跳变。只用 transform / opacity。
+   注意：这两个类只挂在编辑区内容 .workspace-columns（编辑栏+预览栏）上，
+   不挂 .workspace-grid——标签栏和工具栏切换文档时不动，只有内容动。 */
 @keyframes nx-doc-swap-in {
   from { opacity: 0; transform: translateY(14px) scale(.995); }
   to { opacity: 1; transform: translateY(0) scale(1); }
