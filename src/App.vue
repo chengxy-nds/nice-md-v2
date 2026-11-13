@@ -138,10 +138,78 @@ function scrollActiveTabIntoView(tabId = activeDocId.value) {
   nextTick(() => {
     const container = tabsScrollRef.value;
     if (!container) return;
-    const target = Array.from(container.children).find(el => el.dataset?.tabId === tabId);
+    // 标签现在是 .workspace-tabs-group（TransitionGroup）的子节点，不再是
+    // 滚动容器的直接子节点，改用后代查询。
+    const target = container.querySelector(`[data-tab-id="${tabId}"]`);
     target?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
   });
 }
+
+// ── 标签激活指示滑块 ──
+// 2px 顶部高亮条在激活标签之间滑动，做法照 IconBar 液体滑块的 P0-5 经验：
+// ① 读（getBoundingClientRect）写（style）合并进同一帧 rAF；② 只写
+// transform / width，不写 left/top；③ ResizeObserver + resize 监听，
+// 侧栏开合、窗口缩放后重定位。滑块放在滚动容器内部、按内容坐标定位，
+// 所以随标签一起滚动，不需要监听 scroll。
+// 注意不要照抄 PreviewPanel 的滑块——它没有 rAF 合并也没有 ResizeObserver，
+// 在布局动画期间会追着旧坐标抖。
+const tabGliderRef = ref(null);
+let tabGliderRaf = 0;
+let tabGliderSettleTimer = null;
+let tabGliderObserver = null;
+
+function moveTabGlider({ instant = false } = {}) {
+  cancelAnimationFrame(tabGliderRaf);
+  tabGliderRaf = requestAnimationFrame(() => {
+    const glider = tabGliderRef.value;
+    const container = tabsScrollRef.value;
+    if (!glider || !container) return;
+    const activeTab = container.querySelector('.workspace-tab-item.is-active');
+    if (!activeTab) {
+      glider.classList.remove('is-visible');
+      return;
+    }
+    // 内容坐标（left 含 scrollLeft），滑块随滚动内容一起走。
+    const barRect = container.getBoundingClientRect();
+    const tabRect = activeTab.getBoundingClientRect();
+    const left = tabRect.left - barRect.left + container.scrollLeft;
+    if (instant) glider.classList.add('is-instant');
+    glider.style.width = `${Math.round(tabRect.width)}px`;
+    glider.style.transform = `translateX(${Math.round(left)}px)`;
+    glider.classList.add('is-visible');
+    if (instant) {
+      requestAnimationFrame(() => glider.classList.remove('is-instant'));
+    }
+  });
+}
+
+function repositionTabGlider() {
+  moveTabGlider();
+}
+
+// 离开动画前把标签宽高写死：.nx-tab-leave-active 是 position: absolute，
+// 脱离 flex 流后宽高会按内容收缩，先定住再淡出才不会闪一下。
+function fixTabLeaveSize(el) {
+  el.style.width = `${el.offsetWidth}px`;
+  el.style.height = `${el.offsetHeight}px`;
+}
+
+onMounted(() => {
+  nextTick(() => moveTabGlider({ instant: true }));
+  if (typeof ResizeObserver !== 'undefined' && tabsScrollRef.value) {
+    tabGliderObserver = new ResizeObserver(() => repositionTabGlider());
+    tabGliderObserver.observe(tabsScrollRef.value);
+  }
+  window.addEventListener('resize', repositionTabGlider);
+});
+
+onUnmounted(() => {
+  cancelAnimationFrame(tabGliderRaf);
+  clearTimeout(tabGliderSettleTimer);
+  tabGliderObserver?.disconnect();
+  tabGliderObserver = null;
+  window.removeEventListener('resize', repositionTabGlider);
+});
 
 function handleTabsWheel(e) {
   const container = tabsScrollRef.value;
@@ -346,12 +414,21 @@ watch(activeDocId, (newId, oldId) => {
   }
   if (newId) {
     scrollActiveTabIntoView(newId);
+    moveTabGlider();
   }
 });
 
+// 关掉非激活标签时激活标签本身没变，但它在条里的位置会左移（FLIP 平移
+// 约 250ms），滑块要跟过去；等 FLIP 落稳后再量一次，避免量到半路位置。
+watch(() => openTabs.value.length, () => {
+  nextTick(() => moveTabGlider());
+  clearTimeout(tabGliderSettleTimer);
+  tabGliderSettleTimer = setTimeout(() => moveTabGlider(), 340);
+});
+
 // ── CRUD handlers ──
-function handleSelectDoc(id) {
-  soundEngine.playClick();
+function handleSelectDoc(id, { silent = false } = {}) {
+  if (!silent) soundEngine.playClick();
   if (!id || id === activeDocId.value) return;
   clearTimeout(docSwapTimer);
   clearTimeout(docSwapEnterTimer);
@@ -370,6 +447,7 @@ function closeTabList(nextIds, fallbackFocusId = null) {
   renamingTabId.value = null;
   closeTabMenu();
   soundEngine.playClick('backspace');
+  const oldActive = activeDocId.value;
   openTabIds.value = nextIds;
   saveOpenTabs(nextIds);
   if (nextIds.length === 0) {
@@ -379,8 +457,15 @@ function closeTabList(nextIds, fallbackFocusId = null) {
   }
   if (!activeDocId.value || !nextIds.includes(activeDocId.value)) {
     const nextActive = (fallbackFocusId && nextIds.includes(fallbackFocusId)) ? fallbackFocusId : nextIds[0];
-    activeDocId.value = nextActive;
-    saveActiveDocId(nextActive);
+    if (oldActive && nextActive !== oldActive) {
+      // 关掉的是当前激活标签：走 handleSelectDoc，让编辑区 / 预览播放与点标签
+      // 相同的 120ms 快退 + .5s 弹簧切入。只改动画路径，不改落到哪个标签；
+      // silent 是因为上面已经播过 backspace 音，不重复播点击音。
+      handleSelectDoc(nextActive, { silent: true });
+    } else {
+      activeDocId.value = nextActive;
+      saveActiveDocId(nextActive);
+    }
   }
 }
 
@@ -2297,6 +2382,14 @@ watch(customStyles, () => {
               @mousedown="handleTabsMouseDown"
               @dragstart.prevent
             >
+              <!-- 标签激活指示滑块：唯一一块 2px 顶部高亮条，用 transform 在激活标签之间滑动
+                   （量测 + rAF 合并读写 + ResizeObserver，见 moveTabGlider；不随滚动条移动，
+                   它是滚动内容的一部分，随标签一起滚动）。 -->
+              <span class="workspace-tab-glider" ref="tabGliderRef" aria-hidden="true" />
+              <!-- nx-tab：新增标签弹簧入场、关闭淡出、剩余标签 FLIP 平移。
+                   TransitionGroup 只包标签本身（.workspace-tabs-group），滚动容器仍是外层
+                   .workspace-tabs-scroll，所以拖拽滚动 / wheel / scrollIntoView 不受影响。 -->
+              <TransitionGroup name="nx-tab" tag="div" class="workspace-tabs-group" @before-leave="fixTabLeaveSize">
               <div
                 v-for="tab in openTabs"
                 :key="tab.id"
@@ -2344,6 +2437,7 @@ watch(customStyles, () => {
                   <X size="11.5" />
                 </button>
               </div>
+              </TransitionGroup>
             </div>
             <button
               type="button"
