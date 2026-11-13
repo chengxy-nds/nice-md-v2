@@ -1166,7 +1166,9 @@ function handlePopupClose() {
 .preview-content-frame.wechat-phone-frame {
   display: flex;
   flex-direction: column;
-  width: 375px;
+  /* 375px 定宽在 375px 真机上加左右 padding 和右侧栏必溢出：封顶 100%。 */
+  width: min(375px, 100%);
+  max-width: 100%;
   height: 780px;
   min-height: 780px;
   background: #ffffff;

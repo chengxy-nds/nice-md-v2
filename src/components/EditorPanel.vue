@@ -141,7 +141,16 @@ const editorFontFamily = ref(initialEditorPrefs.fontFamily);
 const editorLineHeightRatio = ref(initialEditorPrefs.lineHeight);
 const editorLetterSpacing = ref(initialEditorPrefs.letterSpacing);
 const editorFontFeatureSettings = ref(initialEditorPrefs.fontFeatureSettings);
-const showLineNumbers = ref(localStorage.getItem('nicemd_line_numbers') !== 'false');
+// 触屏（粗指针）上 iOS 聚焦 <16px 的输入区会自动放大页面：只在触屏上把
+// 生效字号钳到 ≥16px，桌面端完全不动用户自己的设置；设置里改字号后也一样生效。
+const isCoarsePointer = typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches;
+const effectiveEditorFontSize = computed(() => {
+  if (!isCoarsePointer) return editorFontSize.value;
+  return `${Math.max(16, parseEditorFontSizeNumber(editorFontSize.value))}px`;
+});
+// 手机窄屏默认不显示行号（42px 占 375px 屏的 11%）；设置里的行号开关
+// 仍可重新打开（loadPreferences 按存的值来，不再二次拦截）。
+const showLineNumbers = ref(localStorage.getItem('nicemd_line_numbers') !== 'false' && !(isCoarsePointer && window.innerWidth <= 480));
 
 const loadPreferences = () => {
   const prefs = loadEditorPreferences();
@@ -305,6 +314,7 @@ const showFloatBar = ref(false);
 const hasFloatSelection = ref(false);
 const floatBarPos = ref({ top: 0, left: 0 });
 const floatBarAbove = ref(true);
+const floatBarRef = ref(null);
 const showTablePicker = ref(false);
 const tableRows = ref(1);
 const tableCols = ref(1);
@@ -335,6 +345,17 @@ let lightboxDidDrag = false;
 // Close the table picker whenever the float bar hides (deselect, click away, etc.)
 watch(showFloatBar, (v) => {
   if (!v) showTablePicker.value = false;
+  if (v) {
+    // 浮动条显示出来后用真实宽度再钳制一次 left：估算宽 420px 只是上限，
+    // 实际按钮多少会变，375px 屏上必须按实测宽算，否则右侧仍可能被裁。
+    nextTick(() => {
+      const el = floatBarRef.value;
+      if (!el) return;
+      const w = el.getBoundingClientRect().width;
+      const maxLeft = Math.max(8, window.innerWidth - w - 8);
+      floatBarPos.value = { ...floatBarPos.value, left: Math.max(8, Math.min(maxLeft, floatBarPos.value.left)) };
+    });
+  }
 });
 
 function toggleTablePicker() {
@@ -502,6 +523,15 @@ function prefixLinesOL(ta) {
   ta.setSelectionRange(lineStart, lineStart + prefixed.length);
 }
 
+// 浮动条宽约 420px（渲染后以真实宽度为准，见 showFloatBar 的 watcher）：
+// 先按估算宽度钳制，375px 屏上旧的 innerWidth-420 算出来是负数，
+// 原写法会被 Math.max(16, …) 顶到 16，条又宽过屏幕右侧。
+function clampFloatBarLeft(x) {
+  const estWidth = Math.min(420, window.innerWidth - 16);
+  const maxLeft = Math.max(8, window.innerWidth - estWidth - 8);
+  return Math.max(8, Math.min(maxLeft, x));
+}
+
 // Position the floating bar above (or below) the line containing `pos`.
 function positionFloatBar(pos, clientEvent = null) {
   if (cmView) {
@@ -510,7 +540,7 @@ function positionFloatBar(pos, clientEvent = null) {
       floatBarAbove.value = coords.top > 120;
       floatBarPos.value = {
         top: floatBarAbove.value ? coords.top : coords.bottom,
-        left: Math.max(16, Math.min(window.innerWidth - 420, coords.left))
+        left: clampFloatBarLeft(coords.left)
       };
       return;
     }
@@ -518,7 +548,7 @@ function positionFloatBar(pos, clientEvent = null) {
       floatBarAbove.value = clientEvent.clientY > 120;
       floatBarPos.value = {
         top: floatBarAbove.value ? clientEvent.clientY : clientEvent.clientY,
-        left: Math.max(16, Math.min(window.innerWidth - 420, clientEvent.clientX))
+        left: clampFloatBarLeft(clientEvent.clientX)
       };
       return;
     }
@@ -530,7 +560,7 @@ function positionFloatBar(pos, clientEvent = null) {
       floatBarAbove.value = clientEvent.clientY > 120;
       floatBarPos.value = {
         top: floatBarAbove.value ? clientEvent.clientY : clientEvent.clientY,
-        left: Math.max(16, Math.min(window.innerWidth - 420, clientEvent.clientX))
+        left: clampFloatBarLeft(clientEvent.clientX)
       };
     }
     return;
@@ -547,7 +577,7 @@ function positionFloatBar(pos, clientEvent = null) {
   floatBarAbove.value = lineTop > 120;
   floatBarPos.value = {
     top: floatBarAbove.value ? lineTop : lineBottom,
-    left: Math.max(16, Math.min(window.innerWidth - 420, rect.left + 20))
+    left: clampFloatBarLeft(rect.left + 20)
   };
 }
 
@@ -1602,12 +1632,12 @@ function initCodeMirror() {
   if (!cmContainerRef.value || cmView) return;
 
   const lineHeightRatio = parseFloat(editorLineHeightRatio.value || '1.72') || 1.72;
-  const editorLineHeight = Math.round(parseEditorFontSizeNumber(editorFontSize.value) * lineHeightRatio);
+  const editorLineHeight = Math.round(parseEditorFontSizeNumber(effectiveEditorFontSize.value) * lineHeightRatio);
 
   const customMarkdownTheme = EditorView.theme({
     "&": {
       height: "100%",
-      fontSize: editorFontSize.value,
+      fontSize: effectiveEditorFontSize.value,
       fontFamily: editorFontFamily.value,
       letterSpacing: editorLetterSpacing.value,
       fontFeatureSettings: editorFontFeatureSettings.value,
@@ -1936,7 +1966,7 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
         </div>
       </div>
 
-      <div class="editor-input-area" :style="{ fontSize: editorFontSize, fontFamily: editorFontFamily, lineHeight: editorLineHeightRatio, letterSpacing: editorLetterSpacing, fontFeatureSettings: editorFontFeatureSettings }" @drop="handleEditorDrop" @dragover.prevent>
+      <div class="editor-input-area" :style="{ fontSize: effectiveEditorFontSize, fontFamily: editorFontFamily, lineHeight: editorLineHeightRatio, letterSpacing: editorLetterSpacing, fontFeatureSettings: editorFontFeatureSettings }" @drop="handleEditorDrop" @dragover.prevent>
         <div v-show="isSyntaxHighlightActive" ref="cmContainerRef" class="codemirror-markdown-editor"></div>
         <textarea
           v-show="!isSyntaxHighlightActive"
@@ -1960,6 +1990,7 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
       <!-- Floating format bar on text selection -->
       <div
         v-if="showFloatBar"
+        ref="floatBarRef"
         class="float-format-bar"
         :class="{ 'is-below': !floatBarAbove }"
         :style="{ top: floatBarPos.top + 'px', left: floatBarPos.left + 'px' }"
@@ -2693,6 +2724,29 @@ textarea::placeholder {
     height: 1.5rem;
     padding: 0 0.375rem;
     font-size: 0.65rem;
+  }
+}
+
+/* 触屏：查找输入 11px、URL 导入输入（无字号，走浏览器默认 ~13px）聚焦时
+   iOS 会自动放大页面，提到 16px。 */
+@media (pointer: coarse) {
+  .find-input,
+  .url-import-popover input {
+    font-size: 16px;
+  }
+}
+
+/* 触屏：查找和悬浮格式条的小按钮（24px）热区扩到 36px，视觉图标不变。 */
+@media (hover: none) {
+  .find-nav-btn,
+  .find-opt-btn,
+  .find-close-btn {
+    width: 36px;
+    height: 36px;
+  }
+  .float-format-bar button {
+    width: 36px;
+    height: 36px;
   }
 }
 

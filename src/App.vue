@@ -2329,6 +2329,7 @@ watch(customStyles, () => {
               :currentView="currentView"
               :isCloudSyncing="isSidebarSyncing"
               @select-doc="(id) => { handleSelectDoc(id); currentView = 'editor'; mobileSidebarOpen = false; }"
+              @swipe-close="mobileSidebarOpen = false"
               @create-doc="(groupId) => { handleCreateDoc(groupId); currentView = 'editor'; }"
               @open-templates="currentView = 'templates'"
               @open-materials="currentView = 'materials'"

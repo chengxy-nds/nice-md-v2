@@ -566,6 +566,7 @@ async function copyHistoricalContent() {
   inset: 0;
   width: 100vw;
   height: 100vh;
+  height: 100dvh;
   background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
@@ -1604,7 +1605,9 @@ html.dark .unified-deleted {
   .history-modal-container {
     width: 100vw;
     height: 100vh;
+    height: 100dvh;
     max-height: 100vh;
+    max-height: 100dvh;
     border-radius: 0;
   }
 

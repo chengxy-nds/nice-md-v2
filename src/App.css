@@ -3,6 +3,9 @@
   display: flex;
   flex-direction: column;
   height: 100vh;
+  /* 移动端：100vh 在 iOS 上含浏览器工具栏区，地址栏收起/键盘弹起时底部会跳；
+     dvh 跟随实际可视高度，写在后面做兜底（不支持 dvh 的浏览器仍用 100vh）。 */
+  height: 100dvh;
   width: 100vw;
   background-color: var(--bg-app);
   color: var(--text-main);
@@ -14,6 +17,7 @@
 
 .app-container.is-standalone-home {
   height: 100vh;
+  height: 100dvh;
   width: 100vw;
   display: block;
   overflow: hidden;
@@ -1391,15 +1395,21 @@ html.dark .popout-item.is-active {
   .mobile-view-tabs {
     display: flex;
   }
+
+  /* 移动端切换器：29px 太矮不好点，提到 36px+。 */
+  .tab-view-btn {
+    padding: 10px 18px;
+  }
   
   .app-header {
     display: flex;
-    padding: 0 12px;
-    height: 4rem;
+    /* 刘海屏安全区：顶部 padding 吃掉刘海高度，高度跟着加回来。 */
+    padding: env(safe-area-inset-top) 12px 0;
+    height: calc(4rem + env(safe-area-inset-top));
   }
 
   .app-floating-toast {
-    top: 72px;
+    top: calc(72px + env(safe-area-inset-top));
   }
 
   .header-center,
@@ -1425,6 +1435,8 @@ html.dark .popout-item.is-active {
     bottom: 0 !important;
     width: min(300px, 86vw) !important;
     height: 100% !important;
+    /* 底部横条安全区：抽屉底部内容不被 Home Indicator 遮住。 */
+    padding-bottom: env(safe-area-inset-bottom) !important;
     z-index: 100 !important;
     background: var(--bg-editor) !important;
     box-shadow: var(--shadow-lg) !important;
@@ -1449,9 +1461,78 @@ html.dark .popout-item.is-active {
   .workspace-grid.active-view-editor .preview-column {
     display: none !important;
   }
-  
+
   .workspace-grid.active-view-preview .editor-column {
     display: none !important;
   }
 
+}
+
+/* ── 移动端：工具栏横向滚动（P0-1）──
+   工具栏在 App.vue 里（.editor-header.workspace-toolbar），EditorPanel.vue:2938
+   的 scoped 规则只对 EditorPanel 自己模板内的元素生效，永远命中不了它，
+   所以这里在 App.css 里再写一条全局规则。按钮一个不少，横向滑着用。 */
+@media (max-width: 640px) {
+  .workspace-toolbar {
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .workspace-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+  .header-actions {
+    width: max-content;
+    min-width: 100%;
+    flex-wrap: nowrap;
+  }
+  /* 带文字的“示例”按钮宽自适应，只定高不定宽，别把它压成 32px 截掉文字。 */
+  .workspace-toolbar .btn-icon:not(.btn-toolbar-sample) {
+    width: 32px;
+    height: 32px;
+  }
+  .workspace-toolbar .btn-toolbar-sample,
+  .workspace-toolbar .btn-toolbar-dropdown {
+    height: 32px;
+  }
+  .workspace-toolbar .btn-icon,
+  .workspace-toolbar .btn-toolbar-dropdown,
+  .workspace-toolbar .export-trigger-container,
+  .workspace-toolbar .toolbar-btn-group,
+  .workspace-toolbar .toolbar-sep {
+    flex-shrink: 0;
+  }
+  .workspace-toolbar .toolbar-spacer {
+    flex: 0 0 8px;
+  }
+}
+
+/* ── 触屏：悬停才出现的操作要常显、热区要够大（P0-3 / P1-2）──
+   照抄 Sidebar.vue / MaterialCenter.vue 里已验证的 hover:none 模式。 */
+@media (hover: none) {
+  /* tab 的 ×：触屏没有悬停，非激活 tab 的 × 默认 opacity:0 根本看不见。 */
+  .workspace-tab-close {
+    opacity: 0.7;
+    position: relative;
+  }
+  /* 视觉仍是 18px，::after 把点按热区扩到 28px，不挤标题。 */
+  .workspace-tab-close::after {
+    content: '';
+    position: absolute;
+    inset: -5px;
+  }
+  .workspace-tab-add {
+    width: 44px;
+  }
+  /* 工具栏图标：视觉图标不变，只把按钮盒子扩到 36px。 */
+  .workspace-toolbar .btn-icon:not(.btn-toolbar-sample) {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* ── 粗指针（触屏）：输入框字号 <16px 时 iOS 聚焦会自动放大页面 ── */
+@media (pointer: coarse) {
+  .workspace-tab-input {
+    font-size: 16px;
+  }
 }
