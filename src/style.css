@@ -2,8 +2,10 @@
 
 :root {
   font-size: 15px;
-  /* ── Muse & Linear Micro-interaction Motion Curves ── */
-  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);
+  /* ── Muse & Linear Micro-interaction Motion Curves ──
+     --ease-spring 采用笔记页 artifact 的弹簧 cubic-bezier(.34, 1.45, .5, 1)
+     （原来 .34, 1.56, .64, 1 过冲更猛）；入场带过冲，出场快且不带过冲。 */
+  --ease-spring: cubic-bezier(.34, 1.45, .5, 1);
   --ease-glide: cubic-bezier(.32, 1.28, .36, 1);
   --ease-out: cubic-bezier(.22, 1, .36, 1);
   /* ── A. 动效系统令牌 ──
@@ -118,14 +120,32 @@
 }
 
 /* ── D. 列表/卡片依次入场 ── 只用 transform / opacity；
-   --nx-i 由模板按 index 传入并截断到 7（前 8 项），避免长列表总时长过长 */
+   --nx-i 由模板按全局连续 index 传入并截断到 7（前 8 项），避免长列表总时长过长。
+   错峰 45ms/项（笔记页 artifact 的 cardIn 节奏）；注意不要按分组重置 index，
+   否则后一个分组会从 0ms 重新开始、与前一组并行出现。 */
 @keyframes nx-list-in {
   from { opacity: 0; transform: translateY(8px) scale(.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 .nx-stagger-item {
   animation: nx-list-in var(--motion-base) var(--ease-out) both;
-  animation-delay: calc(min(var(--nx-i, 0), 7) * 25ms);
+  animation-delay: calc(min(var(--nx-i, 0), 7) * 45ms);
+}
+
+/* ── D2. 文档切换：先 120ms 快退（.nx-doc-leaving，见 App.vue 的
+   handleSelectDoc），再用 viewIn 式弹簧入场（translateY(14px) scale(.995)→1，
+   .5s），避免“瞬间切掉、再淡入”的跳变。只用 transform / opacity。 */
+@keyframes nx-doc-swap-in {
+  from { opacity: 0; transform: translateY(14px) scale(.995); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.nx-doc-swap-in {
+  animation: nx-doc-swap-in .5s var(--ease-enter) both;
+}
+.nx-doc-leaving {
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 120ms var(--ease-exit), transform 120ms var(--ease-exit);
 }
 
 /* ── E. 微交互工具类 ── 按压只给主按钮/工具栏按钮，不给文字链接 */

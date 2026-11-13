@@ -1196,6 +1196,30 @@ html.dark .popout-item.is-active {
   grid-template-columns: minmax(0, 1fr) minmax(0, 46px);
 }
 
+/* ── 专注模式（笔记页 artifact 的做法）──
+   预览栏用 grid-template-columns .55s 弹簧收到 0，同时预览列本身
+   opacity 0 + translateY(8px) scale(.985) 淡出；侧边栏由 sidebarVisible
+   收起，走已有的 sidebar-slide 抽屉过渡。只用 grid / transform / opacity。
+   进入 .55s 弹簧，退出回到基础的 .36s glide（出场快收，符合 A-F 的
+   “入场弹簧、出场快”）。窄屏（≤960px）下 JS 已强制切到编辑视图，
+   避免预览视图里两栏同时被藏掉；这里再兜底：专注时预览列不占位。 */
+.workspace-grid.is-focus .workspace-columns,
+.app-container.is-focus .workspace-grid .workspace-columns {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0);
+  transition: grid-template-columns 550ms var(--ease-spring);
+}
+.workspace-grid .preview-column {
+  transition: opacity 550ms var(--ease-spring), transform 550ms var(--ease-spring);
+}
+.workspace-grid.is-focus .preview-column {
+  opacity: 0;
+  transform: translateY(8px) scale(.985);
+  pointer-events: none;
+}
+.workspace-grid.is-focus .workspace-column.editor-column {
+  border-right: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .workspace-columns {
     transition-duration: 0.01ms !important;
