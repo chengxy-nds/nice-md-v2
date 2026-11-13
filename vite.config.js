@@ -294,6 +294,49 @@ export default defineConfig({
   optimizeDeps: {
     entries: ['index.html', 'src/main.js'], // explicitly scan only these files for pre-bundling
   },
+  build: {
+    // Item 6: the baseline build emitted a single 4.7MB index chunk (gzip
+    // 1.35MB) with no splitting at all. Name the big static vendors so the
+    // browser can cache them separately from app code; dynamically imported
+    // libs (mermaid/katex/docx/html2canvas/mammoth/cos-sdk) already split
+    // into their own chunks via import() and are grouped here by name.
+    // NOTE: Vite 8 uses Rolldown, so this lives under rolldownOptions.
+    // base './' keeps dynamic chunk URLs relative, which also works under
+    // Electron's file:// protocol.
+    sourcemap: false,
+    chunkSizeWarningLimit: 1000,
+    rolldownOptions: {
+      output: {
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (id.includes('codemirror') || id.includes('@lezer')) return 'vendor-codemirror';
+          if (id.includes('highlight.js')) return 'vendor-hljs';
+          if (id.includes('marked')) return 'vendor-markdown';
+          // NOTE: mermaid, katex and their dependency trees (d3, cytoscape,
+          // dagre, lodash, ...) are deliberately NOT grouped here, and
+          // there is deliberately NO generic catch-all 'vendor' bucket.
+          // They are loaded via dynamic import() only when a document
+          // actually contains a diagram / math. Two attempts proved that
+          // grouping them is counterproductive in Vite 8 / Rolldown: the
+          // dynamic-import helper Rolldown generates landed inside the
+          // grouped chunk, which turned the whole chunk into a static
+          // dependency of the entry — first a 1.9MB vendor-mermaid chunk,
+          // then a 3.3MB generic vendor chunk, both modulepreloaded on
+          // every load. Without grouping, Rolldown keeps its own
+          // fine-grained splitting (per-diagram-type chunks for mermaid)
+          // and those chunks stay lazy.
+          if (id.includes('docx') || id.includes('html2canvas') || id.includes('mammoth')) return 'vendor-export';
+          if (id.includes('@neondatabase') || id.includes('@tidbcloud')) return 'vendor-cloud';
+          // NOTE: cos-js-sdk is deliberately excluded from vendor-cloud:
+          // it is only loaded via dynamic import() when the user uploads
+          // to OSS, and grouping it with the statically-imported Neon/TiDB
+          // drivers would make it eager too.
+          if (id.includes('vue') || id.includes('@vue')) return 'vendor-vue';
+          return undefined;
+        }
+      }
+    }
+  },
   server: {
     port: 3000,
     host: '0.0.0.0',

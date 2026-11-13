@@ -1,8 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
-import renderMathInElement from 'katex/dist/contrib/auto-render.js';
 import 'katex/dist/katex.min.css';
-import mermaid from 'mermaid';
 import { compileToWeChatHtml, cleanEmptyListItems } from '../utils/wechatStyles';
 import { ensureMarkdownExtensions } from '../utils/markdownExtensions';
 import { parseMarkdownWithDocToc } from '../utils/markdownToc';
@@ -296,22 +294,52 @@ watch(() => props.isWeChatMode, () => {
   });
 });
 
+// ── Lazy heavy renderers (item 3) ──
+// KaTeX (~260kB) and Mermaid (~600kB + diagram chunks) used to load with
+// the preview on every page load. They are now fetched on demand: KaTeX
+// only when the rendered text contains math delimiters, Mermaid only when
+// the document contains a mermaid block. The KaTeX CSS stays a static
+// import so math never flashes unstyled once loaded.
+let katexAutoRender = null;
+let mermaidLib = null;
+async function loadKatexAutoRender() {
+  if (!katexAutoRender) katexAutoRender = (await import('katex/dist/contrib/auto-render.js')).default;
+  return katexAutoRender;
+}
+async function loadMermaid() {
+  if (!mermaidLib) {
+    mermaidLib = (await import('mermaid')).default;
+    mermaidLib.initialize({
+      startOnLoad: false,
+      theme: 'default',
+      securityLevel: 'loose',
+      flowchart: { htmlLabels: false },
+      sequence: { useMaxWidth: true }
+    });
+  }
+  return mermaidLib;
+}
+
 // Render KaTeX math formulas and Mermaid charts dynamically
 const renderMathAndCharts = async () => {
   await nextTick();
   if (!previewContainerRef.value) return;
 
-  // 1. Render KaTeX Math
+  // 1. Render KaTeX Math — only when math delimiters are present
   try {
-    renderMathInElement(previewContainerRef.value, {
-      delimiters: [
-        { left: '$$', right: '$$', display: true },
-        { left: '$', right: '$', display: false },
-        { left: '\\(', right: '\\)', display: false },
-        { left: '\\[', right: '\\]', display: true }
-      ],
-      throwOnError: false
-    });
+    const text = previewContainerRef.value.textContent || '';
+    if (text.includes('$') || text.includes('\\(') || text.includes('\\[')) {
+      const renderMathInElement = await loadKatexAutoRender();
+      renderMathInElement(previewContainerRef.value, {
+        delimiters: [
+          { left: '$$', right: '$$', display: true },
+          { left: '$', right: '$', display: false },
+          { left: '\\(', right: '\\)', display: false },
+          { left: '\\[', right: '\\]', display: true }
+        ],
+        throwOnError: false
+      });
+    }
   } catch (err) {
     console.warn('[ArticlePreview] KaTeX render error:', err);
   }
@@ -339,6 +367,7 @@ const renderMathAndCharts = async () => {
         });
 
         if (validNodes.length > 0) {
+          const mermaid = await loadMermaid();
           await mermaid.run({ nodes: validNodes }).catch((err) => {
             console.warn('[ArticlePreview] Mermaid run handled:', err);
           });
@@ -368,17 +397,7 @@ watch(() => props.isWeChatMode, () => {
 });
 
 onMounted(() => {
-  try {
-    mermaid.initialize({
-      startOnLoad: false,
-      theme: 'default',
-      securityLevel: 'loose',
-      flowchart: { htmlLabels: false },
-      sequence: { useMaxWidth: true }
-    });
-  } catch (err) {
-    console.error('[ArticlePreview] Mermaid init error:', err);
-  }
+  // Mermaid is initialised lazily inside loadMermaid() on first use.
   renderMathAndCharts();
 });
 

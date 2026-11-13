@@ -40,7 +40,7 @@ import {
 import { showConfirm } from '../utils/confirmDialog';
 import { writeTextToClipboard } from '../utils/clipboard';
 import { detectUrlAtOffset, downloadUrlResource, getFastPreviewImageUrl } from '../utils/editorUrlHelper';
-import mammoth from 'mammoth/mammoth.browser.js';
+import { fireConfetti } from '../utils/celebrate';
 import { htmlToMarkdown } from '../utils/htmlToMarkdown';
 import { isStorageEnabled, uploadToOSS } from '../utils/fileStorage';
 import {
@@ -262,7 +262,7 @@ const startUrlExtraction = async () => {
       importUrl.value = '';
 
       soundEngine.playChime();
-      confetti({
+      void fireConfetti({
         particleCount: 80,
         spread: 60,
         origin: { y: 0.6 }
@@ -1418,7 +1418,8 @@ const processFile = async (file) => {
     if (extension === 'docx' || extension === 'doc') {
       // Word .docx / .doc import using mammoth browser bundle + JSZip fallback
       const arrayBuffer = await file.arrayBuffer();
-      const m = mammoth.default || mammoth;
+      const mammothMod = await import('mammoth/mammoth.browser.js');
+      const m = mammothMod.default || mammothMod;
 
       let markdown = '';
       

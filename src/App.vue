@@ -1,7 +1,5 @@
 <script setup>
-import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
-import html2canvas from 'html2canvas';
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, ImageRun, AlignmentType } from 'docx';
+import { ref, computed, defineAsyncComponent, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import {
   Menu, Sparkles, Search, Image, ImagePlus, BookOpen, Link, Upload, Trash2,
   Eye, EyeOff, Download, Undo2, Redo2, Code2,
@@ -16,23 +14,23 @@ import { soundEngine } from './utils/synthAudio';
 import { showConfirm } from './utils/confirmDialog';
 import EditorPanel from './components/EditorPanel.vue';
 import PreviewPanel from './components/PreviewPanel.vue';
-import LaunchpadModal from './components/LaunchpadModal.vue';
-import SettingsModal from './components/SettingsModal.vue';
+const LaunchpadModal = defineAsyncComponent(() => import('./components/LaunchpadModal.vue'));
+const SettingsModal = defineAsyncComponent(() => import('./components/SettingsModal.vue'));
 import ConfirmDialog from './components/ConfirmDialog.vue';
-import CoverCollageModal from './components/CoverCollageModal.vue';
+const CoverCollageModal = defineAsyncComponent(() => import('./components/CoverCollageModal.vue'));
 import Sidebar from './components/Sidebar.vue';
 import IconBar from './components/IconBar.vue';
-import DocHistoryModal from './components/DocHistoryModal.vue';
+const DocHistoryModal = defineAsyncComponent(() => import('./components/DocHistoryModal.vue'));
 import { compileToWeChatHtml, cleanEmptyListItems, stripOssProcessFromMarkdown } from './utils/wechatStyles';
 import { writeTextToClipboard } from './utils/clipboard';
 import { EDITOR_SETTINGS_UPDATED_EVENT, loadSyncScrollPreference } from './utils/editorPreferences';
 import { ensureMarkdownExtensions, stripYamlFrontMatter } from './utils/markdownExtensions';
 import { parseMarkdownWithDocToc, isDocTocToken, extractHeadingsFromTokens } from './utils/markdownToc';
 import { marked } from 'marked';
-import confetti from 'canvas-confetti';
+import { fireConfetti } from './utils/celebrate';
 import { defaultMarkdown } from './utils/defaultMarkdown';
-import TemplateCenter from './components/TemplateCenter.vue';
-import MaterialCenter from './components/MaterialCenter.vue';
+const TemplateCenter = defineAsyncComponent(() => import('./components/TemplateCenter.vue'));
+const MaterialCenter = defineAsyncComponent(() => import('./components/MaterialCenter.vue'));
 import HomeLandingView from './components/HomeLandingView.vue';
 import BrandLogo from './components/BrandLogo.vue';
 import { createSnapshot, getAllDocSnapshots, saveAllDocSnapshots } from './utils/docHistory';
@@ -57,6 +55,7 @@ import {
   syncCloudBidirectional,
   realtimeSyncDoc,
   realtimeSyncGroup,
+  flushPendingRealtimeSync,
   realtimeDeleteDoc,
   realtimePermanentDeleteDoc,
   realtimePermanentDeleteDocsBatch,
@@ -226,9 +225,12 @@ const markdownContent = computed({
           }
         }
       }
+      // NOTE (item 1): no synchronous save / cloud write here. Every
+      // keystroke used to JSON.stringify ALL documents into localStorage
+      // and fire an immediate cloud write. Persistence is now the 800ms
+      // debounced watcher on markdownContent below; cloud sync goes
+      // through dispatchRealtime's own debounce plus the 2s full auto-sync.
       if (contentChanged) doc.updatedAt = Date.now();
-      saveDocuments(documents.value);
-      if (contentChanged) realtimeSyncDoc(doc);
     }
   }
 });
@@ -240,9 +242,9 @@ const customStyles = computed({
     if (doc) {
       const stylesChanged = JSON.stringify(doc.customStyles ?? {}) !== JSON.stringify(val ?? {});
       doc.customStyles = val;
+      // NOTE (item 1): see markdownContent setter — persistence is the
+      // debounced watcher below, not a synchronous write per change.
       if (stylesChanged) doc.updatedAt = Date.now();
-      saveDocuments(documents.value);
-      if (stylesChanged) realtimeSyncDoc(doc);
     }
   }
 });
@@ -1285,24 +1287,29 @@ async function prepareContainerImages(container) {
 // non-editable embedded content. Here we parse the markdown into native Word
 // paragraphs / tables / runs so every line is real, editable text.
 
+// Lazily loaded docx namespace (item 3) — filled by exportWord() just
+// before the helpers below run. docx is only downloaded when the user
+// exports Word, and exportWord() is the only caller of these helpers.
+let docxNs = null;
+
 function mdTextToRuns(text) {
   const runs = [];
   const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*|~~[^~]+~~)/g);
   for (const part of parts) {
     if (!part) continue;
     if (part.startsWith('**') && part.endsWith('**')) {
-      runs.push(new TextRun({ text: part.slice(2, -2), bold: true }));
+      runs.push(new docxNs.TextRun({ text: part.slice(2, -2), bold: true }));
     } else if (part.startsWith('~~') && part.endsWith('~~')) {
-      runs.push(new TextRun({ text: part.slice(2, -2), strike: true }));
+      runs.push(new docxNs.TextRun({ text: part.slice(2, -2), strike: true }));
     } else if (part.startsWith('`') && part.endsWith('`')) {
-      runs.push(new TextRun({ text: part.slice(1, -1), font: 'Consolas' }));
+      runs.push(new docxNs.TextRun({ text: part.slice(1, -1), font: 'Consolas' }));
     } else if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
-      runs.push(new TextRun({ text: part.slice(1, -1), italics: true }));
+      runs.push(new docxNs.TextRun({ text: part.slice(1, -1), italics: true }));
     } else {
-      runs.push(new TextRun({ text: part }));
+      runs.push(new docxNs.TextRun({ text: part }));
     }
   }
-  if (!runs.length) runs.push(new TextRun({ text }));
+  if (!runs.length) runs.push(new docxNs.TextRun({ text }));
   return runs;
 }
 
@@ -1357,19 +1364,19 @@ async function mdToDocxWithImages(tokens) {
   const imgParagraph = (tk) => {
     const p = getImg();
     if (p) {
-      return new Paragraph({
-        children: [new ImageRun({
+      return new docxNs.Paragraph({
+        children: [new docxNs.ImageRun({
           data: p.bytes,
           transformation: { width: p.w, height: p.h },
           type: p.type
         })],
-        alignment: AlignmentType.CENTER,
+        alignment: docxNs.AlignmentType.CENTER,
         spacing: { before: 120, after: 120 }
       });
     }
-    return new Paragraph({
-      children: [new TextRun({ text: `[图片: ${tk.text || tk.href || ''}]`, color: '888888' })],
-      alignment: AlignmentType.CENTER,
+    return new docxNs.Paragraph({
+      children: [new docxNs.TextRun({ text: `[图片: ${tk.text || tk.href || ''}]`, color: '888888' })],
+      alignment: docxNs.AlignmentType.CENTER,
       spacing: { before: 120, after: 120 }
     });
   };
@@ -1378,7 +1385,7 @@ async function mdToDocxWithImages(tokens) {
   const paragraphWithImages = (t) => {
     const hasImg = t.tokens && t.tokens.some(tk => tk.type === 'image');
     if (!hasImg) {
-      return [new Paragraph({
+      return [new docxNs.Paragraph({
         children: mdTextToRuns(t.text),
         spacing: { after: 120, line: 360 }
       })];
@@ -1388,21 +1395,21 @@ async function mdToDocxWithImages(tokens) {
       if (tk.type === 'image') {
         const p = getImg();
         if (p) {
-          runs.push(new ImageRun({
+          runs.push(new docxNs.ImageRun({
             data: p.bytes,
             transformation: { width: p.w, height: p.h },
             type: p.type
           }));
         } else {
-          runs.push(new TextRun({ text: `[图片]`, color: '888888' }));
+          runs.push(new docxNs.TextRun({ text: `[图片]`, color: '888888' }));
         }
       } else {
         runs.push(...mdTextToRuns(tk.raw || tk.text || ''));
       }
     }
-    return [new Paragraph({
+    return [new docxNs.Paragraph({
       children: runs,
-      alignment: AlignmentType.CENTER,
+      alignment: docxNs.AlignmentType.CENTER,
       spacing: { before: 120, after: 120 }
     })];
   };
@@ -1417,8 +1424,8 @@ async function mdToDocxWithImages(tokens) {
         case 'paragraph':
           if (isDocTocToken(t)) {
             extractHeadingsFromTokens(tokens).forEach((item) => {
-              out.push(new Paragraph({
-                children: [new TextRun({ text: item.text })],
+              out.push(new docxNs.Paragraph({
+                children: [new docxNs.TextRun({ text: item.text })],
                 bullet: { level: Math.min(item.level, 4) },
                 spacing: { after: 60 }
               }));
@@ -1430,10 +1437,10 @@ async function mdToDocxWithImages(tokens) {
         case 'heading': {
           const depth = Math.min(t.depth || 1, 6);
           const headingMap = {
-            1: HeadingLevel.HEADING_1, 2: HeadingLevel.HEADING_2, 3: HeadingLevel.HEADING_3,
-            4: HeadingLevel.HEADING_4, 5: HeadingLevel.HEADING_5, 6: HeadingLevel.HEADING_6
+            1: docxNs.HeadingLevel.HEADING_1, 2: docxNs.HeadingLevel.HEADING_2, 3: docxNs.HeadingLevel.HEADING_3,
+            4: docxNs.HeadingLevel.HEADING_4, 5: docxNs.HeadingLevel.HEADING_5, 6: docxNs.HeadingLevel.HEADING_6
           };
-          out.push(new Paragraph({
+          out.push(new docxNs.Paragraph({
             children: mdTextToRuns(t.text),
             heading: headingMap[depth],
             spacing: { before: 240, after: 120 }
@@ -1441,7 +1448,7 @@ async function mdToDocxWithImages(tokens) {
           break;
         }
         case 'blockquote':
-          out.push(new Paragraph({
+          out.push(new docxNs.Paragraph({
             children: mdTextToRuns(t.text),
             indent: { left: 400 },
             border: { left: { style: 'single', size: 12, color: '999999' } },
@@ -1451,7 +1458,7 @@ async function mdToDocxWithImages(tokens) {
         case 'list': {
           (t.items || []).forEach((item, i) => {
             const itemText = item.text || '';
-            out.push(new Paragraph({
+            out.push(new docxNs.Paragraph({
               children: mdTextToRuns(itemText),
               numbering: t.ordered ? { reference: 'ordered-list', level: 0 } : undefined,
               bullet: t.ordered ? undefined : { level: 0 },
@@ -1462,8 +1469,8 @@ async function mdToDocxWithImages(tokens) {
         }
         case 'code': {
           const lines = (t.text || '').split('\n');
-          out.push(new Paragraph({
-            children: lines.map((l, i) => new TextRun({
+          out.push(new docxNs.Paragraph({
+            children: lines.map((l, i) => new docxNs.TextRun({
               text: l + (i < lines.length - 1 ? '\n' : ''),
               font: 'Consolas',
               size: 18,
@@ -1477,9 +1484,9 @@ async function mdToDocxWithImages(tokens) {
         case 'table': {
           const headerRow = t.header || [];
           const rows = t.rows || [];
-          const makeRow = (cells, isHeader) => new TableRow({
-            children: cells.map((cell) => new TableCell({
-              children: [new Paragraph({
+          const makeRow = (cells, isHeader) => new docxNs.TableRow({
+            children: cells.map((cell) => new docxNs.TableCell({
+              children: [new docxNs.Paragraph({
                 children: mdTextToRuns(cell.text || ''),
                 spacing: { after: 0 }
               })],
@@ -1490,15 +1497,15 @@ async function mdToDocxWithImages(tokens) {
           if (headerRow.length) tableRows.push(makeRow(headerRow, true));
           rows.forEach(r => tableRows.push(makeRow(r, false)));
           if (tableRows.length) {
-            out.push(new Table({
-              width: { size: 100, type: WidthType.PERCENTAGE },
+            out.push(new docxNs.Table({
+              width: { size: 100, type: docxNs.WidthType.PERCENTAGE },
               rows: tableRows
             }));
           }
           break;
         }
         case 'space':
-          out.push(new Paragraph({ children: [] }));
+          out.push(new docxNs.Paragraph({ children: [] }));
           break;
         default:
           break;
@@ -1514,6 +1521,8 @@ async function exportWord() {
   const title = getExportTitle();
   try {
     ensureMarkdownExtensions();
+    docxNs = await import('docx');
+    const { Document, Packer } = docxNs;
     const tokens = marked.lexer(stripYamlFrontMatter(markdownContent.value || ''));
     const children = await mdToDocxWithImages(tokens);
 
@@ -1563,6 +1572,7 @@ async function exportPNG() {
 
     await prepareContainerImages(inner);
 
+    const { default: html2canvas } = await import('html2canvas');
     const canvas = await html2canvas(inner, {
       scale: 2,
       useCORS: true,
@@ -2026,7 +2036,7 @@ onMounted(async () => {
         markdownContent.value = article.markdown;
 
         soundEngine.playChime();
-        confetti({
+        void fireConfetti({
           particleCount: 100,
           spread: 70,
           origin: { y: 0.6 }
@@ -2058,12 +2068,24 @@ onUnmounted(() => {
 });
 
 // ── auto-save watchers ──
+// Single debounced persistence path (item 1): the markdownContent /
+// customStyles computed setters only mutate memory now. This 800ms
+// debounce is the only local save for typing; beforeunload below is
+// the crash/close safety net that flushes it synchronously.
 let docSaveTimer = null;
 watch(markdownContent, () => {
   clearTimeout(docSaveTimer);
   docSaveTimer = setTimeout(() => {
     saveDocuments(documents.value);
   }, 800);
+});
+
+// Flush any pending debounced save + realtime cloud writes before the
+// tab closes, so the 800ms/1200ms debounce can never lose the last edit.
+window.addEventListener('beforeunload', () => {
+  clearTimeout(docSaveTimer);
+  saveDocuments(documents.value);
+  void flushPendingRealtimeSync();
 });
 
 watch(sidebarVisible, (val) => {

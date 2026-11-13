@@ -22,7 +22,7 @@ import { parseMarkdownWithDocToc } from '../utils/markdownToc';
 import { soundEngine } from '../utils/synthAudio';
 import ThemeCustomizer from './ThemeCustomizer.vue';
 import ArticlePreview from './ArticlePreview.vue';
-import confetti from 'canvas-confetti';
+import { fireConfetti } from '../utils/celebrate';
 
 const props = defineProps({
   markdown: {
@@ -351,7 +351,7 @@ const showToast = (msg) => {
   }
   
   // Confetti effect for premium feel!
-  confetti({
+  void fireConfetti({
     particleCount: 45,
     spread: 35,
     origin: { y: 0.85 },

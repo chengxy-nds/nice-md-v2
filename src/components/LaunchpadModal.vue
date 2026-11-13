@@ -24,7 +24,7 @@ import {
 } from '@lucide/vue';
 import { soundEngine } from '../utils/synthAudio';
 import { compileToWeChatHtml } from '../utils/wechatStyles';
-import confetti from 'canvas-confetti';
+import { fireConfetti } from '../utils/celebrate';
 import BrandLogo from './BrandLogo.vue';
 
 const props = defineProps({
@@ -1318,7 +1318,7 @@ const handleLaunch = async () => {
   isLaunching.value = false;
   soundEngine.playChime();
   
-  confetti({
+  void fireConfetti({
     particleCount: 70,
     spread: 60,
     origin: { x: 0.8, y: 0.6 }

@@ -1,5 +1,5 @@
 import { marked } from 'marked';
-import hljs from 'highlight.js';
+import hljs from './highlight';
 
 export const CONTAINER_CONFIGS = {
   note: { icon: 'ℹ️', label: '核心信息提示 (Note)', bg: '#eff6ff', border: '#bfdbfe', accent: '#2563eb', titleColor: '#1e40af', textColor: '#1e3a8a' },

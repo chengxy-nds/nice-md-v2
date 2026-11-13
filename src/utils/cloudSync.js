@@ -367,8 +367,69 @@ export async function syncCloudBidirectional(credentialsOrConn, localDocs, local
   return await getAdapter(targetProvider).syncBidirectional(credentialsOrConn, localDocs, localGroups, localHistories, localThemes);
 }
 
+// ── Realtime sync: debounce high-frequency writes (item 1) ──────────────
+// Before this change every keystroke triggered an immediate cloud write
+// (via App.vue's markdownContent setter -> realtimeSyncDoc) plus a full
+// localStorage serialisation. Deletes stay immediate: they are rare and
+// correctness-critical, and must not be delayed behind a later write.
+// Debounced actions coalesce per entity id and flush after 1200ms of
+// inactivity; flushPendingRealtimeSync() forces the pending writes out
+// (used by the beforeunload handler in App.vue so no edit is lost).
+const REALTIME_DEBOUNCE_MS = 1200;
+const DEBOUNCED_REALTIME_ACTIONS = new Set(['syncDoc', 'syncGroup', 'syncTheme', 'syncHistory']);
+const pendingRealtime = new Map(); // key -> { action, payload, timer, resolvers }
+
+function realtimeKey(action, payload) {
+  const id = payload && typeof payload === 'object' ? (payload.id || payload.docId || payload.themeId || '') : String(payload ?? '');
+  return `${action}:${id}`;
+}
+
+function flushRealtimeEntry(key) {
+  const entry = pendingRealtime.get(key);
+  if (!entry) return Promise.resolve();
+  pendingRealtime.delete(key);
+  clearTimeout(entry.timer);
+  if (!isCloudSyncEnabled()) {
+    entry.resolvers.forEach((r) => r(undefined));
+    return Promise.resolve();
+  }
+  const adapter = getAdapter(getActiveCloudProvider());
+  const promise = trackMutationPromise(adapter[entry.action](adapter.getConfig(), entry.payload));
+  promise.then(
+    (v) => entry.resolvers.forEach((r) => r(v)),
+    () => entry.resolvers.forEach((r) => r(undefined)),
+  );
+  return promise;
+}
+
+export function flushPendingRealtimeSync() {
+  return Promise.all([...pendingRealtime.keys()].map((key) => flushRealtimeEntry(key)));
+}
+
+export function cancelPendingRealtimeSync() {
+  for (const entry of pendingRealtime.values()) {
+    clearTimeout(entry.timer);
+    entry.resolvers.forEach((r) => r(undefined));
+  }
+  pendingRealtime.clear();
+}
+
 function dispatchRealtime(action, payload) {
   if (!isCloudSyncEnabled() || !payload) return;
+  if (DEBOUNCED_REALTIME_ACTIONS.has(action)) {
+    const key = realtimeKey(action, payload);
+    const existing = pendingRealtime.get(key);
+    if (existing) {
+      clearTimeout(existing.timer);
+      existing.payload = payload;
+      existing.timer = setTimeout(() => { void flushRealtimeEntry(key); }, REALTIME_DEBOUNCE_MS);
+      return new Promise((resolve) => existing.resolvers.push(resolve));
+    }
+    const entry = { action, payload, timer: null, resolvers: [] };
+    entry.timer = setTimeout(() => { void flushRealtimeEntry(key); }, REALTIME_DEBOUNCE_MS);
+    pendingRealtime.set(key, entry);
+    return new Promise((resolve) => entry.resolvers.push(resolve));
+  }
   const adapter = getAdapter(getActiveCloudProvider());
   return trackMutationPromise(adapter[action](adapter.getConfig(), payload));
 }

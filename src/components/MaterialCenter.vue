@@ -31,7 +31,7 @@ import {
   materials
 } from '../utils/materialLibrary';
 import { soundEngine } from '../utils/synthAudio';
-import confetti from 'canvas-confetti';
+import { fireConfetti } from '../utils/celebrate';
 
 const emit = defineEmits(['back-to-editor', 'insert-material', 'apply-background']);
 
@@ -104,7 +104,7 @@ async function handleCopy(mat) {
 
 function handleInsert(mat) {
   soundEngine.playChime();
-  confetti({
+  void fireConfetti({
     particleCount: 60,
     spread: 50,
     origin: { y: 0.6 }
@@ -114,7 +114,7 @@ function handleInsert(mat) {
 
 function handleApplyBackground(mat) {
   soundEngine.playChime();
-  confetti({
+  void fireConfetti({
     particleCount: 60,
     spread: 50,
     origin: { y: 0.6 }
