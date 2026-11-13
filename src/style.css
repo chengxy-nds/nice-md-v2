@@ -135,16 +135,27 @@
 /* ── D2. 文档切换：先 120ms 快退（.nx-doc-leaving，见 App.vue 的
    handleSelectDoc），再用 viewIn 式弹簧入场（translateY(14px) scale(.995)→1，
    .5s），避免“瞬间切掉、再淡入”的跳变。只用 transform / opacity。
-   注意：这两个类只挂在编辑区内容 .workspace-columns（编辑栏+预览栏）上，
-   不挂 .workspace-grid——标签栏和工具栏切换文档时不动，只有内容动。 */
+   作用范围（只动内容本身）：这两个类仍挂在 .workspace-columns 上当状态
+   标记，但动画只落在内容后代上——编辑器正文（textarea 模式的 textarea、
+   CodeMirror 模式的 .cm-content）和预览文章（.preview-body）。
+   明确不动：行号（.line-gutter、CodeMirror 的 .cm-gutters 都在动画目标
+   之外）、右侧栏（.preview-right-bar、.theme-sidebar-wrapper）、标签栏、
+   工具栏、编辑器底部栏、预览头部。注意 CodeMirror 的行号在
+   .editor-input-area 内部，所以不能直接动 .editor-input-area，只能动
+   .cm-content；动 .cm-content 只是视觉位移，不碰 CodeMirror 的测量。 */
 @keyframes nx-doc-swap-in {
   from { opacity: 0; transform: translateY(14px) scale(.995); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
-.nx-doc-swap-in {
+/* 只动内容后代，容器本身不做 transform / opacity（见上面注释）。 */
+.workspace-columns.nx-doc-swap-in .editor-input-area textarea,
+.workspace-columns.nx-doc-swap-in .editor-input-area .cm-content,
+.workspace-columns.nx-doc-swap-in .preview-body {
   animation: nx-doc-swap-in .5s var(--ease-enter) both;
 }
-.nx-doc-leaving {
+.workspace-columns.nx-doc-leaving .editor-input-area textarea,
+.workspace-columns.nx-doc-leaving .editor-input-area .cm-content,
+.workspace-columns.nx-doc-leaving .preview-body {
   opacity: 0;
   transform: translateY(-6px);
   transition: opacity 120ms var(--ease-exit), transform 120ms var(--ease-exit);
