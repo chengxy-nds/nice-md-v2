@@ -1594,7 +1594,9 @@ async function exportPNG() {
   }
 }
 
-// ── PDF export using html2pdf.js ──
+// ── PDF export via browser print (iframe) ──
+// (The html2pdf.js branch was dead code — the library was never imported,
+// so export always fell through to here. The dependency is removed.)
 function printViaIframe(bodyHtml, title) {
   const iframe = document.createElement('iframe');
   iframe.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:none;visibility:hidden;';
@@ -1656,8 +1658,6 @@ async function exportPDF(options = {}) {
     styledHtml = getStyledHtml();
   }
 
-  const exportFilename = raw ? `${title}_无主题.pdf` : `${title}.pdf`;
-
   // Force Web mode container (750px desktop web width)
   let host = null;
   try {
@@ -1699,20 +1699,8 @@ async function exportPDF(options = {}) {
 
     await prepareContainerImages(inner);
 
-    if (typeof html2pdf === 'function') {
-      const opt = {
-        margin:       [12, 12, 12, 12],
-        filename:     exportFilename,
-        image:        { type: 'jpeg', quality: 0.98 },
-        html2canvas:  { scale: 2, useCORS: true, backgroundColor: '#ffffff', windowWidth: 750 },
-        jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak:    { mode: ['css', 'legacy'] }
-      };
-      await html2pdf().set(opt).from(inner).save();
-      return;
-    }
   } catch (err) {
-    console.warn('[NiceMD] html2pdf Web export failed, falling back to iframe print:', err);
+    console.warn('[NiceMD] PDF prepare failed, falling back to iframe print:', err);
   } finally {
     if (host && host.parentNode) {
       document.body.removeChild(host);

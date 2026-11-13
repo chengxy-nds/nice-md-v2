@@ -22,7 +22,7 @@ import {
   Underline,
   RotateCcw,
   Eye
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 import {
   materialCategories,
   styleCategories,

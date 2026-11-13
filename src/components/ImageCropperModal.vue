@@ -11,7 +11,7 @@ import {
   Sparkles,
   Check,
   Plus
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 import {
   CROP_RATIO_PRESETS,
   getOrientedDimensions,

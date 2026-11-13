@@ -1,6 +1,6 @@
 <script setup>
 import { ref, watch, computed, onMounted, onBeforeUnmount, nextTick } from 'vue';
-import { Palette, FileText, X, Save, Sliders, Code2, RotateCcw, Check, Sparkles, Hash, FileType } from 'lucide-vue-next';
+import { Palette, FileText, X, Save, Sliders, Code2, RotateCcw, Check, Sparkles, Hash, FileType } from '@lucide/vue';
 import { getThemeDefaultStyles, getThemeSavedStyles, isBuiltInTheme } from '../utils/themePresets';
 import { allMaterialTemplatesMap, getMaterialTemplatesForKey, backgroundTemplates, underlineTemplates } from '../utils/materialLibrary';
 import MaterialPopup from './MaterialPopup.vue';

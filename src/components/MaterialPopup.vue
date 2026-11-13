@@ -1,6 +1,6 @@
 <script setup>
 import { ref, computed, watch, nextTick } from 'vue';
-import { X, Check, Search, ChevronDown, Sparkles } from 'lucide-vue-next';
+import { X, Check, Search, ChevronDown, Sparkles } from '@lucide/vue';
 import {
   getMaterialTemplatesForKey,
   styleCategories,

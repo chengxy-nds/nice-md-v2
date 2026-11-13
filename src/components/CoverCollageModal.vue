@@ -16,7 +16,7 @@ import {
   Move,
   Crop,
   Image as ImageIcon
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 import ImageCropperModal from './ImageCropperModal.vue';
 import {
   COLLAGE_RATIOS,

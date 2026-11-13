@@ -18,7 +18,7 @@ import {
   ArrowRight,
   Eye,
   SlidersHorizontal
-} from 'lucide-vue-next';
+} from '@lucide/vue';
 import {
   MAX_SNAPSHOTS_PER_DOC,
   getDocSnapshots,

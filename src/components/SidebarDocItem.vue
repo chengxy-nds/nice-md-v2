@@ -4,7 +4,7 @@ let closeActiveDocMenu = null;
 
 <script setup>
 import { ref, computed, nextTick, watch, onUnmounted } from 'vue';
-import { Pencil, Trash2, History, Copy, Pin, MoreHorizontal } from 'lucide-vue-next';
+import { Pencil, Trash2, History, Copy, Pin, MoreHorizontal } from '@lucide/vue';
 import { showConfirm } from '../utils/confirmDialog';
 
 const props = defineProps({
