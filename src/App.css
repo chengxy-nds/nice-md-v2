@@ -1045,6 +1045,12 @@ html.dark .empty-tabs-title {
   display: none;
 }
 
+/* 手机预览模式顶部操作（发布 / 复制 / 自定义主题）：平时藏掉，只在
+   ≤960px 预览模式出现（见下方 .active-view-preview 规则）。 */
+.workspace-toolbar .btn-icon.preview-top-action {
+  display: none;
+}
+
 .workspace-toolbar .btn-icon.is-copied {
   color: #16a34a;
   background: rgba(22, 163, 74, 0.1);
@@ -1636,6 +1642,12 @@ html.dark .popout-item.is-active {
     display: none !important;
   }
 
+  /* 手机预览：发布 / 复制 / 自定义主题移到顶部这一栏；手机预览 / 隐藏预览
+     直接去掉，底栏在手机上整条藏掉（见 PreviewPanel）。 */
+  .workspace-grid.active-view-preview .workspace-toolbar .btn-icon.preview-top-action {
+    display: inline-flex;
+  }
+
 }
 
 /* ── 窄屏工具栏：不横向滚动，溢出工具收进“···”菜单 ──
@@ -1718,6 +1730,30 @@ html.dark .popout-item.is-active {
   .workspace-toolbar .toolbar-doc-theme-container .btn-toolbar-dropdown .dropdown-label-prefix,
   .workspace-toolbar .toolbar-doc-theme-container .btn-toolbar-dropdown .dropdown-label-val {
     display: none;
+  }
+  /* 预览模式行内顺序：主题 / 发布 / 复制 / 自定义主题 / “···”。 */
+  .workspace-toolbar .btn-icon.preview-top-action.preview-publish {
+    order: 22;
+  }
+  .workspace-toolbar .btn-icon.preview-top-action.preview-copy {
+    order: 23;
+  }
+  .workspace-toolbar .btn-icon.preview-top-action.preview-theme {
+    order: 24;
+  }
+  /* 预览模式：主题触发器放开，显示当前主题名（色点 + 名字 + 箭头），不再压成
+     36px 方块；名字过长省略。“主题”二字仍藏掉，只留名字，省宽度。 */
+  .workspace-grid.active-view-preview .workspace-toolbar .toolbar-doc-theme-container .btn-toolbar-dropdown {
+    width: auto;
+    height: 32px;
+    padding: 0 8px;
+  }
+  .workspace-grid.active-view-preview .workspace-toolbar .toolbar-doc-theme-container .btn-toolbar-dropdown .dropdown-label-val {
+    display: inline;
+    max-width: 88px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .hide-on-narrow {
     display: none !important;
