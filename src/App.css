@@ -1475,24 +1475,19 @@ html.dark .popout-item.is-active {
     /* 刘海屏安全区：顶部 padding 吃掉刘海高度，高度跟着加回来。 */
     padding: env(safe-area-inset-top) 12px 0;
     height: calc(4rem + env(safe-area-inset-top));
-    /* 顶栏 sticky：配合下面工具栏的 sticky，滚动时顶栏 + 工具栏叠在顶部。
-       注意：当前布局是 100dvh + overflow:hidden，编辑/预览各自在列内滚动，
-       工具栏本来就在滚动区之外、不会被卷走；sticky 在此是兜底（若上层
-       某天变成可滚动容器，它才生效），真正让工具栏贴到顶部的，是上面
-       藏掉的 38px 标签条。 */
-    position: sticky;
-    top: 0;
-    z-index: 30;
+    /* 注意：这里刻意不用 position:sticky。布局是 100dvh + overflow:hidden，
+       编辑/预览各自在列内滚动，顶栏和工具栏都在滚动区之外、永远不会被卷走，
+       正常文档流就固定在顶部；之前加的 sticky 反而害了工具栏（见下）。 */
   }
 
-  /* 工具栏 sticky：top 顶到顶栏底边（4rem + 刘海安全区），不与顶栏重叠、
-     不盖住编辑区首行（它在文档流里占 42px 高，sticky 不改变占位）。
-     只在移动端 sticky，桌面端保持原来的静态定位。 */
-  .workspace-toolbar {
-    position: sticky;
-    top: calc(4rem + env(safe-area-inset-top));
-    z-index: 25;
-  }
+  /* 工具栏不在此 sticky：之前写的是 top:calc(4rem + safe-area)，以为是相对
+     视口顶到顶栏底边；但 sticky 的 top 是相对最近滚动容器
+     （.workspace-grid，overflow:hidden）的顶边量的，而 grid 顶边本来就
+     在顶栏底边 —— 工具栏被多顶下去一整个顶栏高（~64px），流内原位留空
+     露出灰底（--bg-app #F3F5F8），编辑区首行顶到空位里、被下移的工具栏
+     从中间截断 —— 就是截图里顶栏下的灰带 + 半行字。正常文档流下工具栏
+     本来就在顶栏正下方、滚动区之外，不需要 sticky；删掉即恢复。
+     桌面端一直是静态定位，不变。 */
 
   .app-floating-toast {
     top: calc(72px + env(safe-area-inset-top));
@@ -1591,16 +1586,26 @@ html.dark .popout-item.is-active {
     padding: 0 8px;
   }
   .header-actions {
-    /* 占满工具栏宽；justify-content: space-between 让可见的几组工具均匀
+    /* 占满工具栏宽；justify-content: space-between 让可见的图标均匀
        铺满整行，取代原来 flex:1 的 spacer——spacer 是截图里大片空白的
        真凶：≤640px 下主题/代码下拉、导出组等全被 hide-on-narrow 藏掉，
        只剩查找/图片/撤销/重做 4 个按钮，spacer 独占了中间全部空宽，
-       把“···”顶到最右端，中间就是一片死空白。 */
+       把“···”顶到最右端，中间就是一片死空白。
+       注意是“按图标分”不是“按组分”：下面的 display:contents 把按钮组
+       拍平，7 个图标/触发器成为这一行的直接子项，组内 1px 紧贴、组间
+       大空档的一簇一簇就没了。 */
     flex: 1;
     width: 100%;
     min-width: 0;
     flex-wrap: nowrap;
     justify-content: space-between;
+  }
+  /* 按钮组拍平：.toolbar-btn-group 只剩布局壳，display:contents 让里面的
+     按钮/触发器直接参与 .header-actions 的 space-between 分配，7 个图标
+     间距相等。hide-on-narrow 的组（导出组）仍是 display:none !important，
+     不受影响；专注组见下面那条 !important 规则。 */
+  .workspace-toolbar .toolbar-btn-group {
+    display: contents;
   }
   /* spacer 在窄屏下不再需要：space-between 已经把“···”推到最右端。 */
   .toolbar-spacer {
@@ -1609,9 +1614,13 @@ html.dark .popout-item.is-active {
   /* 窄屏下多放回两个高频图标工具（历史版本、专注模式），不带文字、不带
      下拉，7 个 36px 图标刚好铺满 375px 宽；导出/主题/代码下拉、导入、
      拼图、示例仍留在“···”菜单里，不恢复横向滚动。 */
-  .workspace-toolbar .btn-icon.hide-on-narrow.show-on-mobile,
-  .workspace-toolbar .toolbar-btn-group.hide-on-narrow.show-on-mobile {
+  .workspace-toolbar .btn-icon.hide-on-narrow.show-on-mobile {
     display: inline-flex !important;
+  }
+  /* 专注组本身也拍平（里面的按钮成为行内直接子项）；这条必须也是
+     !important 才能压过上面那条旧规则的 inline-flex。 */
+  .workspace-toolbar .toolbar-btn-group.hide-on-narrow.show-on-mobile {
+    display: contents !important;
   }
   .hide-on-narrow {
     display: none !important;
