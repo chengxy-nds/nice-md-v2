@@ -1107,6 +1107,17 @@ let narrowToolbarQuery = null;
 function updateNarrowToolbar() {
   isNarrowToolbar.value = narrowToolbarQuery ? narrowToolbarQuery.matches : window.innerWidth <= 640;
 }
+
+/* 窄屏（≤960px）抽屉断点：抽屉收起时 Sidebar 只是被 transform 移出屏外，
+   仍在 DOM 里，里面的搜索框仍可聚焦；iOS Safari 因此在键盘上方显示
+   “上一个 / 下一个输入框”切换按钮（^ v），点它只会把焦点移到屏外的搜索框，
+   屏幕上看起来毫无反应。抽屉收起时给 Sidebar 加 inert，让它整个脱离焦点
+   顺序，Safari 就只剩编辑器一个输入框，不再显示那组切换按钮。 */
+const isNarrowDrawer = ref(false);
+let narrowDrawerQuery = null;
+function updateNarrowDrawer() {
+  isNarrowDrawer.value = narrowDrawerQuery ? narrowDrawerQuery.matches : window.innerWidth <= 960;
+}
 function anchorToolbarPopout(triggerEl, asSheet = false) {
   if (!triggerEl || !isNarrowToolbar.value) {
     toolbarPopoutStyle.value = {};
@@ -2564,6 +2575,9 @@ onMounted(async () => {
   narrowToolbarQuery = window.matchMedia('(max-width: 640px)');
   updateNarrowToolbar();
   narrowToolbarQuery.addEventListener('change', updateNarrowToolbar);
+  narrowDrawerQuery = window.matchMedia('(max-width: 960px)');
+  updateNarrowDrawer();
+  narrowDrawerQuery.addEventListener('change', updateNarrowDrawer);
   window.addEventListener(EDITOR_SETTINGS_UPDATED_EVENT, refreshGeneralSettings);
 
   // 5. Immediate Cloud Sync on boot if enabled
@@ -2801,6 +2815,7 @@ watch(customStyles, () => {
             <Sidebar
               ref="sidebarRef"
               :class="{ 'mobile-drawer-open': mobileSidebarOpen }"
+              :inert="isNarrowDrawer && !mobileSidebarOpen"
               v-show="(sidebarVisible || mobileSidebarOpen) && currentView === 'editor'"
               :documents="documents"
               :groups="groups"
