@@ -1933,74 +1933,10 @@ function handleGlobalKeydown(e) {
   }
 }
 
-// ── 手机键盘补偿 ──
-// iOS/Android 上键盘弹起时会盖住编辑区底部，写到文档底部时光标行可能躲到键盘后面。
-// visualViewport 能量出键盘实际盖住的高度：编辑区底部被盖住多少，就给内容区底部
-// 加多少留白（最后一行也能滚到键盘上方），再把光标行滚到键盘上方。
-// 只在粗指针设备上生效；布局本身已经用 dvh 缩上去的机型算出来 overlap 为 0，
-// 不做任何事，不会重复补偿。键盘收起时全部还原。
-let kbCompTimer = null;
-let kbCompApplied = 0;
-
-function applyKeyboardCompensation() {
-  if (!window.matchMedia('(pointer: coarse)').matches || !window.visualViewport) {
-    resetKeyboardCompensation();
-    return;
-  }
-  const vv = window.visualViewport;
-  const visibleBottom = vv.height + vv.offsetTop;
-  const scroller = cmView?.scrollDOM || null;
-  let overlap = 0;
-  if (scroller) {
-    overlap = Math.max(0, scroller.getBoundingClientRect().bottom - visibleBottom);
-  } else if (textareaRef.value) {
-    overlap = Math.max(0, textareaRef.value.getBoundingClientRect().bottom - visibleBottom);
-  }
-  if (overlap < 40) {
-    resetKeyboardCompensation();
-    return;
-  }
-  if (cmView?.contentDOM) cmView.contentDOM.style.paddingBottom = `${32 + overlap}px`;
-  else if (textareaRef.value) textareaRef.value.style.paddingBottom = `${overlap}px`;
-  kbCompApplied = overlap;
-  if (cmView) {
-    // 光标行若正躲在键盘后面，把它滚到键盘上方（yMargin = 被盖住的高度）；
-    // 已经在可视区内的不做任何事。
-    const anchor = cmView.state.selection.main.head;
-    isProgrammaticEditorScroll = true;
-    try {
-      cmView.dispatch({
-        effects: EditorView.scrollIntoView(anchor, { y: 'nearest', yMargin: overlap })
-      });
-    } catch {} finally {
-      requestAnimationFrame(() => {
-        isProgrammaticEditorScroll = false;
-      });
-    }
-  }
-}
-
-function resetKeyboardCompensation() {
-  if (!kbCompApplied) return;
-  kbCompApplied = 0;
-  if (cmView?.contentDOM) cmView.contentDOM.style.paddingBottom = '';
-  if (textareaRef.value) textareaRef.value.style.paddingBottom = '';
-}
-
-function handleViewportChange() {
-  // 键盘弹出/收起动画期间 resize 会连发多次，等停稳再算一次。
-  clearTimeout(kbCompTimer);
-  kbCompTimer = setTimeout(applyKeyboardCompensation, 120);
-}
-
 onMounted(() => {
   window.addEventListener(EDITOR_SETTINGS_UPDATED_EVENT, loadPreferences);
   document.addEventListener('pointerdown', handleGlobalPointerDown);
   document.addEventListener('keydown', handleGlobalKeydown);
-  if (window.visualViewport) {
-    window.visualViewport.addEventListener('resize', handleViewportChange);
-    window.visualViewport.addEventListener('scroll', handleViewportChange);
-  }
   if (isSyntaxHighlightActive.value) {
     nextTick(() => {
       initCodeMirror();
@@ -2012,12 +1948,6 @@ onUnmounted(() => {
   window.removeEventListener(EDITOR_SETTINGS_UPDATED_EVENT, loadPreferences);
   document.removeEventListener('pointerdown', handleGlobalPointerDown);
   document.removeEventListener('keydown', handleGlobalKeydown);
-  if (window.visualViewport) {
-    window.visualViewport.removeEventListener('resize', handleViewportChange);
-    window.visualViewport.removeEventListener('scroll', handleViewportChange);
-  }
-  clearTimeout(kbCompTimer);
-  resetKeyboardCompensation();
   cleanupLightboxPanListeners();
   clearUrlHoverTimer();
   if (cmView) {
