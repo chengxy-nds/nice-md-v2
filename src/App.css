@@ -1207,6 +1207,13 @@ html.dark .popout-item:hover {
   font-weight: 600;
 }
 
+/* “···”菜单里开子面板的那几行：右端 › 顶到头，表示点开还有一层。 */
+.popout-item-chevron {
+  margin-left: auto;
+  color: var(--text-muted, #64748B);
+  flex-shrink: 0;
+}
+
 html.dark .popout-item.is-active {
   background: rgba(255, 255, 255, 0.1);
 }
@@ -1691,6 +1698,131 @@ html.dark .popout-item.is-active {
   .workspace-toolbar .toolbar-btn-group,
   .workspace-toolbar .toolbar-sep {
     flex-shrink: 0;
+  }
+
+  /* ── 窄屏底部弹出层：选择主题 / 导入 / 导出 / 代码主题 ──
+     ≤640px 下这四个选择面板不再用触发按钮旁边的浮动下拉，改成从屏幕底部
+     滑上的 bottom sheet：左右各留 8px 边距、顶部圆角、拖动条、标题行、
+     背后遮罩、最高 75vh 内部滚动。anchorToolbarPopout() 对它们不再写内联
+     top/left/maxHeight（见 App.vue，asSheet 参数 / openPickerSheet），
+     位置全部由这里控制。“···”菜单本身是浮动下拉，不是弹出层。 */
+  .header-popout-panel.is-bottom-sheet {
+    left: 8px;
+    right: 8px;
+    bottom: 0;
+    top: auto;
+    width: auto;
+    min-width: 0;
+    max-width: none;
+    max-height: 75vh;
+    max-height: 75dvh;
+    margin: 0;
+    border-radius: 16px 16px 0 0;
+    padding: 0 8px calc(10px + env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 32px rgba(15, 23, 42, 0.18);
+  }
+  /* 下滑拖动时 transition:none，避免面板滞后于手指；松手弹回靠 base 的
+     transition: all .18s。 */
+  .header-popout-panel.is-bottom-sheet.is-dragging {
+    transition: none !important;
+  }
+  /* 遮罩：盖住编辑区和预览区。注意它在工具条的层叠上下文里（z-index: 10），
+     顶栏（z-index: 20）盖在它上面，所以顶栏那一小条不会被遮暗——面板
+     本身不和顶栏重叠，无影响；点顶栏按钮仍会关掉面板（外面点按关闭）。 */
+  .bottom-sheet-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.45);
+    z-index: 150;
+  }
+  /* 拖动条 + 标题行：sticky 在面板顶部，列表再长也不会被卷走；背景跟面板
+     走 inherit，保证深浅模式下和面板底色严丝合缝。 */
+  .bottom-sheet-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    flex-shrink: 0;
+    margin: 0 -8px;
+    padding: 8px 12px 4px;
+    background: inherit;
+    border-bottom: 1px solid var(--border-subtle, #EDF1F7);
+  }
+  html.dark .bottom-sheet-head {
+    border-bottom-color: rgba(255, 255, 255, 0.08);
+  }
+  .bottom-sheet-handle {
+    width: 36px;
+    height: 4px;
+    margin: 0 auto 8px;
+    border-radius: 2px;
+    background: var(--border-color, #E2E8F0);
+  }
+  .bottom-sheet-title-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    min-height: 36px;
+  }
+  .bottom-sheet-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-main, #0F172A);
+  }
+  .bottom-sheet-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text-muted, #64748B);
+    cursor: pointer;
+  }
+  .bottom-sheet-close:active {
+    background: var(--bg-capsule, #F1F5F9);
+    color: var(--text-main, #0F172A);
+  }
+  /* 进出场动画：只动 transform / opacity，符合项目动效规则；
+     整块都在 ≤640px 媒体块里，桌面端 Transition 的 class 没有样式。 */
+  @keyframes sheet-slide-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  @keyframes sheet-slide-down {
+    from { transform: translateY(0); }
+    to { transform: translateY(100%); }
+  }
+  @keyframes sheet-fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes sheet-fade-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+  .sheet-panel-enter-active {
+    animation: sheet-slide-up 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .sheet-panel-leave-active {
+    animation: sheet-slide-down 0.22s ease-in;
+  }
+  .sheet-backdrop-enter-active {
+    animation: sheet-fade-in 0.2s ease;
+  }
+  .sheet-backdrop-leave-active {
+    animation: sheet-fade-out 0.2s ease;
+  }
+}
+
+/* 减弱动效：底部弹出层进出场直接出现 / 消失。 */
+@media (max-width: 640px) and (prefers-reduced-motion: reduce) {
+  .sheet-panel-enter-active,
+  .sheet-panel-leave-active,
+  .sheet-backdrop-enter-active,
+  .sheet-backdrop-leave-active {
+    animation: none;
   }
 }
 

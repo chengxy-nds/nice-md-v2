@@ -3,7 +3,7 @@ import { ref, computed, defineAsyncComponent, onMounted, onUnmounted, watch, nex
 import {
   Menu, Sparkles, Search, Image, ImagePlus, BookOpen, Link, Upload, Trash2,
   Eye, EyeOff, Download, Undo2, Redo2, Code2, MoreHorizontal,
-  ChevronDown, FileCode, FileText, Globe, Settings, Check, X,
+  ChevronDown, ChevronRight, FileCode, FileText, Globe, Settings, Check, X,
   History, Copy, Plus, ArrowLeftToLine, ArrowRightToLine, CircleX,
   LayoutGrid, Maximize, Minimize
 } from '@lucide/vue';
@@ -1082,6 +1082,14 @@ const showDocThemeMenu = ref(false);
 const showCodeThemeMenu = ref(false);
 const showMoreMenu = ref(false);
 const moreMenuRef = ref(null);
+/* 窄屏两层选择器： “···”菜单里每类只留一行，点一行打开对应的底部选择
+   面板。排版主题复用已有的 showDocThemeMenu（窄屏下它本来就是 sheet）；
+   导入 / 导出 / 代码主题各用一个新 ref——不能复用 showImportMenu /
+   showExportMenu / showCodeThemeMenu，那三个面板在桌面端触发器容器
+   （hide-on-narrow）里，窄屏下整个容器 display:none，面板永远出不来。 */
+const showImportSheet = ref(false);
+const showExportSheet = ref(false);
+const showCodeThemeSheet = ref(false);
 const importMenuRef = ref(null);
 const exportMenuRef = ref(null);
 const docThemeMenuRef = ref(null);
@@ -1099,8 +1107,15 @@ let narrowToolbarQuery = null;
 function updateNarrowToolbar() {
   isNarrowToolbar.value = narrowToolbarQuery ? narrowToolbarQuery.matches : window.innerWidth <= 640;
 }
-function anchorToolbarPopout(triggerEl) {
+function anchorToolbarPopout(triggerEl, asSheet = false) {
   if (!triggerEl || !isNarrowToolbar.value) {
+    toolbarPopoutStyle.value = {};
+    return;
+  }
+  /* 底部弹出层（选择主题 / 导入 / 导出 / 代码主题）不走锚定：位置由 CSS 固定在屏幕底部，
+     内联 top/left/maxHeight 会和它打架，这里直接清空，样式全交给
+     .is-bottom-sheet（见 App.css ≤640px 块）。 */
+  if (asSheet) {
     toolbarPopoutStyle.value = {};
     return;
   }
@@ -1121,6 +1136,9 @@ function closeAllToolbarMenus() {
   showDocThemeMenu.value = false;
   showCodeThemeMenu.value = false;
   showMoreMenu.value = false;
+  showImportSheet.value = false;
+  showExportSheet.value = false;
+  showCodeThemeSheet.value = false;
 }
 /* 工具栏横向滚动时，fixed 菜单会和触发按钮脱节：滚动即关菜单。
    但面板自己的内部滚动不要关：浮动面板虽然是 position:fixed，DOM 上
@@ -1138,7 +1156,7 @@ function toggleImportMenu() {
 function toggleDocThemeMenu() {
   showDocThemeMenu.value = !showDocThemeMenu.value;
   showCodeThemeMenu.value = false;
-  if (showDocThemeMenu.value) nextTick(() => anchorToolbarPopout(docThemeMenuRef.value?.querySelector('.btn-toolbar-dropdown')));
+  if (showDocThemeMenu.value) nextTick(() => anchorToolbarPopout(docThemeMenuRef.value?.querySelector('.btn-toolbar-dropdown'), true));
 }
 function toggleCodeThemeMenu() {
   showCodeThemeMenu.value = !showCodeThemeMenu.value;
@@ -1158,6 +1176,9 @@ function toggleImageMenu() {
   showDocThemeMenu.value = false;
   showCodeThemeMenu.value = false;
   showMoreMenu.value = false;
+  showImportSheet.value = false;
+  showExportSheet.value = false;
+  showCodeThemeSheet.value = false;
   showImageMenu.value = next;
   if (next) nextTick(() => anchorToolbarPopout(imageMenuRef.value?.querySelector('.btn-icon')));
 }
@@ -1175,6 +1196,20 @@ function toggleMoreMenu() {
 function closeMoreMenuAnd(fn) {
   showMoreMenu.value = false;
   if (typeof fn === 'function') fn();
+}
+/* 打开底部选择面板：“···”菜单里每类只留一行，点一行开对应的面板
+   （导入 / 导出 / 排版主题 / 代码主题）。先把“···”菜单和其它面板全
+   关掉再开指定的那一个，同一时间最多一个面板开着。排版主题复用
+   showDocThemeMenu（行内色点触发器也调同一个）。位置由 CSS 固定在
+   屏幕底部，内联 top/left/maxHeight 必须清空，否则和 .is-bottom-sheet
+   的 fixed 定位打架。 */
+function openPickerSheet(kind) {
+  closeAllToolbarMenus();
+  toolbarPopoutStyle.value = {};
+  if (kind === 'import') showImportSheet.value = true;
+  else if (kind === 'export') showExportSheet.value = true;
+  else if (kind === 'theme') showDocThemeMenu.value = true;
+  else if (kind === 'code-theme') showCodeThemeSheet.value = true;
 }
 function handleMoreMenuPointerDown(e) {
   if (showMoreMenu.value && moreMenuRef.value && !moreMenuRef.value.contains(e.target)) {
@@ -1198,10 +1233,59 @@ function handleImageMenuPointerDown(e) {
   }
 }
 
-function handleImageMenuKeyDown(e) {
+/* 排版主题面板的 mouseleave 本来是桌面端“鼠标移出就关”；窄屏下它是底部
+   弹出层，关闭走遮罩 / × / 下滑 / Esc，mouseleave 在 iOS 触摸滚动时
+   可能误触发，所以窄屏下直接放过。 */
+function handleDocThemeMouseLeave() {
+  if (!isNarrowToolbar.value) showDocThemeMenu.value = false;
+}
+
+/* ── 底部弹出层下滑关闭 ──
+   只在窄屏生效。手指在面板顶部（内容已滚到顶，scrollTop 为 0）往下滑时
+   拖动面板，松手时下滑超过 90px 就关闭，否则弹回；列表中间下滑仍是
+   正常滚动，不会误关。拖动时 transition:none，避免面板滞后于手指；
+   手指折返向上则放开拖动，让列表恢复原生滚动。 */
+let sheetDrag = null;
+function onSheetTouchStart(e) {
+  if (!isNarrowToolbar.value) return;
+  const t = e.touches[0];
+  sheetDrag = { startY: t.clientY, deltaY: 0, el: e.currentTarget, dragging: false };
+}
+function onSheetTouchMove(e) {
+  if (!sheetDrag || !isNarrowToolbar.value) return;
+  const dy = e.touches[0].clientY - sheetDrag.startY;
+  sheetDrag.deltaY = dy;
+  if (sheetDrag.dragging) {
+    if (dy <= 0) {
+      sheetDrag.dragging = false;
+      sheetDrag.el.classList.remove('is-dragging');
+      sheetDrag.el.style.transform = '';
+      return;
+    }
+    e.preventDefault();
+    sheetDrag.el.style.transform = `translateY(${dy}px)`;
+    return;
+  }
+  if (dy > 0 && sheetDrag.el.scrollTop <= 0) {
+    sheetDrag.dragging = true;
+    sheetDrag.el.classList.add('is-dragging');
+    e.preventDefault();
+    sheetDrag.el.style.transform = `translateY(${dy}px)`;
+  }
+}
+function onSheetTouchEnd() {
+  if (!sheetDrag) return;
+  const { el, deltaY, dragging } = sheetDrag;
+  sheetDrag = null;
+  if (!dragging) return;
+  el.classList.remove('is-dragging');
+  el.style.transform = '';
+  if (deltaY > 90) closeAllToolbarMenus();
+}
+
+function handleToolbarMenuKeyDown(e) {
   if (e.key === 'Escape') {
-    showImageMenu.value = false;
-    showMoreMenu.value = false;
+    closeAllToolbarMenus();
   }
 }
 
@@ -2190,7 +2274,7 @@ onMounted(async () => {
 
   document.addEventListener('mousedown', handleImageMenuPointerDown);
   document.addEventListener('mousedown', handleMoreMenuPointerDown);
-  document.addEventListener('keydown', handleImageMenuKeyDown);
+  document.addEventListener('keydown', handleToolbarMenuKeyDown);
   document.addEventListener('scroll', closeToolbarPopoutsOnScroll, { capture: true, passive: true });
   narrowToolbarQuery = window.matchMedia('(max-width: 640px)');
   updateNarrowToolbar();
@@ -2278,7 +2362,7 @@ onUnmounted(() => {
   clearTimeout(toolbarCopyTimer);
   document.removeEventListener('mousedown', handleImageMenuPointerDown);
   document.removeEventListener('mousedown', handleMoreMenuPointerDown);
-  document.removeEventListener('keydown', handleImageMenuKeyDown);
+  document.removeEventListener('keydown', handleToolbarMenuKeyDown);
   document.removeEventListener('scroll', closeToolbarPopoutsOnScroll, { capture: true });
   narrowToolbarQuery?.removeEventListener('change', updateNarrowToolbar);
   window.removeEventListener(EDITOR_SETTINGS_UPDATED_EVENT, refreshGeneralSettings);
@@ -2677,16 +2761,16 @@ watch(customStyles, () => {
                 >
                   <MoreHorizontal size="14.5" />
                 </button>
+                <!-- 窄屏“···”菜单：改回浮动下拉（不是底部弹出层）。每类只留一行：
+                     导入 / 导出 / 排版主题 / 代码主题点开对应的底部选择面板，
+                     查找 / 历史 / 专注直接执行。分组小标题不要了，行本身就是分类；
+                     带 › 的四行开子面板。 -->
                 <div class="header-popout-panel" v-if="showMoreMenu" :class="{ 'is-floating': isNarrowToolbar }" :style="isNarrowToolbar ? toolbarPopoutStyle : null">
-                  <div class="popout-section-label">导入</div>
-                  <button class="popout-item" @click="closeMoreMenuAnd(() => editorPanelRef?.toggleUrlImport())"><Link size="14" /><span>URL 文章导入</span></button>
-                  <button class="popout-item" @click="closeMoreMenuAnd(() => editorPanelRef?.triggerFileInput('.md,.markdown'))"><FileCode size="14" /><span>导入 Markdown (.md)</span></button>
-                  <button class="popout-item" @click="closeMoreMenuAnd(() => editorPanelRef?.triggerFileInput('.docx,.doc'))"><FileText size="14" /><span>导入 Word (.docx)</span></button>
-                  <button class="popout-item" @click="closeMoreMenuAnd(() => editorPanelRef?.triggerFileInput('.html,.htm'))"><Globe size="14" /><span>导入 HTML (.html)</span></button>
-                  <button class="popout-item" @click="closeMoreMenuAnd(() => editorPanelRef?.triggerFileInput('.txt'))"><FileCode size="14" /><span>导入纯文本 (.txt)</span></button>
-                  <button class="popout-item" @click="closeMoreMenuAnd(handleFillSample)"><BookOpen size="14" /><span>填充示例</span></button>
+                  <button class="popout-item" @click="openPickerSheet('import')"><Upload size="14" /><span>导入</span><ChevronRight size="14" class="popout-item-chevron" /></button>
+                  <button class="popout-item" @click="openPickerSheet('export')"><Download size="14" /><span>导出</span><ChevronRight size="14" class="popout-item-chevron" /></button>
+                  <button class="popout-item" @click="openPickerSheet('theme')"><span class="theme-swatch-dot" :style="{ backgroundColor: activeThemeObj?.styles?.['--accent-color'] || '#116ACC' }"></span><span>排版主题</span><ChevronRight size="14" class="popout-item-chevron" /></button>
+                  <button class="popout-item" @click="openPickerSheet('code-theme')"><FileCode size="14" /><span>代码主题</span><ChevronRight size="14" class="popout-item-chevron" /></button>
                   <div class="popout-divider"></div>
-                  <div class="popout-section-label">工具</div>
                   <button class="popout-item" @click="closeMoreMenuAnd(() => editorPanelRef?.openFindReplace())"><Search size="14" /><span>查找与替换</span></button>
                   <button class="popout-item" @click="closeMoreMenuAnd(() => openDocHistory(activeDocument))"><History size="14" /><span>历史版本</span></button>
                   <button class="popout-item" @click="closeMoreMenuAnd(toggleFocusMode)">
@@ -2694,26 +2778,77 @@ watch(customStyles, () => {
                     <Maximize v-else size="14" />
                     <span>{{ focusMode ? '退出专注模式' : '专注模式' }}</span>
                   </button>
-                  <div class="popout-divider"></div>
-                  <div class="popout-section-label">导出</div>
-                  <button class="popout-item" @click="closeMoreMenuAnd(exportMD)"><FileCode size="14" /><span>导出 Markdown</span></button>
-                  <button class="popout-item" @click="closeMoreMenuAnd(exportHTML)"><Globe size="14" /><span>导出 HTML</span></button>
-                  <button class="popout-item" @click="closeMoreMenuAnd(exportWord)"><FileText size="14" /><span>导出 Word (.docx)</span></button>
-                  <button class="popout-item" @click="closeMoreMenuAnd(exportPDF)"><Download size="14" /><span>导出 PDF</span></button>
-                  <button class="popout-item" @click="closeMoreMenuAnd(() => exportPDF({ raw: true }))"><Download size="14" /><span>导出 PDF (无主题)</span></button>
-                  <button class="popout-item" @click="closeMoreMenuAnd(exportPNG)"><Image size="14" /><span>导出 PNG 长图</span></button>
-                  <div class="popout-divider"></div>
-                  <div class="popout-section-label">代码主题</div>
+                </div>
+
+                <!-- 窄屏底部选择面板：导入 —— “···”菜单里“导入”那一行打开它。
+                     只在 ≤640px 出现（v-if 里的 isNarrowToolbar），桌面端没有。 -->
+                <Transition name="sheet-backdrop">
+                  <div v-if="showImportSheet && isNarrowToolbar" class="bottom-sheet-backdrop" @click="showImportSheet = false" aria-hidden="true"></div>
+                </Transition>
+                <Transition name="sheet-panel">
+                <div class="header-popout-panel is-floating is-bottom-sheet" v-if="showImportSheet && isNarrowToolbar" role="dialog" aria-label="导入" @touchstart="onSheetTouchStart" @touchmove="onSheetTouchMove" @touchend="onSheetTouchEnd" @touchcancel="onSheetTouchEnd">
+                  <div class="bottom-sheet-head">
+                    <div class="bottom-sheet-handle" aria-hidden="true"></div>
+                    <div class="bottom-sheet-title-row">
+                      <span class="bottom-sheet-title">导入</span>
+                      <button type="button" class="bottom-sheet-close" @click="showImportSheet = false" aria-label="关闭"><X size="16" /></button>
+                    </div>
+                  </div>
+                  <button class="popout-item" @click="showImportSheet = false; editorPanelRef?.toggleUrlImport()"><Link size="14" /><span>URL 文章导入</span></button>
+                  <button class="popout-item" @click="showImportSheet = false; editorPanelRef?.triggerFileInput('.md,.markdown')"><FileCode size="14" /><span>导入 Markdown (.md)</span></button>
+                  <button class="popout-item" @click="showImportSheet = false; editorPanelRef?.triggerFileInput('.docx,.doc')"><FileText size="14" /><span>导入 Word (.docx)</span></button>
+                  <button class="popout-item" @click="showImportSheet = false; editorPanelRef?.triggerFileInput('.html,.htm')"><Globe size="14" /><span>导入 HTML (.html)</span></button>
+                  <button class="popout-item" @click="showImportSheet = false; editorPanelRef?.triggerFileInput('.txt')"><FileCode size="14" /><span>导入纯文本 (.txt)</span></button>
+                  <button class="popout-item" @click="showImportSheet = false; handleFillSample()"><BookOpen size="14" /><span>填充示例</span></button>
+                </div>
+                </Transition>
+
+                <!-- 窄屏底部选择面板：导出 -->
+                <Transition name="sheet-backdrop">
+                  <div v-if="showExportSheet && isNarrowToolbar" class="bottom-sheet-backdrop" @click="showExportSheet = false" aria-hidden="true"></div>
+                </Transition>
+                <Transition name="sheet-panel">
+                <div class="header-popout-panel is-floating is-bottom-sheet" v-if="showExportSheet && isNarrowToolbar" role="dialog" aria-label="导出" @touchstart="onSheetTouchStart" @touchmove="onSheetTouchMove" @touchend="onSheetTouchEnd" @touchcancel="onSheetTouchEnd">
+                  <div class="bottom-sheet-head">
+                    <div class="bottom-sheet-handle" aria-hidden="true"></div>
+                    <div class="bottom-sheet-title-row">
+                      <span class="bottom-sheet-title">导出</span>
+                      <button type="button" class="bottom-sheet-close" @click="showExportSheet = false" aria-label="关闭"><X size="16" /></button>
+                    </div>
+                  </div>
+                  <button class="popout-item" @click="showExportSheet = false; exportMD()"><FileCode size="14" /><span>导出 Markdown</span></button>
+                  <button class="popout-item" @click="showExportSheet = false; exportHTML()"><Globe size="14" /><span>导出 HTML</span></button>
+                  <button class="popout-item" @click="showExportSheet = false; exportWord()"><FileText size="14" /><span>导出 Word (.docx)</span></button>
+                  <button class="popout-item" @click="showExportSheet = false; exportPDF()"><Download size="14" /><span>导出 PDF</span></button>
+                  <button class="popout-item" @click="showExportSheet = false; exportPDF({ raw: true })"><Download size="14" /><span>导出 PDF (无主题)</span></button>
+                  <button class="popout-item" @click="showExportSheet = false; exportPNG()"><Image size="14" /><span>导出 PNG 长图</span></button>
+                </div>
+                </Transition>
+
+                <!-- 窄屏底部选择面板：代码主题 -->
+                <Transition name="sheet-backdrop">
+                  <div v-if="showCodeThemeSheet && isNarrowToolbar" class="bottom-sheet-backdrop" @click="showCodeThemeSheet = false" aria-hidden="true"></div>
+                </Transition>
+                <Transition name="sheet-panel">
+                <div class="header-popout-panel is-floating is-bottom-sheet" v-if="showCodeThemeSheet && isNarrowToolbar" role="dialog" aria-label="代码主题" @touchstart="onSheetTouchStart" @touchmove="onSheetTouchMove" @touchend="onSheetTouchEnd" @touchcancel="onSheetTouchEnd">
+                  <div class="bottom-sheet-head">
+                    <div class="bottom-sheet-handle" aria-hidden="true"></div>
+                    <div class="bottom-sheet-title-row">
+                      <span class="bottom-sheet-title">代码主题</span>
+                      <button type="button" class="bottom-sheet-close" @click="showCodeThemeSheet = false" aria-label="关闭"><X size="16" /></button>
+                    </div>
+                  </div>
                   <button
                     v-for="ct in codeThemes"
                     :key="ct.id"
                     class="popout-item"
                     :class="{ 'is-active': ct.id === currentCodeTheme }"
-                    @click="closeMoreMenuAnd(() => handleCodeThemeSelect(ct.id))"
+                    @click="showCodeThemeSheet = false; handleCodeThemeSelect(ct.id)"
                   >
                     <span>{{ ct.name }}</span>
                   </button>
                 </div>
+                </Transition>
               </div>
 
               <!-- Document Theme Dropdown：窄屏下也放回行内（show-on-mobile），
@@ -2733,7 +2868,18 @@ watch(customStyles, () => {
                   <span class="dropdown-label-val">{{ activeThemeObj?.name || '山海' }}</span>
                   <ChevronDown size="12" class="dropdown-chevron" />
                 </button>
-                <div class="header-popout-panel" v-if="showDocThemeMenu" @mouseleave="showDocThemeMenu = false" :class="{ 'is-floating': isNarrowToolbar }" :style="isNarrowToolbar ? toolbarPopoutStyle : null">
+                <Transition name="sheet-backdrop">
+                  <div v-if="showDocThemeMenu && isNarrowToolbar" class="bottom-sheet-backdrop" @click="showDocThemeMenu = false" aria-hidden="true"></div>
+                </Transition>
+                <Transition name="sheet-panel">
+                <div class="header-popout-panel" v-if="showDocThemeMenu" role="dialog" aria-label="选择主题" @mouseleave="handleDocThemeMouseLeave" :class="{ 'is-floating': isNarrowToolbar, 'is-bottom-sheet': isNarrowToolbar }" :style="isNarrowToolbar ? toolbarPopoutStyle : null" @touchstart="onSheetTouchStart" @touchmove="onSheetTouchMove" @touchend="onSheetTouchEnd" @touchcancel="onSheetTouchEnd">
+                  <div class="bottom-sheet-head">
+                    <div class="bottom-sheet-handle" aria-hidden="true"></div>
+                    <div class="bottom-sheet-title-row">
+                      <span class="bottom-sheet-title">选择主题</span>
+                      <button type="button" class="bottom-sheet-close" @click="showDocThemeMenu = false" aria-label="关闭"><X size="16" /></button>
+                    </div>
+                  </div>
                   <button
                     v-for="t in themePresets"
                     :key="t.id"
@@ -2748,6 +2894,7 @@ watch(customStyles, () => {
                     <span>{{ t.name }}</span>
                   </button>
                 </div>
+                </Transition>
               </div>
 
               <!-- Code Theme Dropdown -->
