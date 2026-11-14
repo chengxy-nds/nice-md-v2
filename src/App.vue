@@ -2748,6 +2748,19 @@ watch(customStyles, () => {
             </button>
           </div>
         </div>
+
+        <!-- 手机端设置入口：IconBar（含齿轮）在 ≤960px 下 display:none，
+             顶栏右侧是空的，放一个 36px 齿轮直通 openSettings()。
+             切换器是 absolute 真居中，加这个按钮不会顶偏它。 -->
+        <button
+          class="btn-header-settings"
+          :class="{ 'is-active': isSettingsOpen }"
+          @click="openSettings()"
+          title="偏好设置"
+          aria-label="偏好设置"
+        >
+          <Settings size="18" />
+        </button>
       </header>
 
       <!-- App Body: Left IconBar + Main Content -->

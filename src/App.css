@@ -1404,8 +1404,31 @@ html.dark .popout-item.is-active {
   box-shadow: var(--shadow-sm);
 }
 
+/* 手机端顶栏设置按钮（≤960px 才显示，见下）：样式照 .btn-menu-toggle，
+   36px 触摸热区；打开状态用品牌色底，与 IconBar 齿轮的 is-active 呼应。 */
 .btn-header-settings {
   display: none;
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  width: 36px;
+  height: 36px;
+  padding: 9px;
+  border-radius: 8px;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.btn-header-settings:hover {
+  background: var(--border-color);
+}
+
+.btn-header-settings.is-active {
+  color: var(--brand-primary, #116ACC);
+  background: var(--brand-primary-subtle, rgba(17, 106, 204, 0.08));
 }
 
 .sidebar-backdrop {
@@ -1966,6 +1989,13 @@ html.dark .popout-item.is-active {
     background: transparent;
   }
   .btn-menu-toggle:active {
+    background: var(--border-color);
+  }
+  /* 设置齿轮同款处理：触屏上 hover 会粘住，打开态的蓝底要留住。 */
+  .btn-header-settings:not(.is-active):hover {
+    background: transparent;
+  }
+  .btn-header-settings:active {
     background: var(--border-color);
   }
   .tab-view-btn:active {
