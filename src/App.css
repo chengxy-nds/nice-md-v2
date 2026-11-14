@@ -1404,16 +1404,26 @@ html.dark .popout-item.is-active {
     display: flex;
   }
 
-  /* 手机模式不展示品牌：logo 图标 + “EASY MD” + “STUDIO” 整个锁起来都藏掉
-     （只藏不删，桌面端照常显示；想留 logo 图标的话，把这条改成只藏文字）。
-     header-left 的 180px 最小宽也要收掉，不然空占一截、切换器居中会偏。 */
+  /* 手机模式品牌只留 logo 图标：wordmark “EASY MD” + “STUDIO” 徽章仍藏掉。
+     375px 宽下完整品牌（图标 28 + 文字约 75 + 徽章约 50 + 间距）加汉堡约 190px，
+     会撞上绝对居中的编辑/预览切换器（约 150px 宽，居中在 187px 处）；
+     只留 28px 图标时左组约 88px，切换器仍有空隙。header-left 的 180px
+     最小宽照旧收掉，不然空占一截、切换器居中会偏。 */
   .wandor-brand-box {
+    display: flex;
+    padding: 2px 4px;
+  }
+  .wandor-brand-box .wandor-wordmark,
+  .wandor-brand-box .brand-studio-badge {
     display: none;
   }
   .header-left {
     min-width: 0;
     position: relative;
     z-index: 1;
+  }
+  .btn-menu-toggle {
+    padding: 6px;
   }
   
   .btn-header-settings {
@@ -1424,9 +1434,10 @@ html.dark .popout-item.is-active {
     display: flex;
   }
 
-  /* 移动端切换器：29px 太矮不好点，提到 36px+。 */
+  /* 移动端切换器：29px 太矮不好点，提到 36px+；横向 padding 从 18px 收到 13px，
+     给左上角回来的 logo 图标留出空隙，切换器本身仍是 absolute 真居中。 */
   .tab-view-btn {
-    padding: 10px 18px;
+    padding: 10px 13px;
   }
 
   /* 长标题标签：单标签最宽 210px 在手机上占一半还多，窄屏下收成 160px，
@@ -1448,12 +1459,39 @@ html.dark .popout-item.is-active {
   html.dark .workspace-tab-item.is-active {
     box-shadow: none;
   }
-  
+
+  /* ── 移动端不展示标签条（38px 整条藏掉，不留空白）──
+     只 display:none，不动任何 JS：标签数据、激活滑块、关闭/重命名逻辑全在
+     桌面端照常工作；隐藏时 moveTabGlider 量到宽 0 的标签只会把滑块收成
+     0 宽不可见，切回桌面宽度时 ResizeObserver 会重新量一次落位。
+     文档切换走汉堡抽屉里的侧边栏（已有“新建文档”+ 号按钮，分组里也有
+     + 号），标签条里的 + 号在移动端不再需要。 */
+  .workspace-tabs {
+    display: none !important;
+  }
+
   .app-header {
     display: flex;
     /* 刘海屏安全区：顶部 padding 吃掉刘海高度，高度跟着加回来。 */
     padding: env(safe-area-inset-top) 12px 0;
     height: calc(4rem + env(safe-area-inset-top));
+    /* 顶栏 sticky：配合下面工具栏的 sticky，滚动时顶栏 + 工具栏叠在顶部。
+       注意：当前布局是 100dvh + overflow:hidden，编辑/预览各自在列内滚动，
+       工具栏本来就在滚动区之外、不会被卷走；sticky 在此是兜底（若上层
+       某天变成可滚动容器，它才生效），真正让工具栏贴到顶部的，是上面
+       藏掉的 38px 标签条。 */
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+
+  /* 工具栏 sticky：top 顶到顶栏底边（4rem + 刘海安全区），不与顶栏重叠、
+     不盖住编辑区首行（它在文档流里占 42px 高，sticky 不改变占位）。
+     只在移动端 sticky，桌面端保持原来的静态定位。 */
+  .workspace-toolbar {
+    position: sticky;
+    top: calc(4rem + env(safe-area-inset-top));
+    z-index: 25;
   }
 
   .app-floating-toast {
@@ -1547,15 +1585,33 @@ html.dark .popout-item.is-active {
 @media (max-width: 640px) {
   .workspace-toolbar {
     overflow-x: visible;
+    /* 两侧 padding 从 16px 收到 8px：7 个 36px 图标组在 320px 宽的旧小屏上
+       也能放下（可用宽 304px，图标组共约 280px），不至于把最右的“···”
+       顶出屏幕；375px 上只是间隙更匀。 */
+    padding: 0 8px;
   }
   .header-actions {
-    /* 占满工具栏宽，里面的 spacer（flex:1）才有空间把“···”顶到最右端；
-       之前 width:auto 让整行先缩到内容宽，spacer 顶了个空，“···”就停在
-       重做按钮后面、右边空一半。 */
+    /* 占满工具栏宽；justify-content: space-between 让可见的几组工具均匀
+       铺满整行，取代原来 flex:1 的 spacer——spacer 是截图里大片空白的
+       真凶：≤640px 下主题/代码下拉、导出组等全被 hide-on-narrow 藏掉，
+       只剩查找/图片/撤销/重做 4 个按钮，spacer 独占了中间全部空宽，
+       把“···”顶到最右端，中间就是一片死空白。 */
     flex: 1;
     width: 100%;
     min-width: 0;
     flex-wrap: nowrap;
+    justify-content: space-between;
+  }
+  /* spacer 在窄屏下不再需要：space-between 已经把“···”推到最右端。 */
+  .toolbar-spacer {
+    display: none;
+  }
+  /* 窄屏下多放回两个高频图标工具（历史版本、专注模式），不带文字、不带
+     下拉，7 个 36px 图标刚好铺满 375px 宽；导出/主题/代码下拉、导入、
+     拼图、示例仍留在“···”菜单里，不恢复横向滚动。 */
+  .workspace-toolbar .btn-icon.hide-on-narrow.show-on-mobile,
+  .workspace-toolbar .toolbar-btn-group.hide-on-narrow.show-on-mobile {
+    display: inline-flex !important;
   }
   .hide-on-narrow {
     display: none !important;
@@ -1640,9 +1696,38 @@ html.dark .popout-item.is-active {
   }
 }
 
-/* ── 粗指针（触屏）：输入框字号 <16px 时 iOS 聚焦会自动放大页面 ── */
+/* ── 粗指针（触屏）：输入框字号 <16px 时 iOS 聚焦会自动放大页面 ──
+   全量覆盖所有文本类输入/选择框，不止编辑器：
+   - 编辑器本体已在 EditorPanel.vue 里钳到 ≥16px（effectiveEditorFontSize，
+     桌面端用户字号不动）；查找/替换、URL 导入输入已在 EditorPanel.vue
+     里提到 16px；标签重命名 .workspace-tab-input 本来就在下面这条里。
+   - 其余 <16px 的输入之前都没覆盖：侧边栏搜索/新建分组/文档重命名、
+     模板中心与素材中心搜索、素材弹窗、首页输入、启动页/历史记录/封面
+     拼图/设置/主题自定义等弹窗里的文本、数字、日期输入与 select。
+     它们大多继承 body 字号或 font:inherit（约 12.5–14px），点一下就
+     触发 iOS 自动放大。
+   - 用 !important 是因为各组件的 scoped 样式（如 .rename-input 12.5px）
+     特异度高于全局规则，不加就盖不住。只在 pointer:coarse 下生效，
+     桌面端完全不动；checkbox/radio/file/range/color 不在列表里，不受影响。
+   - viewport 刻意不改（index.html 仍是 width=device-width, initial-scale=1.0，
+     无 user-scalable=no / maximum-scale=1）：用户仍可手动双指缩放，
+     只是聚焦输入框时不再被系统自动放大。 */
 @media (pointer: coarse) {
-  .workspace-tab-input {
-    font-size: 16px;
+  .workspace-tab-input,
+  input:not([type]),
+  input[type="text"],
+  input[type="search"],
+  input[type="url"],
+  input[type="number"],
+  input[type="password"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="date"],
+  input[type="datetime-local"],
+  input[type="time"],
+  input[type="month"],
+  textarea,
+  select {
+    font-size: 16px !important;
   }
 }

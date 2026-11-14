@@ -2604,7 +2604,7 @@ watch(customStyles, () => {
               <div class="toolbar-btn-group">
                 <button @click="editorPanelRef?.handleUndo()" class="btn-icon" title="撤销 (Ctrl+Z)"><Undo2 size="14.5" /></button>
                 <button @click="editorPanelRef?.handleRedo()" class="btn-icon" title="重做 (Ctrl+Y)"><Redo2 size="14.5" /></button>
-                <button @click="openDocHistory(activeDocument)" class="btn-icon hide-on-narrow" title="历史版本与内容比对"><History size="14.5" /></button>
+                <button @click="openDocHistory(activeDocument)" class="btn-icon hide-on-narrow show-on-mobile" title="历史版本与内容比对"><History size="14.5" /></button>
               </div>
 
               <span class="toolbar-sep hide-on-narrow"></span>
@@ -2612,7 +2612,7 @@ watch(customStyles, () => {
               <!-- 专注模式：收起侧边栏与预览，只留编辑区；再点一次退出。
                    按钮本身有 is-active 按压态（图标 Maximize/Minimize 切换 +
                    .btn-icon.is-active 背景色），不只是文字切换。 -->
-              <div class="toolbar-btn-group hide-on-narrow">
+              <div class="toolbar-btn-group hide-on-narrow show-on-mobile">
                 <button
                   @click="toggleFocusMode"
                   class="btn-icon"
