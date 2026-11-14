@@ -1159,6 +1159,21 @@ html.dark .popout-divider {
   background: rgba(255, 255, 255, 0.08);
 }
 
+/* 下拉菜单里的分组小标题（目前只有“···”菜单是多分组的，其余面板都是
+   单类列表，不用分组）：11px 灰色粗体，上面留空，1px 细线只起组间隔作用，
+   分类靠标题认，不靠细线。 */
+.popout-section-label {
+  padding: 8px 10px 2px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted, #64748B);
+  white-space: nowrap;
+}
+
+html.dark .popout-section-label {
+  color: #94a3b8;
+}
+
 .popout-item {
   display: flex;
   align-items: center;
@@ -1574,36 +1589,39 @@ html.dark .popout-item.is-active {
 
 /* ── 窄屏工具栏：不横向滚动，溢出工具收进“···”菜单 ──
    之前这里是 overflow-x:auto，工具栏一滑到底才能点到后面的按钮；现在
-   ≤640px 只留核心 4 个按钮（查找 / 图片 / 撤销 / 重做）+ 右端一个“···”，
-   其余工具（class 为 hide-on-narrow 的元素）藏起来，进“···”菜单里找。
-   菜单是 fixed 浮动定位，不会被裁。桌面端不受影响。 */
+   ≤640px 行内留 7 个常用工具（图片 / 拼图 / 撤销 / 重做 / 复制 / 排版主题 /
+   清空）+ 右端一个“···”，其余工具（class 为 hide-on-narrow 的元素）藏
+   起来，进“···”菜单里找。菜单是 fixed 浮动定位，不会被裁。桌面端不受影响。 */
 @media (max-width: 640px) {
   .workspace-toolbar {
     overflow-x: visible;
-    /* 两侧 padding 从 16px 收到 8px：7 个 36px 图标组在 320px 宽的旧小屏上
-       也能放下（可用宽 304px，图标组共约 280px），不至于把最右的“···”
-       顶出屏幕；375px 上只是间隙更匀。 */
+    /* 两侧 padding 从 16px 收到 8px：8 个 36px 按钮在 320px 宽的旧小屏上
+       也能放下（可用宽 304px，按钮共 288px，剩 16px 作间隙），不至于把
+       最右的“···”顶出屏幕；375px 上只是间隙更匀。 */
     padding: 0 8px;
   }
   .header-actions {
     /* 占满工具栏宽；justify-content: space-between 让可见的图标均匀
        铺满整行，取代原来 flex:1 的 spacer——spacer 是截图里大片空白的
        真凶：≤640px 下主题/代码下拉、导出组等全被 hide-on-narrow 藏掉，
-       只剩查找/图片/撤销/重做 4 个按钮，spacer 独占了中间全部空宽，
-       把“···”顶到最右端，中间就是一片死空白。
+       只剩几个按钮，spacer 独占了中间全部空宽，把“···”顶到最右端，
+       中间就是一片死空白。
        注意是“按图标分”不是“按组分”：下面的 display:contents 把按钮组
-       拍平，7 个图标/触发器成为这一行的直接子项，组内 1px 紧贴、组间
-       大空档的一簇一簇就没了。 */
+       拍平，8 个图标/触发器成为这一行的直接子项，组内 1px 紧贴、组间
+       大空档的一簇一簇就没了。
+       gap 必须清 0：space-between 之外再加 4px 固定间隙，320px 上
+       288px 按钮 + 7×4px 间隙 = 316px > 304px 可用宽，“···”会被顶出去。 */
     flex: 1;
     width: 100%;
     min-width: 0;
     flex-wrap: nowrap;
     justify-content: space-between;
+    gap: 0;
   }
   /* 按钮组拍平：.toolbar-btn-group 只剩布局壳，display:contents 让里面的
-     按钮/触发器直接参与 .header-actions 的 space-between 分配，7 个图标
-     间距相等。hide-on-narrow 的组（导出组）仍是 display:none !important，
-     不受影响；专注组见下面那条 !important 规则。 */
+     按钮/触发器直接参与 .header-actions 的 space-between 分配，8 个图标
+     /触发器间距相等。hide-on-narrow 的元素仍是 display:none !important，
+     不受影响。
   .workspace-toolbar .toolbar-btn-group {
     display: contents;
   }
@@ -1611,16 +1629,44 @@ html.dark .popout-item.is-active {
   .toolbar-spacer {
     display: none;
   }
-  /* 窄屏下多放回两个高频图标工具（历史版本、专注模式），不带文字、不带
-     下拉，7 个 36px 图标刚好铺满 375px 宽；导出/主题/代码下拉、导入、
-     拼图、示例仍留在“···”菜单里，不恢复横向滚动。 */
+  /* 窄屏下放回行内的图标（拼图）：hide-on-narrow 藏掉的元素里，只有带
+     show-on-mobile 的单个图标按钮恢复显示；查找 / 历史 / 专注现在回到
+     “···”菜单里，不再放回行内。 */
   .workspace-toolbar .btn-icon.hide-on-narrow.show-on-mobile {
     display: inline-flex !important;
   }
-  /* 专注组本身也拍平（里面的按钮成为行内直接子项）；这条必须也是
-     !important 才能压过上面那条旧规则的 inline-flex。 */
-  .workspace-toolbar .toolbar-btn-group.hide-on-narrow.show-on-mobile {
-    display: contents !important;
+  /* 排版主题下拉的触发器容器也要恢复显示（它不是 .btn-icon，上面的规则
+     够不着）；容器只是定位壳，block 就够，里面的下拉按钮自己定尺寸。 */
+  .workspace-toolbar .export-trigger-container.hide-on-narrow.show-on-mobile {
+    display: block !important;
+  }
+  /* 行内顺序：DOM 里“···”在主题下拉前面、清空在主题下拉前面，直接按 DOM
+     排会是 …复制 / 清空 / “···”/ 主题；用 order 排成用户要的顺序：
+     图片 / 拼图 / 撤销 / 重做 / 复制 / 主题 / 清空 / “···”。
+     按钮组被 display:contents 拍平后，里面的按钮本身就是 flex 子项，
+     order 直接生效；桌面端不在这个媒体块里，不受影响。 */
+  .workspace-toolbar .toolbar-doc-theme-container {
+    order: 20;
+  }
+  .workspace-toolbar .btn-icon.toolbar-clear-btn {
+    order: 21;
+  }
+  .workspace-toolbar .toolbar-more-container {
+    order: 30;
+  }
+  /* 排版主题触发器窄屏压成 36px 方块：只留主题色点 + 下拉箭头，文字
+     （“主题 / 山海·经典”）藏掉——全写出来要 110px+，7 个按钮加它
+     就放不下了。面板还是原来那个，点开照常选主题。 */
+  .workspace-toolbar .toolbar-doc-theme-container .btn-toolbar-dropdown {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+    gap: 4px;
+  }
+  .workspace-toolbar .toolbar-doc-theme-container .btn-toolbar-dropdown .dropdown-label-prefix,
+  .workspace-toolbar .toolbar-doc-theme-container .btn-toolbar-dropdown .dropdown-label-val {
+    display: none;
   }
   .hide-on-narrow {
     display: none !important;
