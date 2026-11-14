@@ -1080,6 +1080,63 @@ const showImportMenu = ref(false);
 const showExportMenu = ref(false);
 const showDocThemeMenu = ref(false);
 const showCodeThemeMenu = ref(false);
+const importMenuRef = ref(null);
+const exportMenuRef = ref(null);
+const docThemeMenuRef = ref(null);
+const codeThemeMenuRef = ref(null);
+
+/* ── 窄屏工具栏下拉菜单浮动锚定 ──
+   ≤640px 时工具栏横向滚动（overflow-x:auto），滚动容器会裁掉里面
+   position:absolute 的下拉菜单，手机上点图片按钮后菜单打开了也看不见。
+   窄屏下菜单改成 position:fixed（.is-floating），按触发按钮的视口位置
+   锚定：左右钳制在视口内，纵向留足空间，超高时菜单内部滚动。桌面端
+   不用这套，仍走原来的绝对定位。 */
+const isNarrowToolbar = ref(false);
+const toolbarPopoutStyle = ref({});
+let narrowToolbarQuery = null;
+function updateNarrowToolbar() {
+  isNarrowToolbar.value = narrowToolbarQuery ? narrowToolbarQuery.matches : window.innerWidth <= 640;
+}
+function anchorToolbarPopout(triggerEl) {
+  if (!triggerEl || !isNarrowToolbar.value) {
+    toolbarPopoutStyle.value = {};
+    return;
+  }
+  const r = triggerEl.getBoundingClientRect();
+  const panelW = 220;
+  const left = Math.max(8, Math.min(r.left, window.innerWidth - Math.min(panelW, window.innerWidth - 16) - 8));
+  const top = Math.min(r.bottom + 6, Math.max(8, window.innerHeight - 140));
+  toolbarPopoutStyle.value = {
+    left: left + 'px',
+    top: top + 'px',
+    maxHeight: Math.max(140, window.innerHeight - top - 12) + 'px',
+  };
+}
+function closeAllToolbarMenus() {
+  showImageMenu.value = false;
+  showImportMenu.value = false;
+  showExportMenu.value = false;
+  showDocThemeMenu.value = false;
+  showCodeThemeMenu.value = false;
+}
+/* 工具栏横向滚动时，fixed 菜单会和触发按钮脱节：滚动即关菜单。 */
+function closeToolbarPopoutsOnScroll(e) {
+  if (e.target?.closest?.('.workspace-toolbar')) closeAllToolbarMenus();
+}
+function toggleImportMenu() {
+  showImportMenu.value = !showImportMenu.value;
+  if (showImportMenu.value) nextTick(() => anchorToolbarPopout(importMenuRef.value?.querySelector('.btn-icon')));
+}
+function toggleDocThemeMenu() {
+  showDocThemeMenu.value = !showDocThemeMenu.value;
+  showCodeThemeMenu.value = false;
+  if (showDocThemeMenu.value) nextTick(() => anchorToolbarPopout(docThemeMenuRef.value?.querySelector('.btn-toolbar-dropdown')));
+}
+function toggleCodeThemeMenu() {
+  showCodeThemeMenu.value = !showCodeThemeMenu.value;
+  showDocThemeMenu.value = false;
+  if (showCodeThemeMenu.value) nextTick(() => anchorToolbarPopout(codeThemeMenuRef.value?.querySelector('.btn-toolbar-dropdown')));
+}
 
 function refreshImageStorageSummary() {
   imageStorageSummary.value = getActiveStorageSummary();
@@ -1093,6 +1150,7 @@ function toggleImageMenu() {
   showDocThemeMenu.value = false;
   showCodeThemeMenu.value = false;
   showImageMenu.value = next;
+  if (next) nextTick(() => anchorToolbarPopout(imageMenuRef.value?.querySelector('.btn-icon')));
 }
 
 function handleToolbarImageUpload() {
@@ -1127,6 +1185,7 @@ const activeCodeThemeObj = computed(() =>
 
 function toggleExportMenu() {
   showExportMenu.value = !showExportMenu.value;
+  if (showExportMenu.value) nextTick(() => anchorToolbarPopout(exportMenuRef.value?.querySelector('.btn-icon')));
 }
 function closeExportMenu() {
   showExportMenu.value = false;
@@ -2101,6 +2160,10 @@ onMounted(async () => {
 
   document.addEventListener('mousedown', handleImageMenuPointerDown);
   document.addEventListener('keydown', handleImageMenuKeyDown);
+  document.addEventListener('scroll', closeToolbarPopoutsOnScroll, { capture: true, passive: true });
+  narrowToolbarQuery = window.matchMedia('(max-width: 640px)');
+  updateNarrowToolbar();
+  narrowToolbarQuery.addEventListener('change', updateNarrowToolbar);
   window.addEventListener(EDITOR_SETTINGS_UPDATED_EVENT, refreshGeneralSettings);
 
   // 5. Immediate Cloud Sync on boot if enabled
@@ -2184,6 +2247,8 @@ onUnmounted(() => {
   clearTimeout(toolbarCopyTimer);
   document.removeEventListener('mousedown', handleImageMenuPointerDown);
   document.removeEventListener('keydown', handleImageMenuKeyDown);
+  document.removeEventListener('scroll', closeToolbarPopoutsOnScroll, { capture: true });
+  narrowToolbarQuery?.removeEventListener('change', updateNarrowToolbar);
   window.removeEventListener(EDITOR_SETTINGS_UPDATED_EVENT, refreshGeneralSettings);
 });
 
@@ -2468,7 +2533,7 @@ watch(customStyles, () => {
                   >
                     <ImagePlus size="14.5" />
                   </button>
-                  <div class="header-popout-panel align-left image-popout-panel" v-if="showImageMenu">
+                  <div class="header-popout-panel align-left image-popout-panel" v-if="showImageMenu" :class="{ 'is-floating': isNarrowToolbar }" :style="isNarrowToolbar ? toolbarPopoutStyle : null">
                     <div class="popout-status">
                       <span class="popout-status-dot" :class="{ 'is-enabled': imageStorageSummary.enabled }"></span>
                       <span class="popout-status-text">
@@ -2494,9 +2559,9 @@ watch(customStyles, () => {
                 >
                   <LayoutGrid size="14.5" />
                 </button>
-                <div class="export-trigger-container">
-                  <button @click="showImportMenu = !showImportMenu" class="btn-icon" :class="{ 'is-active': showImportMenu }" title="导入本地文档"><Upload size="14.5" /></button>
-                  <div class="header-popout-panel" v-if="showImportMenu" @mouseleave="showImportMenu = false">
+                <div class="export-trigger-container" ref="importMenuRef">
+                  <button @click="toggleImportMenu" class="btn-icon" :class="{ 'is-active': showImportMenu }" title="导入本地文档"><Upload size="14.5" /></button>
+                  <div class="header-popout-panel" v-if="showImportMenu" @mouseleave="showImportMenu = false" :class="{ 'is-floating': isNarrowToolbar }" :style="isNarrowToolbar ? toolbarPopoutStyle : null">
                     <button class="popout-item" @click="editorPanelRef?.triggerFileInput('.md,.markdown'); showImportMenu = false"><FileCode size="14" /><span>Markdown (.md)</span></button>
                     <button class="popout-item" @click="editorPanelRef?.triggerFileInput('.docx,.doc'); showImportMenu = false"><FileText size="14" /><span>Word (.docx)</span></button>
                     <button class="popout-item" @click="editorPanelRef?.triggerFileInput('.html,.htm'); showImportMenu = false"><Globe size="14" /><span>HTML (.html)</span></button>
@@ -2547,9 +2612,9 @@ watch(customStyles, () => {
                   <Check v-if="toolbarDocCopied" size="14.5" />
                   <Copy v-else size="14.5" />
                 </button>
-                <div class="export-trigger-container">
-                  <button class="btn-icon" @click="showExportMenu = !showExportMenu" title="导出文件"><Download size="14.5" /></button>
-                  <div class="header-popout-panel" v-if="showExportMenu" @mouseleave="showExportMenu = false">
+                <div class="export-trigger-container" ref="exportMenuRef">
+                  <button class="btn-icon" @click="toggleExportMenu" title="导出文件"><Download size="14.5" /></button>
+                  <div class="header-popout-panel" v-if="showExportMenu" @mouseleave="showExportMenu = false" :class="{ 'is-floating': isNarrowToolbar }" :style="isNarrowToolbar ? toolbarPopoutStyle : null">
                     <button class="popout-item" @click="exportMD(); showExportMenu = false"><FileCode size="14" /><span>Markdown</span></button>
                     <button class="popout-item" @click="exportHTML(); showExportMenu = false"><Globe size="14" /><span>HTML</span></button>
                     <button class="popout-item" @click="exportWord(); showExportMenu = false"><FileText size="14" /><span>Word (.docx)</span></button>
@@ -2565,11 +2630,11 @@ watch(customStyles, () => {
               <span class="toolbar-spacer"></span>
 
               <!-- Document Theme Dropdown -->
-              <div class="export-trigger-container">
+              <div class="export-trigger-container" ref="docThemeMenuRef">
                 <button
                   class="btn-toolbar-dropdown"
                   :class="{ 'is-active': showDocThemeMenu }"
-                  @click="showDocThemeMenu = !showDocThemeMenu; showCodeThemeMenu = false"
+                  @click="toggleDocThemeMenu"
                   title="切换文章排版主题"
                 >
                   <span
@@ -2580,7 +2645,7 @@ watch(customStyles, () => {
                   <span class="dropdown-label-val">{{ activeThemeObj?.name || '山海' }}</span>
                   <ChevronDown size="12" class="dropdown-chevron" />
                 </button>
-                <div class="header-popout-panel" v-if="showDocThemeMenu" @mouseleave="showDocThemeMenu = false">
+                <div class="header-popout-panel" v-if="showDocThemeMenu" @mouseleave="showDocThemeMenu = false" :class="{ 'is-floating': isNarrowToolbar }" :style="isNarrowToolbar ? toolbarPopoutStyle : null">
                   <button
                     v-for="t in themePresets"
                     :key="t.id"
@@ -2598,11 +2663,11 @@ watch(customStyles, () => {
               </div>
 
               <!-- Code Theme Dropdown -->
-              <div class="export-trigger-container">
+              <div class="export-trigger-container" ref="codeThemeMenuRef">
                 <button
                   class="btn-toolbar-dropdown"
                   :class="{ 'is-active': showCodeThemeMenu }"
-                  @click="showCodeThemeMenu = !showCodeThemeMenu; showDocThemeMenu = false"
+                  @click="toggleCodeThemeMenu"
                   title="切换代码块高亮主题"
                 >
                   <Code2 size="13" class="dropdown-code-icon" />
@@ -2610,7 +2675,7 @@ watch(customStyles, () => {
                   <span class="dropdown-label-val">{{ activeCodeThemeObj?.name || 'Atom One Dark' }}</span>
                   <ChevronDown size="12" class="dropdown-chevron" />
                 </button>
-                <div class="header-popout-panel" v-if="showCodeThemeMenu" @mouseleave="showCodeThemeMenu = false">
+                <div class="header-popout-panel" v-if="showCodeThemeMenu" @mouseleave="showCodeThemeMenu = false" :class="{ 'is-floating': isNarrowToolbar }" :style="isNarrowToolbar ? toolbarPopoutStyle : null">
                   <button
                     v-for="ct in codeThemes"
                     :key="ct.id"
