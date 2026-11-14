@@ -1122,8 +1122,13 @@ function closeAllToolbarMenus() {
   showCodeThemeMenu.value = false;
   showMoreMenu.value = false;
 }
-/* 工具栏横向滚动时，fixed 菜单会和触发按钮脱节：滚动即关菜单。 */
+/* 工具栏横向滚动时，fixed 菜单会和触发按钮脱节：滚动即关菜单。
+   但面板自己的内部滚动不要关：浮动面板虽然是 position:fixed，DOM 上
+   仍是 .workspace-toolbar 的子孙（.export-trigger-container 里面），
+   面板里一滑就会触发这条监听 —— 之前 6 个下拉菜单在手机上都是一滑
+   就收，就是这个原因。面板外的工具栏滚动才关。 */
 function closeToolbarPopoutsOnScroll(e) {
+  if (e.target?.closest?.('.header-popout-panel')) return;
   if (e.target?.closest?.('.workspace-toolbar')) closeAllToolbarMenus();
 }
 function toggleImportMenu() {
