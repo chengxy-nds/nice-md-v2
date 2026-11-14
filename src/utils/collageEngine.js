@@ -148,7 +148,7 @@ export const COLLAGE_LAYOUTS = [
   },
   {
     id: '6-grid',
-    name: '六图矩阵 (2×3)',
+    name: '六图矩阵 (3×2)',
     cellsCount: 6,
     cells: [
       { x: 0, y: 0, w: 1 / 3, h: 0.5 },
@@ -458,7 +458,41 @@ function drawRoundedPath(ctx, x, y, w, h, radius) {
 }
 
 /**
- * Render complete collage onto a Canvas element
+ * Draw an image into a cell rect with object-fit: cover, applying the cell's
+ * zoom & pan. Shared by the normal cell render and the drag ghost so the
+ * carried tile looks exactly like it does in its cell.
+ */
+function drawCoverImage(ctx, imgObj, geom, cellState) {
+  const cellRatio = geom.w / geom.h;
+  const imgRatio = imgObj.naturalWidth / imgObj.naturalHeight;
+  const zoom = Math.max(1, Math.min(3, cellState.zoom || 1));
+
+  let drawW, drawH;
+  if (imgRatio > cellRatio) {
+    drawH = geom.h * zoom;
+    drawW = geom.h * imgRatio * zoom;
+  } else {
+    drawW = geom.w * zoom;
+    drawH = (geom.w / imgRatio) * zoom;
+  }
+
+  const panXRatio = cellState.panX || 0;
+  const panYRatio = cellState.panY || 0;
+  const maxPanX = (drawW - geom.w) / 2;
+  const maxPanY = (drawH - geom.h) / 2;
+
+  const drawX = geom.x + (geom.w - drawW) / 2 + panXRatio * maxPanX;
+  const drawY = geom.y + (geom.h - drawH) / 2 + panYRatio * maxPanY;
+
+  ctx.drawImage(imgObj, drawX, drawY, drawW, drawH);
+}
+
+/**
+ * Render complete collage onto a Canvas element.
+ * Optional config.dragState { fromIndex, overIndex, ghostX, ghostY } draws a
+ * drag-to-swap in progress: the source cell renders as a lifted empty slot,
+ * the hovered cell gets a drop-target highlight, and the carried tile is
+ * drawn as a semi-transparent ghost following the pointer (canvas coords).
  */
 export function renderCollageToCanvas(canvas, config, imageMap = new Map()) {
   if (!canvas) return;
@@ -471,7 +505,8 @@ export function renderCollageToCanvas(canvas, config, imageMap = new Map()) {
     radius = 12,
     backgroundColor = '#FFFFFF',
     cellStates = [],
-    selectedCellIndex = null
+    selectedCellIndex = null,
+    dragState = null
   } = config;
 
   canvas.width = width;
@@ -495,6 +530,8 @@ export function renderCollageToCanvas(canvas, config, imageMap = new Map()) {
     const cellState = cellStates[index] || {};
     const imgObj = cellState.url ? imageMap.get(cellState.url) : null;
     const isSelected = selectedCellIndex === index;
+    const isDragSource = dragState !== null && dragState.fromIndex === index;
+    const isDropTarget = dragState !== null && dragState.overIndex === index && dragState.overIndex !== dragState.fromIndex;
 
     ctx.save();
 
@@ -503,36 +540,26 @@ export function renderCollageToCanvas(canvas, config, imageMap = new Map()) {
     drawRoundedPath(ctx, geom.x, geom.y, geom.w, geom.h, radius);
     ctx.closePath();
 
-    if (imgObj && imgObj.complete && imgObj.naturalWidth > 0) {
+    if (imgObj && imgObj.complete && imgObj.naturalWidth > 0 && !isDragSource) {
       // Cell background fill
       ctx.fillStyle = '#E2E8F0';
       ctx.fill();
 
       ctx.clip();
 
-      // Calculate object-fit: cover with user zoom & pan
-      const cellRatio = geom.w / geom.h;
-      const imgRatio = imgObj.naturalWidth / imgObj.naturalHeight;
-      const zoom = Math.max(1, Math.min(3, cellState.zoom || 1));
+      // object-fit: cover with user zoom & pan (shared with the drag ghost)
+      drawCoverImage(ctx, imgObj, geom, cellState);
+    } else if (isDragSource) {
+      // Lifted tile: the image is on the ghost, so the source cell renders
+      // as a dimmed empty slot with a dashed outline.
+      ctx.fillStyle = '#E8EEF5';
+      ctx.fill();
 
-      let drawW, drawH;
-      if (imgRatio > cellRatio) {
-        drawH = geom.h * zoom;
-        drawW = geom.h * imgRatio * zoom;
-      } else {
-        drawW = geom.w * zoom;
-        drawH = (geom.w / imgRatio) * zoom;
-      }
-
-      const panXRatio = cellState.panX || 0;
-      const panYRatio = cellState.panY || 0;
-      const maxPanX = (drawW - geom.w) / 2;
-      const maxPanY = (drawH - geom.h) / 2;
-
-      const drawX = geom.x + (geom.w - drawW) / 2 + panXRatio * maxPanX;
-      const drawY = geom.y + (geom.h - drawH) / 2 + panYRatio * maxPanY;
-
-      ctx.drawImage(imgObj, drawX, drawY, drawW, drawH);
+      ctx.lineWidth = Math.max(2, Math.round(width / 600));
+      ctx.strokeStyle = '#94A3B8';
+      ctx.setLineDash([8, 6]);
+      ctx.stroke();
+      ctx.setLineDash([]);
     } else {
       // Empty cell placeholder
       ctx.fillStyle = isSelected ? '#EFF6FF' : '#F8FAFC';
@@ -589,7 +616,63 @@ export function renderCollageToCanvas(canvas, config, imageMap = new Map()) {
       ctx.stroke();
       ctx.restore();
     }
+
+    // 4. Drop-target highlight for a drag-to-swap in progress
+    if (isDropTarget) {
+      ctx.save();
+      ctx.beginPath();
+      drawRoundedPath(ctx, geom.x, geom.y, geom.w, geom.h, radius);
+      ctx.fillStyle = 'rgba(37, 99, 235, 0.14)';
+      ctx.fill();
+      ctx.lineWidth = Math.max(4, Math.round(width / 300));
+      ctx.strokeStyle = '#2563EB';
+      ctx.shadowColor = 'rgba(37, 99, 235, 0.45)';
+      ctx.shadowBlur = 16;
+      ctx.stroke();
+      ctx.restore();
+    }
   });
+
+  // 5. Drag ghost: the carried tile follows the pointer, semi-transparent,
+  // at the source cell's size and with its zoom/pan intact.
+  if (dragState) {
+    const fromState = cellStates[dragState.fromIndex] || {};
+    const ghostImg = fromState.url ? imageMap.get(fromState.url) : null;
+    const fromCell = cells[dragState.fromIndex];
+    if (ghostImg && ghostImg.complete && ghostImg.naturalWidth > 0 && fromCell) {
+      const fromGeom = computeCellGeometry(fromCell, width, height, gap, padding);
+      const ghostGeom = {
+        x: dragState.ghostX - fromGeom.w / 2,
+        y: dragState.ghostY - fromGeom.h / 2,
+        w: fromGeom.w,
+        h: fromGeom.h
+      };
+      ctx.save();
+      ctx.globalAlpha = 0.88;
+      ctx.shadowColor = 'rgba(15, 23, 42, 0.45)';
+      ctx.shadowBlur = Math.max(12, Math.round(width / 100));
+      ctx.shadowOffsetY = Math.max(6, Math.round(width / 200));
+      ctx.beginPath();
+      drawRoundedPath(ctx, ghostGeom.x, ghostGeom.y, ghostGeom.w, ghostGeom.h, radius);
+      ctx.fillStyle = '#E2E8F0';
+      ctx.fill();
+      // The shadow must not bleed into the image itself.
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.clip();
+      drawCoverImage(ctx, ghostImg, ghostGeom, fromState);
+      ctx.restore();
+
+      ctx.save();
+      ctx.beginPath();
+      drawRoundedPath(ctx, ghostGeom.x, ghostGeom.y, ghostGeom.w, ghostGeom.h, radius);
+      ctx.lineWidth = Math.max(3, Math.round(width / 400));
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.95)';
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
 }
 
 /**

@@ -86,6 +86,28 @@ const isOutputSizeValid = computed(() => [outputWidth.value, outputHeight.value]
   return Number.isInteger(number) && number >= 1 && number <= 12000;
 }) && Number(outputWidth.value) * Number(outputHeight.value) <= 40000000);
 
+// Layout mini icons must show cells in the same proportions as the live
+// preview. The old fixed 68×40 (1.7:1) box never matched any output ratio
+// (e.g. 1880×1600 = 1.175:1), so its cells looked wide and flat while the
+// real cells were narrower — reading as "width squeezed". The box now fits
+// inside a 68×68 square at the live output aspect ratio, so the icon follows
+// any ratio/size change.
+const layoutPreviewBoxStyle = computed(() => {
+  const ratio = activeRatio.value.ratio || 1;
+  const maxSide = 68;
+  const minSide = 16;
+  let width;
+  let height;
+  if (ratio >= 1) {
+    width = maxSide;
+    height = Math.max(minSide, maxSide / ratio);
+  } else {
+    height = maxSide;
+    width = Math.max(minSide, maxSide * ratio);
+  }
+  return { width: `${Math.round(width)}px`, height: `${Math.round(height)}px` };
+});
+
 const activeLayout = computed(() => {
   return COLLAGE_LAYOUTS.find(l => l.id === selectedLayoutId.value) || COLLAGE_LAYOUTS[0];
 });
@@ -294,46 +316,77 @@ function processFiles(files) {
 }
 
 // ── Live Canvas Rendering ──
+function renderCanvasNow() {
+  if (!canvasRef.value || !isOutputSizeValid.value) return;
+  renderCollageToCanvas(canvasRef.value, {
+    width: activeRatio.value.width,
+    height: activeRatio.value.height,
+    layout: activeLayout.value,
+    gap: gap.value,
+    padding: padding.value,
+    radius: radius.value,
+    backgroundColor: backgroundColor.value,
+    cellStates: cellStates.value,
+    selectedCellIndex: selectedCellIndex.value,
+    dragState: swapDrag.value
+  }, imageMap);
+}
+
 function triggerRender() {
   if (!isOutputSizeValid.value) return;
   nextTick(() => {
-    if (!canvasRef.value) return;
-    renderCollageToCanvas(canvasRef.value, {
-      width: activeRatio.value.width,
-      height: activeRatio.value.height,
-      layout: activeLayout.value,
-      gap: gap.value,
-      padding: padding.value,
-      radius: radius.value,
-      backgroundColor: backgroundColor.value,
-      cellStates: cellStates.value,
-      selectedCellIndex: selectedCellIndex.value
-    }, imageMap);
+    renderCanvasNow();
   });
 }
 
-// ── Canvas Interactive Cell Selection & Panning ──
-let isDragging = false;
-let dragStartX = 0;
-let dragStartY = 0;
-let initialPanX = 0;
-let initialPanY = 0;
+// A swap drag can only be in flight while a finger is on the canvas, but a
+// second finger could still tap an export button — never export the ghost.
+function ensureCleanCanvasForExport() {
+  if (!swapDrag.value && !isDragging) return;
+  clearLongPressTimer();
+  swapDrag.value = null;
+  isDragging = false;
+  dragMode = null;
+  downPointerId = null;
+  downCellIndex = -1;
+  renderCanvasNow();
+}
 
-function handleCanvasPointerDown(e) {
-  if (!canvasRef.value) return;
-  e.preventDefault();
-  e.currentTarget?.setPointerCapture?.(e.pointerId);
+// ── Canvas Interactive Cell Selection, Panning & Drag-to-Swap ──
+// Quick drag = pan the image inside its cell (today's behaviour).
+// Long-press (~350ms, finger held nearly still) on a filled tile picks it up:
+// dragging then carries a ghost of the tile, and releasing over a different
+// cell swaps the two tiles (whole cell state travels, so the crop follows).
+// Releasing over the same cell, or outside any cell, cancels.
+const LONG_PRESS_MS = 350;
+const LONG_PRESS_MOVE_PX = 10;
+const swapDrag = ref(null); // { fromIndex, overIndex, ghostX, ghostY } in canvas coords, or null
+let longPressTimer = null;
+let dragMode = null; // 'pan' | 'swap' | null (pointer down, gesture undecided)
+let downPointerId = null;
+let downClientX = 0;
+let downClientY = 0;
+let downCellIndex = -1;
+
+function clearLongPressTimer() {
+  if (longPressTimer !== null) {
+    clearTimeout(longPressTimer);
+    longPressTimer = null;
+  }
+}
+
+function canvasPointFromClient(clientX, clientY) {
   const rect = canvasRef.value.getBoundingClientRect();
-  const scaleX = canvasRef.value.width / rect.width;
-  const scaleY = canvasRef.value.height / rect.height;
+  return {
+    x: (clientX - rect.left) * (canvasRef.value.width / rect.width),
+    y: (clientY - rect.top) * (canvasRef.value.height / rect.height)
+  };
+}
 
-  const clickX = (e.clientX - rect.left) * scaleX;
-  const clickY = (e.clientY - rect.top) * scaleY;
-
-  // Find clicked cell
+function cellIndexAtPoint(clientX, clientY) {
+  if (!canvasRef.value) return -1;
+  const { x: clickX, y: clickY } = canvasPointFromClient(clientX, clientY);
   const cells = activeLayout.value.cells || [];
-  let clickedIndex = -1;
-
   for (let i = 0; i < cells.length; i++) {
     const geom = computeCellGeometry(
       cells[i],
@@ -348,26 +401,82 @@ function handleCanvasPointerDown(e) {
       clickY >= geom.y &&
       clickY <= geom.y + geom.h
     ) {
-      clickedIndex = i;
-      break;
+      return i;
     }
   }
+  return -1;
+}
+
+let isDragging = false;
+let dragStartX = 0;
+let dragStartY = 0;
+let initialPanX = 0;
+let initialPanY = 0;
+
+function handleCanvasPointerDown(e) {
+  if (!canvasRef.value || isDragging) return;
+  e.preventDefault();
+  e.currentTarget?.setPointerCapture?.(e.pointerId);
+
+  // Find clicked cell
+  const clickedIndex = cellIndexAtPoint(e.clientX, e.clientY);
 
   if (clickedIndex !== -1) {
     soundEngine.playClick();
     selectedCellIndex.value = clickedIndex;
     isDragging = true;
+    dragMode = null;
+    downPointerId = e.pointerId;
+    downClientX = e.clientX;
+    downClientY = e.clientY;
+    downCellIndex = clickedIndex;
     dragStartX = e.clientX;
     dragStartY = e.clientY;
     const state = cellStates.value[clickedIndex];
     initialPanX = state?.panX || 0;
     initialPanY = state?.panY || 0;
+    // Long-press on a filled tile picks it up for a swap drag. A quick drag
+    // before the timer fires stays a pan, and an empty cell has nothing to
+    // carry, so it never arms the timer.
+    clearLongPressTimer();
+    if (state?.url) {
+      longPressTimer = setTimeout(() => {
+        if (!isDragging || dragMode !== null || downCellIndex === -1) return;
+        dragMode = 'swap';
+        const p = canvasPointFromClient(downClientX, downClientY);
+        swapDrag.value = { fromIndex: downCellIndex, overIndex: downCellIndex, ghostX: p.x, ghostY: p.y };
+        soundEngine.playClick();
+        triggerRender();
+      }, LONG_PRESS_MS);
+    }
     triggerRender();
   }
 }
 
 function handleCanvasPointerMove(e) {
-  if (!isDragging) return;
+  if (!isDragging || e.pointerId !== downPointerId) return;
+
+  if (dragMode === 'swap') {
+    const p = canvasPointFromClient(e.clientX, e.clientY);
+    swapDrag.value = {
+      ...swapDrag.value,
+      overIndex: cellIndexAtPoint(e.clientX, e.clientY),
+      ghostX: p.x,
+      ghostY: p.y
+    };
+    triggerRender();
+    return;
+  }
+
+  // Gesture undecided: moving past the threshold cancels the long-press and
+  // becomes a pan (today's behaviour).
+  const moved = Math.hypot(e.clientX - downClientX, e.clientY - downClientY);
+  if (moved > LONG_PRESS_MOVE_PX) {
+    clearLongPressTimer();
+    dragMode = 'pan';
+  }
+  if (dragMode !== 'pan') return;
+
   const state = activeCellState.value;
   if (!state || !state.url) return;
 
@@ -381,11 +490,37 @@ function handleCanvasPointerMove(e) {
   triggerRender();
 }
 
-function handleCanvasPointerUp() {
+function handleCanvasPointerUp(e) {
+  if (e?.pointerId !== undefined && downPointerId !== null && e.pointerId !== downPointerId) return;
+  clearLongPressTimer();
+  const hadSwapDrag = dragMode === 'swap' && swapDrag.value !== null;
+  if (hadSwapDrag) {
+    const { fromIndex, overIndex } = swapDrag.value;
+    if (overIndex !== null && overIndex !== -1 && overIndex !== fromIndex) {
+      // Swap the whole cell state (image + zoom/pan/crop) so the crop travels
+      // with the tile. Swapping with an empty cell moves the image there.
+      const emptyState = { url: '', zoom: 1, panX: 0, panY: 0, alt: '' };
+      const fromState = cellStates.value[fromIndex] || { ...emptyState };
+      const overState = cellStates.value[overIndex] || { ...emptyState };
+      cellStates.value[fromIndex] = overState;
+      cellStates.value[overIndex] = fromState;
+      // The selection follows the moved image to its new cell.
+      selectedCellIndex.value = overIndex;
+      soundEngine.playChime();
+    }
+    swapDrag.value = null;
+  }
   isDragging = false;
+  dragMode = null;
+  downPointerId = null;
+  downCellIndex = -1;
+  // Only a swap drag needs a final render (to clear the ghost / show the
+  // swap); a pan or tap already rendered on its last move / pointerdown.
+  if (hadSwapDrag) triggerRender();
 }
 
 function handleCanvasWheel(e) {
+  if (dragMode === 'swap') return;
   const state = activeCellState.value;
   if (!state || !state.url) return;
   e.preventDefault();
@@ -402,6 +537,7 @@ function guardExportable() {
 
 async function handleCopyImage() {
   if (!canvasRef.value) return;
+  ensureCleanCanvasForExport();
   const blocked = guardExportable();
   if (blocked) {
     emit('toast', blocked);
@@ -424,6 +560,7 @@ async function handleCopyImage() {
 
 function handleDownloadImage() {
   if (!canvasRef.value) return;
+  ensureCleanCanvasForExport();
   const blocked = guardExportable();
   if (blocked) {
     emit('toast', blocked);
@@ -442,6 +579,7 @@ function handleDownloadImage() {
 
 async function handleInsertToDoc() {
   if (!canvasRef.value) return;
+  ensureCleanCanvasForExport();
   const blocked = guardExportable();
   if (blocked) {
     emit('toast', blocked);
@@ -649,7 +787,7 @@ onUnmounted(() => {
 
             <!-- Column 2: Live Canvas Stage -->
             <div class="stage-panel">
-              <div class="stage-canvas-wrapper" @pointerdown="handleCanvasPointerDown" @pointermove="handleCanvasPointerMove" @wheel="handleCanvasWheel">
+              <div class="stage-canvas-wrapper" @pointerdown="handleCanvasPointerDown" @pointermove="handleCanvasPointerMove" @wheel="handleCanvasWheel" @contextmenu.prevent>
                 <canvas ref="canvasRef" class="collage-main-canvas"></canvas>
               </div>
 
@@ -732,7 +870,7 @@ onUnmounted(() => {
                     @click="selectLayout(l)"
                     :aria-label="`${l.cellsCount} 张图片，${l.name}`"
                   >
-                    <div class="layout-preview-box">
+                    <div class="layout-preview-box" :style="layoutPreviewBoxStyle">
                       <div
                         v-for="(c, cIdx) in l.cells"
                         :key="cIdx"
@@ -801,7 +939,7 @@ onUnmounted(() => {
           <div class="collage-footer">
             <div class="footer-meta">
               <span class="dim-tag">{{ activeRatio.width }} × {{ activeRatio.height }} px · PNG</span>
-              <span class="guide-hint"><Move size="12" class="inline mr-1" />拖动调整 · 滚轮缩放</span>
+              <span class="guide-hint"><Move size="12" class="inline mr-1" />拖动调整 · 滚轮缩放 · 长按拖动换位</span>
             </div>
             <div class="footer-actions">
               <button
@@ -1334,6 +1472,9 @@ onUnmounted(() => {
   border-radius: 8px;
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
   touch-action: none;
+  /* Long-press drag-to-swap must not trigger the iOS callout or text selection. */
+  -webkit-touch-callout: none;
+  user-select: none;
 }
 
 .cell-action-bar {
