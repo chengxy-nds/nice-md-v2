@@ -458,6 +458,10 @@ const POPOUT_TRIGGER_GAP = 8;
 
 const copyTriggerRef = ref(null);
 const copyPopoutRef = ref(null);
+/* 复制菜单的当前锚点：平时是底栏的复制按钮；手机预览模式下底栏藏掉，
+   顶部工具栏的“复制”按钮通过 toggleCopyMenuFrom 把自己设为锚点，
+   弹出层位置和“点外面关闭”的判断都按它来。 */
+const activeCopyAnchorRef = ref(null);
 const showCopyMenu = ref(false);
 const isCopyMenuPinned = ref(false);
 const copyPopoutStyle = ref({});
@@ -479,7 +483,8 @@ const clearCopyHoverTimer = () => {
 const handleCopyOutsidePointerDown = (e) => {
   if (!showCopyMenu.value) return;
   const target = e.target;
-  if (copyTriggerRef.value?.contains(target) || copyPopoutRef.value?.contains(target)) {
+  const anchorEl = activeCopyAnchorRef.value || copyTriggerRef.value;
+  if (anchorEl?.contains(target) || copyPopoutRef.value?.contains(target)) {
     return;
   }
   closeCopyMenu();
@@ -506,9 +511,10 @@ const detachCopyMenuListeners = () => {
 const updateCopyPopoutPosition = async () => {
   copyPopoutStyle.value = { top: '-9999px', left: '-9999px', visibility: 'hidden' };
   await nextTick();
-  if (!showCopyMenu.value || !copyTriggerRef.value || !copyPopoutRef.value) return;
+  const anchorEl = activeCopyAnchorRef.value || copyTriggerRef.value;
+  if (!showCopyMenu.value || !anchorEl || !copyPopoutRef.value) return;
 
-  const anchorRect = copyTriggerRef.value.getBoundingClientRect();
+  const anchorRect = anchorEl.getBoundingClientRect();
   const panelRect = copyPopoutRef.value.getBoundingClientRect();
   const maxTop = Math.max(POPOUT_VIEWPORT_PADDING, window.innerHeight - panelRect.height - POPOUT_VIEWPORT_PADDING);
   const top = Math.min(Math.max(anchorRect.top, POPOUT_VIEWPORT_PADDING), maxTop);
@@ -534,6 +540,7 @@ const openCopyMenu = ({ pinned = false } = {}) => {
 const closeCopyMenu = () => {
   clearCopyHoverTimer();
   isCopyMenuPinned.value = false;
+  activeCopyAnchorRef.value = null;
   if (showCopyMenu.value) {
     showCopyMenu.value = false;
     detachCopyMenuListeners();
@@ -555,6 +562,19 @@ const toggleCopyMenu = () => {
   }
   openCopyMenu({ pinned: true });
 };
+
+/* 顶部工具栏的“复制”按钮（手机预览模式）在 App.vue 里，菜单状态仍归这里管：
+   把顶部按钮作为锚点打开 / 关闭菜单，弹出层位置按它来算。 */
+const toggleCopyMenuFrom = (anchorEl) => {
+  if (showCopyMenu.value && isCopyMenuPinned.value) {
+    closeCopyMenu();
+    return;
+  }
+  activeCopyAnchorRef.value = anchorEl || null;
+  openCopyMenu({ pinned: true });
+};
+
+defineExpose({ toggleCopyMenuFrom });
 
 const handleSelectCopyAction = (actionFn) => {
   closeCopyMenu();
@@ -983,6 +1003,12 @@ html.dark .preview-right-bar {
     font-weight: 500;
     color: var(--text-muted, #64748B);
     white-space: nowrap;
+  }
+
+  /* 手机预览：发布 / 复制 / 主题已移到顶部工具栏，手机预览 / 隐藏预览直接去掉，
+     底栏不再留任何按钮，整条藏掉，文章拿满高。 */
+  .preview-right-bar {
+    display: none;
   }
 }
 

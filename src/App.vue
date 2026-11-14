@@ -4,7 +4,7 @@ import {
   Menu, Sparkles, Search, Image, ImagePlus, BookOpen, Link, Upload, Trash2,
   Eye, EyeOff, Download, Undo2, Redo2, Code2, MoreHorizontal,
   ChevronDown, ChevronRight, FileCode, FileText, Globe, Settings, Check, X,
-  History, Copy, Plus, ArrowLeftToLine, ArrowRightToLine, CircleX,
+  History, Copy, Plus, ArrowLeftToLine, ArrowRightToLine, CircleX, Send, Palette,
   LayoutGrid, Maximize, Minimize
 } from '@lucide/vue';
 import { applyTheme, getThemeDefaultStyles, getThemeSavedStyles, themes as themePresets } from './utils/themePresets';
@@ -1073,6 +1073,13 @@ const activeThemeName = computed(() =>
   themePresets.find(t => t.id === currentTheme.value)?.name || '山海'
 );
 const editorPanelRef = ref(null);
+const previewPanelRef = ref(null);
+/* 手机预览模式顶部“复制”按钮的锚点：复制菜单的状态和弹出层都在 PreviewPanel 里，
+   顶部按钮通过 previewPanelRef 调 toggleCopyMenuFrom，把自己作为锚点传过去。 */
+const mobileCopyBtnRef = ref(null);
+const togglePreviewCopyMenu = () => {
+  previewPanelRef.value?.toggleCopyMenuFrom?.(mobileCopyBtnRef.value);
+};
 const showImageMenu = ref(false);
 const imageMenuRef = ref(null);
 const imageStorageSummary = ref(getActiveStorageSummary());
@@ -3263,6 +3270,19 @@ watch(customStyles, () => {
                 </Transition>
               </div>
 
+              <!-- 手机预览模式顶部操作：发布 / 复制 / 自定义主题。只在 ≤960px 预览模式出现
+                   （见 App.css .preview-top-action），平时藏掉；底栏的五个按钮全部上移
+                   或去掉后，手机上不再留底栏。 -->
+              <button type="button" class="btn-icon preview-top-action preview-publish" @click="openLaunchpad" title="发布" aria-label="发布文章">
+                <Send size="18" stroke-width="1.8" />
+              </button>
+              <button type="button" class="btn-icon preview-top-action preview-copy" ref="mobileCopyBtnRef" @click.stop="togglePreviewCopyMenu" title="复制" aria-label="复制排版内容" aria-haspopup="menu">
+                <Copy size="18" stroke-width="1.7" />
+              </button>
+              <button type="button" class="btn-icon preview-top-action preview-theme" :class="{ 'is-active': showThemePanel }" @click="showThemePanel = !showThemePanel" title="自定义主题" aria-label="自定义主题" :aria-pressed="showThemePanel">
+                <Palette size="18" stroke-width="1.7" />
+              </button>
+
               <!-- Code Theme Dropdown -->
               <div class="export-trigger-container hide-on-narrow" ref="codeThemeMenuRef">
                 <button
@@ -3313,6 +3333,7 @@ watch(customStyles, () => {
             </div>
             <div class="workspace-column preview-column">
               <PreviewPanel
+                ref="previewPanelRef"
                 :markdown="markdownContent"
                 :docTitle="activeDocument?.title ?? '未命名文档'"
                 :themeId="currentTheme"
