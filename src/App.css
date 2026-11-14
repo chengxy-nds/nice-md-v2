@@ -1814,6 +1814,68 @@ html.dark .popout-item.is-active {
   .sheet-backdrop-leave-active {
     animation: sheet-fade-out 0.2s ease;
   }
+  /* ── 滚轮选择器（iOS UIPickerView 风格）：四个底部面板在 ≤640px 下改成
+     矮滚轮 —— 标题行 + 5 行滚轮（220px）+ 底部安全区，整块约 300px，
+     上面的文章预览 / 编辑区还露着。一次显示 5 行（44px/行），中间行落
+     在高亮带里；行的淡入淡出由 JS 按距中心的距离写 opacity / scale
+     （只动 transform / opacity）。面板本身不再滚动，滚动只发生在滚轮
+     里（touch-action:none + pointer 事件）；下滑关闭只从标题区触发。 */
+  .header-popout-panel.is-bottom-sheet.is-wheel-sheet {
+    overflow: hidden;
+  }
+  .wheel-picker {
+    position: relative;
+    height: 220px;
+    margin: 0 -8px;
+    overflow: hidden;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    cursor: grab;
+    flex-shrink: 0;
+  }
+  .wheel-picker:active {
+    cursor: grabbing;
+  }
+  .wheel-highlight {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: 88px;
+    height: 44px;
+    border-radius: 10px;
+    background: rgba(100, 116, 139, 0.16);
+    pointer-events: none;
+  }
+  .wheel-list {
+    padding: 88px 0;
+    will-change: transform;
+  }
+  .wheel-item {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 44px;
+    font-size: 16px;
+    line-height: 1.25;
+    color: var(--text-main, #0F172A);
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .wheel-item.is-centre {
+    font-weight: 700;
+  }
+  .wheel-item .wheel-item-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  /* 滚轮里的主题色点要比工具条上那个 8px 的大，不然看不清。 */
+  .wheel-item .theme-swatch-dot {
+    width: 14px;
+    height: 14px;
+  }
 }
 
 /* 减弱动效：底部弹出层进出场直接出现 / 消失。 */
