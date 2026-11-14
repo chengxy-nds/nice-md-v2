@@ -622,6 +622,16 @@ html.dark .meta {
   opacity: 1;
 }
 
+/* 触屏：文档行“···”常显不透明、热区扩到 36px，不用先点选中文档才能看清它
+   （分组的操作按钮已经是这个做法，见 Sidebar.vue 的 hover:none 规则）。 */
+@media (hover: none) {
+  .more {
+    opacity: 1;
+    width: 36px;
+    height: 36px;
+  }
+}
+
 .more:hover,
 .more.is-active {
   background: rgba(38, 120, 232, 0.1);

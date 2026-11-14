@@ -534,10 +534,12 @@ function clampFloatBarLeft(x) {
 
 // Position the floating bar above (or below) the line containing `pos`.
 function positionFloatBar(pos, clientEvent = null) {
+  // 浮动条在 ≤480px 会换成两到三行（约 130px 高），选区离顶不够时改放下方。
+  const aboveThreshold = window.innerWidth <= 480 ? 140 : 120;
   if (cmView) {
     const coords = cmView.coordsAtPos(pos);
     if (coords) {
-      floatBarAbove.value = coords.top > 120;
+      floatBarAbove.value = coords.top > aboveThreshold;
       floatBarPos.value = {
         top: floatBarAbove.value ? coords.top : coords.bottom,
         left: clampFloatBarLeft(coords.left)
@@ -545,7 +547,7 @@ function positionFloatBar(pos, clientEvent = null) {
       return;
     }
     if (clientEvent && clientEvent.clientY !== undefined) {
-      floatBarAbove.value = clientEvent.clientY > 120;
+      floatBarAbove.value = clientEvent.clientY > aboveThreshold;
       floatBarPos.value = {
         top: floatBarAbove.value ? clientEvent.clientY : clientEvent.clientY,
         left: clampFloatBarLeft(clientEvent.clientX)
@@ -557,7 +559,7 @@ function positionFloatBar(pos, clientEvent = null) {
   const ta = textareaRef.value;
   if (!ta) {
     if (clientEvent && clientEvent.clientY !== undefined) {
-      floatBarAbove.value = clientEvent.clientY > 120;
+      floatBarAbove.value = clientEvent.clientY > aboveThreshold;
       floatBarPos.value = {
         top: floatBarAbove.value ? clientEvent.clientY : clientEvent.clientY,
         left: clampFloatBarLeft(clientEvent.clientX)
@@ -574,7 +576,7 @@ function positionFloatBar(pos, clientEvent = null) {
   const lineTop = rect.top + padTop + lineIdx * lineH - ta.scrollTop;
   const lineBottom = lineTop + lineH;
   // If not enough room above, flip the bar below the selection instead.
-  floatBarAbove.value = lineTop > 120;
+  floatBarAbove.value = lineTop > aboveThreshold;
   floatBarPos.value = {
     top: floatBarAbove.value ? lineTop : lineBottom,
     left: clampFloatBarLeft(rect.left + 20)
@@ -1931,10 +1933,74 @@ function handleGlobalKeydown(e) {
   }
 }
 
+// ── 手机键盘补偿 ──
+// iOS/Android 上键盘弹起时会盖住编辑区底部，写到文档底部时光标行可能躲到键盘后面。
+// visualViewport 能量出键盘实际盖住的高度：编辑区底部被盖住多少，就给内容区底部
+// 加多少留白（最后一行也能滚到键盘上方），再把光标行滚到键盘上方。
+// 只在粗指针设备上生效；布局本身已经用 dvh 缩上去的机型算出来 overlap 为 0，
+// 不做任何事，不会重复补偿。键盘收起时全部还原。
+let kbCompTimer = null;
+let kbCompApplied = 0;
+
+function applyKeyboardCompensation() {
+  if (!window.matchMedia('(pointer: coarse)').matches || !window.visualViewport) {
+    resetKeyboardCompensation();
+    return;
+  }
+  const vv = window.visualViewport;
+  const visibleBottom = vv.height + vv.offsetTop;
+  const scroller = cmView?.scrollDOM || null;
+  let overlap = 0;
+  if (scroller) {
+    overlap = Math.max(0, scroller.getBoundingClientRect().bottom - visibleBottom);
+  } else if (textareaRef.value) {
+    overlap = Math.max(0, textareaRef.value.getBoundingClientRect().bottom - visibleBottom);
+  }
+  if (overlap < 40) {
+    resetKeyboardCompensation();
+    return;
+  }
+  if (cmView?.contentDOM) cmView.contentDOM.style.paddingBottom = `${32 + overlap}px`;
+  else if (textareaRef.value) textareaRef.value.style.paddingBottom = `${overlap}px`;
+  kbCompApplied = overlap;
+  if (cmView) {
+    // 光标行若正躲在键盘后面，把它滚到键盘上方（yMargin = 被盖住的高度）；
+    // 已经在可视区内的不做任何事。
+    const anchor = cmView.state.selection.main.head;
+    isProgrammaticEditorScroll = true;
+    try {
+      cmView.dispatch({
+        effects: EditorView.scrollIntoView(anchor, { y: 'nearest', yMargin: overlap })
+      });
+    } catch {} finally {
+      requestAnimationFrame(() => {
+        isProgrammaticEditorScroll = false;
+      });
+    }
+  }
+}
+
+function resetKeyboardCompensation() {
+  if (!kbCompApplied) return;
+  kbCompApplied = 0;
+  if (cmView?.contentDOM) cmView.contentDOM.style.paddingBottom = '';
+  if (textareaRef.value) textareaRef.value.style.paddingBottom = '';
+}
+
+function handleViewportChange() {
+  // 键盘弹出/收起动画期间 resize 会连发多次，等停稳再算一次。
+  clearTimeout(kbCompTimer);
+  kbCompTimer = setTimeout(applyKeyboardCompensation, 120);
+}
+
 onMounted(() => {
   window.addEventListener(EDITOR_SETTINGS_UPDATED_EVENT, loadPreferences);
   document.addEventListener('pointerdown', handleGlobalPointerDown);
   document.addEventListener('keydown', handleGlobalKeydown);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', handleViewportChange);
+    window.visualViewport.addEventListener('scroll', handleViewportChange);
+  }
   if (isSyntaxHighlightActive.value) {
     nextTick(() => {
       initCodeMirror();
@@ -1946,6 +2012,12 @@ onUnmounted(() => {
   window.removeEventListener(EDITOR_SETTINGS_UPDATED_EVENT, loadPreferences);
   document.removeEventListener('pointerdown', handleGlobalPointerDown);
   document.removeEventListener('keydown', handleGlobalKeydown);
+  if (window.visualViewport) {
+    window.visualViewport.removeEventListener('resize', handleViewportChange);
+    window.visualViewport.removeEventListener('scroll', handleViewportChange);
+  }
+  clearTimeout(kbCompTimer);
+  resetKeyboardCompensation();
   cleanupLightboxPanListeners();
   clearUrlHoverTimer();
   if (cmView) {
@@ -2016,7 +2088,8 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
         <button @click="insertFormat('strike'); showFloatBar = false" title="删除线"><Strikethrough size="14" /></button>
         <button @click="insertFormat('code'); showFloatBar = false" title="行内代码"><Code size="14" /></button>
         <button @click="insertFormat('link'); showFloatBar = false" title="链接"><Link size="14" /></button>
-        <span class="float-sep"></span>
+        <span class="float-sep float-sep-mid"></span>
+        <span class="float-row-break"></span>
         <button @click="insertFormat('h1'); showFloatBar = false" title="H1">H1</button>
         <button @click="insertFormat('h2'); showFloatBar = false" title="H2">H2</button>
         <button @click="insertFormat('h3'); showFloatBar = false" title="H3">H3</button>
@@ -2414,23 +2487,6 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
   overflow: hidden;
 }
 
-.header-actions {
-  display: flex; gap: 4px; align-items: center; width: 100%;
-}
-
-.btn-icon {
-  background: transparent; border: none; color: var(--text-muted);
-  border-radius: 6px; width: 28px; height: 28px;
-  display: flex; align-items: center; justify-content: center;
-  cursor: pointer; transition: all 0.15s ease;
-}
-.btn-icon:hover { color: var(--accent-color); background: var(--accent-bg); }
-.btn-icon.is-active { color: var(--accent-color); background: var(--accent-bg); }
-.btn-danger:hover { color: #ef4444; background: rgba(239,68,68,0.1); }
-
-.toolbar-sep { width: 1px; height: 16px; background: var(--border-color); margin: 0 4px; }
-.toolbar-spacer { flex: 1; }
-
 /* Jiggle Animation on file import */
 @keyframes jiggle {
   0% { transform: scale(1); }
@@ -2783,6 +2839,15 @@ textarea::placeholder {
   gap: 12px;
 }
 
+/* 窄屏：定宽 320px + right:16px 在 320px 屏上会溢出左边缘 16px，改成左右贴边。 */
+@media (max-width: 640px) {
+  .url-import-popover {
+    left: 8px;
+    right: 8px;
+    width: auto;
+  }
+}
+
 .popover-header {
   display: flex;
   justify-content: space-between;
@@ -2908,6 +2973,8 @@ html.dark .btn-submit-url:hover:not(:disabled) {
 }
 .float-format-bar button:hover { background: var(--accent-bg); color: var(--accent-color); }
 .float-sep { width: 1px; height: 16px; background: var(--border-color); margin: 0 3px; }
+/* 换行点：只在 ≤480px 启用（见下方媒体查询），把浮动条分成常用行和格式行。 */
+.float-row-break { display: none; }
 
 /* Table size picker popover */
 .table-picker {
@@ -2960,15 +3027,28 @@ html.dark .btn-submit-url:hover:not(:disabled) {
   .float-format-bar {
     padding: 3px 4px;
     border-radius: 8px;
+    /* 窄屏改成多行：常用操作在第一行，标题/列表/代码块在下面，不再横向滚动；
+       36px 按钮（hover:none 的 36px 规则写在前面，这里必须再写一次，
+       否则同优先级下后写的 24px 会赢）。 */
+    flex-wrap: wrap;
+    overflow-x: visible;
+    max-width: 94vw;
   }
   .float-format-bar button {
-    width: 24px;
-    height: 24px;
-    font-size: 10px;
+    width: 36px;
+    height: 36px;
+    font-size: 12px;
   }
   .float-sep {
     height: 14px;
     margin: 0 2px;
+  }
+  /* 中间的分隔线由换行点代替，第二行从 H1 开始。 */
+  .float-sep-mid { display: none; }
+  .float-row-break {
+    display: block;
+    flex-basis: 100%;
+    height: 0;
   }
 }
 
@@ -3005,22 +3085,6 @@ html.dark .btn-submit-url:hover:not(:disabled) {
 }
 
 @media (max-width: 640px) {
-  .editor-header {
-    padding: 4px 6px;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-  .header-actions {
-    flex-wrap: nowrap;
-    gap: 1px;
-  }
-  .btn-icon {
-    width: 26px;
-    height: 26px;
-  }
-  .toolbar-sep {
-    margin: 0 2px;
-  }
   /* 浮动回顶 / 回底按钮：视觉仍是 28px，::after 把点按热区扩到 40px；
      触屏没有 hover，常驻 0.5 透明度不会变，点按时用 :active 回到不透明给反馈。 */
   .scroll-quick-btn {

@@ -162,7 +162,7 @@ const emit = defineEmits([
   'move-doc', 'reorder-docs', 'reorder-groups', 'toggle-collapse',
   'open-templates', 'open-materials', 'open-doc-history',
   'duplicate-doc', 'toggle-pin',
-  'cloud-sync-action', 'open-cloud-settings', 'swipe-close'
+  'cloud-sync-action', 'open-cloud-settings', 'swipe-close', 'close-drawer'
 ]);
 
 // ── Search, Filter & Sort State ──
@@ -895,6 +895,14 @@ function resetSidebarWidth() {
         <button class="sidebar-toolbar-btn" @click="handleCreateGroupClick" title="新建文件夹" aria-label="新建文件夹">
           <FolderPlus size="16" stroke-width="2" />
         </button>
+        <button
+          class="sidebar-toolbar-btn drawer-close-btn"
+          @click="emit('close-drawer')"
+          title="关闭文档列表"
+          aria-label="关闭文档列表"
+        >
+          <X size="16" stroke-width="2.2" />
+        </button>
       </div>
     </div>
 
@@ -1288,6 +1296,17 @@ function resetSidebarWidth() {
   .sidebar-resizer {
     display: none !important;
   }
+  /* 移动端抽屉才有的关闭 ×：桌面侧边栏常驻，不需要它。 */
+  .drawer-close-btn {
+    display: flex !important;
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* 桌面端不显示抽屉关闭按钮（见上方 ≤960px 规则）。 */
+.drawer-close-btn {
+  display: none;
 }
 
 html.dark .sidebar-container {

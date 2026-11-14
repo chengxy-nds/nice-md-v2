@@ -1367,6 +1367,43 @@ function handlePopupClose() {
   border-radius: 0.125rem;
 }
 
+/* 真机上去框：手机（或粗指针设备）上看微信预览，屏幕里再套一部假手机
+   （灵动岛、假 09:41 状态栏、假 Home 条、4px 深色边框）既占地方又别扭。
+   去掉全部框体装饰，文章按真实宽度通栏显示，只留文章标题头；外层本来
+   的滚动区接管滚动，不再内外两层套着滚。桌面端不受影响。 */
+@media (max-width: 960px), (pointer: coarse) {
+  .preview-body.is-wechat-wrapper {
+    padding: 0;
+    background: transparent;
+  }
+  :global(html.dark) .preview-body.is-wechat-wrapper,
+  :global(html[data-color-mode="dark"]) .preview-body.is-wechat-wrapper {
+    background: transparent;
+  }
+  .preview-content-frame.wechat-phone-frame {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0;
+  }
+  :global(html.dark) .preview-content-frame.wechat-phone-frame,
+  :global(html[data-color-mode="dark"]) .preview-content-frame.wechat-phone-frame {
+    box-shadow: none;
+  }
+  .phone-dynamic-island,
+  .phone-status-bar,
+  .phone-article-footer,
+  .phone-home-indicator {
+    display: none;
+  }
+  .phone-screen-scroll {
+    overflow-y: visible;
+  }
+}
+
 /* Math & Mermaid styling */
 .math-block {
   margin: 1.2em 0;

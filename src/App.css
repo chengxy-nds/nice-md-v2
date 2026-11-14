@@ -1129,6 +1129,16 @@ html.dark .empty-tabs-title {
   white-space: nowrap;
 }
 
+/* “···”菜单顶部的小标题：按钮本身没地方写字，菜单里写一句“更多工具”，
+   新用户一眼就知道这些功能收在这里。 */
+.popout-menu-header {
+  padding: 5px 10px 3px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, #64748B);
+}
+
 .popout-status-dot {
   width: 6px;
   height: 6px;
@@ -1544,6 +1554,8 @@ html.dark .popout-item.is-active {
     height: 100% !important;
     /* 底部横条安全区：抽屉底部内容不被 Home Indicator 遮住。 */
     padding-bottom: env(safe-area-inset-bottom) !important;
+    /* 顶部刘海安全区：灵动岛机型上抽屉顶行不顶到刘海区。 */
+    padding-top: calc(10px + env(safe-area-inset-top, 0px)) !important;
     z-index: 100 !important;
     background: var(--bg-editor) !important;
     box-shadow: var(--shadow-lg) !important;
@@ -1589,6 +1601,15 @@ html.dark .popout-item.is-active {
   }
 
   .workspace-grid.active-view-preview .editor-column {
+    display: none !important;
+  }
+
+  /* 预览模式：手机上编辑工具整行都没用了，藏掉图片 / 拼图 / 撤销 / 重做 /
+     复制 / 清空这些编辑组，省出一行给文章，也不会在读文章时误点清空；
+     排版主题和“···”是 .header-actions 的直接子项、不在组里，留下来。 */
+  .workspace-grid.active-view-preview .workspace-toolbar .toolbar-btn-group,
+  .workspace-grid.active-view-preview .workspace-toolbar .toolbar-sep,
+  .workspace-grid.active-view-preview .workspace-toolbar .toolbar-spacer {
     display: none !important;
   }
 
@@ -1848,6 +1869,13 @@ html.dark .popout-item.is-active {
     background: rgba(100, 116, 139, 0.16);
     pointer-events: none;
   }
+  /* 深色模式：0.16 的灰带在深色底上几乎看不见，提到 0.28 再加一条细描边，
+     居中行不只靠加粗区分。 */
+  html.dark .wheel-highlight,
+  [data-color-mode="dark"] .wheel-highlight {
+    background: rgba(148, 163, 184, 0.28);
+    box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.25);
+  }
   .wheel-list {
     padding: 88px 0;
     will-change: transform;
@@ -1978,5 +2006,39 @@ html.dark .popout-item.is-active {
   textarea,
   select {
     font-size: 16px !important;
+  }
+}
+
+/* ── 横屏 / 短视口 ──
+   横屏手机（约 844×390）顶栏 + 工具栏 + 编辑区底栏已经吃掉约 150px，
+   300px 的滚轮面板占到屏幕高度的 77%，“上面预览还露着”不成立。
+   短视口下：面板封顶 60dvh、滚轮只显示 3 行（JS 的居中 / 点行计算跟
+   .wheel-picker 的实际高度走，见 App.vue wheelVisibleRows），顶栏收紧。 */
+@media (max-width: 960px) and (orientation: landscape) and (max-height: 500px) {
+  .app-header {
+    height: calc(3.5rem + env(safe-area-inset-top));
+  }
+  .header-popout-panel.is-bottom-sheet {
+    max-height: 60vh;
+    max-height: 60dvh;
+  }
+  .wheel-picker {
+    height: 132px;
+  }
+  .wheel-highlight {
+    top: 44px;
+  }
+  .wheel-list {
+    padding: 44px 0;
+  }
+}
+
+/* ── 手机 Toast 改到底部 ──
+   原来钉在顶部（72px + 安全区），正好压在工具栏 / 编辑区顶部；
+   ≤640px 改到底部、安全区上方。 */
+@media (max-width: 640px) {
+  .app-floating-toast {
+    top: auto;
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   }
 }
