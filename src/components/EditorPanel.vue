@@ -2586,8 +2586,11 @@ textarea::placeholder {
   align-items: center;
   justify-content: flex-end;
   gap: 14px;
-  height: 28px;
-  padding: 0 16px;
+  /* 底部横条安全区：全面屏手机上字数行不被 Home Indicator 顶到；
+     全局是 border-box，所以高度里把 inset 加回来，内容区仍是 28px。
+     env() 在桌面端是 0，桌面端高度不变。 */
+  height: calc(28px + env(safe-area-inset-bottom));
+  padding: 0 16px env(safe-area-inset-bottom);
   border-top: 1px solid var(--border-color, #E2E8F0);
   background: var(--bg-toolbar, #FAFBFC);
   font-size: 11.5px;
@@ -3017,6 +3020,19 @@ html.dark .btn-submit-url:hover:not(:disabled) {
   }
   .toolbar-sep {
     margin: 0 2px;
+  }
+  /* 浮动回顶 / 回底按钮：视觉仍是 28px，::after 把点按热区扩到 40px；
+     触屏没有 hover，常驻 0.5 透明度不会变，点按时用 :active 回到不透明给反馈。 */
+  .scroll-quick-btn {
+    position: relative;
+  }
+  .scroll-quick-btn::after {
+    content: '';
+    position: absolute;
+    inset: -6px;
+  }
+  .scroll-quick-btn:active {
+    opacity: 1;
   }
 }
 

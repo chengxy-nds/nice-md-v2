@@ -1436,6 +1436,18 @@ html.dark .popout-item.is-active {
     min-width: 88px;
     max-width: 160px;
   }
+
+  /* 顶栏三条细线堆在一起显碎（顶栏底边、标签条底线、工具栏底边）。
+     去掉标签条这一条（容器和每条标签各画了一条重合的底线），标签与工具栏
+     连成一块 chrome；激活标签的底色 + 顶部滑块仍能分辨，工具栏底边还在。 */
+  .workspace-tabs,
+  .workspace-tab-item,
+  .workspace-tab-item.is-active,
+  html.dark .workspace-tabs,
+  html.dark .workspace-tab-item,
+  html.dark .workspace-tab-item.is-active {
+    box-shadow: none;
+  }
   
   .app-header {
     display: flex;
@@ -1537,7 +1549,11 @@ html.dark .popout-item.is-active {
     overflow-x: visible;
   }
   .header-actions {
-    width: auto;
+    /* 占满工具栏宽，里面的 spacer（flex:1）才有空间把“···”顶到最右端；
+       之前 width:auto 让整行先缩到内容宽，spacer 顶了个空，“···”就停在
+       重做按钮后面、右边空一半。 */
+    flex: 1;
+    width: 100%;
     min-width: 0;
     flex-wrap: nowrap;
   }
@@ -1588,6 +1604,39 @@ html.dark .popout-item.is-active {
   .workspace-toolbar .btn-icon:not(.btn-toolbar-sample) {
     width: 36px;
     height: 36px;
+  }
+  /* 触屏没有悬停：:hover 样式会在点按后粘住不掉 —— iOS 上“···”点完一直
+     带个圆角方框边就是这么来的（平时边框是透明的，:hover 才画出来）。
+     这里把工具栏按钮 / + 号 / 汉堡的 hover 效果清掉，改用 :active 给按压
+     反馈；.is-active（菜单打开中的蓝底）是 class 控制的，不受影响。 */
+  .workspace-toolbar .btn-icon:not(.is-active):hover {
+    border-color: transparent;
+    background: transparent;
+    box-shadow: none;
+    color: var(--text-muted, #64748B);
+  }
+  .workspace-toolbar .btn-icon:active {
+    transform: scale(.92);
+    background: var(--bg-card, #FFFFFF);
+  }
+  .workspace-tab-add:hover,
+  html.dark .workspace-tab-add:hover {
+    background: transparent;
+  }
+  .workspace-tab-add:active {
+    background: #edf4ff;
+  }
+  html.dark .workspace-tab-add:active {
+    background: rgba(59, 130, 246, 0.14);
+  }
+  .btn-menu-toggle:hover {
+    background: transparent;
+  }
+  .btn-menu-toggle:active {
+    background: var(--border-color);
+  }
+  .tab-view-btn:active {
+    transform: scale(.96);
   }
 }
 

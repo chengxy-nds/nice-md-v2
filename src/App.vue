@@ -2672,7 +2672,6 @@ watch(customStyles, () => {
                   <MoreHorizontal size="14.5" />
                 </button>
                 <div class="header-popout-panel" v-if="showMoreMenu" :class="{ 'is-floating': isNarrowToolbar }" :style="isNarrowToolbar ? toolbarPopoutStyle : null">
-                  <button class="popout-item" @click="closeMoreMenuAnd(() => editorPanelRef?.openFindReplace())"><Search size="14" /><span>查找与替换</span></button>
                   <button class="popout-item" @click="closeMoreMenuAnd(() => editorPanelRef?.toggleUrlImport())"><Link size="14" /><span>URL 文章导入</span></button>
                   <button class="popout-item" @click="closeMoreMenuAnd(openCollageModal)"><LayoutGrid size="14" /><span>封面拼图</span></button>
                   <div class="popout-divider"></div>
