@@ -1648,6 +1648,13 @@ html.dark .popout-item.is-active {
     display: inline-flex;
   }
 
+  /* 手机编辑：键盘一弹，顶栏工具条就被顶出视野，排版主题按钮放在编辑工具栏里
+     根本够不着，还占一个位置；直接藏掉。换主题去预览模式（顶部有主题名）
+     或点“···”里的排版主题。预览模式不受影响。 */
+  .workspace-grid.active-view-editor .workspace-toolbar .export-trigger-container.toolbar-doc-theme-container {
+    display: none !important;
+  }
+
 }
 
 /* ── 窄屏工具栏：不横向滚动，溢出工具收进“···”菜单 ──
