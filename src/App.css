@@ -1040,6 +1040,11 @@ html.dark .empty-tabs-title {
   border-color: rgba(17, 106, 204, 0.2);
 }
 
+/* 窄屏“···”更多工具按钮：桌面端不展示，只在 ≤640px 出现（见下）。 */
+.workspace-toolbar .btn-icon.toolbar-more-btn {
+  display: none;
+}
+
 .workspace-toolbar .btn-icon.is-copied {
   color: #16a34a;
   background: rgba(22, 163, 74, 0.1);
@@ -1398,6 +1403,18 @@ html.dark .popout-item.is-active {
   .btn-menu-toggle {
     display: flex;
   }
+
+  /* 手机模式不展示品牌：logo 图标 + “EASY MD” + “STUDIO” 整个锁起来都藏掉
+     （只藏不删，桌面端照常显示；想留 logo 图标的话，把这条改成只藏文字）。
+     header-left 的 180px 最小宽也要收掉，不然空占一截、切换器居中会偏。 */
+  .wandor-brand-box {
+    display: none;
+  }
+  .header-left {
+    min-width: 0;
+    position: relative;
+    z-index: 1;
+  }
   
   .btn-header-settings {
     display: flex;
@@ -1411,6 +1428,14 @@ html.dark .popout-item.is-active {
   .tab-view-btn {
     padding: 10px 18px;
   }
+
+  /* 长标题标签：单标签最宽 210px 在手机上占一半还多，窄屏下收成 160px，
+     标题省略号本来就有（.workspace-tab-title 的 text-overflow），+ 号本来
+     就在滚动容器外、永远可见；激活滑块量的是标签实际宽，截断不影响它。 */
+  .workspace-tab-item {
+    min-width: 88px;
+    max-width: 160px;
+  }
   
   .app-header {
     display: flex;
@@ -1423,15 +1448,19 @@ html.dark .popout-item.is-active {
     top: calc(72px + env(safe-area-inset-top));
   }
 
+  /* 编辑/预览切换器在顶栏里绝对居中：品牌已藏、左边只剩汉堡按钮，
+     flex 居中会被左边按钮顶偏，absolute + translate 才是真居中
+     （.app-header 本身是 position: relative；top 里加一半安全区，
+     刘海机上也不会偏）。 */
   .header-center,
   .header-center.is-workspace-centered {
-    position: relative;
-    left: auto;
-    top: auto;
-    width: auto;
-    flex: 1;
-    justify-content: flex-end;
-    transform: none;
+    position: absolute;
+    left: 50%;
+    top: calc(50% + env(safe-area-inset-top) / 2);
+    width: max-content;
+    flex: none;
+    justify-content: center;
+    transform: translate(-50%, -50%);
   }
   
   .header-selects {
@@ -1498,22 +1527,27 @@ html.dark .popout-item.is-active {
 
 }
 
-/* ── 移动端：工具栏横向滚动（P0-1）──
-   工具栏在 App.vue 里（.editor-header.workspace-toolbar），EditorPanel.vue:2938
-   的 scoped 规则只对 EditorPanel 自己模板内的元素生效，永远命中不了它，
-   所以这里在 App.css 里再写一条全局规则。按钮一个不少，横向滑着用。 */
+/* ── 窄屏工具栏：不横向滚动，溢出工具收进“···”菜单 ──
+   之前这里是 overflow-x:auto，工具栏一滑到底才能点到后面的按钮；现在
+   ≤640px 只留核心 4 个按钮（查找 / 图片 / 撤销 / 重做）+ 右端一个“···”，
+   其余工具（class 为 hide-on-narrow 的元素）藏起来，进“···”菜单里找。
+   菜单是 fixed 浮动定位，不会被裁。桌面端不受影响。 */
 @media (max-width: 640px) {
   .workspace-toolbar {
-    overflow-x: auto;
-    scrollbar-width: none;
-  }
-  .workspace-toolbar::-webkit-scrollbar {
-    display: none;
+    overflow-x: visible;
   }
   .header-actions {
-    width: max-content;
-    min-width: 100%;
+    width: auto;
+    min-width: 0;
     flex-wrap: nowrap;
+  }
+  .hide-on-narrow {
+    display: none !important;
+  }
+  /* “···”按钮：默认 display:none（见 .toolbar-more-btn），窄屏才出现，
+     放在 spacer 右边，也就是工具栏最右端。 */
+  .workspace-toolbar .btn-icon.toolbar-more-btn {
+    display: inline-flex;
   }
   /* 带文字的“示例”按钮宽自适应，只定高不定宽，别把它压成 32px 截掉文字。 */
   .workspace-toolbar .btn-icon:not(.btn-toolbar-sample) {
@@ -1530,9 +1564,6 @@ html.dark .popout-item.is-active {
   .workspace-toolbar .toolbar-btn-group,
   .workspace-toolbar .toolbar-sep {
     flex-shrink: 0;
-  }
-  .workspace-toolbar .toolbar-spacer {
-    flex: 0 0 8px;
   }
 }
 
