@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, defineAsyncComponent, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { ref, reactive, computed, defineAsyncComponent, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import {
   Menu, Sparkles, Search, Image, ImagePlus, BookOpen, Link, Upload, Trash2,
   Eye, EyeOff, Download, Undo2, Redo2, Code2, MoreHorizontal,
@@ -1130,6 +1130,8 @@ function anchorToolbarPopout(triggerEl, asSheet = false) {
   };
 }
 function closeAllToolbarMenus() {
+  /* 滚轮预览中途关掉（Esc / 下滑 / 点其它触发器）要把主题还原，见 revertWheelPreview。 */
+  revertWheelPreview();
   showImageMenu.value = false;
   showImportMenu.value = false;
   showExportMenu.value = false;
@@ -1154,6 +1156,12 @@ function toggleImportMenu() {
   if (showImportMenu.value) nextTick(() => anchorToolbarPopout(importMenuRef.value?.querySelector('.btn-icon')));
 }
 function toggleDocThemeMenu() {
+  /* 窄屏下排版主题走滚轮面板（openPickerSheet('theme')），桌面端仍是原来的浮动下拉。 */
+  if (isNarrowToolbar.value) {
+    if (showDocThemeMenu.value) closeWheelSheet();
+    else openPickerSheet('theme');
+    return;
+  }
   showDocThemeMenu.value = !showDocThemeMenu.value;
   showCodeThemeMenu.value = false;
   if (showDocThemeMenu.value) nextTick(() => anchorToolbarPopout(docThemeMenuRef.value?.querySelector('.btn-toolbar-dropdown'), true));
@@ -1204,12 +1212,278 @@ function closeMoreMenuAnd(fn) {
    屏幕底部，内联 top/left/maxHeight 必须清空，否则和 .is-bottom-sheet
    的 fixed 定位打架。 */
 function openPickerSheet(kind) {
+  openWheelSheet(kind);
+}
+
+/* ── 窄屏滚轮选择器（iOS UIPickerView 风格）──
+   四个底部面板（导入 / 导出 / 排版主题 / 代码主题）在 ≤640px 下不再是
+   高列表，改成矮滚轮：面板总高约 300px，上面的文章预览 / 编辑区还露着；
+   一次显示 5 行，中间行落在高亮带里，越往两边越淡；拖动带惯性，松手吸
+   附到最近一行；点中间行确认，点其它行先滚到中间。主题类滚到哪行就即
+   时预览（只改内存里的 currentTheme / currentCodeTheme / customStyles，
+   不写 localStorage、不调 saveDocuments），关掉时没确认就还原；导入 /
+   导出没有预览可看，滚动只移动高亮。 */
+const WHEEL_ROW_H = 44;
+const WHEEL_VISIBLE_ROWS = 5;
+const WHEEL_PAD = ((WHEEL_VISIBLE_ROWS - 1) / 2) * WHEEL_ROW_H; // 88：上下各留 2 行
+const wheelState = reactive({
+  kind: null, // 'import' | 'export' | 'theme' | 'code-theme'
+  items: [], // { id, label, icon?, dot?, run }
+  index: 0, // 当前居中项
+});
+let wheelOffset = 0; // 列表 translateY（px），-index * ROW_H 时第 index 项居中；rAF 里直接写 DOM，不走响应式
+let wheelViewportEl = null;
+let wheelListEl = null;
+let wheelRaf = 0;
+let wheelPointer = null; // { id, startY, startOffset, samples, downT, moved }
+let wheelPreview = null; // { kind, origTheme, origCodeTheme, origStyles }
+const wheelReducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+
+function buildWheelItems(kind) {
+  if (kind === 'import') return [
+    { id: 'url', label: 'URL 文章导入', icon: Link, run: () => editorPanelRef.value?.toggleUrlImport() },
+    { id: 'md', label: '导入 Markdown (.md)', icon: FileCode, run: () => editorPanelRef.value?.triggerFileInput('.md,.markdown') },
+    { id: 'docx', label: '导入 Word (.docx)', icon: FileText, run: () => editorPanelRef.value?.triggerFileInput('.docx,.doc') },
+    { id: 'html', label: '导入 HTML (.html)', icon: Globe, run: () => editorPanelRef.value?.triggerFileInput('.html,.htm') },
+    { id: 'txt', label: '导入纯文本 (.txt)', icon: FileCode, run: () => editorPanelRef.value?.triggerFileInput('.txt') },
+    { id: 'sample', label: '填充示例', icon: BookOpen, run: () => handleFillSample() },
+  ];
+  if (kind === 'export') return [
+    { id: 'md', label: '导出 Markdown', icon: FileCode, run: () => exportMD() },
+    { id: 'html', label: '导出 HTML', icon: Globe, run: () => exportHTML() },
+    { id: 'word', label: '导出 Word (.docx)', icon: FileText, run: () => exportWord() },
+    { id: 'pdf', label: '导出 PDF', icon: Download, run: () => exportPDF() },
+    { id: 'pdf-raw', label: '导出 PDF (无主题)', icon: Download, run: () => exportPDF({ raw: true }) },
+    { id: 'png', label: '导出 PNG 长图', icon: Image, run: () => exportPNG() },
+  ];
+  if (kind === 'theme') return themePresets.map(t => ({ id: t.id, label: t.name, dot: t.styles?.['--accent-color'] || '#116ACC', run: () => changeTheme(t.id) }));
+  if (kind === 'code-theme') return codeThemes.map(ct => ({ id: ct.id, label: ct.name, run: () => handleCodeThemeSelect(ct.id) }));
+  return [];
+}
+function wheelMinOffset() {
+  return -(Math.max(0, wheelState.items.length - 1) * WHEEL_ROW_H);
+}
+function wheelCentreIndex(offset = wheelOffset) {
+  return Math.max(0, Math.min(wheelState.items.length - 1, Math.round(-offset / WHEEL_ROW_H)));
+}
+/* 按当前 offset 直接写 DOM：列表位移 + 每一行的淡入淡出（只动 transform /
+   opacity）。不走响应式，避免惯性滚动时每帧都触发 Vue 重渲染。 */
+function renderWheel() {
+  if (!wheelListEl) return;
+  wheelListEl.style.transform = `translate3d(0, ${wheelOffset}px, 0)`;
+  const centreY = (WHEEL_VISIBLE_ROWS / 2) * WHEEL_ROW_H;
+  const rows = wheelListEl.children;
+  for (let i = 0; i < rows.length; i++) {
+    const rowCentre = WHEEL_PAD + i * WHEEL_ROW_H + WHEEL_ROW_H / 2 + wheelOffset;
+    const dist = Math.abs(rowCentre - centreY) / WHEEL_ROW_H;
+    const el = rows[i];
+    el.style.opacity = Math.max(0.2, Math.min(1, 1.08 - dist * 0.36)).toFixed(3);
+    el.style.transform = `scale(${Math.max(0.92, Math.min(1, 1 - Math.max(0, dist - 0.5) * 0.035)).toFixed(3)})`;
+  }
+}
+function updateWheelCentre() {
+  const c = wheelCentreIndex();
+  if (c === wheelState.index) return;
+  wheelState.index = c;
+  previewWheelCentre();
+}
+/* 主题类即时预览：只改内存（currentTheme / currentCodeTheme /
+   customStyles + applyTheme），不写 localStorage、不调 saveDocuments；
+   关掉没确认就由 revertWheelPreview 还原。导入 / 导出没有预览可看。 */
+function previewWheelCentre() {
+  if (!wheelPreview) return;
+  const item = wheelState.items[wheelState.index];
+  if (!item) return;
+  if (wheelPreview.kind === 'theme' && item.id !== currentTheme.value) {
+    currentTheme.value = item.id;
+    applyTheme(item.id);
+    customStyles.value = getThemeSavedStyles(item.id) || {};
+  } else if (wheelPreview.kind === 'code-theme' && item.id !== currentCodeTheme.value) {
+    currentCodeTheme.value = item.id;
+    const s = JSON.parse(JSON.stringify(customStyles.value || {}));
+    if (!s.code) s.code = {};
+    s.code.codeThemeId = item.id;
+    customStyles.value = s;
+  }
+}
+function revertWheelPreview() {
+  if (!wheelPreview) return;
+  const snap = wheelPreview;
+  wheelPreview = null;
+  if (snap.kind === 'theme') {
+    if (currentTheme.value !== snap.origTheme) {
+      currentTheme.value = snap.origTheme;
+      applyTheme(snap.origTheme);
+    }
+    customStyles.value = JSON.parse(JSON.stringify(snap.origStyles || {}));
+  } else if (snap.kind === 'code-theme') {
+    if (currentCodeTheme.value !== snap.origCodeTheme) currentCodeTheme.value = snap.origCodeTheme;
+    customStyles.value = JSON.parse(JSON.stringify(snap.origStyles || {}));
+  }
+}
+function setWheelViewportRef(el) {
+  if (el) {
+    wheelViewportEl = el;
+    wheelListEl = el.querySelector('.wheel-list');
+    renderWheel();
+  } else if (wheelViewportEl && !document.contains(wheelViewportEl)) {
+    /* 旧面板离场动画结束才卸载：如果这时新面板已经挂上，wheelViewportEl
+       指向新元素，不要清掉。 */
+    wheelViewportEl = null;
+    wheelListEl = null;
+  }
+}
+function openWheelSheet(kind) {
   closeAllToolbarMenus();
   toolbarPopoutStyle.value = {};
+  wheelState.kind = kind;
+  wheelState.items = buildWheelItems(kind);
+  const startIndex = kind === 'theme'
+    ? Math.max(0, wheelState.items.findIndex(it => it.id === currentTheme.value))
+    : kind === 'code-theme'
+      ? Math.max(0, wheelState.items.findIndex(it => it.id === currentCodeTheme.value))
+      : 0;
+  wheelState.index = startIndex;
+  wheelOffset = -startIndex * WHEEL_ROW_H;
+  wheelPreview = (kind === 'theme' || kind === 'code-theme') ? {
+    kind,
+    origTheme: currentTheme.value,
+    origCodeTheme: currentCodeTheme.value,
+    origStyles: JSON.parse(JSON.stringify(customStyles.value || {})),
+  } : null;
   if (kind === 'import') showImportSheet.value = true;
   else if (kind === 'export') showExportSheet.value = true;
   else if (kind === 'theme') showDocThemeMenu.value = true;
   else if (kind === 'code-theme') showCodeThemeSheet.value = true;
+  nextTick(() => renderWheel());
+}
+/* 关滚轮面板：revert=true（× / 遮罩 / 下滑 / Esc）先把预览的主题还原；
+   确认走 revert=false（已经由 changeTheme / handleCodeThemeSelect 落盘，
+   或导入 / 导出本来就没东西可还原）。 */
+function closeWheelSheet(revert = true) {
+  if (revert) revertWheelPreview();
+  wheelPreview = null;
+  cancelWheelAnim();
+  wheelPointer = null;
+  wheelListEl = null;
+  showImportSheet.value = false;
+  showExportSheet.value = false;
+  showCodeThemeSheet.value = false;
+  showDocThemeMenu.value = false;
+}
+function cancelWheelAnim() {
+  if (wheelRaf) { cancelAnimationFrame(wheelRaf); wheelRaf = 0; }
+}
+function onWheelPointerDown(e) {
+  if (!isNarrowToolbar.value) return;
+  cancelWheelAnim();
+  const vp = e.currentTarget;
+  wheelViewportEl = vp;
+  wheelListEl = vp.querySelector('.wheel-list');
+  const now = performance.now();
+  wheelPointer = {
+    id: e.pointerId, startY: e.clientY, startOffset: wheelOffset,
+    samples: [{ y: e.clientY, t: now }], downT: now, moved: 0,
+  };
+  try { vp.setPointerCapture(e.pointerId); } catch { /* 旧浏览器没有 setPointerCapture */ }
+}
+function onWheelPointerMove(e) {
+  if (!wheelPointer || e.pointerId !== wheelPointer.id) return;
+  const now = performance.now();
+  const dy = e.clientY - wheelPointer.startY;
+  wheelPointer.moved = Math.max(wheelPointer.moved, Math.abs(dy));
+  wheelPointer.samples.push({ y: e.clientY, t: now });
+  while (wheelPointer.samples.length > 2 && now - wheelPointer.samples[0].t > 100) wheelPointer.samples.shift();
+  let next = wheelPointer.startOffset + dy;
+  const min = wheelMinOffset();
+  if (next > 0) next *= 0.35; // 顶到底了再拉：阻尼回弹
+  else if (next < min) next = min + (next - min) * 0.35;
+  wheelOffset = next;
+  renderWheel();
+  updateWheelCentre();
+}
+function onWheelPointerUp(e) {
+  if (!wheelPointer || e.pointerId !== wheelPointer.id) return;
+  const p = wheelPointer;
+  wheelPointer = null;
+  if (e.type === 'pointercancel') { snapWheelToNearest(); return; }
+  if (p.moved < 10 && performance.now() - p.downT < 400) {
+    handleWheelTap(e);
+    return;
+  }
+  const s = p.samples;
+  let v = 0;
+  if (s.length >= 2) {
+    const a = s[0], b = s[s.length - 1];
+    v = (b.y - a.y) / Math.max(1, b.t - a.t); // px/ms
+  }
+  if (Math.abs(v) > 0.25) startWheelInertia(v);
+  else snapWheelToNearest();
+}
+function handleWheelTap(e) {
+  const vp = e.currentTarget;
+  const rect = vp.getBoundingClientRect();
+  const y = e.clientY - rect.top;
+  const idx = Math.max(0, Math.min(wheelState.items.length - 1, Math.floor((y - WHEEL_PAD - wheelOffset) / WHEEL_ROW_H)));
+  if (idx === wheelState.index) confirmWheelSelection();
+  else animateWheelTo(-idx * WHEEL_ROW_H);
+}
+function confirmWheelSelection() {
+  const item = wheelState.items[wheelState.index];
+  if (!item) return;
+  const kind = wheelState.kind;
+  if (kind === 'import' || kind === 'export') {
+    closeWheelSheet(false);
+    item.run();
+  } else {
+    item.run();
+    closeWheelSheet(false);
+  }
+}
+function startWheelInertia(v0) {
+  cancelWheelAnim();
+  if (wheelReducedMotion()) { snapWheelToNearest(); return; }
+  let v = v0;
+  let last = performance.now();
+  const min = wheelMinOffset();
+  const step = (now) => {
+    const dt = Math.min(40, now - last);
+    last = now;
+    wheelOffset += v * dt;
+    v *= Math.pow(0.88, dt / 16.7);
+    if (wheelOffset > 0) { wheelOffset = 0; v = 0; }
+    if (wheelOffset < min) { wheelOffset = min; v = 0; }
+    renderWheel();
+    updateWheelCentre();
+    if (Math.abs(v) < 0.03) { snapWheelToNearest(); return; }
+    wheelRaf = requestAnimationFrame(step);
+  };
+  wheelRaf = requestAnimationFrame(step);
+}
+function snapWheelToNearest() {
+  animateWheelTo(-wheelState.index * WHEEL_ROW_H);
+}
+function animateWheelTo(target) {
+  cancelWheelAnim();
+  const from = wheelOffset;
+  if (Math.abs(target - from) < 0.5 || wheelReducedMotion()) {
+    wheelOffset = target;
+    renderWheel();
+    updateWheelCentre();
+    return;
+  }
+  const start = performance.now();
+  const dur = 200;
+  const step = (now) => {
+    const t = Math.min(1, (now - start) / dur);
+    const ease = 1 - Math.pow(1 - t, 3);
+    wheelOffset = from + (target - from) * ease;
+    renderWheel();
+    updateWheelCentre();
+    if (t < 1) wheelRaf = requestAnimationFrame(step);
+    else { wheelOffset = target; renderWheel(); updateWheelCentre(); }
+  };
+  wheelRaf = requestAnimationFrame(step);
 }
 function handleMoreMenuPointerDown(e) {
   if (showMoreMenu.value && moreMenuRef.value && !moreMenuRef.value.contains(e.target)) {
@@ -1248,6 +1522,9 @@ function handleDocThemeMouseLeave() {
 let sheetDrag = null;
 function onSheetTouchStart(e) {
   if (!isNarrowToolbar.value) return;
+  /* 滚轮区域的手势归滚轮自己管：面板的下滑关闭只从标题区触发，手指在滚轮
+     上下拖动是滚轮滚动，绝不能把面板拖走。 */
+  if (e.target?.closest?.('.wheel-picker')) return;
   const t = e.touches[0];
   sheetDrag = { startY: t.clientY, deltaY: 0, el: e.currentTarget, dragging: false };
 }
@@ -2783,70 +3060,100 @@ watch(customStyles, () => {
                 <!-- 窄屏底部选择面板：导入 —— “···”菜单里“导入”那一行打开它。
                      只在 ≤640px 出现（v-if 里的 isNarrowToolbar），桌面端没有。 -->
                 <Transition name="sheet-backdrop">
-                  <div v-if="showImportSheet && isNarrowToolbar" class="bottom-sheet-backdrop" @click="showImportSheet = false" aria-hidden="true"></div>
+                  <div v-if="showImportSheet && isNarrowToolbar" class="bottom-sheet-backdrop" @click="closeWheelSheet()" aria-hidden="true"></div>
                 </Transition>
                 <Transition name="sheet-panel">
-                <div class="header-popout-panel is-floating is-bottom-sheet" v-if="showImportSheet && isNarrowToolbar" role="dialog" aria-label="导入" @touchstart="onSheetTouchStart" @touchmove="onSheetTouchMove" @touchend="onSheetTouchEnd" @touchcancel="onSheetTouchEnd">
+                <div class="header-popout-panel is-floating is-bottom-sheet is-wheel-sheet" v-if="showImportSheet && isNarrowToolbar" role="dialog" aria-label="导入" @touchstart="onSheetTouchStart" @touchmove="onSheetTouchMove" @touchend="onSheetTouchEnd" @touchcancel="onSheetTouchEnd">
                   <div class="bottom-sheet-head">
                     <div class="bottom-sheet-handle" aria-hidden="true"></div>
                     <div class="bottom-sheet-title-row">
                       <span class="bottom-sheet-title">导入</span>
-                      <button type="button" class="bottom-sheet-close" @click="showImportSheet = false" aria-label="关闭"><X size="16" /></button>
+                      <button type="button" class="bottom-sheet-close" @click="closeWheelSheet()" aria-label="关闭"><X size="16" /></button>
                     </div>
                   </div>
-                  <button class="popout-item" @click="showImportSheet = false; editorPanelRef?.toggleUrlImport()"><Link size="14" /><span>URL 文章导入</span></button>
-                  <button class="popout-item" @click="showImportSheet = false; editorPanelRef?.triggerFileInput('.md,.markdown')"><FileCode size="14" /><span>导入 Markdown (.md)</span></button>
-                  <button class="popout-item" @click="showImportSheet = false; editorPanelRef?.triggerFileInput('.docx,.doc')"><FileText size="14" /><span>导入 Word (.docx)</span></button>
-                  <button class="popout-item" @click="showImportSheet = false; editorPanelRef?.triggerFileInput('.html,.htm')"><Globe size="14" /><span>导入 HTML (.html)</span></button>
-                  <button class="popout-item" @click="showImportSheet = false; editorPanelRef?.triggerFileInput('.txt')"><FileCode size="14" /><span>导入纯文本 (.txt)</span></button>
-                  <button class="popout-item" @click="showImportSheet = false; handleFillSample()"><BookOpen size="14" /><span>填充示例</span></button>
+                  <div class="wheel-picker" :ref="setWheelViewportRef" role="listbox" aria-label="导入方式" @pointerdown="onWheelPointerDown" @pointermove="onWheelPointerMove" @pointerup="onWheelPointerUp" @pointercancel="onWheelPointerUp" @contextmenu.prevent>
+                    <div class="wheel-highlight" aria-hidden="true"></div>
+                    <div class="wheel-list">
+                      <div
+                        v-for="(item, i) in wheelState.items"
+                        :key="item.id"
+                        class="wheel-item"
+                        :class="{ 'is-centre': i === wheelState.index }"
+                        role="option"
+                        :aria-selected="i === wheelState.index"
+                      >
+                        <span v-if="item.dot" class="theme-swatch-dot" :style="{ backgroundColor: item.dot }"></span>
+                        <component v-else-if="item.icon" :is="item.icon" size="15" />
+                        <span class="wheel-item-label">{{ item.label }}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 </Transition>
 
                 <!-- 窄屏底部选择面板：导出 -->
                 <Transition name="sheet-backdrop">
-                  <div v-if="showExportSheet && isNarrowToolbar" class="bottom-sheet-backdrop" @click="showExportSheet = false" aria-hidden="true"></div>
+                  <div v-if="showExportSheet && isNarrowToolbar" class="bottom-sheet-backdrop" @click="closeWheelSheet()" aria-hidden="true"></div>
                 </Transition>
                 <Transition name="sheet-panel">
-                <div class="header-popout-panel is-floating is-bottom-sheet" v-if="showExportSheet && isNarrowToolbar" role="dialog" aria-label="导出" @touchstart="onSheetTouchStart" @touchmove="onSheetTouchMove" @touchend="onSheetTouchEnd" @touchcancel="onSheetTouchEnd">
+                <div class="header-popout-panel is-floating is-bottom-sheet is-wheel-sheet" v-if="showExportSheet && isNarrowToolbar" role="dialog" aria-label="导出" @touchstart="onSheetTouchStart" @touchmove="onSheetTouchMove" @touchend="onSheetTouchEnd" @touchcancel="onSheetTouchEnd">
                   <div class="bottom-sheet-head">
                     <div class="bottom-sheet-handle" aria-hidden="true"></div>
                     <div class="bottom-sheet-title-row">
                       <span class="bottom-sheet-title">导出</span>
-                      <button type="button" class="bottom-sheet-close" @click="showExportSheet = false" aria-label="关闭"><X size="16" /></button>
+                      <button type="button" class="bottom-sheet-close" @click="closeWheelSheet()" aria-label="关闭"><X size="16" /></button>
                     </div>
                   </div>
-                  <button class="popout-item" @click="showExportSheet = false; exportMD()"><FileCode size="14" /><span>导出 Markdown</span></button>
-                  <button class="popout-item" @click="showExportSheet = false; exportHTML()"><Globe size="14" /><span>导出 HTML</span></button>
-                  <button class="popout-item" @click="showExportSheet = false; exportWord()"><FileText size="14" /><span>导出 Word (.docx)</span></button>
-                  <button class="popout-item" @click="showExportSheet = false; exportPDF()"><Download size="14" /><span>导出 PDF</span></button>
-                  <button class="popout-item" @click="showExportSheet = false; exportPDF({ raw: true })"><Download size="14" /><span>导出 PDF (无主题)</span></button>
-                  <button class="popout-item" @click="showExportSheet = false; exportPNG()"><Image size="14" /><span>导出 PNG 长图</span></button>
+                  <div class="wheel-picker" :ref="setWheelViewportRef" role="listbox" aria-label="导出格式" @pointerdown="onWheelPointerDown" @pointermove="onWheelPointerMove" @pointerup="onWheelPointerUp" @pointercancel="onWheelPointerUp" @contextmenu.prevent>
+                    <div class="wheel-highlight" aria-hidden="true"></div>
+                    <div class="wheel-list">
+                      <div
+                        v-for="(item, i) in wheelState.items"
+                        :key="item.id"
+                        class="wheel-item"
+                        :class="{ 'is-centre': i === wheelState.index }"
+                        role="option"
+                        :aria-selected="i === wheelState.index"
+                      >
+                        <span v-if="item.dot" class="theme-swatch-dot" :style="{ backgroundColor: item.dot }"></span>
+                        <component v-else-if="item.icon" :is="item.icon" size="15" />
+                        <span class="wheel-item-label">{{ item.label }}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 </Transition>
 
                 <!-- 窄屏底部选择面板：代码主题 -->
                 <Transition name="sheet-backdrop">
-                  <div v-if="showCodeThemeSheet && isNarrowToolbar" class="bottom-sheet-backdrop" @click="showCodeThemeSheet = false" aria-hidden="true"></div>
+                  <div v-if="showCodeThemeSheet && isNarrowToolbar" class="bottom-sheet-backdrop" @click="closeWheelSheet()" aria-hidden="true"></div>
                 </Transition>
                 <Transition name="sheet-panel">
-                <div class="header-popout-panel is-floating is-bottom-sheet" v-if="showCodeThemeSheet && isNarrowToolbar" role="dialog" aria-label="代码主题" @touchstart="onSheetTouchStart" @touchmove="onSheetTouchMove" @touchend="onSheetTouchEnd" @touchcancel="onSheetTouchEnd">
+                <div class="header-popout-panel is-floating is-bottom-sheet is-wheel-sheet" v-if="showCodeThemeSheet && isNarrowToolbar" role="dialog" aria-label="代码主题" @touchstart="onSheetTouchStart" @touchmove="onSheetTouchMove" @touchend="onSheetTouchEnd" @touchcancel="onSheetTouchEnd">
                   <div class="bottom-sheet-head">
                     <div class="bottom-sheet-handle" aria-hidden="true"></div>
                     <div class="bottom-sheet-title-row">
                       <span class="bottom-sheet-title">代码主题</span>
-                      <button type="button" class="bottom-sheet-close" @click="showCodeThemeSheet = false" aria-label="关闭"><X size="16" /></button>
+                      <button type="button" class="bottom-sheet-close" @click="closeWheelSheet()" aria-label="关闭"><X size="16" /></button>
                     </div>
                   </div>
-                  <button
-                    v-for="ct in codeThemes"
-                    :key="ct.id"
-                    class="popout-item"
-                    :class="{ 'is-active': ct.id === currentCodeTheme }"
-                    @click="showCodeThemeSheet = false; handleCodeThemeSelect(ct.id)"
-                  >
-                    <span>{{ ct.name }}</span>
-                  </button>
+                  <div class="wheel-picker" :ref="setWheelViewportRef" role="listbox" aria-label="代码主题" @pointerdown="onWheelPointerDown" @pointermove="onWheelPointerMove" @pointerup="onWheelPointerUp" @pointercancel="onWheelPointerUp" @contextmenu.prevent>
+                    <div class="wheel-highlight" aria-hidden="true"></div>
+                    <div class="wheel-list">
+                      <div
+                        v-for="(item, i) in wheelState.items"
+                        :key="item.id"
+                        class="wheel-item"
+                        :class="{ 'is-centre': i === wheelState.index }"
+                        role="option"
+                        :aria-selected="i === wheelState.index"
+                      >
+                        <span v-if="item.dot" class="theme-swatch-dot" :style="{ backgroundColor: item.dot }"></span>
+                        <component v-else-if="item.icon" :is="item.icon" size="15" />
+                        <span class="wheel-item-label">{{ item.label }}</span>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 </Transition>
               </div>
@@ -2869,17 +3176,37 @@ watch(customStyles, () => {
                   <ChevronDown size="12" class="dropdown-chevron" />
                 </button>
                 <Transition name="sheet-backdrop">
-                  <div v-if="showDocThemeMenu && isNarrowToolbar" class="bottom-sheet-backdrop" @click="showDocThemeMenu = false" aria-hidden="true"></div>
+                  <div v-if="showDocThemeMenu && isNarrowToolbar" class="bottom-sheet-backdrop" @click="closeWheelSheet()" aria-hidden="true"></div>
                 </Transition>
                 <Transition name="sheet-panel">
-                <div class="header-popout-panel" v-if="showDocThemeMenu" role="dialog" aria-label="选择主题" @mouseleave="handleDocThemeMouseLeave" :class="{ 'is-floating': isNarrowToolbar, 'is-bottom-sheet': isNarrowToolbar }" :style="isNarrowToolbar ? toolbarPopoutStyle : null" @touchstart="onSheetTouchStart" @touchmove="onSheetTouchMove" @touchend="onSheetTouchEnd" @touchcancel="onSheetTouchEnd">
-                  <div class="bottom-sheet-head">
+                <div class="header-popout-panel" v-if="showDocThemeMenu" role="dialog" aria-label="选择主题" @mouseleave="handleDocThemeMouseLeave" :class="{ 'is-floating': isNarrowToolbar, 'is-bottom-sheet': isNarrowToolbar, 'is-wheel-sheet': isNarrowToolbar }" :style="isNarrowToolbar ? toolbarPopoutStyle : null" @touchstart="onSheetTouchStart" @touchmove="onSheetTouchMove" @touchend="onSheetTouchEnd" @touchcancel="onSheetTouchEnd">
+                  <!-- 窄屏下的标题行只在滚轮面板里出现；桌面端下拉本来没有标题行，
+                       之前这里没加窄屏判断，桌面端会多出一个没样式的标题行 + 原生 × 按钮。 -->
+                  <div class="bottom-sheet-head" v-if="isNarrowToolbar">
                     <div class="bottom-sheet-handle" aria-hidden="true"></div>
                     <div class="bottom-sheet-title-row">
                       <span class="bottom-sheet-title">选择主题</span>
-                      <button type="button" class="bottom-sheet-close" @click="showDocThemeMenu = false" aria-label="关闭"><X size="16" /></button>
+                      <button type="button" class="bottom-sheet-close" @click="closeWheelSheet()" aria-label="关闭"><X size="16" /></button>
                     </div>
                   </div>
+                  <div v-if="isNarrowToolbar" class="wheel-picker" :ref="setWheelViewportRef" role="listbox" aria-label="选择主题" @pointerdown="onWheelPointerDown" @pointermove="onWheelPointerMove" @pointerup="onWheelPointerUp" @pointercancel="onWheelPointerUp" @contextmenu.prevent>
+                    <div class="wheel-highlight" aria-hidden="true"></div>
+                    <div class="wheel-list">
+                      <div
+                        v-for="(item, i) in wheelState.items"
+                        :key="item.id"
+                        class="wheel-item"
+                        :class="{ 'is-centre': i === wheelState.index }"
+                        role="option"
+                        :aria-selected="i === wheelState.index"
+                      >
+                        <span v-if="item.dot" class="theme-swatch-dot" :style="{ backgroundColor: item.dot }"></span>
+                        <component v-else-if="item.icon" :is="item.icon" size="15" />
+                        <span class="wheel-item-label">{{ item.label }}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <template v-else>
                   <button
                     v-for="t in themePresets"
                     :key="t.id"
@@ -2893,6 +3220,7 @@ watch(customStyles, () => {
                     ></span>
                     <span>{{ t.name }}</span>
                   </button>
+                  </template>
                 </div>
                 </Transition>
               </div>
