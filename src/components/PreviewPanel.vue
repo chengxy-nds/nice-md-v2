@@ -635,6 +635,7 @@ onUnmounted(() => {
           <span class="right-btn-icon ic-plane">
             <Send size="18" stroke-width="1.8" class="bar-publish-icon" />
           </span>
+          <span class="bar-btn-label">发布</span>
           <div class="right-tooltip" role="tooltip">
             <span class="right-tooltip-label">发布与多渠道分发</span>
           </div>
@@ -661,6 +662,7 @@ onUnmounted(() => {
             <span class="right-btn-icon ic-copy">
               <Copy size="18" stroke-width="1.7" />
             </span>
+            <span class="bar-btn-label">复制</span>
             <div class="right-tooltip" role="tooltip">
               <span class="right-tooltip-label">复制排版内容</span>
               <span class="right-tooltip-shortcut">一键格式化</span>
@@ -687,6 +689,7 @@ onUnmounted(() => {
               <Monitor v-else key="desktop" size="18" stroke-width="1.7" />
             </Transition>
           </span>
+          <span class="bar-btn-label">{{ isWeChatMode ? '电脑预览' : '手机预览' }}</span>
           <div class="right-tooltip" role="tooltip">
             <span class="right-tooltip-label">{{ isWeChatMode ? '切换为电脑预览' : '切换为手机模拟预览' }}</span>
           </div>
@@ -706,6 +709,7 @@ onUnmounted(() => {
             <Eye v-if="previewVisible" size="18" stroke-width="1.7" />
             <EyeOff v-else size="18" stroke-width="1.7" />
           </span>
+          <span class="bar-btn-label">{{ previewVisible ? '隐藏预览' : '显示预览' }}</span>
           <div class="right-tooltip" role="tooltip">
             <span class="right-tooltip-label">{{ previewVisible ? '隐藏预览区' : '显示预览区' }}</span>
           </div>
@@ -727,6 +731,7 @@ onUnmounted(() => {
           <span class="right-btn-icon ic-theme">
             <Palette size="18" stroke-width="1.7" />
           </span>
+          <span class="bar-btn-label">主题</span>
           <div class="right-tooltip" role="tooltip">
             <span class="right-tooltip-label">自定义主题与排版</span>
           </div>
@@ -957,6 +962,28 @@ html.dark .preview-right-bar {
   .right-tooltip {
     display: none;
   }
+  /* 横排底栏：图标下面加一行小字（发布 / 复制 / 手机预览 / 隐藏预览 / 主题），
+     触屏上没有 hover 提示，纯图标只能靠猜；底栏高度随之长一点。 */
+  .preview-right-bar .bar-publish-btn,
+  .preview-right-bar .bar-action-btn {
+    flex-direction: column;
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    gap: 2px;
+  }
+  .preview-right-bar .right-btn-icon {
+    width: auto;
+    height: auto;
+  }
+  .preview-right-bar .bar-btn-label {
+    display: block;
+    font-size: 10px;
+    line-height: 1;
+    font-weight: 500;
+    color: var(--text-muted, #64748B);
+    white-space: nowrap;
+  }
 }
 
 /* ── 触屏：液体滑块是 hover/focus 驱动，触屏上点之前不会动，只会
@@ -1075,6 +1102,11 @@ html.dark .bar-action-btn.is-active {
 }
 
 /* ── 右侧图标微动效 (Icon Micro-motions) ── */
+/* 底栏图标下的小字标签：只在 ≤960px 的横排底栏里显示（见上方媒体块）。 */
+.bar-btn-label {
+  display: none;
+}
+
 .right-btn-icon {
   display: flex;
   align-items: center;

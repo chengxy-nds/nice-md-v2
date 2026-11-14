@@ -2237,6 +2237,31 @@
   }
 }
 
+/* 手机：设置改成全屏页，不再是居中 85vh 卡片——标题栏 × 本来就有，
+   只是把它扩到 36px 并算上顶部刘海安全区。 */
+@media (max-width: 640px) {
+  .settings-card {
+    width: 100vw !important;
+    width: 100dvw !important;
+    height: 100vh !important;
+    height: 100dvh !important;
+    max-width: none !important;
+    max-height: none !important;
+    border: none !important;
+    border-radius: 0 !important;
+  }
+  .settings-card .modal-header {
+    padding-top: calc(14px + env(safe-area-inset-top, 0px));
+  }
+  .settings-card .btn-close {
+    width: 36px;
+    height: 36px;
+  }
+  .settings-card .modal-footer {
+    padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)) !important;
+  }
+}
+
 /* ── Item 4: credential security card (cloud sync tab) ── */
 .credential-security-card {
   margin: 12px 16px 0;

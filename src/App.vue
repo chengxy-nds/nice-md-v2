@@ -1224,8 +1224,16 @@ function openPickerSheet(kind) {
    不写 localStorage、不调 saveDocuments），关掉时没确认就还原；导入 /
    导出没有预览可看，滚动只移动高亮。 */
 const WHEEL_ROW_H = 44;
-const WHEEL_VISIBLE_ROWS = 5;
-const WHEEL_PAD = ((WHEEL_VISIBLE_ROWS - 1) / 2) * WHEEL_ROW_H; // 88：上下各留 2 行
+// 滚轮一次显示几行：跟 CSS 里 .wheel-picker 的实际高度走（竖屏 220px → 5 行，
+// 横屏短视口 132px → 3 行），居中 / 淡出 / 点行计算都用这个值，
+// CSS 改高度时 JS 不用再改。
+function wheelVisibleRows() {
+  if (!wheelViewportEl) return 5;
+  return Math.max(3, Math.round(wheelViewportEl.clientHeight / WHEEL_ROW_H));
+}
+function wheelPad() {
+  return ((wheelVisibleRows() - 1) / 2) * WHEEL_ROW_H;
+}
 const wheelState = reactive({
   kind: null, // 'import' | 'export' | 'theme' | 'code-theme'
   items: [], // { id, label, icon?, dot?, run }
@@ -1271,10 +1279,10 @@ function wheelCentreIndex(offset = wheelOffset) {
 function renderWheel() {
   if (!wheelListEl) return;
   wheelListEl.style.transform = `translate3d(0, ${wheelOffset}px, 0)`;
-  const centreY = (WHEEL_VISIBLE_ROWS / 2) * WHEEL_ROW_H;
+  const centreY = (wheelVisibleRows() / 2) * WHEEL_ROW_H;
   const rows = wheelListEl.children;
   for (let i = 0; i < rows.length; i++) {
-    const rowCentre = WHEEL_PAD + i * WHEEL_ROW_H + WHEEL_ROW_H / 2 + wheelOffset;
+    const rowCentre = wheelPad() + i * WHEEL_ROW_H + WHEEL_ROW_H / 2 + wheelOffset;
     const dist = Math.abs(rowCentre - centreY) / WHEEL_ROW_H;
     const el = rows[i];
     el.style.opacity = Math.max(0.2, Math.min(1, 1.08 - dist * 0.36)).toFixed(3);
@@ -1424,7 +1432,7 @@ function handleWheelTap(e) {
   const vp = e.currentTarget;
   const rect = vp.getBoundingClientRect();
   const y = e.clientY - rect.top;
-  const idx = Math.max(0, Math.min(wheelState.items.length - 1, Math.floor((y - WHEEL_PAD - wheelOffset) / WHEEL_ROW_H)));
+  const idx = Math.max(0, Math.min(wheelState.items.length - 1, Math.floor((y - wheelPad() - wheelOffset) / WHEEL_ROW_H)));
   if (idx === wheelState.index) confirmWheelSelection();
   else animateWheelTo(-idx * WHEEL_ROW_H);
 }
@@ -2788,6 +2796,7 @@ watch(customStyles, () => {
               :isCloudSyncing="isSidebarSyncing"
               @select-doc="(id) => { handleSelectDoc(id); currentView = 'editor'; mobileSidebarOpen = false; }"
               @swipe-close="mobileSidebarOpen = false"
+              @close-drawer="mobileSidebarOpen = false"
               @create-doc="(groupId) => { handleCreateDoc(groupId); currentView = 'editor'; }"
               @open-templates="currentView = 'templates'"
               @open-materials="currentView = 'materials'"
@@ -3043,6 +3052,7 @@ watch(customStyles, () => {
                      查找 / 历史 / 专注直接执行。分组小标题不要了，行本身就是分类；
                      带 › 的四行开子面板。 -->
                 <div class="header-popout-panel" v-if="showMoreMenu" :class="{ 'is-floating': isNarrowToolbar }" :style="isNarrowToolbar ? toolbarPopoutStyle : null">
+                  <div class="popout-menu-header" aria-hidden="true">更多工具</div>
                   <button class="popout-item" @click="openPickerSheet('import')"><Upload size="14" /><span>导入</span><ChevronRight size="14" class="popout-item-chevron" /></button>
                   <button class="popout-item" @click="openPickerSheet('export')"><Download size="14" /><span>导出</span><ChevronRight size="14" class="popout-item-chevron" /></button>
                   <button class="popout-item" @click="openPickerSheet('theme')"><span class="theme-swatch-dot" :style="{ backgroundColor: activeThemeObj?.styles?.['--accent-color'] || '#116ACC' }"></span><span>排版主题</span><ChevronRight size="14" class="popout-item-chevron" /></button>
