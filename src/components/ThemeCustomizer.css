@@ -1421,3 +1421,138 @@
   background-color: #1e1e1e;
   border-color: rgba(255, 255, 255, 0.12);
 }
+
+/* ── 手机端：可视化配置表单不再被挤裁 ──────────────────────────────
+   根因（iPhone 截图实测）：
+   1) 表单是两列网格，每格里标签 3.25rem + 控件固定 4.5rem (72px)；
+      触屏下 App.css 的 pointer:coarse 规则又把 select 字号提到 16px，
+      于是“无阴影 / 无边框 / 100% (全宽) / 居中对齐 / 标准圆角”等值被
+      原生下拉箭头盖住，只剩前两个字。
+   2) 颜色行（取色器 22px + 文本框 72px = 98px）塞在 72px 格子里，
+      向右撑出约 26px；.customizer-body 是 overflow-y:auto，横向随之
+      变成 auto，于是面板底部出现横向滚动条，section 右侧的“重置”按钮
+      也被顶出可视区（截图里只剩“里直”两个笔画）。
+   修法：≤960px 控件列改弹性（值不再被 72px 卡住）；≤640px 表单改单列，
+   控件 40px 高、16px 字号，标题过长省略，面板横向不再滚动。桌面端不动。 */
+@media (max-width: 960px) {
+  /* 控件列改弹性：标签定宽，控件占满剩余宽度 */
+  .style-controls:not(.table-style-controls) .style-field {
+    grid-template-columns: 3.25rem minmax(0, 1fr);
+  }
+  .style-controls:not(.table-style-controls) .style-field > .style-select {
+    width: 100% !important; /* 压过模板里 width: 6.5rem 的行内样式 */
+  }
+  .style-controls:not(.table-style-controls) .style-field > .value-input {
+    width: 100% !important;
+  }
+  .style-controls:not(.table-style-controls) .style-field .color-row {
+    width: 100%;
+  }
+  .style-controls:not(.table-style-controls) .style-field .color-row .value-input {
+    flex: 1;
+    min-width: 0;
+    width: auto;
+  }
+}
+
+@media (max-width: 640px) {
+  /* 面板只纵向滚动，横向不再出现滚动条 */
+  .customizer-body {
+    overflow-x: hidden;
+    padding: 8px 10px 12px;
+  }
+
+  /* 表单网格改单列：每行一个字段，标签 + 满宽控件（所有 section 共用） */
+  .style-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .body-row-two-col {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .body-texture-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .style-controls:not(.table-style-controls) .style-field {
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    min-height: 2.5rem;
+    height: auto;
+  }
+  .style-controls:not(.table-style-controls) .style-field-wide {
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+  }
+  .style-controls:not(.table-style-controls) .field-label {
+    width: 4.5rem;
+    font-size: 0.8125rem;
+    white-space: normal;
+  }
+  .style-controls:not(.table-style-controls) .style-field > :not(.field-label) {
+    width: 100%;
+  }
+  .table-style-controls .style-field {
+    height: auto;
+    min-height: 2.5rem;
+  }
+  .table-sub-fields {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .table-sub-fields .style-field {
+    width: 100%;
+  }
+  .table-sub-fields .style-field .color-row {
+    flex: 1;
+    min-width: 0;
+  }
+  .table-sub-fields .style-field .color-row .value-input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* 控件：40px 触摸高度，16px 字号（与 PR #9 防自动放大一致） */
+  .style-select,
+  .value-input {
+    height: 2.5rem;
+    min-height: 2.5rem;
+    font-size: 1rem;
+  }
+  .style-select {
+    padding-right: 1.75rem; /* 给原生下拉箭头留位置，值不再被箭头盖住 */
+  }
+  .color-picker {
+    width: 2.25rem;
+    height: 2.25rem;
+    flex-shrink: 0;
+  }
+  .mac-toggle-btn {
+    min-height: 2.5rem;
+  }
+
+  /* body / p 专用的卡片行：标签定宽，控件满宽 */
+  .body-setting-card.is-row > .style-select,
+  .body-setting-card.is-row > .value-input {
+    width: 100% !important;
+    max-width: none;
+    flex: 1 1 auto;
+  }
+  .body-setting-card.is-row .color-row {
+    flex: 1;
+    min-width: 0;
+  }
+  .body-setting-card.is-row .color-row .value-input {
+    flex: 1;
+    min-width: 0;
+  }
+  .body-setting-title {
+    width: 4.5rem;
+    flex-basis: 4.5rem;
+    font-size: 0.8125rem;
+  }
+
+  /* section 标题：过长时省略，右侧“重置”等按钮不再被顶出屏 */
+  .section-title-text {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
