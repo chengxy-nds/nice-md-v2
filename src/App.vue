@@ -2554,7 +2554,7 @@ watch(customStyles, () => {
             <div class="header-actions">
               <!-- Content Editing & Import Group -->
               <div class="toolbar-btn-group">
-                <button @click="editorPanelRef?.openFindReplace()" class="btn-icon" title="查找与替换"><Search size="14.5" /></button>
+                <button @click="editorPanelRef?.openFindReplace()" class="btn-icon hide-on-narrow" title="查找与替换"><Search size="14.5" /></button>
                 <button @click="editorPanelRef?.toggleUrlImport()" class="btn-icon hide-on-narrow" title="URL 文章抓取导入"><Link size="14.5" /></button>
                 <div class="export-trigger-container" ref="imageMenuRef">
                   <button
@@ -2585,7 +2585,7 @@ watch(customStyles, () => {
                 </div>
                 <button
                   @click="openCollageModal"
-                  class="btn-icon hide-on-narrow"
+                  class="btn-icon hide-on-narrow show-on-mobile"
                   title="封面拼图制作 (多格拼图与尺寸定制)"
                   aria-label="封面拼图制作"
                 >
@@ -2609,7 +2609,7 @@ watch(customStyles, () => {
               <div class="toolbar-btn-group">
                 <button @click="editorPanelRef?.handleUndo()" class="btn-icon" title="撤销 (Ctrl+Z)"><Undo2 size="14.5" /></button>
                 <button @click="editorPanelRef?.handleRedo()" class="btn-icon" title="重做 (Ctrl+Y)"><Redo2 size="14.5" /></button>
-                <button @click="openDocHistory(activeDocument)" class="btn-icon hide-on-narrow show-on-mobile" title="历史版本与内容比对"><History size="14.5" /></button>
+                <button @click="openDocHistory(activeDocument)" class="btn-icon hide-on-narrow" title="历史版本与内容比对"><History size="14.5" /></button>
               </div>
 
               <span class="toolbar-sep hide-on-narrow"></span>
@@ -2617,7 +2617,7 @@ watch(customStyles, () => {
               <!-- 专注模式：收起侧边栏与预览，只留编辑区；再点一次退出。
                    按钮本身有 is-active 按压态（图标 Maximize/Minimize 切换 +
                    .btn-icon.is-active 背景色），不只是文字切换。 -->
-              <div class="toolbar-btn-group hide-on-narrow show-on-mobile">
+              <div class="toolbar-btn-group hide-on-narrow">
                 <button
                   @click="toggleFocusMode"
                   class="btn-icon"
@@ -2633,8 +2633,9 @@ watch(customStyles, () => {
 
               <span class="toolbar-sep hide-on-narrow"></span>
 
-              <!-- Export & Clean Group -->
-              <div class="toolbar-btn-group hide-on-narrow">
+              <!-- Export & Clean Group：复制和清空在窄屏下放回行内（见 .toolbar-clear-btn
+                   的 order），导出按钮本身仍只在“···”菜单里，容器单独藏起来。 -->
+              <div class="toolbar-btn-group">
                 <button
                   @click="handleCopyDocContent()"
                   class="btn-icon"
@@ -2644,7 +2645,7 @@ watch(customStyles, () => {
                   <Check v-if="toolbarDocCopied" size="14.5" />
                   <Copy v-else size="14.5" />
                 </button>
-                <div class="export-trigger-container" ref="exportMenuRef">
+                <div class="export-trigger-container hide-on-narrow" ref="exportMenuRef">
                   <button class="btn-icon" @click="toggleExportMenu" title="导出文件"><Download size="14.5" /></button>
                   <div class="header-popout-panel" v-if="showExportMenu" @mouseleave="showExportMenu = false" :class="{ 'is-floating': isNarrowToolbar }" :style="isNarrowToolbar ? toolbarPopoutStyle : null">
                     <button class="popout-item" @click="exportMD(); showExportMenu = false"><FileCode size="14" /><span>Markdown</span></button>
@@ -2655,7 +2656,7 @@ watch(customStyles, () => {
                     <button class="popout-item" @click="exportPNG(); showExportMenu = false"><Image size="14" /><span>PNG 长图</span></button>
                   </div>
                 </div>
-                <button @click="editorPanelRef?.clearContent()" class="btn-icon btn-danger" title="清空内容"><Trash2 size="14.5" /></button>
+                <button @click="editorPanelRef?.clearContent()" class="btn-icon btn-danger toolbar-clear-btn" title="清空内容"><Trash2 size="14.5" /></button>
               </div>
 
               <!-- Spacer pushing Theme & Code style dropdowns to the far right -->
@@ -2677,15 +2678,16 @@ watch(customStyles, () => {
                   <MoreHorizontal size="14.5" />
                 </button>
                 <div class="header-popout-panel" v-if="showMoreMenu" :class="{ 'is-floating': isNarrowToolbar }" :style="isNarrowToolbar ? toolbarPopoutStyle : null">
+                  <div class="popout-section-label">导入</div>
                   <button class="popout-item" @click="closeMoreMenuAnd(() => editorPanelRef?.toggleUrlImport())"><Link size="14" /><span>URL 文章导入</span></button>
-                  <button class="popout-item" @click="closeMoreMenuAnd(openCollageModal)"><LayoutGrid size="14" /><span>封面拼图</span></button>
-                  <div class="popout-divider"></div>
                   <button class="popout-item" @click="closeMoreMenuAnd(() => editorPanelRef?.triggerFileInput('.md,.markdown'))"><FileCode size="14" /><span>导入 Markdown (.md)</span></button>
                   <button class="popout-item" @click="closeMoreMenuAnd(() => editorPanelRef?.triggerFileInput('.docx,.doc'))"><FileText size="14" /><span>导入 Word (.docx)</span></button>
                   <button class="popout-item" @click="closeMoreMenuAnd(() => editorPanelRef?.triggerFileInput('.html,.htm'))"><Globe size="14" /><span>导入 HTML (.html)</span></button>
                   <button class="popout-item" @click="closeMoreMenuAnd(() => editorPanelRef?.triggerFileInput('.txt'))"><FileCode size="14" /><span>导入纯文本 (.txt)</span></button>
                   <button class="popout-item" @click="closeMoreMenuAnd(handleFillSample)"><BookOpen size="14" /><span>填充示例</span></button>
                   <div class="popout-divider"></div>
+                  <div class="popout-section-label">工具</div>
+                  <button class="popout-item" @click="closeMoreMenuAnd(() => editorPanelRef?.openFindReplace())"><Search size="14" /><span>查找与替换</span></button>
                   <button class="popout-item" @click="closeMoreMenuAnd(() => openDocHistory(activeDocument))"><History size="14" /><span>历史版本</span></button>
                   <button class="popout-item" @click="closeMoreMenuAnd(toggleFocusMode)">
                     <Minimize v-if="focusMode" size="14" />
@@ -2693,29 +2695,15 @@ watch(customStyles, () => {
                     <span>{{ focusMode ? '退出专注模式' : '专注模式' }}</span>
                   </button>
                   <div class="popout-divider"></div>
-                  <button class="popout-item" @click="closeMoreMenuAnd(handleCopyDocContent)"><Copy size="14" /><span>复制内容</span></button>
+                  <div class="popout-section-label">导出</div>
                   <button class="popout-item" @click="closeMoreMenuAnd(exportMD)"><FileCode size="14" /><span>导出 Markdown</span></button>
                   <button class="popout-item" @click="closeMoreMenuAnd(exportHTML)"><Globe size="14" /><span>导出 HTML</span></button>
                   <button class="popout-item" @click="closeMoreMenuAnd(exportWord)"><FileText size="14" /><span>导出 Word (.docx)</span></button>
                   <button class="popout-item" @click="closeMoreMenuAnd(exportPDF)"><Download size="14" /><span>导出 PDF</span></button>
                   <button class="popout-item" @click="closeMoreMenuAnd(() => exportPDF({ raw: true }))"><Download size="14" /><span>导出 PDF (无主题)</span></button>
                   <button class="popout-item" @click="closeMoreMenuAnd(exportPNG)"><Image size="14" /><span>导出 PNG 长图</span></button>
-                  <button class="popout-item" @click="closeMoreMenuAnd(() => editorPanelRef?.clearContent())"><Trash2 size="14" /><span>清空内容</span></button>
                   <div class="popout-divider"></div>
-                  <button
-                    v-for="t in themePresets"
-                    :key="t.id"
-                    class="popout-item"
-                    :class="{ 'is-active': t.id === currentTheme }"
-                    @click="closeMoreMenuAnd(() => changeTheme(t.id))"
-                  >
-                    <span
-                      class="theme-swatch-dot"
-                      :style="{ backgroundColor: t.styles?.['--accent-color'] || '#116ACC' }"
-                    ></span>
-                    <span>{{ t.name }}</span>
-                  </button>
-                  <div class="popout-divider"></div>
+                  <div class="popout-section-label">代码主题</div>
                   <button
                     v-for="ct in codeThemes"
                     :key="ct.id"
@@ -2728,8 +2716,9 @@ watch(customStyles, () => {
                 </div>
               </div>
 
-              <!-- Document Theme Dropdown -->
-              <div class="export-trigger-container hide-on-narrow" ref="docThemeMenuRef">
+              <!-- Document Theme Dropdown：窄屏下也放回行内（show-on-mobile），
+                   触发器压成 36px 色点 + 箭头（见 App.css），面板复用浮动锚定。 -->
+              <div class="export-trigger-container hide-on-narrow show-on-mobile toolbar-doc-theme-container" ref="docThemeMenuRef">
                 <button
                   class="btn-toolbar-dropdown"
                   :class="{ 'is-active': showDocThemeMenu }"
