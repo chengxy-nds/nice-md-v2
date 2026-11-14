@@ -1272,8 +1272,8 @@ async function processImageInsertion(file) {
         replaceEditorText(placeholder, `![${alt}](${dataUrl})`);
       };
       reader.readAsDataURL(file);
-      // Notify user with clear error cause
-      alert('【OSS 图床上传提示】\n图片未能成功上传到 OSS (' + err.message + ')\n已为您自动转为本地图片插入。');
+      // 图床上传失败：用 toast 把原因说清楚，再自动转本地插入，不静默失败。
+      emit('toast', `图床上传失败（${err.message}），已转为本地图片插入`);
     }
   } else {
     // 2. OSS is not configured -> Convert to base64 data URL
@@ -1282,23 +1282,41 @@ async function processImageInsertion(file) {
       const dataUrl = ev.target.result;
       insertTextAtCursor(`![${alt}](${dataUrl})`);
       soundEngine.playClick();
+      emit('toast', '已插入本地图片');
     };
     reader.readAsDataURL(file);
   }
 }
 
-// ── Toolbar image upload button ──
-function handleImageUpload() {
+/* ── 隐藏 file input（iOS Safari 修复）──
+   iOS Safari 会忽略未挂载到文档的 input 上的程序化 click()：点“上传图片”
+   后选图框根本打不开，且没有任何报错。必须先把 input 挂到 body（视觉隐藏，
+   不拦截点按），在用户手势里同步 click()，选完/取消后移除。 */
+function openHiddenFileInput(accept, onPick) {
+  document.querySelectorAll('.nx-hidden-file-input').forEach((el) => el.remove());
   const input = document.createElement('input');
   input.type = 'file';
-  input.accept = 'image/*';
-  input.onchange = async (e) => {
-    const file = e.target.files?.[0];
+  input.accept = accept;
+  input.className = 'nx-hidden-file-input';
+  input.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;';
+  input.onchange = (e) => {
+    const files = e.target.files;
+    input.remove();
+    onPick(files?.length ? files : null);
+  };
+  input.oncancel = () => input.remove();
+  document.body.appendChild(input);
+  input.click();
+}
+
+// ── Toolbar image upload button ──
+function handleImageUpload() {
+  openHiddenFileInput('image/*', async (files) => {
+    const file = files?.[0];
     if (!file) return;
     soundEngine.playClick();
     await processImageInsertion(file);
-  };
-  input.click();
+  });
 }
 
 // ── Clipboard Paste Event Handler ──
@@ -1466,16 +1484,11 @@ const onDrop = async (e) => {
 
 // Handle File Input Selection
 const triggerFileInput = (accept = '.md,.markdown,.txt,.docx,.doc,.html,.htm') => {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = accept;
-  input.onchange = async (e) => {
-    const files = e.target.files;
-    if (files.length > 0) {
+  openHiddenFileInput(accept, async (files) => {
+    if (files?.length > 0) {
       await processFile(files[0]);
     }
-  };
-  input.click();
+  });
 };
 
 // Process File (Word, TXT, MD, HTML)

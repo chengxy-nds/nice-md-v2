@@ -1094,6 +1094,17 @@ html.dark .empty-tabs-title {
   right: auto;
 }
 
+/* ── 窄屏浮动菜单 ──
+   工具栏 ≤640px 横向滚动后成了滚动容器，会裁掉里面绝对定位的下拉菜单
+   （手机上点图片按钮，菜单打开了也被裁得看不见）；position:fixed 让菜单
+   脱离裁剪，top/left/maxHeight 由 JS 按触发按钮位置算
+   （App.vue anchorToolbarPopout）。只在窄屏下启用（.is-floating），桌面端不动。 */
+.header-popout-panel.is-floating {
+  position: fixed;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .image-popout-panel {
   min-width: 186px;
   opacity: 1;
@@ -1449,14 +1460,33 @@ html.dark .popout-item.is-active {
   }
   
   .workspace-grid {
-    grid-template-columns: 1fr !important;
     height: 100% !important;
   }
-  
+
   .workspace-column {
     height: 100% !important;
   }
-  
+
+  /* ── 单列布局：.workspace-columns 也必须收成 1fr ──
+     之前只把 .workspace-grid 写成 grid-template-columns:1fr，但它本身是
+     display:flex，那条规则是死的；.workspace-columns 仍是两列，
+     display:none 的那列留下一个空轨道，可见列只占一半宽，右半边就是
+     手机截图里的灰色空区。preview-hidden / 主题面板 / 专注模式的双列
+     规则特异度更高，这里一并覆盖。 */
+  .workspace-columns,
+  .workspace-grid.preview-hidden .workspace-columns,
+  .workspace-grid.theme-panel-open:not(.preview-hidden) .workspace-columns,
+  .workspace-grid.theme-panel-open.preview-hidden .workspace-columns,
+  .workspace-grid.is-focus .workspace-columns,
+  .app-container.is-focus .workspace-grid .workspace-columns {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  /* 单列后编辑列右边不再有相邻列，1px 分隔线只会画在屏幕右边缘。 */
+  .workspace-column.editor-column {
+    border-right: none;
+  }
+
   /* Segmented switcher logic */
   .workspace-grid.active-view-editor .preview-column {
     display: none !important;
