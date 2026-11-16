@@ -6,6 +6,8 @@ import {
   X,
   ChevronUp,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Bold,
   Italic,
   Strikethrough,
@@ -853,6 +855,71 @@ function closeUrlLightbox() {
   lightboxPan.value = { x: 0, y: 0 };
   lightboxImgLoading.value = false;
   isLightboxPanning.value = false;
+}
+
+// 编辑区灯箱里左右切换文中的图：从正文 Markdown 里按顺序抽出去重的图片地址
+// （和发布弹窗里 articleImages 同一套取法）。当前这张不在列表里时
+// （比如悬停打开的站外图、文件链接），不显示切换按钮。
+const editorImages = computed(() => {
+  const list = [];
+  const text = editorText.value || '';
+  const mdRegex = /!\[([^\]]*)\]\((https?:\/\/[^\s)]+|data:image\/[^\s)]+)\)/g;
+  let match;
+  while ((match = mdRegex.exec(text)) !== null) {
+    if (match[2] && !list.some((it) => it.url === match[2])) {
+      list.push({ url: match[2], alt: match[1] || '' });
+    }
+  }
+  const htmlRegex = /<img[^>]+src=["']([^"']+)["']/gi;
+  while ((match = htmlRegex.exec(text)) !== null) {
+    if (match[1] && !list.some((it) => it.url === match[1])) {
+      list.push({ url: match[1], alt: '' });
+    }
+  }
+  return list;
+});
+
+const lightboxImageIndex = computed(() => {
+  if (!lightboxRawUrl.value) return -1;
+  return editorImages.value.findIndex((it) => it.url === lightboxRawUrl.value);
+});
+const canSwitchLightboxImage = computed(
+  () => lightboxImageIndex.value >= 0 && editorImages.value.length > 1,
+);
+
+function showPrevLightboxImage() {
+  if (!canSwitchLightboxImage.value) return;
+  const len = editorImages.value.length;
+  const next = editorImages.value[(lightboxImageIndex.value - 1 + len) % len];
+  openUrlLightbox(next.url, next.alt);
+}
+
+function showNextLightboxImage() {
+  if (!canSwitchLightboxImage.value) return;
+  const len = editorImages.value.length;
+  const next = editorImages.value[(lightboxImageIndex.value + 1) % len];
+  openUrlLightbox(next.url, next.alt);
+}
+
+// 手机上左右滑动切换：没放大时才算，放大了横滑是拖图；横滑超过 50px 才算，竖滑不触发。
+let lightboxTouchX = null;
+let lightboxTouchY = null;
+function onLightboxTouchStart(e) {
+  if (lightboxZoom.value > 1) { lightboxTouchX = null; return; }
+  const t = e.changedTouches[0];
+  lightboxTouchX = t?.clientX ?? null;
+  lightboxTouchY = t?.clientY ?? null;
+}
+function onLightboxTouchEnd(e) {
+  if (lightboxTouchX == null) return;
+  const t = e.changedTouches[0];
+  const dx = (t?.clientX ?? lightboxTouchX) - lightboxTouchX;
+  const dy = (t?.clientY ?? lightboxTouchY ?? 0) - (lightboxTouchY ?? 0);
+  lightboxTouchX = null;
+  lightboxTouchY = null;
+  if (Math.abs(dx) < 50 || Math.abs(dx) < Math.abs(dy)) return;
+  if (dx < 0) showNextLightboxImage();
+  else showPrevLightboxImage();
 }
 
 function stepLightboxZoom(delta) {
@@ -1935,6 +2002,12 @@ function handleGlobalKeydown(e) {
   if (lightboxImageUrl.value) {
     if (e.key === 'Escape') {
       closeUrlLightbox();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      showPrevLightboxImage();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      showNextLightboxImage();
     } else if (e.key === '+' || e.key === '=') {
       e.preventDefault();
       stepLightboxZoom(0.25);
@@ -2263,6 +2336,8 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
             class="editor-lightbox-stage"
             @click.self="closeUrlLightbox"
             @wheel.prevent="handleLightboxWheel"
+            @touchstart.passive="onLightboxTouchStart"
+            @touchend.passive="onLightboxTouchEnd"
           >
             <img
               ref="lightboxImgRef"
@@ -2280,6 +2355,33 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
               draggable="false"
             />
             <div v-if="lightboxImgLoading" class="editor-lightbox-loading">正在加载高清图片...</div>
+          </div>
+
+          <!-- 左右切换文中的图：当前这张不在正文图片列表里时不显示 -->
+          <button
+            v-if="canSwitchLightboxImage"
+            class="editor-lightbox-nav-btn editor-lightbox-nav-prev"
+            @click.stop="showPrevLightboxImage"
+            title="上一张"
+            aria-label="上一张图片"
+          >
+            <ChevronLeft size="22" />
+          </button>
+          <button
+            v-if="canSwitchLightboxImage"
+            class="editor-lightbox-nav-btn editor-lightbox-nav-next"
+            @click.stop="showNextLightboxImage"
+            title="下一张"
+            aria-label="下一张图片"
+          >
+            <ChevronRight size="22" />
+          </button>
+          <div
+            v-if="canSwitchLightboxImage && !lightboxImgLoading"
+            class="editor-lightbox-counter"
+            @click.stop
+          >
+            {{ lightboxImageIndex + 1 }} / {{ editorImages.length }}
           </div>
         </div>
       </Teleport>
@@ -3485,5 +3587,65 @@ html.dark .btn-submit-url:hover:not(:disabled) {
   border: 1px solid rgba(255, 255, 255, 0.16);
   color: #e2e8f0;
   font-size: 12px;
+}
+
+/* Lightbox 左右切换：文中的图一张一张翻，首尾循环。 */
+.editor-lightbox-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.88);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #f8fafc;
+  cursor: pointer;
+  z-index: 3;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.editor-lightbox-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.editor-lightbox-nav-btn:active {
+  transform: translateY(-50%) scale(0.94);
+}
+
+.editor-lightbox-nav-prev {
+  left: 16px;
+}
+
+.editor-lightbox-nav-next {
+  right: 16px;
+}
+
+.editor-lightbox-counter {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: #e2e8f0;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  z-index: 3;
+}
+
+@media (max-width: 640px) {
+  .editor-lightbox-nav-prev {
+    left: 8px;
+  }
+
+  .editor-lightbox-nav-next {
+    right: 8px;
+  }
 }
 </style>
