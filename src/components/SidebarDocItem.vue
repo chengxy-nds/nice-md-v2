@@ -82,6 +82,16 @@ const docCharCount = computed(() => {
   return cleaned.length;
 });
 
+// 图片数：正文里 ![...](...) 和 <img> 出现的次数，显示在字数后面。
+// 同一张图在文中出现两次算两张，和读者看到的一致。
+const docImageCount = computed(() => {
+  const raw = props.doc.content || '';
+  if (!raw) return 0;
+  const md = raw.match(/!\[.*?]\((?:https?:\/\/[^\s)]+|data:image\/[^\s)]+)\)/g);
+  const html = raw.match(/<img[^>]+src=["'][^"']+["']/gi);
+  return (md ? md.length : 0) + (html ? html.length : 0);
+});
+
 // 标题匹配高亮：把标题按搜索词切成片段渲染（纯文本插值，无 v-html，
 // 避免标题里的 HTML 被执行）。无搜索词时只有一个片段，渲染与原来一致。
 const titleParts = computed(() => {
@@ -390,9 +400,9 @@ onUnmounted(() => {
         {{ searchSnippet }}
       </div>
 
-      <!-- Meta Row (Time · Word Count) -->
+      <!-- Meta Row (Time · Word Count · Image Count) -->
       <div class="meta">
-        {{ docTime }} · {{ docCharCount }}字
+        {{ docTime }} · {{ docCharCount }}字<span v-if="docImageCount > 0"> · {{ docImageCount }}图</span>
       </div>
     </div>
 
