@@ -1792,6 +1792,52 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
   transform: rotate(90deg);
 }
 
+/* Lightbox 左右切换：文中的图一张一张翻，首尾循环。 */
+.lightbox-nav-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.9);
+  cursor: pointer;
+  z-index: 10;
+  transition: background 0.18s ease, transform 0.18s ease;
+}
+
+.lightbox-nav-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+}
+
+.lightbox-nav-btn:active {
+  transform: translateY(-50%) scale(0.94);
+}
+
+.lightbox-nav-prev {
+  left: 1rem;
+}
+
+.lightbox-nav-next {
+  right: 1rem;
+}
+
+@media (max-width: 640px) {
+  .lightbox-nav-prev {
+    left: 0.5rem;
+  }
+
+  .lightbox-nav-next {
+    right: 0.5rem;
+  }
+}
+
 /* Centered Image Container */
 .lightbox-image-container {
   display: flex;
