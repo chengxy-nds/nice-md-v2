@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted, computed, watch } from 'vue';
+import { ref, reactive, onMounted, onUnmounted, computed, watch } from 'vue';
 import { 
   X, 
   Play, 
@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   ExternalLink, 
   Copy,
+  ChevronLeft,
   ChevronRight,
   Clock,
   RotateCw,
@@ -202,6 +203,61 @@ const openImagePreview = (url) => {
 const openCoverPreview = () => {
   openImagePreview(coverImage.value);
 };
+
+// ── 大图预览里左右切换文中的图 ──
+// 当前这张在 articleImages 里的下标；不在列表里（比如自定义上传的封面、
+// 预设封面）时是 -1，就不显示切换按钮。首尾循环，翻到底能接着翻。
+const previewImageIndex = computed(() => {
+  if (!previewImageUrl.value) return -1;
+  return articleImages.value.indexOf(previewImageUrl.value);
+});
+const canSwitchPreviewImage = computed(
+  () => previewImageIndex.value >= 0 && articleImages.value.length > 1,
+);
+
+function showPrevPreviewImage() {
+  if (!canSwitchPreviewImage.value) return;
+  const len = articleImages.value.length;
+  const next = (previewImageIndex.value - 1 + len) % len;
+  previewImageUrl.value = articleImages.value[next];
+  soundEngine.playClick();
+}
+
+function showNextPreviewImage() {
+  if (!canSwitchPreviewImage.value) return;
+  const len = articleImages.value.length;
+  const next = (previewImageIndex.value + 1) % len;
+  previewImageUrl.value = articleImages.value[next];
+  soundEngine.playClick();
+}
+
+// 键盘 ← → 切换，Esc 关闭；只在灯箱开着的时候监听。
+function handleLightboxKeydown(e) {
+  if (!showCoverPreviewModal.value) return;
+  if (e.key === 'ArrowLeft') { e.preventDefault(); showPrevPreviewImage(); }
+  else if (e.key === 'ArrowRight') { e.preventDefault(); showNextPreviewImage(); }
+  else if (e.key === 'Escape') { showCoverPreviewModal.value = false; }
+}
+
+watch(showCoverPreviewModal, (open) => {
+  if (open) window.addEventListener('keydown', handleLightboxKeydown);
+  else window.removeEventListener('keydown', handleLightboxKeydown);
+});
+onUnmounted(() => window.removeEventListener('keydown', handleLightboxKeydown));
+
+// 手机上左右滑动切换：横滑超过 50px 才算，竖滑不触发。
+let lightboxTouchX = null;
+function onLightboxTouchStart(e) {
+  lightboxTouchX = e.changedTouches[0]?.clientX ?? null;
+}
+function onLightboxTouchEnd(e) {
+  if (lightboxTouchX == null) return;
+  const dx = (e.changedTouches[0]?.clientX ?? lightboxTouchX) - lightboxTouchX;
+  lightboxTouchX = null;
+  if (Math.abs(dx) < 50) return;
+  if (dx < 0) showNextPreviewImage();
+  else showPrevPreviewImage();
+}
 
 const triggerCoverUpload = () => {
   openCoverSelectModal();
@@ -1953,7 +2009,7 @@ onMounted(() => {
         >
           <!-- Floating Top Controls Bar (Frosted Glass Pill) -->
           <div class="lightbox-floating-controls" @click.stop>
-            <span class="lightbox-badge">封面大图预览</span>
+            <span class="lightbox-badge">封面大图预览<span v-if="canSwitchPreviewImage"> · {{ previewImageIndex + 1 }} / {{ articleImages.length }}</span></span>
             <div class="lightbox-btn-group">
               <button class="lightbox-tool-btn" @click="triggerCoverUpload" title="更换新封面">
                 <Upload size="13" />
@@ -1966,9 +2022,34 @@ onMounted(() => {
           </div>
 
           <!-- Centered Floating Image Container -->
-          <div class="lightbox-image-container" @click.stop>
+          <div
+            class="lightbox-image-container"
+            @click.stop
+            @touchstart.passive="onLightboxTouchStart"
+            @touchend.passive="onLightboxTouchEnd"
+          >
             <img :src="previewImageUrl || coverImage" alt="Full Cover Preview" class="lightbox-floating-img" />
           </div>
+
+          <!-- 左右切换文中的图：当前这张不在文章插图列表里时不显示 -->
+          <button
+            v-if="canSwitchPreviewImage"
+            class="lightbox-nav-btn lightbox-nav-prev"
+            @click.stop="showPrevPreviewImage"
+            title="上一张"
+            aria-label="上一张图片"
+          >
+            <ChevronLeft size="22" />
+          </button>
+          <button
+            v-if="canSwitchPreviewImage"
+            class="lightbox-nav-btn lightbox-nav-next"
+            @click.stop="showNextPreviewImage"
+            title="下一张"
+            aria-label="下一张图片"
+          >
+            <ChevronRight size="22" />
+          </button>
         </div>
       </Transition>
     </Teleport>
