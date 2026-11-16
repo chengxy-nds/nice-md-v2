@@ -1296,17 +1296,15 @@ function resetSidebarWidth() {
   .sidebar-resizer {
     display: none !important;
   }
-  /* 移动端抽屉才有的关闭 ×：桌面侧边栏常驻，不需要它。 */
+  /* 关闭 ×：移动端放大到 36px 好点。桌面端它是 30px 的普通工具栏按钮，
+     点一下收起侧边栏（见 App.vue 的 closeSidebarList）。之前这里写着
+     “桌面端不显示”，但 .sidebar-toolbar-btn 的 display:flex 在后面把
+     它的 display:none 盖掉了，× 在桌面露出来、点了又没反应。 */
   .drawer-close-btn {
     display: flex !important;
     width: 36px;
     height: 36px;
   }
-}
-
-/* 桌面端不显示抽屉关闭按钮（见上方 ≤960px 规则）。 */
-.drawer-close-btn {
-  display: none;
 }
 
 html.dark .sidebar-container {

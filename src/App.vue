@@ -2486,6 +2486,17 @@ const toggleMobileSidebar = () => {
   mobileSidebarOpen.value = !mobileSidebarOpen.value;
 };
 
+// 关闭文档列表（侧边栏顶上的 ×，close-drawer）：窄屏（≤960px）关的是抽屉，
+// 宽屏关的是常驻侧边栏。之前这里只关了 mobileSidebarOpen，宽屏上它本来
+// 就是 false，点 × 等于没点；偏偏 .sidebar-toolbar-btn 的 display:flex
+// 还盖掉了 .drawer-close-btn 的 display:none，让 × 在宽屏上也露出来——
+// 露出来又关不掉。宽屏收起后从左侧图标栏的“文档”再点开（sidebarVisible
+// 的开关一直都在那儿，也会持久化）。
+const closeSidebarList = () => {
+  mobileSidebarOpen.value = false;
+  if (!isNarrowDrawer.value) sidebarVisible.value = false;
+};
+
 const sidebarRef = ref(null);
 
 const handleScroll = (percentage) => {
@@ -2831,7 +2842,7 @@ watch(customStyles, () => {
               :isCloudSyncing="isSidebarSyncing"
               @select-doc="(id) => { handleSelectDoc(id); currentView = 'editor'; mobileSidebarOpen = false; }"
               @swipe-close="mobileSidebarOpen = false"
-              @close-drawer="mobileSidebarOpen = false"
+              @close-drawer="closeSidebarList"
               @create-doc="(groupId) => { handleCreateDoc(groupId); currentView = 'editor'; }"
               @open-templates="currentView = 'templates'"
               @open-materials="currentView = 'materials'"
