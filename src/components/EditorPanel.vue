@@ -1251,13 +1251,31 @@ function replaceEditorText(target, replacement) {
   }
 }
 
+// FileReader 包一层 Promise：多图要按选中的顺序一张一张插，
+// processImageInsertion 必须真正等到插入完成再返回，
+// 不能只靠 reader.onload 回调（那样 await 回来时图还没插进去，
+// 几张图的插入顺序就乱了）。
+function readFileAsDataURL(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (ev) => resolve(ev.target.result);
+    reader.onerror = () => reject(reader.error || new Error('读取图片失败'));
+    reader.readAsDataURL(file);
+  });
+}
+
+// 上传占位符的唯一序号：同名图片在同一毫秒上传时，
+// Date.now() 会撞车，replaceEditorText 只换第一个匹配到的，
+// 会换错地方。
+let imageUploadSeq = 0;
+
 async function processImageInsertion(file) {
   if (!file || !file.type?.startsWith('image/')) return;
   const alt = file.name ? file.name.replace(/\.[^.]+$/, '') : 'image';
 
   // 1. Auto-detect if OSS cloud storage is configured
   if (isStorageEnabled()) {
-    const placeholder = `![⏳ 正在上传云端图片 (${alt})...](${Date.now()})`;
+    const placeholder = `![⏳ 正在上传云端图片 (${alt})...](upload-${Date.now()}-${++imageUploadSeq})`;
     insertTextAtCursor(placeholder);
 
     try {
@@ -1268,25 +1286,17 @@ async function processImageInsertion(file) {
     } catch (err) {
       logger.error('[OSS Upload Failed]', err);
       // Fallback: convert to base64 so user's image is not lost
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const dataUrl = ev.target.result;
-        replaceEditorText(placeholder, `![${alt}](${dataUrl})`);
-      };
-      reader.readAsDataURL(file);
+      const dataUrl = await readFileAsDataURL(file);
+      replaceEditorText(placeholder, `![${alt}](${dataUrl})`);
       // 图床上传失败：用 toast 把原因说清楚，再自动转本地插入，不静默失败。
       emit('toast', `图床上传失败（${err.message}），已转为本地图片插入`);
     }
   } else {
     // 2. OSS is not configured -> Convert to base64 data URL
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      const dataUrl = ev.target.result;
-      insertTextAtCursor(`![${alt}](${dataUrl})`);
-      soundEngine.playClick();
-      emit('toast', '已插入本地图片');
-    };
-    reader.readAsDataURL(file);
+    const dataUrl = await readFileAsDataURL(file);
+    insertTextAtCursor(`![${alt}](${dataUrl})`);
+    soundEngine.playClick();
+    emit('toast', '已插入本地图片');
   }
 }
 
@@ -1294,11 +1304,12 @@ async function processImageInsertion(file) {
    iOS Safari 会忽略未挂载到文档的 input 上的程序化 click()：点“上传图片”
    后选图框根本打不开，且没有任何报错。必须先把 input 挂到 body（视觉隐藏，
    不拦截点按），在用户手势里同步 click()，选完/取消后移除。 */
-function openHiddenFileInput(accept, onPick) {
+function openHiddenFileInput(accept, onPick, multiple = false) {
   document.querySelectorAll('.nx-hidden-file-input').forEach((el) => el.remove());
   const input = document.createElement('input');
   input.type = 'file';
   input.accept = accept;
+  input.multiple = multiple;
   input.className = 'nx-hidden-file-input';
   input.style.cssText = 'position:fixed;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;';
   input.onchange = (e) => {
@@ -1312,13 +1323,21 @@ function openHiddenFileInput(accept, onPick) {
 }
 
 // ── Toolbar image upload button ──
+// 多选：input 上加了 multiple（iOS 相册也支持一次选多张），
+// 选中的图按顺序一张一张插；一张坏了不影响后面的。
 function handleImageUpload() {
   openHiddenFileInput('image/*', async (files) => {
-    const file = files?.[0];
-    if (!file) return;
+    if (!files?.length) return;
     soundEngine.playClick();
-    await processImageInsertion(file);
-  });
+    for (const file of files) {
+      try {
+        await processImageInsertion(file);
+      } catch (err) {
+        logger.error('[Image Insert Failed]', err);
+        emit('toast', `图片 ${file.name || ''} 插入失败`);
+      }
+    }
+  }, true);
 }
 
 // ── Clipboard Paste Event Handler ──
