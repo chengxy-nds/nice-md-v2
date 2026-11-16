@@ -347,7 +347,7 @@ onUnmounted(() => {
       'is-dragging-before': isDragOver && dragPosition === 'before',
       'is-dragging-after': isDragOver && dragPosition === 'after'
     }"
-    draggable="true"
+    :draggable="!isRenaming"
     @click="$emit('select', props.doc.id)"
     @contextmenu="openContextMenu"
     @dragstart="onDragStart"
