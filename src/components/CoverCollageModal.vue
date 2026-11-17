@@ -1070,7 +1070,7 @@ onUnmounted(() => {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: var(--brand-subtle, #EFF6FF);
+  background: var(--brand-subtle, var(--brand-subtle, #E6F7F9));
   color: var(--brand-primary, #00C8D7);
   display: flex;
   align-items: center;
@@ -1298,7 +1298,7 @@ onUnmounted(() => {
 .upload-dropzone:hover,
 .upload-dropzone:focus-within {
   border-color: var(--brand-primary, #00C8D7);
-  background: var(--brand-subtle, #EFF6FF);
+  background: var(--brand-subtle, var(--brand-subtle, #E6F7F9));
   outline: none;
 }
 
@@ -1310,7 +1310,7 @@ onUnmounted(() => {
   justify-content: center;
   border-radius: 8px;
   color: var(--brand-primary, #00C8D7);
-  background: var(--brand-subtle, #EFF6FF);
+  background: var(--brand-subtle, var(--brand-subtle, #E6F7F9));
 }
 
 .upload-drop-icon {
@@ -1497,7 +1497,7 @@ onUnmounted(() => {
 .cell-label-pill {
   font-size: 12px;
   font-weight: 600;
-  color: #93C5FD;
+  color: var(--brand-primary-light, #C9F2F6);
 }
 
 .cell-empty-hint {
@@ -1611,7 +1611,7 @@ onUnmounted(() => {
 
 .ratio-card.is-selected {
   border-color: var(--brand-primary, #00C8D7);
-  background: var(--brand-subtle, #EFF6FF);
+  background: var(--brand-subtle, var(--brand-subtle, #E6F7F9));
 }
 
 .ratio-header {
@@ -1632,7 +1632,7 @@ onUnmounted(() => {
   padding: 1px 5px;
   border-radius: 4px;
   background: #C9F2F6;
-  color: #1E40AF;
+  color: var(--brand-primary-hover, #00A9B8);
 }
 
 .ratio-dim {
@@ -2242,8 +2242,8 @@ html.dark .btn-footer-action.is-secondary {
 
 html.dark .ratio-card.is-selected,
 html.dark .layout-btn.is-selected {
-  border-color: #3B82F6;
-  background: rgba(59, 130, 246, 0.15);
+  border-color: var(--brand-primary, #00C8D7);
+  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
 }
 
 html.dark .layout-btn:not(.is-selected):hover {
@@ -2257,7 +2257,7 @@ html.dark .layout-count-tabs {
 
 html.dark .layout-count-tab.is-selected {
   background: rgba(51, 65, 85, 0.82);
-  color: #93C5FD;
+  color: var(--brand-primary-light, #C9F2F6);
 }
 
 html.dark .layout-preview-box {
@@ -2270,7 +2270,7 @@ html.dark .dimension-input-wrap input {
 }
 
 html.dark .upload-drop-icon-box {
-  background: rgba(59, 130, 246, 0.15);
+  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
 }
 
 html.dark .layout-mini-cell {

@@ -664,7 +664,7 @@ onUnmounted(() => {
   width: 34px;
   height: 34px;
   border-radius: 9px;
-  background: var(--brand-subtle, #EFF6FF);
+  background: var(--brand-subtle, var(--brand-subtle, #E6F7F9));
   color: var(--brand-primary, #00C8D7);
   display: flex;
   align-items: center;
@@ -693,7 +693,7 @@ onUnmounted(() => {
   padding: 1px 7px;
   border-radius: 999px;
   background: #C9F2F6;
-  color: #1E40AF;
+  color: var(--brand-primary-hover, #00A9B8);
 }
 
 .header-subtitle {
@@ -813,7 +813,7 @@ onUnmounted(() => {
 }
 
 .btn-transform.is-active {
-  background: var(--brand-subtle, #EFF6FF);
+  background: var(--brand-subtle, var(--brand-subtle, #E6F7F9));
   border-color: var(--brand-primary, #00C8D7);
   color: var(--brand-primary, #00C8D7);
 }
@@ -879,8 +879,8 @@ onUnmounted(() => {
 .interactive-crop-box {
   position: absolute;
   box-sizing: border-box;
-  border: 1.5px solid #3B82F6;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 8px rgba(59, 130, 246, 0.16);
+  border: 1.5px solid var(--brand-primary, #00C8D7);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.9), 0 0 8px var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
   cursor: move;
   pointer-events: auto;
   touch-action: none;
@@ -902,7 +902,7 @@ onUnmounted(() => {
   position: absolute;
   box-sizing: border-box;
   background: #FFFFFF;
-  border: 2px solid #2563EB;
+  border: 2px solid var(--brand-primary, #00C8D7);
   border-radius: 2px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   touch-action: none;
@@ -946,7 +946,7 @@ onUnmounted(() => {
   width: 24px;
   height: 24px;
   border: 2.5px solid rgba(255, 255, 255, 0.2);
-  border-top-color: #3B82F6;
+  border-top-color: var(--brand-primary, #00C8D7);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

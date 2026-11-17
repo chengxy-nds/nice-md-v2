@@ -999,8 +999,8 @@ html.dark .feature-card {
 }
 
 .icon-blue {
-  background: #eff6ff;
-  color: #2563eb;
+  background: var(--brand-subtle, #E6F7F9);
+  color: var(--brand-primary-hover, #00A9B8);
 }
 
 .icon-terracotta {
@@ -1014,8 +1014,8 @@ html.dark .feature-card {
 }
 
 html.dark .icon-blue {
-  background: rgba(37, 99, 235, 0.18);
-  color: #60a5fa;
+  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
+  color: var(--brand-primary-light, #C9F2F6);
 }
 
 html.dark .icon-terracotta {
@@ -1245,8 +1245,8 @@ html.dark .nav-text-link {
 html.dark .btn-wandor-cta,
 html.dark .btn-card-submit-cta,
 html.dark .hero-start-button {
-  background: #347fe5;
-  border-color: #347fe5;
+  background: var(--brand-primary, #00C8D7);
+  border-color: var(--brand-primary, #00C8D7);
   color: #fff;
 }
 
@@ -1302,11 +1302,11 @@ html.dark .wandor-hero-title {
 
 html.dark .wandor-hero-title span,
 html.dark .hero-eyebrow {
-  color: #70a9f5;
+  color: var(--brand-primary-light, #C9F2F6);
 }
 
 html.dark .hero-eyebrow-dot {
-  background: #70a9f5;
+  background: var(--brand-primary-light, #C9F2F6);
 }
 
 .wandor-hero-subtitle {
@@ -1973,8 +1973,8 @@ html.dark .nav-text-link {
 
 html.dark .btn-wandor-cta,
 html.dark .btn-card-submit-cta {
-  border-color: #347fe5;
-  background: #347fe5;
+  border-color: var(--brand-primary, #00C8D7);
+  background: var(--brand-primary, #00C8D7);
   color: #fff;
 }
 
@@ -2023,7 +2023,7 @@ html.dark .wandor-hero-title {
 }
 
 html.dark .wandor-hero-title span {
-  color: #7db1fa;
+  color: var(--brand-primary-light, #C9F2F6);
 }
 
 .wandor-hero-subtitle {
@@ -2199,7 +2199,7 @@ html.dark .btn-card-sample-pill {
 }
 
 .proof-link:hover {
-  color: #0c58b5;
+  color: var(--brand-primary-hover, #00A9B8);
 }
 
 html.dark .proof-label,

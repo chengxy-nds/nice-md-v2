@@ -1822,7 +1822,7 @@ function initCodeMirror() {
       outline: "2px solid #d97706"
     },
     "&.cm-focused > .cm-scroller > .cm-selectionLayer .cm-selectionBackground, .cm-selectionBackground": {
-      backgroundColor: "rgba(59, 130, 246, 0.22) !important"
+      backgroundColor: "var(--brand-primary-tint, rgba(0, 200, 215, 0.15)) !important"
     }
   });
 
@@ -3519,8 +3519,8 @@ html.dark .btn-submit-url:hover:not(:disabled) {
 }
 
 .editor-lightbox-btn.is-active {
-  background: #2563eb;
-  border-color: #60a5fa;
+  background: var(--brand-primary, #00C8D7);
+  border-color: var(--brand-primary-light, #C9F2F6);
   color: #ffffff;
 }
 
@@ -3542,7 +3542,7 @@ html.dark .btn-submit-url:hover:not(:disabled) {
 }
 
 .editor-lightbox-btn.is-active:hover {
-  background: #1d4ed8;
+  background: var(--brand-primary, #00C8D7);
 }
 
 .editor-lightbox-stage {
