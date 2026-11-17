@@ -585,9 +585,10 @@ html.dark .meta {
 }
 
 .more {
-  /* 文档行“···”常显：之前默认 0.48 透明，桌面上不滑过几乎看不见。 */
+  /* 文档行“···”常显：之前默认 0.48 透明，桌面上不滑过几乎看不见。
+     颜色也加深到 #475569，不滑过也一眼能看到。 */
   opacity: 1;
-  color: #6f829d;
+  color: #475569;
   border: none;
   background: transparent;
   cursor: pointer;
