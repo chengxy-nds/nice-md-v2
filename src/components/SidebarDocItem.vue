@@ -6,7 +6,6 @@ let closeActiveDocMenu = null;
 import { ref, computed, nextTick, watch, onUnmounted } from 'vue';
 import { Pencil, Trash2, History, Copy, Pin, MoreHorizontal } from '@lucide/vue';
 import { showConfirm } from '../utils/confirmDialog';
-import { countDocChars, countDocImages } from '../utils/docStats';
 
 const props = defineProps({
   doc: { type: Object, required: true },
@@ -71,12 +70,6 @@ function formatDocTime(ts) {
 const docTime = computed(() => {
   return formatDocTime(props.doc.updatedAt || props.doc.createdAt || Date.now());
 });
-
-const docCharCount = computed(() => countDocChars(props.doc.content));
-
-// 图片数：正文里 ![...](...) 和 <img> 出现的次数，显示在字数后面。
-// 同一张图在文中出现两次算两张，和读者看到的一致。
-const docImageCount = computed(() => countDocImages(props.doc.content));
 
 // 标题匹配高亮：把标题按搜索词切成片段渲染（纯文本插值，无 v-html，
 // 避免标题里的 HTML 被执行）。无搜索词时只有一个片段，渲染与原来一致。
@@ -386,9 +379,9 @@ onUnmounted(() => {
         {{ searchSnippet }}
       </div>
 
-      <!-- Meta Row (Time · Word Count · Image Count) -->
+      <!-- Meta Row (Time only — 字数/图数只在编辑区底部显示) -->
       <div class="meta">
-        {{ docTime }} · {{ docCharCount }}字<span v-if="docImageCount > 0"> · {{ docImageCount }}图</span>
+        {{ docTime }}
       </div>
     </div>
 
