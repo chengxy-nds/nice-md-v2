@@ -2816,7 +2816,8 @@ watch(customStyles, () => {
 
       <!-- App Body: Left IconBar + Main Content -->
       <div class="app-body">
-        <div class="app-left">
+        <!-- 窄栏才显示图标栏；宽栏打开时由 Sidebar 自己带 logo + 导航，不重复 -->
+        <div class="app-left" v-show="!(sidebarVisible && currentView === 'editor')">
           <IconBar
             :sidebarVisible="sidebarVisible"
             :currentView="currentView"
@@ -2826,7 +2827,7 @@ watch(customStyles, () => {
               if (tab === 'home') { currentView = 'home'; }
               if (tab === 'docs') {
                 if (focusMode.value) { toggleFocusMode(); }
-                else if (currentView !== 'editor') currentView = 'editor';
+                else if (currentView !== 'editor') { currentView = 'editor'; sidebarVisible = true; }
                 else sidebarVisible = !sidebarVisible;
               }
               if (tab === 'templates') { currentView = 'templates'; }
@@ -2865,6 +2866,10 @@ watch(customStyles, () => {
               @create-doc="(groupId) => { handleCreateDoc(groupId); currentView = 'editor'; }"
               @open-templates="currentView = 'templates'"
               @open-materials="currentView = 'materials'"
+              @go-home="currentView = 'home'"
+              @go-docs="currentView = 'editor'"
+              @open-settings="openSettings()"
+              @open-launchpad="isLaunchpadOpen = true"
               @open-doc-history="openDocHistory"
               @rename-doc="handleRenameDoc"
               @delete-doc="handleDeleteDoc"
