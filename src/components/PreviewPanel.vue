@@ -866,14 +866,26 @@ onUnmounted(() => {
 }
 
 /* 抽屉平滑滑入动效 (Muse Ease Glide Drawer) */
-.theme-slide-enter-active,
-.theme-slide-leave-active {
+.theme-slide-enter-active {
   transition: transform 0.42s var(--ease-glide), opacity 0.3s ease;
 }
 
-.theme-slide-enter-from,
-.theme-slide-leave-to {
+/* 收起时面板宽度也收到 0，预览区跟着平滑变宽：以前只滑出（transform 不占
+   布局），面板 0.42s 里还占着位置，预览要等它消失后才突然弹宽，再加
+   文章重排，看起来就像卡了约 1 秒。现在宽度同步收，预览一边变宽，
+   整个过程就只有 0.42s，没有停顿。 */
+.theme-slide-leave-active {
+  transition: width 0.42s var(--ease-glide), opacity 0.3s ease;
+}
+
+.theme-slide-enter-from {
   transform: translateX(100%);
+  opacity: 0;
+}
+
+.theme-slide-leave-to {
+  width: 0;
+  min-width: 0;
   opacity: 0;
 }
 

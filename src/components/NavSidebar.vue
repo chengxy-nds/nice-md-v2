@@ -155,6 +155,9 @@ function moveGliderToEl(btn, stretch = true) {
 
     // 纵向物理拉伸（上限 1.16 倍）
     const stretchY = stretch ? 1 + Math.min(dist / 650, 0.16) : 1;
+    // 和右侧栏一样：圆片尺寸跟着按钮走，保证正好盖住图标。
+    gliderRef.value.style.width = `${btnRect.width}px`;
+    gliderRef.value.style.height = `${btnRect.height}px`;
     applyGliderTransform(left, top, stretchY);
 
     if (stretchY > 1.01) {
@@ -271,7 +274,7 @@ onUnmounted(() => {
 .nav-glider {
   position: absolute;
   top: 0;
-  left: 8px;
+  left: 0;
   width: 40px;
   height: 40px;
   border-radius: 999px;
@@ -279,7 +282,13 @@ onUnmounted(() => {
   opacity: 0;
   pointer-events: none;
   z-index: 1;
-  transition: transform 380ms var(--ease-glide), opacity 0.2s var(--ease-out);
+  /* 位置全由 JS 的 translate 决定（和右侧栏一样）；不要在这里写 left，
+     否则 translate 的 left 会再叠加一次，圆片就偏到图标右边去了。 */
+  transition: transform 380ms var(--ease-glide),
+              width 300ms var(--ease-glide),
+              height 300ms var(--ease-glide),
+              border-radius 300ms var(--ease-glide),
+              opacity 0.2s var(--ease-out);
   will-change: transform;
 }
 .nav-glider.is-visible {
