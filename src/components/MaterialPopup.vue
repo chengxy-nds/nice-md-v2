@@ -114,7 +114,7 @@ function getRenderHtml(item) {
         <div style="font-size: 12.5px; color: #64748b;">保持纯白纸面质感，适合极简阅读风格</div>
       </div>`;
     }
-    return `<div style="text-align: center; color: #64748b; font-size: 14px; font-weight: 700; border-bottom: 2px solid #2563eb; padding-bottom: 4px; display: inline-block;">默认主题${label}</div>`;
+    return `<div style="text-align: center; color: #64748b; font-size: 14px; font-weight: 700; border-bottom: 2px solid var(--brand-primary, #00C8D7); padding-bottom: 4px; display: inline-block;">默认主题${label}</div>`;
   }
 
   // Dedicated Rich Immersive Canvas for Background Textures

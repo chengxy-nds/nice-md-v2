@@ -123,8 +123,8 @@ html.dark .wandor-wordmark {
   font-weight: 700;
   letter-spacing: 0.06em;
   color: var(--brand-primary, #116ACC);
-  background: var(--brand-primary-subtle, rgba(17, 106, 204, 0.08));
-  border: 1px solid rgba(17, 106, 204, 0.18);
+  background: var(--brand-primary-subtle, var(--brand-primary-tint, rgba(0, 200, 215, 0.15)));
+  border: 1px solid var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
   padding: 2px 6px;
   border-radius: 5px;
   line-height: 1;
@@ -578,7 +578,7 @@ html.dark .workspace-tabs {
 }
 
 html.dark .workspace-tab-glider {
-  background: #60a5fa;
+  background: var(--brand-primary-light, #C9F2F6);
 }
 
 /* ── 标签栏过渡（nx-tab / TransitionGroup）──
@@ -691,7 +691,7 @@ html.dark .workspace-tab-item.is-active {
 }
 
 html.dark .workspace-tab-item.is-active .workspace-tab-icon {
-  color: #93c5fd;
+  color: var(--brand-primary-light, #C9F2F6);
 }
 
 .workspace-tab-title {
@@ -727,7 +727,7 @@ html.dark .workspace-tab-item.is-active .workspace-tab-icon {
 
 html.dark .workspace-tab-input {
   background: #14161c;
-  border-color: #60a5fa;
+  border-color: var(--brand-primary-light, #C9F2F6);
   color: #f1f5f9;
 }
 
@@ -772,8 +772,8 @@ html.dark .workspace-tab-input {
 }
 
 html.dark .workspace-tab-close:hover {
-  background: rgba(59, 130, 246, 0.16);
-  color: #93c5fd;
+  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
+  color: var(--brand-primary-light, #C9F2F6);
 }
 
 .workspace-tab-add {
@@ -802,8 +802,8 @@ html.dark .workspace-tab-close:hover {
 }
 
 html.dark .workspace-tab-add:hover {
-  background: rgba(59, 130, 246, 0.14);
-  color: #93c5fd;
+  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
+  color: var(--brand-primary-light, #C9F2F6);
 }
 
 .tab-context-menu {
@@ -963,8 +963,8 @@ html.dark .empty-tabs-title {
 }
 
 .btn-empty-new-tab:hover {
-  background: #347fe5;
-  border-color: #347fe5;
+  background: var(--brand-primary, #00C8D7);
+  border-color: var(--brand-primary, #00C8D7);
   color: #ffffff;
 }
 
@@ -1036,8 +1036,8 @@ html.dark .empty-tabs-title {
 
 .workspace-toolbar .btn-icon.is-active {
   color: var(--brand-primary, #116ACC);
-  background: var(--brand-primary-subtle, rgba(17, 106, 204, 0.08));
-  border-color: rgba(17, 106, 204, 0.2);
+  background: var(--brand-primary-subtle, var(--brand-primary-tint, rgba(0, 200, 215, 0.15)));
+  border-color: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
 }
 
 /* 窄屏“···”更多工具按钮：桌面端不展示，只在 ≤640px 出现（见下）。 */
@@ -1218,7 +1218,7 @@ html.dark .popout-item:hover {
 }
 
 .popout-item.is-active {
-  background: var(--brand-primary-subtle, rgba(17, 106, 204, 0.08));
+  background: var(--brand-primary-subtle, var(--brand-primary-tint, rgba(0, 200, 215, 0.15)));
   color: var(--brand-primary, #116ACC);
   font-weight: 600;
 }
@@ -1286,7 +1286,7 @@ html.dark .popout-item.is-active {
 .btn-toolbar-dropdown.is-active {
   background: var(--bg-card, #FFFFFF);
   border-color: var(--brand-primary, #116ACC);
-  box-shadow: 0 0 0 2px rgba(17, 106, 204, 0.1);
+  box-shadow: 0 0 0 2px var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
 }
 
 .workspace-columns {
@@ -1434,7 +1434,7 @@ html.dark .popout-item.is-active {
 
 .btn-header-settings.is-active {
   color: var(--brand-primary, #116ACC);
-  background: var(--brand-primary-subtle, rgba(17, 106, 204, 0.08));
+  background: var(--brand-primary-subtle, var(--brand-primary-tint, rgba(0, 200, 215, 0.15)));
 }
 
 .sidebar-backdrop {
@@ -2026,7 +2026,7 @@ html.dark .popout-item.is-active {
     background: #edf4ff;
   }
   html.dark .workspace-tab-add:active {
-    background: rgba(59, 130, 246, 0.14);
+    background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
   }
   .btn-menu-toggle:hover {
     background: transparent;

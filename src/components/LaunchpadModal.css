@@ -436,8 +436,8 @@ html.dark .btn-action-dark.btn-refresh-status {
 }
 
 .row-select-checkbox:hover {
-  border-color: #3b82f6;
-  background: #eff6ff;
+  border-color: var(--brand-primary, #00C8D7);
+  background: var(--brand-subtle, #E6F7F9);
 }
 
 .row-select-checkbox.is-checked {
@@ -493,11 +493,11 @@ html.dark .row-select-checkbox.is-checked .check-svg {
 }
 
 .platform-row-item.is-unlogged:hover .text-go-login {
-  color: #2563eb;
+  color: var(--brand-primary-hover, #00A9B8);
 }
 
 .platform-row-item.is-unlogged:hover .row-chevron-arrow {
-  color: #2563eb;
+  color: var(--brand-primary-hover, #00A9B8);
   transform: translateX(0.125rem);
 }
 
@@ -579,7 +579,7 @@ html.dark .row-select-checkbox.is-checked .check-svg {
 }
 
 .platform-sub.is-clickable-user:hover {
-  color: #2563eb;
+  color: var(--brand-primary-hover, #00A9B8);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -679,9 +679,9 @@ html.dark .badge-logged-in-clean.is-selected-badge {
 }
 
 .badge-checking {
-  background: #eff6ff;
-  border: 0.0625rem solid #dbeafe;
-  color: #2563eb;
+  background: var(--brand-subtle, #E6F7F9);
+  border: 0.0625rem solid var(--brand-subtle, #E6F7F9);
+  color: var(--brand-primary-hover, #00A9B8);
   font-size: 0.6875rem;
   font-weight: 600;
   padding: 0.1875rem 0.5rem;
@@ -733,8 +733,8 @@ html.dark .badge-logged-in-clean.is-selected-badge {
 }
 
 .setting-icon-badge.is-shield {
-  background: #eff6ff;
-  color: #3b82f6;
+  background: var(--brand-subtle, #E6F7F9);
+  color: var(--brand-primary-hover, #00A9B8);
 }
 
 .setting-icon-badge.is-file {
@@ -1478,11 +1478,11 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 
 .manage-platform-item.is-enabled {
   background: #f8fbff;
-  border-color: #93c5fd;
+  border-color: var(--brand-primary-light, #C9F2F6);
 }
 
 .manage-platform-item.is-enabled:hover {
-  border-color: #3b82f6;
+  border-color: var(--brand-primary, #00C8D7);
   background: #f0f7ff;
 }
 
@@ -1527,7 +1527,7 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 .fallback-icon-letter {
   font-size: 0.875rem;
   font-weight: 700;
-  color: #2563eb;
+  color: var(--brand-primary-hover, #00A9B8);
 }
 
 .manage-item-info {
@@ -1571,7 +1571,7 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 }
 
 .manage-item-tag.is-logged-tag.is-clickable-user:hover {
-  color: #2563eb;
+  color: var(--brand-primary-hover, #00A9B8);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
@@ -1583,7 +1583,7 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 }
 
 .manage-platform-item.is-unlogged-manage:hover .manage-item-tag.is-unlogged-tag {
-  color: #2563eb;
+  color: var(--brand-primary-hover, #00A9B8);
 }
 
 .manage-modal-footer {
@@ -2385,7 +2385,7 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 :global(html[data-color-mode="dark"]) .badge-logged-in-clean.is-selected-badge {
   background: rgba(55, 148, 255, 0.2);
   border-color: rgba(55, 148, 255, 0.4);
-  color: #60a5fa;
+  color: var(--brand-primary-light, #C9F2F6);
 }
 
 :global(html.dark) .settings-card-box,
@@ -3008,8 +3008,8 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 
 .btn-gradient-launch:hover:not(:disabled) {
   transform: none;
-  border-color: #0c58b5;
-  background: #0c58b5;
+  border-color: var(--brand-primary, #00C8D7);
+  background: var(--brand-primary, #00C8D7);
   box-shadow: none;
 }
 
@@ -3027,8 +3027,8 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 
 :global(html.dark) .btn-gradient-launch:not(:disabled),
 :global(html[data-color-mode="dark"]) .btn-gradient-launch:not(:disabled) {
-  border-color: #347fe5;
-  background: #347fe5;
+  border-color: var(--brand-primary, #00C8D7);
+  background: var(--brand-primary, #00C8D7);
   color: #fff;
 }
 
@@ -3153,7 +3153,7 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 
 :global(html.dark) .platform-row-item.is-selected,
 :global(html[data-color-mode="dark"]) .platform-row-item.is-selected {
-  border-left-color: #70a9f5;
+  border-left-color: var(--brand-primary-light, #C9F2F6);
   background: #202e3f;
 }
 
@@ -3182,8 +3182,8 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 
 :global(html.dark) .platform-row-item.is-selected .row-select-checkbox.is-checked,
 :global(html[data-color-mode="dark"]) .platform-row-item.is-selected .row-select-checkbox.is-checked {
-  border-color: #70a9f5;
-  background: #70a9f5;
+  border-color: var(--brand-primary-light, #C9F2F6);
+  background: var(--brand-primary-light, #C9F2F6);
 }
 
 :global(html.dark) .badge-logged-in-clean,

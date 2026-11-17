@@ -984,7 +984,7 @@ function handlePopupClose() {
 :global(html.dark) .preview-body:not(.is-wechat-wrapper) .markdown-body :deep([data-doc-toc="true"] a),
 :global(html.dark) .preview-body:not(.is-wechat-wrapper) .markdown-body :deep(.footnote-ref a),
 :global(html.dark) .preview-body:not(.is-wechat-wrapper) .markdown-body :deep(.footnote-backref) {
-  color: var(--accent-color, #60a5fa) !important;
+  color: var(--accent-color, var(--brand-primary-light, #C9F2F6)) !important;
 }
 
 .markdown-body :deep(:not(pre) > code) {

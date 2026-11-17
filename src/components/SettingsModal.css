@@ -840,9 +840,9 @@
 }
 
 .storage-provider-option.is-selected {
-  border-color: #c8dcf6;
-  background: #eff6ff;
-  color: #205f9e;
+  border-color: var(--brand-primary-border, #A8E6EC);
+  background: var(--brand-subtle, #E6F7F9);
+  color: var(--brand-primary-hover, #00A9B8);
 }
 
 .storage-provider-option.is-unavailable {
@@ -1136,12 +1136,12 @@
 
 .cloud-nav-tab:hover {
   background: var(--bg-app);
-  border-color: rgba(59, 130, 246, 0.24);
+  border-color: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
 }
 
 .cloud-nav-tab.is-active {
-  background: rgba(59, 130, 246, 0.035);
-  border-color: rgba(59, 130, 246, 0.38);
+  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
+  border-color: var(--brand-primary-ring, rgba(0, 200, 215, 0.35));
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
 }
 
@@ -1268,13 +1268,13 @@
 }
 
 .tab-status-pill.is-ready {
-  background: rgba(59, 130, 246, 0.1);
-  color: #3b82f6;
-  border-color: rgba(59, 130, 246, 0.25);
+  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
+  color: var(--brand-primary-hover, #00A9B8);
+  border-color: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
 }
 
 .tab-status-pill.is-ready .pill-dot {
-  background: #3b82f6;
+  background: var(--brand-primary, #00C8D7);
   opacity: 0.9;
 }
 
@@ -1522,9 +1522,9 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: rgba(59, 130, 246, 0.08);
-  border: 1px solid rgba(59, 130, 246, 0.25);
-  color: #3b82f6;
+  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
+  border: 1px solid var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
+  color: var(--brand-primary-hover, #00A9B8);
   font-size: 11px;
   font-weight: 600;
   padding: 3px 8px;
@@ -1535,8 +1535,8 @@
 }
 
 .btn-quick-fill:hover {
-  background: rgba(59, 130, 246, 0.16);
-  border-color: #3b82f6;
+  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
+  border-color: var(--brand-primary, #00C8D7);
 }
 
 .modern-input-group {
@@ -1550,9 +1550,9 @@
 }
 
 .modern-input-group:focus-within {
-  border-color: #3b82f6;
+  border-color: var(--brand-primary, #00C8D7);
   background: var(--bg-card);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+  box-shadow: 0 0 0 3px var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
 }
 
 .input-prefix-icon {
@@ -1788,9 +1788,9 @@
 }
 
 .btn-cloud-test:hover:not(:disabled) {
-  border-color: #3b82f6;
-  color: #3b82f6;
-  background: rgba(59, 130, 246, 0.05);
+  border-color: var(--brand-primary, #00C8D7);
+  color: var(--brand-primary-hover, #00A9B8);
+  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
 }
 
 .btn-cloud-test.success {
@@ -1861,9 +1861,9 @@
 
 .cloud-result-banner.syncing,
 .cloud-result-banner.testing {
-  background: rgba(59, 130, 246, 0.08);
-  color: #2563eb;
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
+  color: var(--brand-primary-hover, #00A9B8);
+  border: 1px solid var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
 }
 
 .metrics-chips {
@@ -1908,7 +1908,7 @@
 }
 
 .ops-header:focus-visible {
-  outline: 2px solid rgba(59, 130, 246, 0.55);
+  outline: 2px solid var(--brand-primary-ring, rgba(0, 200, 215, 0.35));
   outline-offset: 3px;
   border-radius: 4px;
 }
@@ -1930,7 +1930,7 @@
 }
 
 .text-primary {
-  color: #3b82f6;
+  color: var(--brand-primary-hover, #00A9B8);
 }
 
 .ops-cards-grid {
@@ -1955,7 +1955,7 @@
 }
 
 .ops-card.card-sync:hover {
-  border-color: rgba(59, 130, 246, 0.4);
+  border-color: var(--brand-primary-ring, rgba(0, 200, 215, 0.35));
 }
 
 .ops-card.card-push:hover {
@@ -1984,8 +1984,8 @@
 }
 
 .ops-icon-wrap.icon-blue {
-  background: rgba(59, 130, 246, 0.12);
-  color: #3b82f6;
+  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
+  color: var(--brand-primary-hover, #00A9B8);
 }
 
 .ops-icon-wrap.icon-green {
@@ -2031,10 +2031,10 @@
 }
 
 .ops-action-btn.btn-blue {
-  background: #3b82f6;
+  background: var(--brand-primary, #00C8D7);
 }
 .ops-action-btn.btn-blue:hover:not(:disabled) {
-  background: #2563eb;
+  background: var(--brand-primary, #00C8D7);
 }
 
 .ops-action-btn.btn-green {
@@ -2325,7 +2325,7 @@
   border: none;
   cursor: pointer;
   color: #fff;
-  background: #2563eb;
+  background: var(--brand-primary, #00C8D7);
 }
 .credential-migrate-btn:disabled {
   opacity: 0.45;

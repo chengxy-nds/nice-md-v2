@@ -1318,7 +1318,7 @@ html.dark .sidebar-container {
   height: 30px;
   border: 0;
   border-radius: 8px;
-  color: #347fe5;
+  color: var(--brand-primary-hover, #00A9B8);
   background: #edf4ff;
   cursor: pointer;
   display: flex;
@@ -1343,7 +1343,7 @@ html.dark .sidebar-container {
 
 .create-action:hover {
   color: #fff;
-  background: #347fe5;
+  background: var(--brand-primary, #00C8D7);
 }
 
 /* 触屏：新建按钮 30px 点按热区扩到 36px，视觉图标不变。 */
@@ -1355,13 +1355,13 @@ html.dark .sidebar-container {
 }
 
 html.dark .create-action {
-  color: #93c5fd;
-  background: rgba(59, 130, 246, 0.14);
+  color: var(--brand-primary-light, #C9F2F6);
+  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
 }
 
 html.dark .create-action:hover {
   color: #fff;
-  background: #347fe5;
+  background: var(--brand-primary, #00C8D7);
 }
 
 /* ── 2. Toolbar (.toolbar) ── */
@@ -1531,7 +1531,7 @@ html.dark .create-action:hover {
   background: transparent;
   padding: 2px 6px;
   border-radius: 5px;
-  color: #3b82f6;
+  color: var(--brand-primary-hover, #00A9B8);
   font-family: inherit;
   font-size: 11px;
   font-weight: 600;
@@ -1540,7 +1540,7 @@ html.dark .create-action:hover {
 }
 
 .sync-settings-link:hover {
-  background: rgba(59, 130, 246, 0.1);
+  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
 }
 
 .sync-dropdown-item {
@@ -1573,8 +1573,8 @@ html.dark .create-action:hover {
 }
 
 .sync-item-icon.icon-blue {
-  background: rgba(59, 130, 246, 0.12);
-  color: #2563eb;
+  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
+  color: var(--brand-primary-hover, #00A9B8);
 }
 
 .sync-item-icon.icon-green {
@@ -1645,8 +1645,8 @@ html.dark .sync-trigger-btn.is-active {
 }
 
 html.dark .sync-trigger-btn.is-syncing {
-  background: rgba(59, 130, 246, 0.14);
-  color: #60a5fa;
+  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
+  color: var(--brand-primary-light, #C9F2F6);
 }
 
 html.dark .sync-trigger-btn .sync-icon {
@@ -1654,7 +1654,7 @@ html.dark .sync-trigger-btn .sync-icon {
 }
 
 html.dark .sync-trigger-btn.is-syncing .sync-icon {
-  color: #60a5fa;
+  color: var(--brand-primary-light, #C9F2F6);
 }
 
 html.dark .sync-dropdown-menu {
@@ -1742,13 +1742,13 @@ html.dark .sync-channel-name {
 html.dark .sidebar-toolbar-btn:hover,
 html.dark .icon-btn:hover {
   background: rgba(255, 255, 255, 0.08);
-  color: #60a5fa;
+  color: var(--brand-primary-light, #C9F2F6);
 }
 
 html.dark .sidebar-toolbar-btn.is-active,
 html.dark .icon-btn.is-active {
-  background: rgba(59, 130, 246, 0.14);
-  color: #60a5fa;
+  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
+  color: var(--brand-primary-light, #C9F2F6);
 }
 
 /* ── 3. Search Bar (.search) ── */
@@ -2420,8 +2420,8 @@ html.dark .trash-doc-item:hover {
 }
 
 html.dark .trash-doc-item.selected {
-  background: var(--sidebar-selected, rgba(59, 130, 246, 0.12));
-  box-shadow: inset 2px 0 0 #60a5fa, inset 0 0 0 1px rgba(96, 165, 250, 0.18);
+  background: var(--sidebar-selected, var(--brand-primary-tint, rgba(0, 200, 215, 0.15)));
+  box-shadow: inset 2px 0 0 var(--brand-primary-light, #C9F2F6), inset 0 0 0 1px rgba(96, 165, 250, 0.18);
 }
 
 .trash-doc-item .file-name {

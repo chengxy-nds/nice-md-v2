@@ -507,7 +507,7 @@ html.dark .file-row:hover {
   transform: scaleY(1);
 }
 html.dark .file-row::before {
-  background: #60a5fa;
+  background: var(--brand-primary-light, #C9F2F6);
 }
 
 /* P1-4: 选中态加左侧 2px 指示条，不再只靠背景色区分。
@@ -517,7 +517,7 @@ html.dark .file-row::before {
 }
 
 html.dark .file-row.selected {
-  background: var(--sidebar-selected, rgba(59, 130, 246, 0.12));
+  background: var(--sidebar-selected, var(--brand-primary-tint, rgba(0, 200, 215, 0.15)));
 }
 
 .file-row.is-dragging-before {
@@ -557,14 +557,14 @@ html.dark .file-row.selected {
 /* 搜索匹配高亮（只在搜索时出现，纯文本片段，无 v-html） */
 .search-match {
   background: rgba(38, 120, 232, 0.16);
-  color: #1d4ed8;
+  color: var(--brand-primary-hover, #00A9B8);
   border-radius: 3px;
   padding: 0 1px;
 }
 
 html.dark .search-match {
   background: rgba(96, 165, 250, 0.25);
-  color: #bfdbfe;
+  color: var(--brand-primary-border, #A8E6EC);
 }
 
 /* 选中只改标题颜色，不改字重：500→700 / 400→500 的字重变化会改字形
