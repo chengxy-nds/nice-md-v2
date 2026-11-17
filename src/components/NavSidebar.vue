@@ -312,40 +312,75 @@ html.dark .nav-glider {
   color: var(--text-main);
 }
 
-/* ── 左侧图标微动效（muse 官网侧边栏的感觉）：滑过时图标自己
-      倾斜一下，松开鼠标再平滑转回来；不是播一次就完的动画，
-      而是跟着悬停状态走的。 ── */
+/* ── 左侧图标微动效（和右侧栏一个做法）：滑过时图标自己动一下，
+      播一次就完，带过冲回稳的晃动才显得好玩自然；不是定住一个
+      倾斜角的 transition——定住不动又硬又容易抖。 ── */
 .nav-btn-icon {
   display: flex;
   align-items: center;
   justify-content: center;
   will-change: transform;
-  transition: transform 0.3s var(--ease-out);
 }
 
-/* 首页房子：往左歪一点 */
+/* 首页房子：蹦一下，带挤压回弹 */
+@keyframes homeHop {
+  0%, 100% { transform: translateY(0) scale(1, 1); }
+  35% { transform: translateY(-3px) scale(1.08, 0.92); }
+  65% { transform: translateY(0) scale(0.96, 1.05); }
+  85% { transform: translateY(-1px) scale(1.03, 0.98); }
+}
 .nav-rail-btn:hover .ic-home {
-  transform: rotate(-10deg) scale(1.08);
+  animation: homeHop 0.55s var(--ease-out);
 }
-/* 我的文档：往右歪一点 */
+
+/* 我的文档：纸页左右晃一下再稳住 */
+@keyframes docWiggle {
+  0%, 100% { transform: rotate(0deg); }
+  30% { transform: rotate(-12deg); }
+  60% { transform: rotate(9deg); }
+}
 .nav-rail-btn:hover .ic-docs {
-  transform: rotate(9deg) scale(1.08);
+  animation: docWiggle 0.6s var(--ease-out);
 }
-/* 模板中心：往左歪一点 */
+
+/* 模板中心：版式左右晃 */
+@keyframes templateWiggle {
+  0%, 100% { transform: rotate(0deg) scale(1, 1); }
+  30% { transform: rotate(-10deg) scale(1.08); }
+  60% { transform: rotate(8deg) scale(1.03); }
+}
 .nav-rail-btn:hover .ic-templates {
-  transform: rotate(-8deg) scale(1.08);
+  animation: templateWiggle 0.6s var(--ease-out);
 }
-/* 素材中心：往右歪一点 */
+
+/* 素材中心：照片翘一下 */
+@keyframes imageWiggle {
+  0%, 100% { transform: rotate(0deg) translateY(0); }
+  35% { transform: rotate(-14deg) translateY(-2px); }
+  70% { transform: rotate(7deg) translateY(0); }
+}
 .nav-rail-btn:hover .ic-materials {
-  transform: rotate(11deg) scale(1.08);
+  animation: imageWiggle 0.6s var(--ease-out);
 }
-/* 设置齿轮：转一下 */
+
+/* 设置齿轮：转一下，带一点过冲回稳 */
+@keyframes gearSpin {
+  0% { transform: rotate(0deg); }
+  60% { transform: rotate(100deg); }
+  100% { transform: rotate(90deg); }
+}
 .nav-rail-btn:hover .ic-settings {
-  transform: rotate(90deg);
+  animation: gearSpin 0.6s var(--ease-out);
 }
-/* 发布火箭：往上飞一点 */
+
+/* 发布火箭：向上飞一下 */
+@keyframes rocketFly {
+  0%, 100% { transform: translate(0, 0) rotate(0deg); }
+  35% { transform: translate(2px, -3px) rotate(-14deg); }
+  70% { transform: translate(-1px, 1px) rotate(4deg); }
+}
 .nav-rail-btn:hover .ic-launch {
-  transform: rotate(-14deg) translate(1px, -2px) scale(1.08);
+  animation: rocketFly 0.65s var(--ease-out);
 }
 
 /* ── 文字提示：滑过图标，右边浮出名字 ── */
