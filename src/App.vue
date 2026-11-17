@@ -201,6 +201,18 @@ onMounted(() => {
     tabGliderObserver.observe(tabsScrollRef.value);
   }
   window.addEventListener('resize', repositionTabGlider);
+
+  // 预加载素材中心 / 模版中心的分包：等主线程空闲时在后台下载，
+  // 第一次点进来不用等下载。Vite 会对同一个模块去重，不会重复加载。
+  const preloadCenters = () => {
+    import('./components/MaterialCenter.vue').catch(() => {});
+    import('./components/TemplateCenter.vue').catch(() => {});
+  };
+  if (typeof window.requestIdleCallback === 'function') {
+    window.requestIdleCallback(preloadCenters, { timeout: 3000 });
+  } else {
+    setTimeout(preloadCenters, 1500);
+  }
 });
 
 onUnmounted(() => {
