@@ -40,7 +40,7 @@ import {
   loadGroups, saveGroups,
   loadActiveDocId, saveActiveDocId,
   loadOpenTabs, hasPersistedOpenTabs, saveOpenTabs,
-  loadSidebarVisible, saveSidebarVisible, loadSidebarWide, saveSidebarWide,
+  loadSidebarVisible, saveSidebarVisible,
   generateId
 } from './utils/docStorage';
 import {
@@ -111,9 +111,6 @@ const activeDocId = ref(null);
 const openTabIds = ref([]);
 const tabsScrollRef = ref(null);
 const sidebarVisible = ref(true);
-// 宽 / 窄模式：默认宽栏（整栏）。宽栏时图标栏藏起来，Sidebar 自己带导航；
-// 窄栏时图标栏常驻，Sidebar 只当文档列表弹出层，挨着图标栏出现。
-const isSidebarWide = ref(true);
 
 const activeDocument = computed(() =>
   documents.value.find(d => d.id === activeDocId.value)
@@ -2516,16 +2513,7 @@ const toggleMobileSidebar = () => {
 // 的开关一直都在那儿，也会持久化）。
 const closeSidebarList = () => {
   mobileSidebarOpen.value = false;
-  // × 只关文档面板，不动导航栏的宽窄。
   if (!isNarrowDrawer.value) sidebarVisible.value = false;
-};
-
-// 宽 / 窄切换（专用按钮）：宽栏 → 收窄成图标栏，同时把文档区域挨着图标栏弹出来；
-// 窄栏 → 变回宽整栏。
-const toggleSidebarWide = () => {
-  isSidebarWide.value = !isSidebarWide.value;
-  saveSidebarWide(isSidebarWide.value);
-  if (!isSidebarWide.value) sidebarVisible.value = true;
 };
 
 const sidebarRef = ref(null);
@@ -2553,7 +2541,6 @@ onMounted(async () => {
   documents.value = loadDocuments();
   groups.value = loadGroups();
   sidebarVisible.value = loadSidebarVisible();
-  isSidebarWide.value = loadSidebarWide();
 
   // 1.5 Sanitize legacy auto-generated h1 background from document customStyles
   let docModified = false;
@@ -2833,15 +2820,12 @@ watch(customStyles, () => {
         <div class="app-left">
           <NavSidebar
             :currentView="currentView"
-            :wide="isSidebarWide"
             :docsOpen="sidebarVisible"
             @go-home="currentView = 'home'"
             @open-templates="currentView = 'templates'"
             @open-materials="currentView = 'materials'"
             @open-settings="openSettings()"
             @open-launchpad="isLaunchpadOpen = true"
-            @create-doc="(groupId) => { handleCreateDoc(groupId); currentView = 'editor'; }"
-            @toggle-wide="toggleSidebarWide"
             @toggle-docs="sidebarVisible = !sidebarVisible"
           />
         </div>
