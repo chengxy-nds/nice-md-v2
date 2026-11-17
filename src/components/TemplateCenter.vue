@@ -185,22 +185,20 @@ async function handleElementClick(sectionName) {
     <div class="tc-glow tc-glow-a"></div>
     <div class="tc-glow tc-glow-b"></div>
 
-    <!-- Top Header -->
+    <!-- Top Header：CapCut 模板页式横幅（与素材中心同一套） -->
     <header class="tc-header">
-      <div class="tc-header-left">
-        <button class="tc-back-btn" @click="emit('back-to-editor')">
-          <ArrowLeft size="15" />
-          <span>返回编辑器</span>
-        </button>
-        <span class="tc-divider"></span>
-        <div class="tc-title-group">
-          <span class="tc-title-badge">
-            <Sparkles size="14" />
-          </span>
-          <h1 class="tc-title">主题画廊</h1>
-          <span class="tc-count">{{ filteredThemes.length }} 个主题</span>
-        </div>
+      <button class="tc-back-btn" @click="emit('back-to-editor')">
+        <ArrowLeft size="15" />
+        <span>返回编辑器</span>
+      </button>
+      <div class="tc-title-group">
+        <span class="tc-title-badge">
+          <Sparkles size="14" />
+        </span>
+        <h1 class="tc-title">主题画廊</h1>
+        <span class="tc-count">{{ filteredThemes.length }} 个主题</span>
       </div>
+      <p class="tc-desc">精选排版主题，点一个看看效果，喜欢就应用到文章上。</p>
 
       <div class="tc-search-box">
         <Search size="14" class="tc-search-icon" />
@@ -355,23 +353,21 @@ async function handleElementClick(sectionName) {
 }
 
 /* ── Header (高度 48px，扁平紧凑) ── */
+/* Header：CapCut 模板页式横幅（与素材中心同一套渐变，圆角 12px）。 */
 .tc-header {
   position: relative;
   z-index: 2;
-  height: 3.25rem;
-  padding: 0 1.25rem;
-  background: var(--bg-card, #FFFFFF);
-  border-bottom: 1px solid var(--border-color, #EDEDED);
+  margin: 16px 24px 0;
+  padding: 20px 28px;
+  background: linear-gradient(90deg, #9DC9FF 0%, #B2CBFE 20%, #C8CEFD 40%, #D6D0FC 55%, #E4D2FB 70%, #EAD8FB 85%, #F9E6F9 100%);
+  border: none;
+  border-radius: 12px;
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 10px;
   flex-shrink: 0;
-}
-
-.tc-header-left {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
 }
 
 .tc-back-btn {
@@ -379,11 +375,11 @@ async function handleElementClick(sectionName) {
   align-items: center;
   gap: 0.375rem;
   height: 2rem;
-  padding: 0 0.75rem;
+  padding: 0 0.75rem 0 0;
   border-radius: 6px;
-  border: 1px solid var(--border-color, #EDEDED);
-  background: var(--bg-card, #ffffff);
-  color: var(--text-main, #222222);
+  border: 1px solid transparent;
+  background: transparent;
+  color: #090C14;
   font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
@@ -392,14 +388,8 @@ async function handleElementClick(sectionName) {
 }
 
 .tc-back-btn:hover {
-  background: #F4F4F5;
-  color: #000000;
-}
-
-.tc-divider {
-  width: 1px;
-  height: 1.125rem;
-  background: var(--border-color, #EDEDED);
+  background: rgba(255, 255, 255, 0.5);
+  color: #090C14;
 }
 
 .tc-title-group {
@@ -427,18 +417,26 @@ async function handleElementClick(sectionName) {
 }
 
 .tc-title {
-  font-size: 0.95rem;
+  font-size: 1.625rem;
   font-weight: 700;
   margin: 0;
-  color: var(--text-main, #222222);
+  color: #090C14;
   letter-spacing: -0.01em;
   line-height: 1.2;
 }
 
+.tc-desc {
+  margin: 0;
+  color: #3B4E6B;
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
 .tc-count {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 500;
-  color: #718096;
+  color: #3B4E6B;
   background: transparent;
   padding: 0 0.125rem;
 }
@@ -511,7 +509,7 @@ async function handleElementClick(sectionName) {
   flex: 1;
   display: flex;
   gap: 0.875rem;
-  padding: 0.875rem 1rem 1rem;
+  padding: 1rem 1.5rem 1.5rem;
   overflow: hidden;
   min-height: 0;
 }
@@ -523,10 +521,10 @@ async function handleElementClick(sectionName) {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
-  padding: 0.625rem;
+  padding: 0.75rem;
   background: var(--bg-card, #ffffff);
   border: 1px solid var(--border-color, #EDEDED);
-  border-radius: 6px;
+  border-radius: 12px;
 }
 
 .tc-sidebar::-webkit-scrollbar {
@@ -574,9 +572,9 @@ async function handleElementClick(sectionName) {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.5rem 0.5rem;
-  border-radius: 5px;
+  gap: 0.75rem;
+  padding: 0.625rem 0.75rem;
+  border-radius: 8px;
   cursor: pointer;
   background: transparent;
   border: 1px solid transparent;
@@ -712,7 +710,7 @@ async function handleElementClick(sectionName) {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  border-radius: 6px;
+  border-radius: 12px;
   background: #ffffff;
   border: 1px solid var(--border-color, #EDEDED);
   overflow: hidden;
@@ -902,10 +900,6 @@ async function handleElementClick(sectionName) {
     gap: 0.5rem;
   }
 
-  .tc-header-left {
-    min-width: 0;
-  }
-
   .tc-search-box {
     width: 100%;
   }
@@ -973,7 +967,16 @@ async function handleElementClick(sectionName) {
 :global(html.dark) .tc-header,
 :global(html[data-color-mode="dark"]) .tc-header {
   background: var(--bg-card, #1e1e1e);
-  border-bottom-color: var(--border-color, #2d2d2d);
+}
+
+:global(html.dark) .tc-title,
+:global(html[data-color-mode="dark"]) .tc-title {
+  color: var(--text-main, #cccccc);
+}
+
+:global(html.dark) .tc-desc,
+:global(html[data-color-mode="dark"]) .tc-desc {
+  color: #9aa8ba;
 }
 
 :global(html.dark) .tc-title-badge,
