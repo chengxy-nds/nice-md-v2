@@ -1321,7 +1321,10 @@ html.dark .sidebar-container {
 }
 
 /* Compact document creation action in the toolbar */
-/* 新建文档大按钮：CapCut 式主操作，全宽青色渐变 pill */
+/* 新建文档大按钮：对标 CapCut「Create new」——
+   不是全圆 pill，而是 10px 圆角矩形；字用深色（CapCut 在亮青底上用黑字，
+   白字在亮青上对比度低、看着发飘）；再加一层很淡的青色阴影托起来，
+   不然就是一块平贴的色块。 */
 .sidebar-create-btn {
   display: flex;
   align-items: center;
@@ -1331,19 +1334,21 @@ html.dark .sidebar-container {
   height: 40px;
   margin: 12px 12px 8px;
   border: none;
-  border-radius: var(--btn-primary-radius, 999px);
+  border-radius: 10px;
   background: var(--btn-primary-bg);
-  color: #ffffff;
+  box-shadow: 0 2px 10px rgba(0, 200, 215, 0.28);
+  color: var(--text-main, #0F172A);
   font-size: 13px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
   flex-shrink: 0;
-  transition: filter 0.2s var(--ease-glide), transform 0.12s var(--ease-glide);
+  transition: filter 0.2s var(--ease-glide), transform 0.12s var(--ease-glide), box-shadow 0.2s var(--ease-glide);
 }
 
 .sidebar-create-btn:hover {
-  filter: brightness(1.06);
+  filter: brightness(1.04);
+  box-shadow: 0 4px 14px rgba(0, 200, 215, 0.32);
 }
 
 .sidebar-create-btn:active {
