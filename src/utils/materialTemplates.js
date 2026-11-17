@@ -6,7 +6,7 @@
  * which the statically loaded MaterialPopup needs as well.
  * Split out of the former materialLibrary.js. */
 
-import { buildTripleLikeFooter, buildQrFollowFooter, buildAuthorFooter, buildSocialMatrixFooter } from './materialBuilders';
+import { buildTripleLikeFooter, buildQrFollowFooter, buildAuthorFooter, buildSocialMatrixFooter, buildPreviousArticlesFooter } from './materialBuilders';
 
 export const materialCategories = [
   { id: 'all', name: '全部素材' },
@@ -2236,6 +2236,18 @@ export const footerWidgetTemplates = [
       const author = options.author || '程序员小富';
       const desc = options.desc || '专注分享后端架构、实用工具与创作经验。';
       return buildAuthorFooter(author, desc);
+    }
+  },
+  {
+    id: 'f-previous-articles',
+    name: '往期文章推荐',
+    description: '文末往期文章列表，标题和链接替换后即用，适合文章结尾引导阅读',
+    tag: '往期推荐',
+    styleCategory: 'minimal',
+    previewHtml: `<div style="padding:6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:4px;font-size:11px;color:#334155;">往期推荐　往期文章标题 1 →</div>`,
+    render: (options = {}) => {
+      const title = options.title || '往期推荐';
+      return buildPreviousArticlesFooter(title);
     }
   }
 ];

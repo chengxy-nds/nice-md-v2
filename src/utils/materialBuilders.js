@@ -60,3 +60,23 @@ export const buildSocialMatrixFooter = () => `<section style="margin: 28px 0 16p
     微信公众号<span style="color: #a0aec0;">&nbsp; · &nbsp;</span>知乎专栏<span style="color: #a0aec0;">&nbsp; · &nbsp;</span>稀土掘金<span style="color: #a0aec0;">&nbsp; · &nbsp;</span>GitHub
   </div>
 </section>`;
+
+export const buildPreviousArticlesFooter = (
+  title = '往期推荐',
+  items = [
+    { title: '往期文章标题 1', href: '#' },
+    { title: '往期文章标题 2', href: '#' },
+    { title: '往期文章标题 3', href: '#' },
+  ],
+) => `<section style="margin: 28px 0 16px; padding: 18px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 6px; box-sizing: border-box;" data-material="true">
+  <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 12px;">
+    <div style="color: #1e293b; font-size: 16px; font-weight: 600; line-height: 1.4;">${title}</div>
+    <a href="#" style="color: #2563eb; font-size: 12px; font-weight: 600; white-space: nowrap; text-decoration: none;">查看全部&nbsp;→</a>
+  </div>
+  <div style="margin-top: 12px; border-top: 1px solid #e2e8f0;">
+${items.map((item, i) => `    <a href="${item.href}" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0;${i > 0 ? ' border-top: 1px solid #e2e8f0;' : ''} color: #1e293b; font-size: 14px; line-height: 1.5; text-decoration: none; box-sizing: border-box;">
+      <span>${item.title}</span>
+      <span style="color: #2563eb; font-size: 13px; font-weight: 600; white-space: nowrap;">→</span>
+    </a>`).join('\n')}
+  </div>
+</section>`;

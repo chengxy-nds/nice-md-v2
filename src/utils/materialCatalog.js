@@ -6,7 +6,7 @@
  * statically loaded MaterialPopup needs it too. Split out of the former
  * materialLibrary.js. */
 
-import { buildTripleLikeFooter, buildQrFollowFooter, buildAuthorFooter, buildSocialMatrixFooter } from './materialBuilders';
+import { buildTripleLikeFooter, buildQrFollowFooter, buildAuthorFooter, buildSocialMatrixFooter, buildPreviousArticlesFooter } from './materialBuilders';
 
 export const materials = [
   // ── 背景底纹精选素材 (纯底纹展示) ──
@@ -724,6 +724,16 @@ export const materials = [
     description: '作者简介与公众号关注入口，适合作为文章署名',
     tags: ['关注卡片', '作者介绍', 'CTA'],
     html: buildAuthorFooter()
+  },
+  {
+    id: 'f-previous-articles',
+    category: 'footer_widgets',
+    tag: '往期推荐',
+    styleCategory: 'minimal',
+    title: '往期文章推荐',
+    description: '文末往期文章列表，标题和链接替换后即用，适合文章结尾引导阅读',
+    tags: ['往期推荐', '相关文章', '文末', '精选爆款'],
+    html: buildPreviousArticlesFooter()
   },
   {
     id: "h-oriental-seal",
