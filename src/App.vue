@@ -3039,25 +3039,6 @@ watch(customStyles, () => {
 
               <span class="toolbar-sep hide-on-narrow"></span>
 
-              <!-- 专注模式：收起侧边栏与预览，只留编辑区；再点一次退出。
-                   按钮本身有 is-active 按压态（图标 Maximize/Minimize 切换 +
-                   .btn-icon.is-active 背景色），不只是文字切换。 -->
-              <div class="toolbar-btn-group hide-on-narrow">
-                <button
-                  @click="toggleFocusMode"
-                  class="btn-icon"
-                  :class="{ 'is-active': focusMode }"
-                  :title="focusMode ? '退出专注模式' : '专注模式（隐藏侧边栏与预览）'"
-                  :aria-label="focusMode ? '退出专注模式' : '进入专注模式'"
-                  :aria-pressed="focusMode"
-                >
-                  <Minimize v-if="focusMode" size="14.5" />
-                  <Maximize v-else size="14.5" />
-                </button>
-              </div>
-
-              <span class="toolbar-sep hide-on-narrow"></span>
-
               <!-- Export & Clean Group：复制和清空在窄屏下放回行内（见 .toolbar-clear-btn
                    的 order），导出按钮本身仍只在“···”菜单里，容器单独藏起来。 -->
               <div class="toolbar-btn-group">
