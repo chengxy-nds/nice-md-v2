@@ -152,7 +152,7 @@
 .platform-tab-btn.is-active,
 .publishing-platform-tab.is-active {
   color: var(--accent-color);
-  background: var(--accent-bg);
+  background: var(--sidebar-selected, #F0F2F5);
   border-color: transparent;
   box-shadow: none;
 }
@@ -1988,16 +1988,6 @@
   color: var(--brand-primary-hover, #00A9B8);
 }
 
-.ops-icon-wrap.icon-green {
-  background: rgba(16, 185, 129, 0.12);
-  color: #10b981;
-}
-
-.ops-icon-wrap.icon-purple {
-  background: rgba(139, 92, 246, 0.12);
-  color: #8b5cf6;
-}
-
 .ops-card-title {
   font-size: 12px;
   font-weight: 700;
@@ -2028,27 +2018,11 @@
   transition: all 0.2s ease;
   font-family: inherit;
   color: #ffffff;
-}
-
-.ops-action-btn.btn-blue {
-  background: var(--brand-primary, #00C8D7);
-}
-.ops-action-btn.btn-blue:hover:not(:disabled) {
   background: var(--brand-primary, #00C8D7);
 }
 
-.ops-action-btn.btn-green {
-  background: #10b981;
-}
-.ops-action-btn.btn-green:hover:not(:disabled) {
-  background: #059669;
-}
-
-.ops-action-btn.btn-purple {
-  background: #8b5cf6;
-}
-.ops-action-btn.btn-purple:hover:not(:disabled) {
-  background: #7c3aed;
+.ops-action-btn:hover:not(:disabled) {
+  background: var(--brand-primary-hover, #00A9B8);
 }
 
 .ops-action-btn:disabled {

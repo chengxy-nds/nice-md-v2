@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed } from 'vue';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
 import {
   Search,
   Check,
@@ -74,6 +74,53 @@ const filteredMaterials = computed(() => {
 
 const isFiltered = computed(() => {
   return activeCategory.value !== 'all' || activeStyle.value !== 'all' || !!searchQuery.value.trim();
+});
+
+// ── 分批渲染：一次只画前 20 张卡片，滑到底再加载 20 张 ──
+// 111 个素材全量渲染时，每张卡片都要过一遍 DOMPurify 消毒再排版，
+// 主线程一次扛不住，手机上点进来就卡。先画 20 张，剩下的随滚动补。
+const PAGE_SIZE = 20;
+const visibleCount = ref(PAGE_SIZE);
+const visibleMaterials = computed(() => filteredMaterials.value.slice(0, visibleCount.value));
+
+// 预览 HTML 消毒结果缓存：素材是静态列表，消毒一次就够了，
+// 之后每次渲染直接取缓存，不用重复跑 DOMPurify。
+const sanitizedHtmlCache = new Map();
+function getSanitizedHtml(mat) {
+  let html = sanitizedHtmlCache.get(mat.id);
+  if (html === undefined) {
+    html = sanitizeWeChatHtml(mat.html);
+    sanitizedHtmlCache.set(mat.id, html);
+  }
+  return html;
+}
+
+// 换分类 / 换风格 / 改搜索时回到第一批。
+watch(filteredMaterials, () => {
+  visibleCount.value = PAGE_SIZE;
+});
+
+// 滑到底自动加载下一批：哨兵元素进入视口（提前 200px）就补 20 张。
+const loadMoreSentinel = ref(null);
+let loadMoreObserver = null;
+function setupLoadMoreObserver() {
+  if (loadMoreObserver) {
+    loadMoreObserver.disconnect();
+    loadMoreObserver = null;
+  }
+  const el = loadMoreSentinel.value;
+  if (!el) return;
+  loadMoreObserver = new IntersectionObserver((entries) => {
+    if (entries.some(e => e.isIntersecting) && visibleCount.value < filteredMaterials.value.length) {
+      visibleCount.value = Math.min(visibleCount.value + PAGE_SIZE, filteredMaterials.value.length);
+    }
+  }, { rootMargin: '200px' });
+  loadMoreObserver.observe(el);
+}
+watch(loadMoreSentinel, setupLoadMoreObserver);
+onMounted(setupLoadMoreObserver);
+onUnmounted(() => {
+  if (loadMoreObserver) loadMoreObserver.disconnect();
 });
 
 function resetFilters() {
@@ -225,7 +272,7 @@ function handleApplyBackground(mat) {
       <!-- Materials Grid -->
       <div class="mc-grid">
         <div
-          v-for="(mat, matIndex) in filteredMaterials"
+          v-for="(mat, matIndex) in visibleMaterials"
           :key="mat.id"
           class="mc-card nx-stagger-item"
           :style="{ '--nx-i': matIndex }"
@@ -241,7 +288,7 @@ function handleApplyBackground(mat) {
             @keydown.space.prevent="openPreview(mat)"
           >
             <div class="mc-render-stage">
-              <div class="mc-render-paper" v-html="sanitizeWeChatHtml(mat.html)"></div>
+              <div class="mc-render-paper" v-html="getSanitizedHtml(mat)"></div>
             </div>
             <span class="mc-preview-trigger" aria-hidden="true">
               <Eye size="13" />
@@ -289,6 +336,15 @@ function handleApplyBackground(mat) {
             <span>清空筛选条件</span>
           </button>
         </div>
+
+        <!-- 分批加载哨兵：滑到底自动补 20 张，并显示已加载进度 -->
+        <div
+          v-if="visibleMaterials.length < filteredMaterials.length"
+          ref="loadMoreSentinel"
+          class="mc-load-more"
+        >
+          <span>已显示 {{ visibleMaterials.length }} / {{ filteredMaterials.length }} 个素材，继续下滑加载更多</span>
+        </div>
       </div>
     </main>
 
@@ -322,7 +378,7 @@ function handleApplyBackground(mat) {
             </button>
           </header>
           <div class="mc-preview-modal-content">
-            <div class="mc-preview-modal-render" v-html="sanitizeWeChatHtml(selectedPreview.html)"></div>
+            <div class="mc-preview-modal-render" v-html="getSanitizedHtml(selectedPreview)"></div>
           </div>
           <footer class="mc-preview-modal-footer">
             <button
@@ -1125,6 +1181,16 @@ function handleApplyBackground(mat) {
   justify-content: center;
   color: var(--text-muted, #71717A);
   font-size: 0.8125rem;
+}
+
+/* 分批加载哨兵：占满网格一行，显示已加载进度 */
+.mc-load-more {
+  grid-column: 1 / -1;
+  padding: 1rem 0 0.5rem;
+  display: flex;
+  justify-content: center;
+  color: var(--text-muted, #71717A);
+  font-size: 0.75rem;
 }
 
 .mc-empty-icon {

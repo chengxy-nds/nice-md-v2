@@ -1910,7 +1910,7 @@ const supportsSilent = (id) => {
                   <p class="ops-card-desc">合并本地和云端的最新内容。</p>
                   <button
                     @click="handleTwoWaySyncProvider(cloudProvider)"
-                    class="ops-action-btn btn-blue"
+                    class="ops-action-btn"
                     :disabled="currentCloudPanel.syncResult === 'syncing' || !currentCloudPanel.hasCred"
                   >
                     <RefreshCw size="13" :class="{ 'animate-spin': currentCloudPanel.syncResult === 'syncing' }" />
@@ -1920,7 +1920,7 @@ const supportsSilent = (id) => {
 
                 <div class="ops-card card-push">
                   <div class="ops-card-top">
-                    <div class="ops-icon-wrap icon-green">
+                    <div class="ops-icon-wrap icon-blue">
                       <FolderUp size="16" />
                     </div>
                     <div class="ops-card-title">{{ cloudProvider === 'github' ? '推送到仓库' : '备份到云端' }}</div>
@@ -1928,7 +1928,7 @@ const supportsSilent = (id) => {
                   <p class="ops-card-desc">{{ currentCloudPanel.pushDesc }}</p>
                   <button
                     @click="handlePushCloudProvider(cloudProvider)"
-                    class="ops-action-btn btn-green"
+                    class="ops-action-btn"
                     :disabled="currentCloudPanel.syncResult === 'syncing' || !currentCloudPanel.hasCred"
                   >
                     <FolderUp size="13" />
@@ -1938,7 +1938,7 @@ const supportsSilent = (id) => {
 
                 <div class="ops-card card-pull">
                   <div class="ops-card-top">
-                    <div class="ops-icon-wrap icon-purple">
+                    <div class="ops-icon-wrap icon-blue">
                       <FolderDown size="16" />
                     </div>
                     <div class="ops-card-title">{{ cloudProvider === 'github' ? '从仓库拉取' : '从云端恢复' }}</div>
@@ -1946,7 +1946,7 @@ const supportsSilent = (id) => {
                   <p class="ops-card-desc">{{ currentCloudPanel.pullDesc }}</p>
                   <button
                     @click="handlePullCloudProvider(cloudProvider)"
-                    class="ops-action-btn btn-purple"
+                    class="ops-action-btn"
                     :disabled="currentCloudPanel.syncResult === 'syncing' || !currentCloudPanel.hasCred"
                   >
                     <FolderDown size="13" />
