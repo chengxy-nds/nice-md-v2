@@ -445,11 +445,11 @@ onUnmounted(() => {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 7px 9px;
+  gap: 12px;
+  padding: 10px 12px;
   min-height: 52px;
-  margin: 2px 0;
-  border-radius: 10px;
+  margin: 4px 0;
+  border-radius: 12px;
   cursor: pointer;
   transition: background .25s var(--ease-spring),
               transform .25s var(--ease-spring),

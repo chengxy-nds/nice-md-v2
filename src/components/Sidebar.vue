@@ -801,6 +801,17 @@ function resetSidebarWidth() {
       @dblclick="resetSidebarWidth"
       title="拖拽调整侧边栏宽度，双击恢复默认"
     ></div>
+    <!-- 新建文档：CapCut 式大按钮，主操作 -->
+    <button
+      type="button"
+      class="sidebar-create-btn"
+      title="新建文档"
+      aria-label="新建文档"
+      @click="handleCreateRootDoc"
+    >
+      <Plus size="15" stroke-width="2.4" />
+      <span>新建文档</span>
+    </button>
     <!-- Toolbar: 云端同步与文档操作 -->
     <div class="toolbar">
       <div class="toolbar-meta">
@@ -859,9 +870,6 @@ function resetSidebarWidth() {
         </div>
       </div>
       <div class="toolbar-actions">
-        <button class="create-action" @click="handleCreateRootDoc" title="新建文档" aria-label="新建文档">
-          <Plus size="16" stroke-width="2.2" />
-        </button>
         <button
           v-if="groups.length > 0"
           class="sidebar-toolbar-btn"
@@ -1313,55 +1321,33 @@ html.dark .sidebar-container {
 }
 
 /* Compact document creation action in the toolbar */
-.create-action {
-  width: 30px;
-  height: 30px;
-  border: 0;
-  border-radius: 8px;
-  color: var(--brand-primary-hover, #00A9B8);
-  background: #edf4ff;
-  cursor: pointer;
+/* 新建文档大按钮：CapCut 式主操作，全宽青色渐变 pill */
+.sidebar-create-btn {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 6px;
+  width: calc(100% - 24px);
+  height: 40px;
+  margin: 12px 12px 8px;
+  border: none;
+  border-radius: var(--btn-primary-radius, 999px);
+  background: var(--btn-primary-bg);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.2s var(--ease-glide), color 0.2s var(--ease-glide), transform 0.12s var(--ease-glide);
+  transition: filter 0.2s var(--ease-glide), transform 0.12s var(--ease-glide);
 }
 
-.create-action svg {
-  transition: transform 0.45s var(--ease-spring);
-  transform-origin: center;
+.sidebar-create-btn:hover {
+  filter: brightness(1.06);
 }
 
-.create-action:hover svg {
-  transform: rotate(90deg);
-}
-
-.create-action:active {
-  transform: scale(0.93);
-}
-
-.create-action:hover {
-  color: #fff;
-  background: var(--brand-primary, #00C8D7);
-}
-
-/* 触屏：新建按钮 30px 点按热区扩到 36px，视觉图标不变。 */
-@media (hover: none) {
-  .create-action {
-    width: 36px;
-    height: 36px;
-  }
-}
-
-html.dark .create-action {
-  color: var(--brand-primary-light, #C9F2F6);
-  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
-}
-
-html.dark .create-action:hover {
-  color: #fff;
-  background: var(--brand-primary, #00C8D7);
+.sidebar-create-btn:active {
+  transform: scale(0.98);
 }
 
 /* ── 2. Toolbar (.toolbar) ── */
@@ -1753,13 +1739,13 @@ html.dark .icon-btn.is-active {
 
 /* ── 3. Search Bar (.search) ── */
 .search {
-  height: 38px;
+  height: 40px;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 10px;
-  border: 1px solid #dfe7f1;
-  border-radius: 11px;
+  padding: 0 12px;
+  border: 1px solid var(--border-color, #E8EAED);
+  border-radius: 12px;
   background: #ffffff;
   box-shadow: none;
   margin-bottom: 10px;
@@ -2125,7 +2111,6 @@ html.dark .count {
 }
 
 /* E. 按钮按压 scale(.97)，只给工具栏/操作按钮，不给文字链接 */
-.create-action:active,
 .sidebar-toolbar-btn:active,
 .icon-btn:active,
 .mini-btn:active,
@@ -2554,7 +2539,6 @@ html.dark .trash-doc-item .meta {
     gap: 2px;
   }
 
-  .create-action,
   .sidebar-toolbar-btn,
   .icon-btn {
     width: 28px;
