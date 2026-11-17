@@ -2233,7 +2233,6 @@ html.dark .mini-btn:hover {
   visibility: hidden;
   margin-left: 16px;
   padding-left: 9px;
-  border-left: 1px solid #e4ebf4;
   min-height: 0;
   transition: grid-template-rows 0.36s var(--ease-glide), visibility 0s linear 0.36s;
 }
@@ -2248,10 +2247,6 @@ html.dark .mini-btn:hover {
 .children-inner {
   overflow: hidden;
   min-height: 0;
-}
-
-html.dark .children {
-  border-left-color: rgba(255, 255, 255, 0.1);
 }
 
 .flat-doc-list {

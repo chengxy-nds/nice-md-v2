@@ -1,14 +1,14 @@
 <!-- 左侧导航栏：只有窄图标列，不再有宽栏。
      顶部是放大的 logo（BrandLogo 32px），点一下回首页。
-     图标滑过有效果：一个液体滑块（nav-glider）在图标之间滑动，
-     跟原来 IconBar 的效果一样；每个图标滑过还出文字提示。 -->
+     图标滑过有效果：灰色圆片跟右侧栏一样，只在滑过时出现，
+     滑到哪个图标就到哪个图标后面，鼠标离开就消失，不常驻在
+     当前选中的图标上；每个图标滑过还出文字提示。 -->
 <template>
   <div class="nav-sidebar" ref="railRef" @mouseleave="handleRailMouseLeave">
     <div ref="gliderRef" class="nav-glider"></div>
 
     <!-- Brand Logo：放大到 32px，点一下回首页 -->
     <div
-      ref="brandBtnRef"
       class="nav-brand nav-target"
       data-key="brand"
       @click="emit('go-home')"
@@ -27,7 +27,7 @@
 
     <div class="nav-rail">
       <button
-        type="button" ref="homeBtnRef" class="nav-rail-btn nav-target" data-key="home"
+        type="button" class="nav-rail-btn nav-target" data-key="home"
         :class="{ 'is-active': currentView === 'home' }"
         title="首页" aria-label="首页"
         @click="emit('go-home')"
@@ -38,7 +38,7 @@
       </button>
       <!-- 文档：点一下，文档列表挨着图标栏弹出 -->
       <button
-        type="button" ref="docsBtnRef" class="nav-rail-btn nav-target" data-key="docs"
+        type="button" class="nav-rail-btn nav-target" data-key="docs"
         :class="{ 'is-active': docsOpen }"
         title="我的文档" aria-label="我的文档"
         @click="emit('toggle-docs')"
@@ -51,7 +51,7 @@
         </div>
       </button>
       <button
-        type="button" ref="templatesBtnRef" class="nav-rail-btn nav-target" data-key="templates"
+        type="button" class="nav-rail-btn nav-target" data-key="templates"
         :class="{ 'is-active': currentView === 'templates' }"
         title="模板中心" aria-label="模板中心"
         @click="emit('open-templates')"
@@ -61,7 +61,7 @@
         <div class="nav-tooltip" role="tooltip"><span class="nav-tooltip-label">模板中心</span></div>
       </button>
       <button
-        type="button" ref="materialsBtnRef" class="nav-rail-btn nav-target" data-key="materials"
+        type="button" class="nav-rail-btn nav-target" data-key="materials"
         :class="{ 'is-active': currentView === 'materials' }"
         title="素材中心" aria-label="素材中心"
         @click="emit('open-materials')"
@@ -73,7 +73,7 @@
     </div>
     <div class="nav-rail-bottom">
       <button
-        type="button" ref="settingsBtnRef" class="nav-rail-btn nav-target" data-key="settings"
+        type="button" class="nav-rail-btn nav-target" data-key="settings"
         title="设置" aria-label="设置"
         @click="emit('open-settings')"
         @mouseenter="onButtonHover" @focus="onButtonHover"
@@ -82,7 +82,7 @@
         <div class="nav-tooltip" role="tooltip"><span class="nav-tooltip-label">设置</span></div>
       </button>
       <button
-        type="button" ref="launchBtnRef" class="nav-rail-btn nav-target" data-key="launch"
+        type="button" class="nav-rail-btn nav-target" data-key="launch"
         title="发布" aria-label="发布"
         @click="emit('open-launchpad')"
         @mouseenter="onButtonHover" @focus="onButtonHover"
@@ -95,7 +95,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
+import { ref, onUnmounted } from 'vue';
 import {
   House,
   FileText,
@@ -106,7 +106,7 @@ import {
 } from '@lucide/vue';
 import BrandLogo from './BrandLogo.vue';
 
-const props = defineProps({
+defineProps({
   currentView: { type: String, default: 'editor' },
   docsOpen: { type: Boolean, default: false }
 });
@@ -116,88 +116,42 @@ const emit = defineEmits([
   'open-settings', 'open-launchpad', 'toggle-docs'
 ]);
 
-/* ── 液体滑块（从 IconBar 搬过来）：滑过哪个图标，灰色圆片就滑到哪个图标
-      后面，距离越远纵向拉得越明显，落位后弹性回缩。 ── */
+/* ── 液体滑块，和右侧栏（PreviewPanel 的 right-glider）同一个做法：
+      灰色圆片只在滑过时出现，滑到哪个图标就到哪个图标后面，
+      距离越远纵向拉得越明显，落位后回缩；鼠标离开整栏就消失，
+      不常驻在当前选中的图标上。定位是同步算的，不包 rAF，
+      滑过立刻就有反应。 ── */
 const railRef = ref(null);
 const gliderRef = ref(null);
-const brandBtnRef = ref(null);
-const homeBtnRef = ref(null);
-const docsBtnRef = ref(null);
-const templatesBtnRef = ref(null);
-const materialsBtnRef = ref(null);
-const settingsBtnRef = ref(null);
-const launchBtnRef = ref(null);
-
-const GLIDE_DURATION = 380; // ms
-let gliderRaf = 0;
-let gliderRetractRaf = 0;
-
-function applyGliderTransform(left, top, stretchY) {
-  if (!gliderRef.value) return;
-  gliderRef.value.style.transform = `translate(${left}px, ${top}px) scaleY(${stretchY})`;
-  gliderRef.value.classList.add('is-visible');
-}
+let stretchTimer = null;
 
 function moveGliderToEl(btn, stretch = true) {
   if (!btn || !gliderRef.value || !railRef.value) return;
-  cancelAnimationFrame(gliderRaf);
-  cancelAnimationFrame(gliderRetractRaf);
-  gliderRaf = requestAnimationFrame(() => {
-    if (!btn || !gliderRef.value || !railRef.value) return;
-    const barRect = railRef.value.getBoundingClientRect();
-    const btnRect = btn.getBoundingClientRect();
-    const top = btnRect.top - barRect.top;
-    const left = btnRect.left - barRect.left;
+  const barRect = railRef.value.getBoundingClientRect();
+  const btnRect = btn.getBoundingClientRect();
+  const top = btnRect.top - barRect.top;
+  const left = btnRect.left - barRect.left;
 
-    const prevY = parseFloat(gliderRef.value.dataset.y || String(top));
-    const dist = Math.abs(top - prevY);
-    gliderRef.value.dataset.y = String(top);
+  const prevY = parseFloat(gliderRef.value.dataset.y || String(top));
+  const dist = Math.abs(top - prevY);
+  gliderRef.value.dataset.y = String(top);
 
-    // 纵向物理拉伸（上限 1.16 倍）
-    const stretchY = stretch ? 1 + Math.min(dist / 650, 0.16) : 1;
-    // 和右侧栏一样：圆片尺寸跟着按钮走，保证正好盖住图标。
-    gliderRef.value.style.width = `${btnRect.width}px`;
-    gliderRef.value.style.height = `${btnRect.height}px`;
-    applyGliderTransform(left, top, stretchY);
+  // 纵向物理拉伸（上限 1.16 倍）
+  const stretchY = stretch ? 1 + Math.min(dist / 500, 0.16) : 1;
 
-    if (stretchY > 1.01) {
-      const start = performance.now();
-      const tick = (now) => {
-        if (!gliderRef.value) return;
-        if (now - start >= GLIDE_DURATION * 0.55) {
-          applyGliderTransform(left, top, 1);
-          return;
-        }
-        gliderRetractRaf = requestAnimationFrame(tick);
-      };
-      gliderRetractRaf = requestAnimationFrame(tick);
-    }
-  });
-}
+  // 圆片尺寸跟着按钮走，保证正好盖住图标。
+  gliderRef.value.style.width = `${btnRect.width}px`;
+  gliderRef.value.style.height = `${btnRect.height}px`;
+  gliderRef.value.style.transform = `translate(${left}px, ${top}px) scaleY(${stretchY})`;
+  gliderRef.value.classList.add('is-visible');
 
-function getActiveButtonEl() {
-  if (props.currentView === 'home') return homeBtnRef.value;
-  if (props.docsOpen) return docsBtnRef.value;
-  if (props.currentView === 'templates') return templatesBtnRef.value;
-  if (props.currentView === 'materials') return materialsBtnRef.value;
-  return null;
-}
-
-function repositionGlider() {
-  const activeBtn = getActiveButtonEl();
-  if (activeBtn) {
-    moveGliderToEl(activeBtn, false);
-  } else if (gliderRef.value) {
-    gliderRef.value.classList.remove('is-visible');
-  }
-}
-
-function handleRailMouseLeave() {
-  const activeBtn = getActiveButtonEl();
-  if (activeBtn) {
-    moveGliderToEl(activeBtn, true);
-  } else if (gliderRef.value) {
-    gliderRef.value.classList.remove('is-visible');
+  clearTimeout(stretchTimer);
+  if (stretchY > 1.01) {
+    stretchTimer = setTimeout(() => {
+      if (gliderRef.value) {
+        gliderRef.value.style.transform = `translate(${left}px, ${top}px) scaleY(1)`;
+      }
+    }, 380 * 0.55);
   }
 }
 
@@ -208,31 +162,14 @@ function onButtonHover(e) {
   }
 }
 
-watch([() => props.currentView, () => props.docsOpen], async () => {
-  await nextTick();
-  repositionGlider();
-});
-
-let gliderObserver = null;
-onMounted(() => {
-  nextTick(() => {
-    repositionGlider();
-  });
-  if (typeof ResizeObserver !== 'undefined' && railRef.value) {
-    gliderObserver = new ResizeObserver(() => repositionGlider());
-    gliderObserver.observe(railRef.value);
+function handleRailMouseLeave() {
+  if (gliderRef.value) {
+    gliderRef.value.classList.remove('is-visible');
   }
-  window.addEventListener('resize', repositionGlider);
-});
+}
 
 onUnmounted(() => {
-  cancelAnimationFrame(gliderRaf);
-  cancelAnimationFrame(gliderRetractRaf);
-  if (gliderObserver) {
-    gliderObserver.disconnect();
-    gliderObserver = null;
-  }
-  window.removeEventListener('resize', repositionGlider);
+  clearTimeout(stretchTimer);
 });
 </script>
 
@@ -270,7 +207,7 @@ onUnmounted(() => {
   z-index: 2;
 }
 
-/* ── 液体滑块：灰色圆片，滑到滑过的图标后面 ── */
+/* ── 液体滑块：灰色圆片，只在滑过时出现，滑到滑过的图标后面 ── */
 .nav-glider {
   position: absolute;
   top: 0;
