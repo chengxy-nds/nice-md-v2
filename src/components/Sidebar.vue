@@ -861,7 +861,7 @@ function resetSidebarWidth() {
       <div class="toolbar-actions">
         <!-- 新建文档：小按钮，放在展开文件夹按钮左侧 -->
         <button
-          class="sidebar-toolbar-btn"
+          class="sidebar-toolbar-btn is-create"
           @click="handleCreateRootDoc"
           title="新建文档"
           aria-label="新建文档"
@@ -902,7 +902,7 @@ function resetSidebarWidth() {
           <FolderPlus size="16" stroke-width="2" />
         </button>
         <button
-          class="sidebar-toolbar-btn drawer-close-btn"
+          class="sidebar-toolbar-btn drawer-close-btn is-close"
           @click="emit('close-drawer')"
           title="关闭文档列表"
           aria-label="关闭文档列表"
@@ -1481,6 +1481,8 @@ html.dark .sidebar-container {
 .sync-trigger-btn.is-menu-open {
   background: #f0f5fb;
   color: #1e293b;
+  /* 同步状态是信息区，滑过只轻微上浮，不变色、不放大。 */
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
 .sync-trigger-btn.is-configured {
@@ -1762,6 +1764,22 @@ html.dark .sync-channel-name {
 .icon-btn:hover {
   background: #f0f5fb;
   color: #00A9B8;
+  /* 中等力度：轻微放大，图标跟着亮起来。 */
+  transform: scale(1.06);
+}
+
+/* 新建文档（+号）是主操作，滑过最明显：青色底 + 深青字 + 放大。 */
+.sidebar-toolbar-btn.is-create:hover {
+  background: rgba(0, 200, 215, 0.12);
+  color: #008A99;
+  transform: scale(1.1);
+}
+
+/* 关闭 × 是收起操作，滑过最轻：中性灰底 + 深灰字，不变色、不放大。 */
+.sidebar-toolbar-btn.is-close:hover {
+  background: #f1f5f9;
+  color: #475569;
+  transform: none;
 }
 
 .sidebar-toolbar-btn:active,
