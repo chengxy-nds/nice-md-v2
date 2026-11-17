@@ -969,10 +969,10 @@ html.dark .empty-tabs-title {
 }
 
 .workspace-toolbar {
-  height: 42px;
+  height: 46px;
   display: flex;
   align-items: center;
-  padding: 0 16px;
+  padding: 0 20px;
   border-bottom: 1px solid var(--border-color);
   background: var(--bg-editor, #ffffff);
   box-shadow: none;
@@ -993,9 +993,9 @@ html.dark .empty-tabs-title {
 .toolbar-btn-group {
   display: inline-flex;
   align-items: center;
-  gap: 1px;
-  padding: 2px;
-  border-radius: 7px;
+  gap: 4px;
+  padding: 4px;
+  border-radius: 10px;
   background: transparent;
   transition: all 0.2s ease;
 }
