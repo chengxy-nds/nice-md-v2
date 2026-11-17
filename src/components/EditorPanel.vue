@@ -40,6 +40,7 @@ import {
   parseEditorFontSizeNumber
 } from '../utils/editorPreferences';
 import { showConfirm } from '../utils/confirmDialog';
+import { countDocChars, countDocImages } from '../utils/docStats';
 import { writeTextToClipboard } from '../utils/clipboard';
 import { detectUrlAtOffset, downloadUrlResource, getFastPreviewImageUrl } from '../utils/editorUrlHelper';
 import { fireConfetti } from '../utils/celebrate';
@@ -1507,21 +1508,23 @@ const lineNumbers = computed(() => {
 });
 
 // ── 底部统计 countUp（笔记页 artifact 的做法）──
-// 切换文档时，单词/字符/行数从 0 用 650ms 立方缓出（1-(1-p)^3）数到目标值；
+// 切换文档时，单词/字数/行数/图数从 0 用 650ms 立方缓出（1-(1-p)^3）数到目标值；
 // 打字时不重播，直接显示实时值。isCountingStats 为真时显示动画值，否则显示实时值。
+// 字数和图数走 src/utils/docStats.js 的统一口径，和侧栏文档列表显示的数字一致。
 const liveStats = computed(() => ({
   words: editorText.value.split(/\s+/).filter(Boolean).length,
-  chars: editorText.value.length,
-  lines: lineNumbers.value.length
+  zi: countDocChars(editorText.value),
+  lines: lineNumbers.value.length,
+  images: countDocImages(editorText.value)
 }));
-const animatedStats = ref({ words: 0, chars: 0, lines: 0 });
+const animatedStats = ref({ words: 0, zi: 0, lines: 0, images: 0 });
 const isCountingStats = ref(false);
 let statCountRaf = 0;
 function startStatCountUp() {
   cancelAnimationFrame(statCountRaf);
   const target = liveStats.value;
-  if (!target.words && !target.chars && !target.lines) {
-    animatedStats.value = { words: 0, chars: 0, lines: 0 };
+  if (!target.words && !target.zi && !target.lines && !target.images) {
+    animatedStats.value = { words: 0, zi: 0, lines: 0, images: 0 };
     isCountingStats.value = false;
     return;
   }
@@ -1533,8 +1536,9 @@ function startStatCountUp() {
     const eased = 1 - Math.pow(1 - p, 3);
     animatedStats.value = {
       words: Math.round(target.words * eased),
-      chars: Math.round(target.chars * eased),
-      lines: Math.round(target.lines * eased)
+      zi: Math.round(target.zi * eased),
+      lines: Math.round(target.lines * eased),
+      images: Math.round(target.images * eased)
     };
     if (p < 1) {
       statCountRaf = requestAnimationFrame(tick);
@@ -2509,8 +2513,9 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
 
         <div class="editor-footer">
           <span>{{ displayStats.words }} 单词</span>
-          <span>{{ displayStats.chars }} 字符</span>
+          <span>{{ displayStats.zi }}字</span>
           <span>{{ displayStats.lines }} 行</span>
+          <span v-if="displayStats.images > 0">{{ displayStats.images }}图</span>
         </div>
 
     <!-- In-place Image Cropper Modal -->
