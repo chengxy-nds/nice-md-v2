@@ -8,7 +8,8 @@ const KEYS = {
   groups: 'nicemd_groups',
   activeDocId: 'nicemd_active_doc_id',
   openTabs: 'nicemd_open_tabs',
-  sidebarVisible: 'nicemd_sidebar_visible_v2'
+  sidebarVisible: 'nicemd_sidebar_visible_v3',
+  sidebarWide: 'nicemd_sidebar_wide_v1'
 };
 
 function safeGet(key, fallback) {
@@ -104,13 +105,31 @@ export function saveOpenTabs(tabIds) {
 }
 
 export function loadSidebarVisible() {
-  // 默认窄栏：只留左侧图标栏，宽文档列表要靠图标栏“文档”按钮点开并固定。
-  // 换了 v2 存储键，旧的 nicemd_sidebar_visible（默认宽）不再生效，下次打开就是窄的。
+  // 默认宽栏：整栏（logo + 导航 + 文档列表）直接展开。
+  // 换了 v3 存储键，旧的 v2（默认窄）不再生效，下次打开就是宽的。
   try {
     const raw = localStorage.getItem(KEYS.sidebarVisible);
-    return raw === null ? false : raw === 'true';
+    return raw === null ? true : raw === 'true';
   } catch {
-    return false;
+    return true;
+  }
+}
+
+export function loadSidebarWide() {
+  // 宽 / 窄模式也单独记：默认宽栏。
+  try {
+    const raw = localStorage.getItem(KEYS.sidebarWide);
+    return raw === null ? true : raw === 'true';
+  } catch {
+    return true;
+  }
+}
+
+export function saveSidebarWide(wide) {
+  try {
+    localStorage.setItem(KEYS.sidebarWide, wide ? 'true' : 'false');
+  } catch {
+    // ignore
   }
 }
 

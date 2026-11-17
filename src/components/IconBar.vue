@@ -5,7 +5,7 @@ import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue';
    （模板是版式不是调色板）、Boxes → Image（素材以图片为主）、
    CircleHelp → Rocket：该按钮实际触发 toggle-tab('launch')，打开的是
    启动台分发弹窗（App.vue:2177），不是帮助文档。 */
-import { House, FileText, LayoutTemplate, Image, Settings, Rocket } from '@lucide/vue';
+import { House, FileText, LayoutTemplate, Image, Settings, Rocket, PanelLeftOpen } from '@lucide/vue';
 import BrandLogo from './BrandLogo.vue';
 
 const props = defineProps({
@@ -16,7 +16,7 @@ const props = defineProps({
   launchpadOpen: { type: Boolean, default: false }
 });
 
-defineEmits(['toggle-tab']);
+defineEmits(['toggle-tab', 'expand-sidebar']);
 
 const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
 const helpShortcut = isMac ? '⌘/' : 'Ctrl+/';
@@ -322,6 +322,24 @@ onUnmounted(() => {
         <div class="nav-tooltip" role="tooltip">
           <span class="nav-tooltip-label">启动台</span>
           <span class="nav-tooltip-shortcut">{{ helpShortcut }}</span>
+        </div>
+      </button>
+
+      <!-- 7. 展开宽栏：窄栏底部的专用按钮，点一下变回宽侧边栏 -->
+      <button
+        class="icon-btn icon-btn-subtle nav-target"
+        data-key="expand"
+        @click="$emit('expand-sidebar')"
+        @mouseenter="onButtonHover"
+        @focus="onButtonHover"
+        data-no-tooltip
+        aria-label="展开宽侧边栏"
+      >
+        <span class="nav-glyph">
+          <PanelLeftOpen size="20" stroke-width="2" />
+        </span>
+        <div class="nav-tooltip" role="tooltip">
+          <span class="nav-tooltip-label">展开宽侧边栏</span>
         </div>
       </button>
     </div>
