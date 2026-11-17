@@ -809,7 +809,7 @@ function resetSidebarWidth() {
       aria-label="新建文档"
       @click="handleCreateRootDoc"
     >
-      <Plus size="15" stroke-width="2.4" />
+      <Plus size="14" stroke-width="2.4" />
       <span>新建文档</span>
     </button>
     <!-- Toolbar: 云端同步与文档操作 -->
@@ -1321,34 +1321,38 @@ html.dark .sidebar-container {
 }
 
 /* Compact document creation action in the toolbar */
-/* 新建文档大按钮：对标 CapCut「Create new」——
-   不是全圆 pill，而是 10px 圆角矩形；字用深色（CapCut 在亮青底上用黑字，
-   白字在亮青上对比度低、看着发飘）；再加一层很淡的青色阴影托起来，
-   不然就是一块平贴的色块。 */
+/* 新建文档按钮：按 CapCut AI Design 首页「Create new」实测值复刻
+   （2026-11-17 浏览器实测，视口 1293×722，按钮 228×44）：
+   - 圆角约 5–6px（不是 10px，更不是 pill）；无阴影、无边框
+     ——我上一版加的淡青阴影是错的，CapCut 按钮底下就是纯白
+   - 背景是左→右的浅青渐变（实测采样）：#4CD7E9 → #76E3F5 → #6DE0F1，
+     比我们原来的 #00D9E3→#00C8D7 亮、淡得多；悬停变深变饱和
+     #19CBE0 → #1ECDE2 → #24D0E5（尺寸不变，无新增阴影）
+   - 内容左对齐（不是居中），图标左缘距按钮左缘 20px，图标与文字间距 15px
+   - 字是近黑色 #0E0E11；字号未能量到，字高约 10–13px 推断为 14px */
 .sidebar-create-btn {
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: calc(100% - 24px);
-  height: 40px;
-  margin: 12px 12px 8px;
+  justify-content: flex-start;
+  gap: 15px;
+  width: calc(100% - 32px);
+  height: 44px;
+  margin: 12px 16px 8px;
+  padding-left: 20px;
   border: none;
-  border-radius: 10px;
-  background: var(--btn-primary-bg);
-  box-shadow: 0 2px 10px rgba(0, 200, 215, 0.28);
-  color: var(--text-main, #0F172A);
-  font-size: 13px;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #4CD7E9 0%, #76E3F5 50%, #6DE0F1 100%);
+  color: #0E0E11;
+  font-size: 14px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
   flex-shrink: 0;
-  transition: filter 0.2s var(--ease-glide), transform 0.12s var(--ease-glide), box-shadow 0.2s var(--ease-glide);
+  transition: background 0.2s var(--ease-glide), transform 0.12s var(--ease-glide);
 }
 
 .sidebar-create-btn:hover {
-  filter: brightness(1.04);
-  box-shadow: 0 4px 14px rgba(0, 200, 215, 0.32);
+  background: linear-gradient(90deg, #19CBE0 0%, #1ECDE2 50%, #24D0E5 100%);
 }
 
 .sidebar-create-btn:active {
