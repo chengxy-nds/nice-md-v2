@@ -30,7 +30,7 @@
       <button
         type="button" class="nav-rail-btn nav-target" data-key="home"
         :class="{ 'is-active': currentView === 'home' }"
-        title="首页" aria-label="首页"
+        aria-label="首页"
         @click="emit('go-home')"
         @mouseenter="onButtonHover" @focus="onButtonHover"
       >
@@ -41,7 +41,7 @@
       <button
         type="button" class="nav-rail-btn nav-target" data-key="docs"
         :class="{ 'is-active': docsOpen }"
-        title="我的文档" aria-label="我的文档"
+        aria-label="我的文档"
         @click="emit('toggle-docs')"
         @mouseenter="onButtonHover" @focus="onButtonHover"
       >
@@ -54,7 +54,7 @@
       <button
         type="button" class="nav-rail-btn nav-target" data-key="templates"
         :class="{ 'is-active': currentView === 'templates' }"
-        title="模板中心" aria-label="模板中心"
+        aria-label="模板中心"
         @click="emit('open-templates')"
         @mouseenter="onButtonHover" @focus="onButtonHover"
       >
@@ -64,7 +64,7 @@
       <button
         type="button" class="nav-rail-btn nav-target" data-key="materials"
         :class="{ 'is-active': currentView === 'materials' }"
-        title="素材中心" aria-label="素材中心"
+        aria-label="素材中心"
         @click="emit('open-materials')"
         @mouseenter="onButtonHover" @focus="onButtonHover"
       >
@@ -75,7 +75,7 @@
     <div class="nav-rail-bottom">
       <button
         type="button" class="nav-rail-btn nav-target" data-key="settings"
-        title="设置" aria-label="设置"
+        aria-label="设置"
         @click="emit('open-settings')"
         @mouseenter="onButtonHover" @focus="onButtonHover"
       >
@@ -84,7 +84,7 @@
       </button>
       <button
         type="button" class="nav-rail-btn nav-target" data-key="launch"
-        title="发布" aria-label="发布"
+        aria-label="发布"
         @click="emit('open-launchpad')"
         @mouseenter="onButtonHover" @focus="onButtonHover"
       >
@@ -96,7 +96,7 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted } from 'vue';
+import { ref } from 'vue';
 import {
   House,
   FileText,
@@ -119,47 +119,32 @@ const emit = defineEmits([
 
 /* ── 液体滑块，和右侧栏（PreviewPanel 的 right-glider）同一个做法：
       灰色圆片只在滑过时出现，滑到哪个图标就到哪个图标后面，
-      距离越远纵向拉得越明显，落位后回缩；鼠标离开整栏就消失，
-      不常驻在当前选中的图标上。定位是同步算的，不包 rAF，
-      滑过立刻就有反应。 ── */
+      鼠标离开整栏就消失，不常驻在当前选中的图标上。定位是同步算的，
+      不包 rAF，滑过立刻就有反应。
+      注意：这里不做纵向拉伸——右侧栏的圆片是实色，拉一下没事；
+      左侧这个是径向渐变（中心实、边缘晕开），一拉就把渐变拉成椭圆，
+      边缘跟着抖，看着就不顺滑。所以只干净地滑过去，不拉伸。 ── */
 const railRef = ref(null);
 const gliderRef = ref(null);
-let stretchTimer = null;
 
-function moveGliderToEl(btn, stretch = true) {
+function moveGliderToEl(btn) {
   if (!btn || !gliderRef.value || !railRef.value) return;
   const barRect = railRef.value.getBoundingClientRect();
   const btnRect = btn.getBoundingClientRect();
   const top = btnRect.top - barRect.top;
   const left = btnRect.left - barRect.left;
 
-  const prevY = parseFloat(gliderRef.value.dataset.y || String(top));
-  const dist = Math.abs(top - prevY);
-  gliderRef.value.dataset.y = String(top);
-
-  // 纵向物理拉伸（上限 1.16 倍）
-  const stretchY = stretch ? 1 + Math.min(dist / 500, 0.16) : 1;
-
   // 圆片尺寸跟着按钮走，保证正好盖住图标。
   gliderRef.value.style.width = `${btnRect.width}px`;
   gliderRef.value.style.height = `${btnRect.height}px`;
-  gliderRef.value.style.transform = `translate(${left}px, ${top}px) scaleY(${stretchY})`;
+  gliderRef.value.style.transform = `translate(${left}px, ${top}px)`;
   gliderRef.value.classList.add('is-visible');
-
-  clearTimeout(stretchTimer);
-  if (stretchY > 1.01) {
-    stretchTimer = setTimeout(() => {
-      if (gliderRef.value) {
-        gliderRef.value.style.transform = `translate(${left}px, ${top}px) scaleY(1)`;
-      }
-    }, 380 * 0.55);
-  }
 }
 
 function onButtonHover(e) {
   const target = e.currentTarget;
   if (target) {
-    moveGliderToEl(target, true);
+    moveGliderToEl(target);
   }
 }
 
@@ -169,9 +154,6 @@ function handleRailMouseLeave() {
   }
 }
 
-onUnmounted(() => {
-  clearTimeout(stretchTimer);
-});
 </script>
 
 <style scoped>

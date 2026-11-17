@@ -418,15 +418,15 @@ export const materials = [
     tag: '橙色序号',
     styleCategory: 'fresh',
     title: '橙色大号序号标题',
-    description: '左侧超大橙色序号 01 + 右侧加粗标题，醒目有冲击力，适合分段小标题',
+    description: '左侧超大橙色序号 01 + 右侧加粗标题，标题长了会自动换行（序号不动，换行文字跟标题对齐）；整块用的 table 布局，复制到公众号样式不乱',
     tags: ['橙色', '大号数字', '序号', '醒目'],
-    html: `<section style="margin: 28px 0 20px; text-align: left; clear: both; box-sizing: border-box;" data-material="true">
-  <section style="display: inline-table; vertical-align: middle; text-align: left; max-width: 100%; box-sizing: border-box;">
+    html: `<section style="margin: 28px 0 20px; clear: both; box-sizing: border-box;" data-material="true">
+  <section style="display: table; width: 100%; border-collapse: collapse; box-sizing: border-box;">
     <section style="display: table-row;">
-      <section style="display: table-cell; vertical-align: middle; line-height: 1; padding-right: 12px;">
+      <section style="display: table-cell; vertical-align: middle; width: 1%; white-space: nowrap; line-height: 1; padding-right: 12px; box-sizing: border-box;">
         <span style="font-size: 36px; font-weight: 900; color: #FF6827; line-height: 1; font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', 'Arial Black', Arial, sans-serif; letter-spacing: -1px;">01</span>
       </section>
-      <section style="display: table-cell; vertical-align: middle;">
+      <section style="display: table-cell; vertical-align: middle; box-sizing: border-box;">
         <span style="font-size: 19px; font-weight: 700; color: #191919; letter-spacing: 0.5px; line-height: 1.4; word-break: break-word; display: block; font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Microsoft YaHei', sans-serif;">把 Switch 游戏移植到苹果设备上</span>
       </section>
     </section>
