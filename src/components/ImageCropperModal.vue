@@ -665,7 +665,7 @@ onUnmounted(() => {
   height: 34px;
   border-radius: 9px;
   background: var(--brand-subtle, #EFF6FF);
-  color: var(--brand-primary, #116ACC);
+  color: var(--brand-primary, #00C8D7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -692,7 +692,7 @@ onUnmounted(() => {
   font-variant-numeric: tabular-nums;
   padding: 1px 7px;
   border-radius: 999px;
-  background: #DBEAFE;
+  background: #C9F2F6;
   color: #1E40AF;
 }
 
@@ -771,8 +771,8 @@ onUnmounted(() => {
 
 .ratio-pill-btn.is-active {
   background: rgba(255, 255, 255, 0.78);
-  border-color: var(--brand-primary, #116ACC);
-  color: var(--brand-primary, #116ACC);
+  border-color: var(--brand-primary, #00C8D7);
+  color: var(--brand-primary, #00C8D7);
   font-weight: 600;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
@@ -808,14 +808,14 @@ onUnmounted(() => {
 }
 
 .btn-transform:hover {
-  border-color: var(--brand-primary, #116ACC);
-  color: var(--brand-primary, #116ACC);
+  border-color: var(--brand-primary, #00C8D7);
+  color: var(--brand-primary, #00C8D7);
 }
 
 .btn-transform.is-active {
   background: var(--brand-subtle, #EFF6FF);
-  border-color: var(--brand-primary, #116ACC);
-  color: var(--brand-primary, #116ACC);
+  border-color: var(--brand-primary, #00C8D7);
+  color: var(--brand-primary, #00C8D7);
 }
 
 /* ── Cropper Stage ── */
@@ -978,7 +978,7 @@ onUnmounted(() => {
   font-variant-numeric: tabular-nums;
   color: var(--text-main, #0F172A);
 }
-.meta-val.is-highlight { color: var(--brand-primary, #116ACC); }
+.meta-val.is-highlight { color: var(--brand-primary, #00C8D7); }
 .meta-sep { color: var(--border-color, #CBD5E1); margin: 0 2px; }
 
 .footer-actions {
@@ -1015,12 +1015,12 @@ onUnmounted(() => {
   font-size: 13px;
   font-weight: 600;
   border: none;
-  background: var(--brand-primary, #116ACC);
+  background: var(--brand-primary, #00C8D7);
   color: #FFFFFF;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  box-shadow: 0 2px 8px rgba(17, 106, 204, 0.28);
+  box-shadow: 0 2px 8px rgba(0, 200, 215, 0.28);
   cursor: pointer;
   transition: all 0.15s ease;
 }

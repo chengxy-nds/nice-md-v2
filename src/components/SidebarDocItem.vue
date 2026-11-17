@@ -496,7 +496,7 @@ html.dark .file-row:hover {
   bottom: 8px;
   width: 2px;
   border-radius: 2px;
-  background: #2678e8;
+  background: #00A9B8;
   opacity: 0;
   transform: scaleY(0);
   transition: opacity .3s var(--ease-spring), transform .3s var(--ease-spring);
@@ -521,13 +521,13 @@ html.dark .file-row.selected {
 }
 
 .file-row.is-dragging-before {
-  background: #edf5ff;
-  box-shadow: inset 0 2px 0 #2678e8;
+  background: #E6F7F9;
+  box-shadow: inset 0 2px 0 #00A9B8;
 }
 
 .file-row.is-dragging-after {
-  background: #edf5ff;
-  box-shadow: inset 0 -2px 0 #2678e8;
+  background: #E6F7F9;
+  box-shadow: inset 0 -2px 0 #00A9B8;
 }
 
 .file-copy {
@@ -645,13 +645,13 @@ html.dark .meta {
 .more:hover,
 .more.is-active {
   background: rgba(38, 120, 232, 0.1);
-  color: #2678e8;
+  color: #00A9B8;
 }
 
 /* Search match snippet */
 .doc-search-snippet {
   font-size: 0.6875rem;
-  color: #2678e8;
+  color: #00A9B8;
   background: rgba(38, 120, 232, 0.08);
   padding: 1px 5px;
   border-radius: 4px;
@@ -753,7 +753,7 @@ html.dark .rename-input:focus {
 
 .menu-item:hover {
   background: #f0f5fb;
-  color: #2678e8;
+  color: #00A9B8;
 }
 
 .menu-item.text-danger {

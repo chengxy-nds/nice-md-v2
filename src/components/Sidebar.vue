@@ -1429,8 +1429,8 @@ html.dark .create-action:hover {
 }
 
 .sync-trigger-btn.is-syncing {
-  background: #edf5ff;
-  color: #2678e8;
+  background: #E6F7F9;
+  color: #00A9B8;
 }
 
 .sync-trigger-btn:disabled {
@@ -1449,7 +1449,7 @@ html.dark .create-action:hover {
 }
 
 .sync-trigger-btn.is-syncing .sync-icon {
-  color: #2678e8;
+  color: #00A9B8;
 }
 
 .sync-icon.is-spinning {
@@ -1698,7 +1698,7 @@ html.dark .sync-channel-name {
 .sidebar-toolbar-btn:hover,
 .icon-btn:hover {
   background: #f0f5fb;
-  color: #2678e8;
+  color: #00A9B8;
 }
 
 .sidebar-toolbar-btn:active,
@@ -1723,8 +1723,8 @@ html.dark .sync-channel-name {
 
 .sidebar-toolbar-btn.is-active,
 .icon-btn.is-active {
-  background: #edf5ff;
-  color: #2678e8;
+  background: #E6F7F9;
+  color: #00A9B8;
 }
 
 .sidebar-toolbar-btn:disabled,
@@ -1769,7 +1769,7 @@ html.dark .icon-btn.is-active {
 }
 
 .search:focus-within {
-  border-color: #2678e8;
+  border-color: #00A9B8;
   box-shadow: 0 0 0 3px rgba(38, 120, 232, 0.12);
 }
 
@@ -1831,7 +1831,7 @@ html.dark .search input {
   height: 34px;
   padding: 0 8px;
   margin: 4px 0 6px;
-  border: 1px solid #2678e8;
+  border: 1px solid #00A9B8;
   border-radius: 8px;
   background: #ffffff;
   box-sizing: border-box;
@@ -1896,7 +1896,7 @@ html.dark .create-group-input {
 
 .action-btn.confirm-btn:hover {
   background: #eaf3ff;
-  color: #2678e8;
+  color: #00A9B8;
 }
 
 /* ── 5. Tree & Folders ── */
@@ -1954,13 +1954,13 @@ html.dark .create-group-input {
 .trash:focus-visible,
 .sidebar-toolbar-btn:focus-visible,
 .icon-btn:focus-visible {
-  outline: 2px solid #2678e8;
+  outline: 2px solid #00A9B8;
   outline-offset: 1px;
 }
 
 .folder-row.is-drop-target {
   background: #eaf3ff;
-  box-shadow: inset 0 0 0 1.5px #2678e8;
+  box-shadow: inset 0 0 0 1.5px #00A9B8;
 }
 
 html.dark .folder-row {
@@ -2019,7 +2019,7 @@ html.dark .folder-lucide.gray {
   font-size: 0.8125rem;
   font-weight: 600;
   padding: 0 5px;
-  border: 1px solid #2678e8;
+  border: 1px solid #00A9B8;
   border-radius: 4px;
   background: #ffffff;
   color: #1e293b;
@@ -2412,7 +2412,7 @@ html.dark .trash-doc-list {
 
 .trash-doc-item.selected {
   background: var(--sidebar-selected, #eaf3ff);
-  box-shadow: inset 2px 0 0 #2678e8, inset 0 0 0 1px #e1eaf7;
+  box-shadow: inset 2px 0 0 #00A9B8, inset 0 0 0 1px #e1eaf7;
 }
 
 html.dark .trash-doc-item:hover {
