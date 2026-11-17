@@ -585,7 +585,8 @@ html.dark .meta {
 }
 
 .more {
-  opacity: 0.48;
+  /* 文档行“···”常显：之前默认 0.48 透明，桌面上不滑过几乎看不见。 */
+  opacity: 1;
   color: #6f829d;
   border: none;
   background: transparent;
@@ -601,21 +602,10 @@ html.dark .meta {
   flex-shrink: 0;
 }
 
-.file-row:hover .more,
-.file-row.selected .more,
-.more.is-active {
-  opacity: 1;
-}
-
-.file-row:focus-within .more {
-  opacity: 1;
-}
-
-/* 触屏：文档行“···”常显不透明、热区扩到 36px，不用先点选中文档才能看清它
+/* 触屏：文档行“···”热区扩到 36px，不用先点选中文档才能看清它
    （分组的操作按钮已经是这个做法，见 Sidebar.vue 的 hover:none 规则）。 */
 @media (hover: none) {
   .more {
-    opacity: 1;
     width: 36px;
     height: 36px;
   }
