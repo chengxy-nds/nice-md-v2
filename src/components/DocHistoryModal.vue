@@ -770,13 +770,14 @@ html.dark .mode-tab-btn.active {
   border-color: var(--brand-primary, #00C8D7);
 }
 
+/* 关闭按钮：CapCut 弹窗样式——灰色实心圆 + 白色 ×（实测 #797979，约 36px）。 */
 .btn-close-modal {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   border: none;
-  background: transparent;
-  color: var(--text-muted, #94a3b8);
+  background: var(--modal-close-bg, #797979);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -785,12 +786,12 @@ html.dark .mode-tab-btn.active {
 }
 
 .btn-close-modal:hover {
-  background: rgba(0, 0, 0, 0.06);
-  color: var(--text-main, #0f172a);
+  background: var(--modal-close-bg-hover, #666666);
+  color: #ffffff;
 }
 
 html.dark .btn-close-modal:hover {
-  background: rgba(255, 255, 255, 0.1);
+  background: var(--modal-close-bg-hover, #666666);
   color: #ffffff;
 }
 

@@ -48,20 +48,22 @@
 
 .title-area h2 {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 20px;
+  font-weight: 700;
   font-family: var(--font-sans);
   color: var(--text-main, #1F2937);
   letter-spacing: -0.01em;
+  letter-spacing: -0.01em;
 }
 
+/* 设置弹窗关闭按钮：CapCut 弹窗样式——灰色实心圆 + 白色 ×（实测 #797979，约 36px）。 */
 .btn-close {
-  background: transparent;
+  background: var(--modal-close-bg, #797979);
   border: none;
-  color: var(--text-muted, #6B7280);
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
+  color: #ffffff;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -70,8 +72,8 @@
 }
 
 .btn-close:hover {
-  background: var(--bg-capsule, #F3F4F6);
-  color: var(--text-main, #1F2937);
+  background: var(--modal-close-bg-hover, #666666);
+  color: #ffffff;
 }
 
 .btn-close:active {

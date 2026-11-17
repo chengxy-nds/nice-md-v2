@@ -237,6 +237,9 @@ html[data-color-mode="light"] {
   --brand-primary: #00C8D7;
   --brand-primary-hover: #00A9B8;
   --brand-primary-active: #008A99;
+  /* 弹窗关闭按钮（CapCut 实测：灰色实心圆 + 白色 ×，约 36px）：常态 #797979，hover 加深。 */
+  --modal-close-bg: #797979;
+  --modal-close-bg-hover: #666666;
   --brand-primary-light: #C9F2F6;
   --brand-primary-subtle: rgba(0, 200, 215, 0.08);
   --brand-subtle: #E6F7F9;
