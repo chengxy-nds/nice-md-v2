@@ -19,7 +19,7 @@ const SettingsModal = defineAsyncComponent(() => import('./components/SettingsMo
 import ConfirmDialog from './components/ConfirmDialog.vue';
 const CoverCollageModal = defineAsyncComponent(() => import('./components/CoverCollageModal.vue'));
 import Sidebar from './components/Sidebar.vue';
-import IconBar from './components/IconBar.vue';
+import NavSidebar from './components/NavSidebar.vue';
 const DocHistoryModal = defineAsyncComponent(() => import('./components/DocHistoryModal.vue'));
 import { compileToWeChatHtml, cleanEmptyListItems, stripOssProcessFromMarkdown } from './utils/wechatStyles';
 import { writeTextToClipboard } from './utils/clipboard';
@@ -2516,8 +2516,8 @@ const toggleMobileSidebar = () => {
 // 的开关一直都在那儿，也会持久化）。
 const closeSidebarList = () => {
   mobileSidebarOpen.value = false;
-  // × 是“关掉侧边栏”：宽栏也收窄，只留图标栏，文档列表不弹出。
-  if (!isNarrowDrawer.value) { sidebarVisible.value = false; isSidebarWide.value = false; saveSidebarWide(false); }
+  // × 只关文档面板，不动导航栏的宽窄。
+  if (!isNarrowDrawer.value) sidebarVisible.value = false;
 };
 
 // 宽 / 窄切换（专用按钮）：宽栏 → 收窄成图标栏，同时把文档区域挨着图标栏弹出来；
@@ -2827,29 +2827,22 @@ watch(customStyles, () => {
         </button>
       </header>
 
-      <!-- App Body: Left IconBar + Main Content -->
+      <!-- App Body: Left NavSidebar + Doc Panel + Main Content -->
       <div class="app-body">
-        <!-- 宽栏时图标栏藏起来（宽栏自己带 logo + 导航）；窄栏时图标栏常驻 -->
-        <div class="app-left" v-show="!(isSidebarWide && currentView === 'editor')">
-          <IconBar
-            :sidebarVisible="sidebarVisible"
+        <!-- 左侧导航栏：只放导航（logo / 新建 / 首页 / 模板 / 素材 / 设置 / 发布），不放文档和文件夹 -->
+        <div class="app-left">
+          <NavSidebar
             :currentView="currentView"
-            :settingsOpen="isSettingsOpen"
-            :launchpadOpen="isLaunchpadOpen"
-            @expand-sidebar="toggleSidebarWide"
-            @toggle-tab="(tab) => {
-              if (tab === 'home') { currentView = 'home'; }
-              if (tab === 'docs') {
-                if (focusMode.value) { toggleFocusMode(); }
-                else if (currentView !== 'editor') { currentView = 'editor'; sidebarVisible = true; }
-                else sidebarVisible = !sidebarVisible;
-              }
-              if (tab === 'templates') { currentView = 'templates'; }
-              if (tab === 'materials') { currentView = 'materials'; }
-              if (tab === 'settings') openSettings();
-              if (tab === 'launch') isLaunchpadOpen = true;
-              if (tab === 'theme') toggleColorMode();
-            }"
+            :wide="isSidebarWide"
+            :docsOpen="sidebarVisible"
+            @go-home="currentView = 'home'"
+            @open-templates="currentView = 'templates'"
+            @open-materials="currentView = 'materials'"
+            @open-settings="openSettings()"
+            @open-launchpad="isLaunchpadOpen = true"
+            @create-doc="(groupId) => { handleCreateDoc(groupId); currentView = 'editor'; }"
+            @toggle-wide="toggleSidebarWide"
+            @toggle-docs="sidebarVisible = !sidebarVisible"
           />
         </div>
 
@@ -2868,23 +2861,16 @@ watch(customStyles, () => {
               ref="sidebarRef"
               :class="{ 'mobile-drawer-open': mobileSidebarOpen }"
               :inert="isNarrowDrawer && !mobileSidebarOpen"
-              v-show="(isSidebarWide || sidebarVisible || mobileSidebarOpen) && currentView === 'editor'"
+              v-show="(sidebarVisible || mobileSidebarOpen) && currentView === 'editor'"
               :documents="documents"
               :groups="groups"
               :activeDocId="activeDocId"
               :currentView="currentView"
-              :wide="isSidebarWide"
               :isCloudSyncing="isSidebarSyncing"
               @select-doc="(id) => { handleSelectDoc(id); currentView = 'editor'; mobileSidebarOpen = false; }"
               @swipe-close="mobileSidebarOpen = false"
               @close-drawer="closeSidebarList"
               @create-doc="(groupId) => { handleCreateDoc(groupId); currentView = 'editor'; }"
-              @open-templates="currentView = 'templates'"
-              @open-materials="currentView = 'materials'"
-              @go-home="currentView = 'home'"
-              @open-settings="openSettings()"
-              @open-launchpad="isLaunchpadOpen = true"
-              @toggle-wide="toggleSidebarWide"
               @open-doc-history="openDocHistory"
               @rename-doc="handleRenameDoc"
               @delete-doc="handleDeleteDoc"
