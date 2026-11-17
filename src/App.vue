@@ -110,7 +110,7 @@ const groups = ref([]);
 const activeDocId = ref(null);
 const openTabIds = ref([]);
 const tabsScrollRef = ref(null);
-const sidebarVisible = ref(true);
+const sidebarVisible = ref(false);
 
 const activeDocument = computed(() =>
   documents.value.find(d => d.id === activeDocId.value)

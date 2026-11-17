@@ -8,7 +8,7 @@ const KEYS = {
   groups: 'nicemd_groups',
   activeDocId: 'nicemd_active_doc_id',
   openTabs: 'nicemd_open_tabs',
-  sidebarVisible: 'nicemd_sidebar_visible'
+  sidebarVisible: 'nicemd_sidebar_visible_v2'
 };
 
 function safeGet(key, fallback) {
@@ -104,11 +104,13 @@ export function saveOpenTabs(tabIds) {
 }
 
 export function loadSidebarVisible() {
+  // 默认窄栏：只留左侧图标栏，宽文档列表要靠图标栏“文档”按钮点开并固定。
+  // 换了 v2 存储键，旧的 nicemd_sidebar_visible（默认宽）不再生效，下次打开就是窄的。
   try {
     const raw = localStorage.getItem(KEYS.sidebarVisible);
-    return raw === null ? true : raw === 'true';
+    return raw === null ? false : raw === 'true';
   } catch {
-    return true;
+    return false;
   }
 }
 
