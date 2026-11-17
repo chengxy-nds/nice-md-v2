@@ -87,9 +87,10 @@
 
 /* 关闭按钮：CapCut 弹窗样式——灰色实心圆 + 白色 ×（实测 #797979，约 36px）。 */
 .close-btn {
-  background: var(--modal-close-bg, #797979);
+  /* 主题编辑的 × 不要背景：就是一个 plain 的 ×，滑过才给个浅底。 */
+  background: transparent;
   border: none;
-  color: #ffffff;
+  color: #64748b;
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 50%;
@@ -101,8 +102,8 @@
 }
 
 .close-btn:hover {
-  background: var(--modal-close-bg-hover, #666666);
-  color: #ffffff;
+  background: #f1f5f9;
+  color: #0f172a;
 }
 
 /* Mode Switcher Bar */
