@@ -27,16 +27,10 @@ import {
   Settings,
   ArrowDownWideNarrow,
   FoldVertical,
-  UnfoldVertical,
-  House,
-  LayoutTemplate,
-  Image,
-  Rocket,
-  PanelLeftClose
+  UnfoldVertical
 } from '@lucide/vue';
 import { showConfirm } from '../utils/confirmDialog';
 import SidebarDocItem from './SidebarDocItem.vue';
-import BrandLogo from './BrandLogo.vue';
 import { getConfiguredCloudSyncInfo } from '../utils/cloudSync';
 
 const CLOUD_PROVIDER_LABELS = {
@@ -158,9 +152,7 @@ const props = defineProps({
   groups: { type: Array, required: true },
   activeDocId: { type: String, default: null },
   currentView: { type: String, default: 'editor' },
-  isCloudSyncing: { type: Boolean, default: false },
-  // 宽栏（整栏：logo + 导航 + 文档列表 + 底部）还是窄栏弹出模式（只有文档列表）。
-  wide: { type: Boolean, default: true }
+  isCloudSyncing: { type: Boolean, default: false }
 });
 
 const emit = defineEmits([
@@ -170,8 +162,7 @@ const emit = defineEmits([
   'move-doc', 'reorder-docs', 'reorder-groups', 'toggle-collapse',
   'open-templates', 'open-materials', 'open-doc-history',
   'duplicate-doc', 'toggle-pin',
-  'cloud-sync-action', 'open-cloud-settings', 'swipe-close', 'close-drawer',
-  'go-home', 'open-settings', 'open-launchpad', 'toggle-wide'
+  'cloud-sync-action', 'open-cloud-settings', 'swipe-close', 'close-drawer'
 ]);
 
 // ── Search, Filter & Sort State ──
@@ -810,52 +801,6 @@ function resetSidebarWidth() {
       @dblclick="resetSidebarWidth"
       title="拖拽调整侧边栏宽度，双击恢复默认"
     ></div>
-    <!-- 品牌：CapCut 式宽栏顶部的 logo + 名称（窄栏弹出模式不显示） -->
-    <div v-if="wide" class="sidebar-brand">
-      <BrandLogo :size="28" />
-      <span class="sidebar-brand-name">EasyMD</span>
-    </div>
-    <!-- 新建文档：CapCut 式大按钮，主操作 -->
-    <button
-      type="button"
-      class="sidebar-create-btn"
-      title="新建文档"
-      aria-label="新建文档"
-      @click="handleCreateRootDoc"
-    >
-      <Plus size="18" stroke-width="3" />
-      <span>新建文档</span>
-    </button>
-    <!-- 宽栏导航：首页 / 模板中心 / 素材中心（CapCut 式分区导航；窄栏弹出模式不显示，导航在左侧图标栏） -->
-    <nav v-if="wide" class="sidebar-nav" aria-label="主导航">
-      <button
-        type="button"
-        class="sidebar-nav-item"
-        :class="{ 'is-active': currentView === 'home' }"
-        @click="emit('go-home')"
-      >
-        <House size="18" stroke-width="2" />
-        <span>首页</span>
-      </button>
-      <button
-        type="button"
-        class="sidebar-nav-item"
-        :class="{ 'is-active': currentView === 'templates' }"
-        @click="emit('open-templates')"
-      >
-        <LayoutTemplate size="18" stroke-width="2" />
-        <span>模板中心</span>
-      </button>
-      <button
-        type="button"
-        class="sidebar-nav-item"
-        :class="{ 'is-active': currentView === 'materials' }"
-        @click="emit('open-materials')"
-      >
-        <Image size="18" stroke-width="2" />
-        <span>素材中心</span>
-      </button>
-    </nav>
     <!-- Toolbar: 云端同步与文档操作 -->
     <div class="toolbar">
       <div class="toolbar-meta">
@@ -946,16 +891,6 @@ function resetSidebarWidth() {
         </button>
         <button class="sidebar-toolbar-btn" @click="handleCreateGroupClick" title="新建文件夹" aria-label="新建文件夹">
           <FolderPlus size="16" stroke-width="2" />
-        </button>
-        <!-- 宽 / 窄切换：宽栏点一下收窄成图标栏，文档区域挨着图标栏弹出 -->
-        <button
-          v-if="wide"
-          class="sidebar-toolbar-btn"
-          @click="emit('toggle-wide')"
-          title="收窄侧边栏"
-          aria-label="收窄侧边栏"
-        >
-          <PanelLeftClose size="16" stroke-width="2" />
         </button>
         <button
           class="sidebar-toolbar-btn drawer-close-btn"
@@ -1290,25 +1225,6 @@ function resetSidebarWidth() {
           </div>
         </div>
       </div>
-    </div>
-    <!-- 宽栏底部：设置 / 发布（窄栏弹出模式不显示，设置/发布在左侧图标栏） -->
-    <div v-if="wide" class="sidebar-footer">
-      <button
-        type="button"
-        class="sidebar-nav-item"
-        @click="emit('open-settings')"
-      >
-        <Settings size="18" stroke-width="2" />
-        <span>设置</span>
-      </button>
-      <button
-        type="button"
-        class="sidebar-nav-item"
-        @click="emit('open-launchpad')"
-      >
-        <Rocket size="18" stroke-width="2" />
-        <span>发布</span>
-      </button>
     </div>
   </aside>
 </template>
