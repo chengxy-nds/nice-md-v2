@@ -40,7 +40,7 @@ import {
   loadGroups, saveGroups,
   loadActiveDocId, saveActiveDocId,
   loadOpenTabs, hasPersistedOpenTabs, saveOpenTabs,
-  loadSidebarVisible, saveSidebarVisible,
+  loadSidebarVisible, saveSidebarVisible, loadSidebarWide, saveSidebarWide,
   generateId
 } from './utils/docStorage';
 import {
@@ -110,7 +110,10 @@ const groups = ref([]);
 const activeDocId = ref(null);
 const openTabIds = ref([]);
 const tabsScrollRef = ref(null);
-const sidebarVisible = ref(false);
+const sidebarVisible = ref(true);
+// 宽 / 窄模式：默认宽栏（整栏）。宽栏时图标栏藏起来，Sidebar 自己带导航；
+// 窄栏时图标栏常驻，Sidebar 只当文档列表弹出层，挨着图标栏出现。
+const isSidebarWide = ref(true);
 
 const activeDocument = computed(() =>
   documents.value.find(d => d.id === activeDocId.value)
@@ -2513,7 +2516,16 @@ const toggleMobileSidebar = () => {
 // 的开关一直都在那儿，也会持久化）。
 const closeSidebarList = () => {
   mobileSidebarOpen.value = false;
-  if (!isNarrowDrawer.value) sidebarVisible.value = false;
+  // × 是“关掉侧边栏”：宽栏也收窄，只留图标栏，文档列表不弹出。
+  if (!isNarrowDrawer.value) { sidebarVisible.value = false; isSidebarWide.value = false; saveSidebarWide(false); }
+};
+
+// 宽 / 窄切换（专用按钮）：宽栏 → 收窄成图标栏，同时把文档区域挨着图标栏弹出来；
+// 窄栏 → 变回宽整栏。
+const toggleSidebarWide = () => {
+  isSidebarWide.value = !isSidebarWide.value;
+  saveSidebarWide(isSidebarWide.value);
+  if (!isSidebarWide.value) sidebarVisible.value = true;
 };
 
 const sidebarRef = ref(null);
@@ -2541,6 +2553,7 @@ onMounted(async () => {
   documents.value = loadDocuments();
   groups.value = loadGroups();
   sidebarVisible.value = loadSidebarVisible();
+  isSidebarWide.value = loadSidebarWide();
 
   // 1.5 Sanitize legacy auto-generated h1 background from document customStyles
   let docModified = false;
@@ -2816,13 +2829,14 @@ watch(customStyles, () => {
 
       <!-- App Body: Left IconBar + Main Content -->
       <div class="app-body">
-        <!-- 窄栏才显示图标栏；宽栏打开时由 Sidebar 自己带 logo + 导航，不重复 -->
-        <div class="app-left" v-show="!(sidebarVisible && currentView === 'editor')">
+        <!-- 宽栏时图标栏藏起来（宽栏自己带 logo + 导航）；窄栏时图标栏常驻 -->
+        <div class="app-left" v-show="!(isSidebarWide && currentView === 'editor')">
           <IconBar
             :sidebarVisible="sidebarVisible"
             :currentView="currentView"
             :settingsOpen="isSettingsOpen"
             :launchpadOpen="isLaunchpadOpen"
+            @expand-sidebar="toggleSidebarWide"
             @toggle-tab="(tab) => {
               if (tab === 'home') { currentView = 'home'; }
               if (tab === 'docs') {
@@ -2854,11 +2868,12 @@ watch(customStyles, () => {
               ref="sidebarRef"
               :class="{ 'mobile-drawer-open': mobileSidebarOpen }"
               :inert="isNarrowDrawer && !mobileSidebarOpen"
-              v-show="(sidebarVisible || mobileSidebarOpen) && currentView === 'editor'"
+              v-show="(isSidebarWide || sidebarVisible || mobileSidebarOpen) && currentView === 'editor'"
               :documents="documents"
               :groups="groups"
               :activeDocId="activeDocId"
               :currentView="currentView"
+              :wide="isSidebarWide"
               :isCloudSyncing="isSidebarSyncing"
               @select-doc="(id) => { handleSelectDoc(id); currentView = 'editor'; mobileSidebarOpen = false; }"
               @swipe-close="mobileSidebarOpen = false"
@@ -2867,9 +2882,9 @@ watch(customStyles, () => {
               @open-templates="currentView = 'templates'"
               @open-materials="currentView = 'materials'"
               @go-home="currentView = 'home'"
-              @go-docs="currentView = 'editor'"
               @open-settings="openSettings()"
               @open-launchpad="isLaunchpadOpen = true"
+              @toggle-wide="toggleSidebarWide"
               @open-doc-history="openDocHistory"
               @rename-doc="handleRenameDoc"
               @delete-doc="handleDeleteDoc"
