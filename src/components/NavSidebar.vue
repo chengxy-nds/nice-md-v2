@@ -1,8 +1,9 @@
 <!-- 左侧导航栏：只有窄图标列，不再有宽栏。
      顶部是放大的 logo（BrandLogo 32px），点一下回首页。
-     图标滑过有效果：灰色圆片跟右侧栏一样，只在滑过时出现，
-     滑到哪个图标就到哪个图标后面，鼠标离开就消失，不常驻在
-     当前选中的图标上；每个图标滑过还出文字提示。 -->
+     滑过有效果：灰色圆片跟右侧栏一样，只在滑过时出现，
+     滑到哪个图标就到哪个图标后面，鼠标离开就消失；每个图标
+     本身还有自己的微动效（跟右侧栏的图标微动效一个做法），
+     每个图标滑过还出文字提示。 -->
 <template>
   <div class="nav-sidebar" ref="railRef" @mouseleave="handleRailMouseLeave">
     <div ref="gliderRef" class="nav-glider"></div>
@@ -33,7 +34,7 @@
         @click="emit('go-home')"
         @mouseenter="onButtonHover" @focus="onButtonHover"
       >
-        <House size="20" stroke-width="2" />
+        <span class="nav-btn-icon ic-home"><House size="20" stroke-width="2" /></span>
         <div class="nav-tooltip" role="tooltip"><span class="nav-tooltip-label">首页</span></div>
       </button>
       <!-- 文档：点一下，文档列表挨着图标栏弹出 -->
@@ -44,7 +45,7 @@
         @click="emit('toggle-docs')"
         @mouseenter="onButtonHover" @focus="onButtonHover"
       >
-        <FileText size="20" stroke-width="2" />
+        <span class="nav-btn-icon ic-docs"><FileText size="20" stroke-width="2" /></span>
         <div class="nav-tooltip" role="tooltip">
           <span class="nav-tooltip-label">我的文档</span>
           <span class="nav-tooltip-shortcut">{{ docsOpen ? '点击收起' : '点击展开' }}</span>
@@ -57,7 +58,7 @@
         @click="emit('open-templates')"
         @mouseenter="onButtonHover" @focus="onButtonHover"
       >
-        <LayoutTemplate size="20" stroke-width="2" />
+        <span class="nav-btn-icon ic-templates"><LayoutTemplate size="20" stroke-width="2" /></span>
         <div class="nav-tooltip" role="tooltip"><span class="nav-tooltip-label">模板中心</span></div>
       </button>
       <button
@@ -67,7 +68,7 @@
         @click="emit('open-materials')"
         @mouseenter="onButtonHover" @focus="onButtonHover"
       >
-        <Image size="20" stroke-width="2" />
+        <span class="nav-btn-icon ic-materials"><Image size="20" stroke-width="2" /></span>
         <div class="nav-tooltip" role="tooltip"><span class="nav-tooltip-label">素材中心</span></div>
       </button>
     </div>
@@ -78,7 +79,7 @@
         @click="emit('open-settings')"
         @mouseenter="onButtonHover" @focus="onButtonHover"
       >
-        <Settings size="20" stroke-width="2" />
+        <span class="nav-btn-icon ic-settings"><Settings size="20" stroke-width="2" /></span>
         <div class="nav-tooltip" role="tooltip"><span class="nav-tooltip-label">设置</span></div>
       </button>
       <button
@@ -87,7 +88,7 @@
         @click="emit('open-launchpad')"
         @mouseenter="onButtonHover" @focus="onButtonHover"
       >
-        <Rocket size="20" stroke-width="2" />
+        <span class="nav-btn-icon ic-launch"><Rocket size="20" stroke-width="2" /></span>
         <div class="nav-tooltip" role="tooltip"><span class="nav-tooltip-label">发布</span></div>
       </button>
     </div>
@@ -207,7 +208,9 @@ onUnmounted(() => {
   z-index: 2;
 }
 
-/* ── 液体滑块：灰色圆片，只在滑过时出现，滑到滑过的图标后面 ── */
+/* ── 液体滑块：灰色圆片，只在滑过时出现，滑到滑过的图标后面 ──
+      圆片是柔和的径向渐变，边缘晕开（像 muse 官网侧边栏那种
+      柔和的圆底），不是生硬的实色块。 */
 .nav-glider {
   position: absolute;
   top: 0;
@@ -215,7 +218,7 @@ onUnmounted(() => {
   width: 40px;
   height: 40px;
   border-radius: 999px;
-  background: #ECEFF2;
+  background: radial-gradient(circle, #ECEFF2 0%, #ECEFF2 62%, rgba(236, 239, 242, 0) 100%);
   opacity: 0;
   pointer-events: none;
   z-index: 1;
@@ -232,7 +235,7 @@ onUnmounted(() => {
   opacity: 1;
 }
 html.dark .nav-glider {
-  background: rgba(255, 255, 255, 0.12);
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.12) 62%, rgba(255, 255, 255, 0) 100%);
 }
 
 /* ── Logo：32px，滑过有果冻弹动 ── */
@@ -295,11 +298,54 @@ html.dark .nav-glider {
   color: var(--text-secondary, #64748b);
   cursor: pointer;
   flex-shrink: 0;
-  transition: color 0.15s var(--ease-glide);
+  transition: color 0.2s ease, transform 0.12s;
   z-index: 2;
+}
+.nav-rail-btn:hover {
+  color: var(--text-main);
+}
+/* 按下回弹（和右侧栏一样） */
+.nav-rail-btn:active {
+  transform: scale(0.93);
 }
 .nav-rail-btn.is-active {
   color: var(--text-main);
+}
+
+/* ── 左侧图标微动效（muse 官网侧边栏的感觉）：滑过时图标自己
+      倾斜一下，松开鼠标再平滑转回来；不是播一次就完的动画，
+      而是跟着悬停状态走的。 ── */
+.nav-btn-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform;
+  transition: transform 0.3s var(--ease-out);
+}
+
+/* 首页房子：往左歪一点 */
+.nav-rail-btn:hover .ic-home {
+  transform: rotate(-10deg) scale(1.08);
+}
+/* 我的文档：往右歪一点 */
+.nav-rail-btn:hover .ic-docs {
+  transform: rotate(9deg) scale(1.08);
+}
+/* 模板中心：往左歪一点 */
+.nav-rail-btn:hover .ic-templates {
+  transform: rotate(-8deg) scale(1.08);
+}
+/* 素材中心：往右歪一点 */
+.nav-rail-btn:hover .ic-materials {
+  transform: rotate(11deg) scale(1.08);
+}
+/* 设置齿轮：转一下 */
+.nav-rail-btn:hover .ic-settings {
+  transform: rotate(90deg);
+}
+/* 发布火箭：往上飞一点 */
+.nav-rail-btn:hover .ic-launch {
+  transform: rotate(-14deg) translate(1px, -2px) scale(1.08);
 }
 
 /* ── 文字提示：滑过图标，右边浮出名字 ── */
