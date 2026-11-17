@@ -20,8 +20,11 @@
 }
 
 /* ── A+B. 共享弹窗过渡（nx-modal / nx-modal-sm / nx-modal-lg / nx-drawer）──
-   遮罩淡入 + blur 0→8px；卡片弹簧 scale(.96)→1.02→1 + translateY(12px)→0；
+   遮罩淡入 + 卡片弹簧 scale(.96)→1.02→1 + translateY(12px)→0；
    出场 150ms 快收、不带过冲。只用 transform / opacity，全部走合成器。
+   遮罩的 blur 不做动画：backdrop-filter 每帧都要重算整页模糊，入场
+   200ms 里掉帧，后边的页面会从清楚一下跳成模糊，看着就是一闪；
+   blur 固定 8px（各弹窗遮罩自己的样式），只让 opacity 淡入。
    各弹窗把 Transition name 改成这里的名字，并在卡片根节点加 .nx-modal-card。 */
 @keyframes nx-modal-spring-in {
   0% { opacity: 0; transform: translateY(12px) scale(.96); }
@@ -71,17 +74,6 @@
 .nx-modal-sm-enter-active .nx-modal-card,
 .nx-modal-lg-enter-active .nx-modal-card {
   will-change: transform, opacity;
-}
-/* 遮罩 blur 只在入场时渐变，出场直接跟 opacity 走，避免每帧重算模糊 */
-.nx-modal-enter-active,
-.nx-modal-sm-enter-active,
-.nx-modal-lg-enter-active {
-  backdrop-filter: blur(0);
-}
-.nx-modal-enter-active { animation: nx-modal-blur-in var(--motion-base) var(--ease-out) both; }
-@keyframes nx-modal-blur-in {
-  from { backdrop-filter: blur(0); }
-  to { backdrop-filter: blur(8px); }
 }
 
 /* ── B. 右侧抽屉（Launchpad）── 遮罩淡入，面板用 glide 滑入，出场 200ms 快收 */
