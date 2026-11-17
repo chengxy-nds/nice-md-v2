@@ -27,10 +27,16 @@ import {
   Settings,
   ArrowDownWideNarrow,
   FoldVertical,
-  UnfoldVertical
+  UnfoldVertical,
+  House,
+  FileText,
+  LayoutTemplate,
+  Image,
+  Rocket
 } from '@lucide/vue';
 import { showConfirm } from '../utils/confirmDialog';
 import SidebarDocItem from './SidebarDocItem.vue';
+import BrandLogo from './BrandLogo.vue';
 import { getConfiguredCloudSyncInfo } from '../utils/cloudSync';
 
 const CLOUD_PROVIDER_LABELS = {
@@ -162,7 +168,8 @@ const emit = defineEmits([
   'move-doc', 'reorder-docs', 'reorder-groups', 'toggle-collapse',
   'open-templates', 'open-materials', 'open-doc-history',
   'duplicate-doc', 'toggle-pin',
-  'cloud-sync-action', 'open-cloud-settings', 'swipe-close', 'close-drawer'
+  'cloud-sync-action', 'open-cloud-settings', 'swipe-close', 'close-drawer',
+  'go-home', 'go-docs', 'open-settings', 'open-launchpad'
 ]);
 
 // ── Search, Filter & Sort State ──
@@ -801,6 +808,11 @@ function resetSidebarWidth() {
       @dblclick="resetSidebarWidth"
       title="拖拽调整侧边栏宽度，双击恢复默认"
     ></div>
+    <!-- 品牌：CapCut 式宽栏顶部的 logo + 名称 -->
+    <div class="sidebar-brand">
+      <BrandLogo :size="28" />
+      <span class="sidebar-brand-name">EasyMD</span>
+    </div>
     <!-- 新建文档：CapCut 式大按钮，主操作 -->
     <button
       type="button"
@@ -812,6 +824,45 @@ function resetSidebarWidth() {
       <Plus size="18" stroke-width="3" />
       <span>新建文档</span>
     </button>
+    <!-- 宽栏导航：首页 / 我的文档 / 模板中心 / 素材中心（CapCut 式分区导航） -->
+    <nav class="sidebar-nav" aria-label="主导航">
+      <button
+        type="button"
+        class="sidebar-nav-item"
+        :class="{ 'is-active': currentView === 'home' }"
+        @click="emit('go-home')"
+      >
+        <House size="18" stroke-width="2" />
+        <span>首页</span>
+      </button>
+      <button
+        type="button"
+        class="sidebar-nav-item"
+        :class="{ 'is-active': currentView === 'editor' }"
+        @click="emit('go-docs')"
+      >
+        <FileText size="18" stroke-width="2" />
+        <span>我的文档</span>
+      </button>
+      <button
+        type="button"
+        class="sidebar-nav-item"
+        :class="{ 'is-active': currentView === 'templates' }"
+        @click="emit('open-templates')"
+      >
+        <LayoutTemplate size="18" stroke-width="2" />
+        <span>模板中心</span>
+      </button>
+      <button
+        type="button"
+        class="sidebar-nav-item"
+        :class="{ 'is-active': currentView === 'materials' }"
+        @click="emit('open-materials')"
+      >
+        <Image size="18" stroke-width="2" />
+        <span>素材中心</span>
+      </button>
+    </nav>
     <!-- Toolbar: 云端同步与文档操作 -->
     <div class="toolbar">
       <div class="toolbar-meta">
@@ -1237,6 +1288,25 @@ function resetSidebarWidth() {
         </div>
       </div>
     </div>
+    <!-- 宽栏底部：设置 / 发布 -->
+    <div class="sidebar-footer">
+      <button
+        type="button"
+        class="sidebar-nav-item"
+        @click="emit('open-settings')"
+      >
+        <Settings size="18" stroke-width="2" />
+        <span>设置</span>
+      </button>
+      <button
+        type="button"
+        class="sidebar-nav-item"
+        @click="emit('open-launchpad')"
+      >
+        <Rocket size="18" stroke-width="2" />
+        <span>发布</span>
+      </button>
+    </div>
   </aside>
 </template>
 
@@ -1360,6 +1430,72 @@ html.dark .sidebar-container {
 
 .sidebar-create-btn:active {
   transform: scale(0.98);
+}
+
+/* ── 1.5 品牌 + 宽栏导航（CapCut 式）── */
+.sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 4px 0;
+  flex-shrink: 0;
+}
+.sidebar-brand-name {
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text-main);
+}
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 4px 0 8px;
+  flex-shrink: 0;
+}
+.sidebar-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  height: 40px;
+  padding: 0 12px;
+  border: none;
+  border-radius: var(--btn-radius, 8px);
+  background: transparent;
+  color: var(--text-main);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s var(--ease-glide);
+}
+.sidebar-nav-item:hover {
+  background: var(--sidebar-hover, #F2F4F7);
+}
+.sidebar-nav-item.is-active {
+  background: var(--sidebar-selected, #F0F2F5);
+  font-weight: 600;
+}
+.sidebar-nav-item svg {
+  flex-shrink: 0;
+  color: var(--text-secondary, #64748b);
+}
+.sidebar-nav-item.is-active svg {
+  color: var(--text-main);
+}
+
+/* ── 1.6 宽栏底部：设置 / 发布 ── */
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-color, #E8EAED);
+  flex-shrink: 0;
 }
 
 /* ── 2. Toolbar (.toolbar) ── */
