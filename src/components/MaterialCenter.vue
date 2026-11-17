@@ -178,22 +178,20 @@ function handleApplyBackground(mat) {
     <div class="mc-glow mc-glow-a"></div>
     <div class="mc-glow mc-glow-b"></div>
 
-    <!-- Header -->
+    <!-- Header：CapCut 模板页式横幅（实测渐变 #9DC9FF → #F9E6F9，圆角 12px） -->
     <header class="mc-header">
-      <div class="mc-header-left">
-        <button class="mc-back-btn" @click="emit('back-to-editor')">
-          <ArrowLeft size="15" />
-          <span>返回编辑器</span>
-        </button>
-        <span class="mc-divider"></span>
-        <div class="mc-title-group">
-          <span class="mc-title-badge">
-            <Sparkles size="14" />
-          </span>
-          <h1 class="mc-title">素材中心</h1>
-          <span class="mc-count">{{ filteredMaterials.length }} 个素材</span>
-        </div>
+      <button class="mc-back-btn" @click="emit('back-to-editor')">
+        <ArrowLeft size="15" />
+        <span>返回编辑器</span>
+      </button>
+      <div class="mc-title-group">
+        <span class="mc-title-badge">
+          <Sparkles size="14" />
+        </span>
+        <h1 class="mc-title">素材中心</h1>
+        <span class="mc-count">{{ filteredMaterials.length }} 个素材</span>
       </div>
+      <p class="mc-desc">精选排版素材，点击即可插入到正在编辑的文章中。</p>
 
       <div class="mc-search-box">
         <Search size="14" class="mc-search-icon" />
@@ -412,7 +410,7 @@ function handleApplyBackground(mat) {
   flex-direction: column;
   height: 100%;
   width: 100%;
-  background: var(--bg-app, #F8F8F8);
+  background: #FFFFFF;
   color: var(--text-main, #222222);
   font-family: var(--font-sans, 'Inter Tight', -apple-system, BlinkMacSystemFont, sans-serif);
   overflow: hidden;
@@ -424,23 +422,23 @@ function handleApplyBackground(mat) {
 }
 
 /* Header (高度 48px，扁平紧凑) */
+/* Header：CapCut 模板页式横幅——实测横向渐变
+   #9DC9FF → #B2CBFE → #C8CEFD → #D6D0FC → #E4D2FB → #F9E6F9，
+   圆角 12px，内边距左 37px / 上 47px / 下 36px 量级，页面底色纯白。 */
 .mc-header {
   position: relative;
   z-index: 2;
-  height: 3.75rem;
-  padding: 0 1.5rem;
-  background: var(--bg-card, #FFFFFF);
-  border-bottom: 1px solid var(--border-color, #EDEDED);
+  margin: 16px 24px 0;
+  padding: 20px 28px;
+  background: linear-gradient(90deg, #9DC9FF 0%, #B2CBFE 20%, #C8CEFD 40%, #D6D0FC 55%, #E4D2FB 70%, #EAD8FB 85%, #F9E6F9 100%);
+  border: none;
+  border-radius: 12px;
   display: flex;
+  flex-direction: column;
   align-items: flex-start;
-  justify-content: space-between;
+  justify-content: flex-start;
+  gap: 10px;
   flex-shrink: 0;
-}
-
-.mc-header-left {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
 }
 
 .mc-back-btn {
@@ -452,6 +450,7 @@ function handleApplyBackground(mat) {
   border-radius: 5px;
   border: 1px solid transparent;
   background: transparent;
+  color: #090C14;
   color: #64748b;
   font-size: 0.75rem;
   font-weight: 600;
@@ -461,14 +460,8 @@ function handleApplyBackground(mat) {
 }
 
 .mc-back-btn:hover {
-  background: #f5f7fa;
-  color: #1e293b;
-}
-
-.mc-divider {
-  width: 1px;
-  height: 1.125rem;
-  background: var(--border-color, #EDEDED);
+  background: rgba(255, 255, 255, 0.5);
+  color: #090C14;
 }
 
 .mc-title-group {
@@ -490,18 +483,26 @@ function handleApplyBackground(mat) {
 }
 
 .mc-title {
-  font-size: 1rem;
-  font-weight: 650;
-  color: var(--text-main, #222222);
+  font-size: 1.625rem;
+  font-weight: 700;
+  color: #090C14;
   margin: 0;
   letter-spacing: -0.01em;
   line-height: 1.2;
 }
 
+.mc-desc {
+  margin: 0;
+  color: #3B4E6B;
+  font-size: 0.875rem;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
 .mc-count {
   font-size: 0.75rem;
   font-weight: 500;
-  color: #718096;
+  color: #3B4E6B;
   background: transparent;
   padding: 0 0.25rem;
 }
@@ -526,9 +527,9 @@ function handleApplyBackground(mat) {
   width: 100%;
   height: 100%;
   padding: 0 1.875rem 0 2rem;
-  border-radius: 6px;
-  border: 1px solid #dce3ec;
-  background: #f8fafc;
+  border-radius: 8px;
+  border: none;
+  background: #FFFFFF;
   color: var(--text-main, #222222);
   font-size: 0.75rem;
   font-weight: 500;
@@ -633,7 +634,7 @@ function handleApplyBackground(mat) {
 .mc-tabs {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
+  gap: 0.5rem;
   padding: 0;
   background: transparent;
   border-radius: 0;
@@ -648,16 +649,19 @@ function handleApplyBackground(mat) {
   display: none;
 }
 
+/* 分类胶囊：按 CapCut 模板页实测——高 32px，圆角约 6px（非全圆），
+   间距 8px；未选中底 #EFF3F5 + 字 #565D6A，选中底 #CCF4F9 + 字 #090C14。 */
 .mc-tab {
   display: inline-flex;
   align-items: center;
   gap: 0.3125rem;
-  padding: 0.4375rem 0.625rem;
-  border-radius: 5px;
+  height: 2rem;
+  padding: 0 0.9375rem;
+  border-radius: 6px;
   border: none;
-  background: transparent;
-  color: #71717A;
-  font-size: 0.75rem;
+  background: #EFF3F5;
+  color: #565D6A;
+  font-size: 0.8125rem;
   font-weight: 500;
   cursor: pointer;
   transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), border-color var(--motion-fast) var(--ease-out), transform var(--motion-base) var(--ease-out), box-shadow var(--motion-base) var(--ease-out), opacity var(--motion-fast) var(--ease-out);
@@ -671,8 +675,8 @@ function handleApplyBackground(mat) {
 }
 
 .mc-tab.is-active {
-  background: #eaf2fc;
-  color: #1769bd;
+  background: #CCF4F9;
+  color: #090C14;
   font-weight: 600;
 }
 
@@ -748,15 +752,15 @@ function handleApplyBackground(mat) {
 .mc-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1.125rem;
+  gap: 1.375rem;
 }
 
-/* Compact cards: the rendered material leads, with actions kept in one calm footer. */
+/* Compact cards：圆角按 CapCut 模板卡实测约 10–12px，边框放淡。 */
 .mc-card {
   position: relative;
   background: #ffffff;
-  border: 1px solid #e1e7ef;
-  border-radius: 6px;
+  border: 1px solid #EDEDED;
+  border-radius: 12px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -1227,10 +1231,6 @@ function handleApplyBackground(mat) {
     gap: 0.5rem;
   }
 
-  .mc-header-left {
-    min-width: 0;
-  }
-
   .mc-search-box {
     width: 100%;
     height: 2.25rem;
@@ -1318,7 +1318,6 @@ function handleApplyBackground(mat) {
 :global(html.dark) .mc-header,
 :global(html[data-color-mode="dark"]) .mc-header {
   background: var(--bg-card, #1e1e1e);
-  border-bottom-color: var(--border-color, #2d2d2d);
 }
 
 :global(html.dark) .mc-filter-panel,
@@ -1379,8 +1378,14 @@ function handleApplyBackground(mat) {
   border-color: transparent;
 }
 
+:global(html.dark) .mc-desc,
+:global(html[data-color-mode="dark"]) .mc-desc {
+  color: #9aa8ba;
+}
+
 :global(html.dark) .mc-tab,
 :global(html[data-color-mode="dark"]) .mc-tab {
+  background: #2a2f36;
   color: #94a3b8;
 }
 
@@ -1392,8 +1397,8 @@ function handleApplyBackground(mat) {
 
 :global(html.dark) .mc-tab.is-active,
 :global(html[data-color-mode="dark"]) .mc-tab.is-active {
-  background: #203953;
-  color: #9bcaff;
+  background: rgba(0, 200, 215, 0.16);
+  color: #7DE8F0;
 }
 
 :global(html.dark) .mc-card,
