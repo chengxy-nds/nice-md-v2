@@ -151,7 +151,7 @@
 
 .platform-tab-btn.is-active,
 .publishing-platform-tab.is-active {
-  color: var(--accent-color);
+  color: var(--text-main);
   background: var(--sidebar-selected, #F0F2F5);
   border-color: transparent;
   box-shadow: none;
@@ -159,7 +159,7 @@
 
 .platform-tab-btn.is-active .tab-label,
 .publishing-platform-tab.is-active .tab-label {
-  color: var(--accent-color);
+  color: var(--text-main);
 }
 
 .platform-management-btn {
@@ -2018,7 +2018,7 @@
   transition: all 0.2s ease;
   font-family: inherit;
   color: #ffffff;
-  background: var(--brand-primary, #00C8D7);
+  background: var(--brand-primary-active, #008A99);
 }
 
 .ops-action-btn:hover:not(:disabled) {
