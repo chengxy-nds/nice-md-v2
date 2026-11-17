@@ -1111,13 +1111,14 @@ onUnmounted(() => {
   text-overflow: ellipsis;
 }
 
+/* 关闭按钮：CapCut 弹窗样式——灰色实心圆 + 白色 ×（实测 #797979，约 36px）。 */
 .btn-close {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   border: none;
-  background: transparent;
-  color: var(--text-muted, #64748B);
+  background: var(--modal-close-bg, #797979);
+  color: #ffffff;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1126,8 +1127,8 @@ onUnmounted(() => {
 }
 
 .btn-close:hover {
-  background: rgba(15, 23, 42, 0.06);
-  color: var(--text-main, #0F172A);
+  background: var(--modal-close-bg-hover, #666666);
+  color: #ffffff;
 }
 
 /* ── 3-Column Body ── */

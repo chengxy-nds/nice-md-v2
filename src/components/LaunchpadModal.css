@@ -103,7 +103,7 @@
 }
 
 .brand-title-cn {
-  font-size: 1.0625rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--text-main, #1e293b);
   letter-spacing: -0.0125rem;
@@ -118,24 +118,24 @@
   font-weight: 400;
 }
 
+/* 抽屉关闭按钮：CapCut 弹窗样式——灰色实心圆 + 白色 ×（实测 #797979，约 36px）。 */
 .btn-drawer-close {
-  background: var(--bg-card, #ffffff);
-  border: 1px solid var(--border-color, #f1f5f9);
-  color: var(--text-muted, #64748b);
-  width: 2rem;
-  height: 2rem;
+  background: var(--modal-close-bg, #797979);
+  border: none;
+  color: #ffffff;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.04);
   transition: all 0.2s ease;
 }
 
 .btn-drawer-close:hover {
-  background: #f1f5f9;
-  color: var(--text-main, #0f172a);
+  background: var(--modal-close-bg-hover, #666666);
+  color: #ffffff;
   transform: scale(1.06);
 }
 
@@ -1212,7 +1212,7 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 }
 
 .manage-modal-title {
-  font-size: 1.0625rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: var(--text-main, #1e293b);
   letter-spacing: -0.0125rem;
@@ -1256,23 +1256,22 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 }
 
 .manage-modal-close {
-  background: var(--bg-card, #ffffff);
-  border: 1px solid var(--border-color, #f1f5f9);
-  color: var(--text-muted, #64748b);
-  width: 2rem;
-  height: 2rem;
+  background: var(--modal-close-bg, #797979);
+  border: none;
+  color: #ffffff;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  box-shadow: 0 0.125rem 0.375rem rgba(0, 0, 0, 0.04);
   transition: all 0.2s ease;
 }
 
 .manage-modal-close:hover {
-  background: #f1f5f9;
-  color: var(--text-main, #0f172a);
+  background: var(--modal-close-bg-hover, #666666);
+  color: #ffffff;
   transform: scale(1.06);
 }
 
@@ -1921,7 +1920,7 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 }
 
 .picker-modal-title {
-  font-size: 1.0625rem;
+  font-size: 1.25rem;
   font-weight: 700;
   color: #0f172a;
   margin: 0;
@@ -1934,11 +1933,11 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 }
 
 .picker-modal-close {
-  background: transparent;
+  background: var(--modal-close-bg, #797979);
   border: none;
-  color: #94a3b8;
-  width: 1.875rem;
-  height: 1.875rem;
+  color: #ffffff;
+  width: 2.25rem;
+  height: 2.25rem;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1948,8 +1947,8 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 }
 
 .picker-modal-close:hover {
-  background: #f1f5f9;
-  color: #0f172a;
+  background: var(--modal-close-bg-hover, #666666);
+  color: #ffffff;
 }
 
 .cover-picker-body {
@@ -2209,15 +2208,15 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 
 :global(html.dark) .btn-drawer-close,
 :global(html[data-color-mode="dark"]) .btn-drawer-close {
-  background: var(--bg-toolbar, #2d2d2d);
-  border-color: var(--border-color);
-  color: var(--text-muted, #969696);
+  background: var(--modal-close-bg, #797979);
+  border: none;
+  color: #ffffff;
 }
 
 :global(html.dark) .btn-drawer-close:hover,
 :global(html[data-color-mode="dark"]) .btn-drawer-close:hover {
-  background: var(--bg-capsule-btn-hover, #37373d);
-  color: var(--text-main, #ffffff);
+  background: var(--modal-close-bg-hover, #666666);
+  color: #ffffff;
 }
 
 :global(html.dark) .current-doc-banner,
@@ -2494,14 +2493,14 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 
 :global(html.dark) .manage-modal-close,
 :global(html[data-color-mode="dark"]) .manage-modal-close {
-  background: var(--bg-toolbar, #2d2d2d);
-  border-color: var(--border-color);
-  color: var(--text-muted, #969696);
+  background: var(--modal-close-bg, #797979);
+  border: none;
+  color: #ffffff;
 }
 
 :global(html.dark) .manage-modal-close:hover,
 :global(html[data-color-mode="dark"]) .manage-modal-close:hover {
-  background: var(--bg-capsule-btn-hover, #37373d);
+  background: var(--modal-close-bg-hover, #666666);
   color: #ffffff;
 }
 

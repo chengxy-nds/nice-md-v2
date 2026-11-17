@@ -90,8 +90,8 @@ function cancel() {
 
 .dialog-title {
   font-family: var(--font-sans);
-  font-size: 15px;
-  font-weight: 600;
+  font-size: 17px;
+  font-weight: 700;
   color: var(--text-main, #1F2937);
   letter-spacing: -0.01em;
   margin: 0;
