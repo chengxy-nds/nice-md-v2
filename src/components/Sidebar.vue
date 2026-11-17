@@ -709,9 +709,9 @@ function onTrashDrop(e) {
 }
 
 // ── Sidebar Resizing & Responsive Width ──
-const SIDEBAR_WIDTH_KEY = 'nicemd_sidebar_custom_width';
-const MIN_SIDEBAR_WIDTH = 220;
-const MAX_SIDEBAR_WIDTH = 640;
+const SIDEBAR_WIDTH_KEY = 'nicemd_sidebar_custom_width_v2';
+const MIN_SIDEBAR_WIDTH = 165;
+const MAX_SIDEBAR_WIDTH = 480;
 
 const sidebarContainerRef = ref(null);
 const customSidebarWidth = ref(null);
@@ -801,17 +801,6 @@ function resetSidebarWidth() {
       @dblclick="resetSidebarWidth"
       title="拖拽调整侧边栏宽度，双击恢复默认"
     ></div>
-    <!-- 新建文档：CapCut 式大按钮，主操作 -->
-    <button
-      type="button"
-      class="sidebar-create-btn"
-      title="新建文档"
-      aria-label="新建文档"
-      @click="handleCreateRootDoc"
-    >
-      <Plus size="18" stroke-width="3" />
-      <span>新建文档</span>
-    </button>
     <!-- Toolbar: 云端同步与文档操作 -->
     <div class="toolbar">
       <div class="toolbar-meta">
@@ -870,6 +859,15 @@ function resetSidebarWidth() {
         </div>
       </div>
       <div class="toolbar-actions">
+        <!-- 新建文档：小按钮，放在展开文件夹按钮左侧 -->
+        <button
+          class="sidebar-toolbar-btn"
+          @click="handleCreateRootDoc"
+          title="新建文档"
+          aria-label="新建文档"
+        >
+          <Plus size="16" stroke-width="2" />
+        </button>
         <button
           v-if="groups.length > 0"
           class="sidebar-toolbar-btn"
@@ -1243,8 +1241,9 @@ function resetSidebarWidth() {
 <style scoped>
 .sidebar-container {
   position: relative;
-  width: clamp(17rem, 20vw, 24rem);
-  min-width: 13.75rem;
+  /* 文档面板宽度缩到原来的 3/4：17rem→12.75rem，20vw→15vw，24rem→18rem。 */
+  width: clamp(12.75rem, 15vw, 18rem);
+  min-width: 10.3125rem;
   container: docs-sidebar / inline-size;
   flex-shrink: 0;
   display: flex;
