@@ -128,7 +128,7 @@ function getRenderHtml(item) {
           <span>🎨</span>
           <span>${item.name}</span>
         </div>
-        <span style="font-size: 11px; font-weight: 600; color: #116ACC; background: rgba(17,106,204,0.08); padding: 2px 8px; border-radius: 9999px;">${item.tag || '底纹'}</span>
+        <span style="font-size: 11px; font-weight: 600; color: #00C8D7; background: rgba(0,200,215,0.08); padding: 2px 8px; border-radius: 9999px;">${item.tag || '底纹'}</span>
       </div>
       <p style="margin: 0; font-size: 13px; color: #475569; line-height: 1.8; font-weight: 400;">
         ${item.description || '细腻排版背景肌理，为整篇公众号长文营造沉浸式纸张呼吸感与层次美学。'}
@@ -642,8 +642,8 @@ function hasPrefixOption(id) {
 }
 
 .stream-material-row.is-selected {
-  background: rgba(17, 106, 204, 0.04);
-  border-left-color: var(--brand-primary, #116ACC);
+  background: rgba(0, 200, 215, 0.04);
+  border-left-color: var(--brand-primary, #00C8D7);
 }
 
 /* Selected Pill */
@@ -657,10 +657,10 @@ function hasPrefixOption(id) {
   font-size: 0.625rem;
   font-weight: 700;
   color: #ffffff;
-  background: var(--brand-primary, #116ACC);
+  background: var(--brand-primary, #00C8D7);
   padding: 0.125rem 0.375rem;
   border-radius: 4px;
-  box-shadow: 0 2px 6px rgba(17, 106, 204, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 200, 215, 0.3);
   z-index: 5;
 }
 

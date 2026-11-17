@@ -233,26 +233,27 @@
 
 :root,
 html[data-color-mode="light"] {
-  /* ── Figma UI Kit & Linear Studio Design System Tokens ── */
-  --brand-primary: #116ACC;
-  --brand-primary-hover: #0C4A8F;
-  --brand-primary-active: #083363;
-  --brand-primary-light: #CFE1F5;
-  --brand-primary-subtle: rgba(17, 106, 204, 0.08);
-  --brand-primary-glow: 0 4px 14px rgba(17, 106, 204, 0.22);
+  /* ── CapCut 风格设计变量：浅灰底 + 白卡片 + 青色主色 + 大圆角 ── */
+  --brand-primary: #00C8D7;
+  --brand-primary-hover: #00A9B8;
+  --brand-primary-active: #008A99;
+  --brand-primary-light: #C9F2F6;
+  --brand-primary-subtle: rgba(0, 200, 215, 0.08);
+  --brand-subtle: #E6F7F9;
+  --brand-primary-glow: 0 4px 14px rgba(0, 200, 215, 0.25);
 
   /* Layered Surface / Container Tokens (Craft / Linear Studio Hierarchy) */
-  --bg-app: #F3F5F8;
-  --bg-rail: #F8FAFC;
-  --bg-sidebar: #F7F9FC;
+  --bg-app: #F7F8FA;
+  --bg-rail: #FFFFFF;
+  --bg-sidebar: #FFFFFF;
   --bg-card: #FFFFFF;
-  --bg-header: rgba(255, 255, 255, 0.94);
-  --bg-toolbar: #FAFBFC;
+  --bg-header: rgba(255, 255, 255, 0.96);
+  --bg-toolbar: #FFFFFF;
   --bg-editor: #FFFFFF;
-  --bg-preview-canvas: #F1F4F9;
+  --bg-preview-canvas: #F7F8FA;
   --bg-preview: #FFFFFF;
   --bg-popover: #FFFFFF;
-  --bg-capsule: #F1F5F9;
+  --bg-capsule: #F2F4F7;
   --bg-capsule-btn-hover: #FFFFFF;
 
   /* Typography Tokens */
@@ -262,50 +263,50 @@ html[data-color-mode="light"] {
   --text-subtle: #94A3B8;
 
   /* Border & Divider Tokens */
-  --border-color: #E2E8F0;
-  --border-subtle: #EDF1F7;
-  --border-strong: #CBD5E1;
-  --border-focus: #116ACC;
+  --border-color: #E8EAED;
+  --border-subtle: #F0F2F5;
+  --border-strong: #DADCE0;
+  --border-focus: #00C8D7;
 
   /* Sidebar Tokens (P1-4)：hover/选中/文字/圆角统一走这里，
      选中态不再只靠背景色区分（另有左侧 2px 指示条）。 */
-  --sidebar-hover: #f5f8fc;
-  --sidebar-selected: #eaf3ff;
+  --sidebar-hover: #F2F4F7;
+  --sidebar-selected: #E6F7F9;
   --sidebar-text: #475569;
-  --sidebar-radius: 10px;
-  --sidebar-radius-sm: 8px;
+  --sidebar-radius: 12px;
+  --sidebar-radius-sm: 10px;
 
   /* Elevation / Shadow Tokens (Figma UI Kit Depth Scale) */
   --shadow-header: 0 1px 2px rgba(15, 23, 42, 0.03);
-  --shadow-sidebar-left: 1px 0 0 #E2E8F0;
-  --shadow-sidebar-right: -1px 0 0 #E2E8F0;
+  --shadow-sidebar-left: 1px 0 0 #E8EAED;
+  --shadow-sidebar-right: -1px 0 0 #E8EAED;
   --shadow-toolbar: 0 1px 2px rgba(15, 23, 42, 0.02);
-  --shadow-popover: 0 12px 32px rgba(15, 23, 42, 0.1), 0 2px 6px rgba(15, 23, 42, 0.04);
+  --shadow-popover: 0 12px 32px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.03);
   --shadow-capsule: inset 0 1px 2px rgba(15, 23, 42, 0.03);
   --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
   --shadow-md: 0 4px 14px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04);
-  --shadow-lg: 0 12px 36px rgba(15, 23, 42, 0.1), 0 30px 84px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 12px 36px rgba(15, 23, 42, 0.08), 0 30px 84px rgba(15, 23, 42, 0.04);
   --shadow-paper: 0 2px 6px rgba(15, 23, 42, 0.03), 0 12px 36px rgba(15, 23, 42, 0.05);
 
-  /* ── 统一核心主按钮设计变量 (Figma UI Kit Primary: #116ACC) ── */
-  --btn-primary-bg: linear-gradient(180deg, #1673D6 0%, #116ACC 100%);
-  --btn-primary-hover: linear-gradient(180deg, #116ACC 0%, #0C4A8F 100%);
-  --btn-primary-active: #083363;
+  /* ── 统一核心主按钮设计变量 (CapCut 青色主按钮) ── */
+  --btn-primary-bg: linear-gradient(180deg, #00D9E3 0%, #00C8D7 100%);
+  --btn-primary-hover: linear-gradient(180deg, #00C8D7 0%, #00A9B8 100%);
+  --btn-primary-active: #008A99;
   --btn-primary-text: #ffffff;
-  --btn-primary-border: rgba(255, 255, 255, 0.14);
-  --btn-primary-shadow: 0 1px 2px rgba(17, 106, 204, 0.2), 0 3px 10px rgba(17, 106, 204, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.22);
-  --btn-primary-hover-shadow: 0 4px 14px rgba(17, 106, 204, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.25);
-  --btn-primary-radius: 8px;
+  --btn-primary-border: rgba(255, 255, 255, 0.2);
+  --btn-primary-shadow: 0 1px 2px rgba(0, 200, 215, 0.25), 0 3px 10px rgba(0, 200, 215, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  --btn-primary-hover-shadow: 0 4px 14px rgba(0, 200, 215, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  --btn-primary-radius: 999px;
 
   /* Accent Tokens */
-  --accent-color: #116ACC;
-  --accent-hover: #0C4A8F;
-  --accent-bg: rgba(17, 106, 204, 0.08);
-  --accent-coral: #116ACC;
+  --accent-color: #00C8D7;
+  --accent-hover: #00A9B8;
+  --accent-bg: rgba(0, 200, 215, 0.08);
+  --accent-coral: #00C8D7;
   --accent-sage: #10B981;
   --accent-warning: #F59E0B;
   --code-bg: #F1F5F9;
-  --code-text: #116ACC;
+  --code-text: #00A9B8;
 
   --font-sans: "Inter", -apple-system, BlinkMacSystemFont, "PingFang SC", "HarmonyOS Sans SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
   --font-heading: "Inter", -apple-system, "PingFang SC", "HarmonyOS Sans SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;

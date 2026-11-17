@@ -1013,7 +1013,7 @@ onUnmounted(() => {
 }
 
 .card-crop-btn:hover {
-  background: var(--brand-primary, #116ACC);
+  background: var(--brand-primary, #00C8D7);
   transform: scale(1.1);
 }
 
@@ -1071,7 +1071,7 @@ onUnmounted(() => {
   height: 36px;
   border-radius: 10px;
   background: var(--brand-subtle, #EFF6FF);
-  color: var(--brand-primary, #116ACC);
+  color: var(--brand-primary, #00C8D7);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1182,7 +1182,7 @@ onUnmounted(() => {
 
 .source-tab-btn.is-active {
   background: rgba(255, 255, 255, 0.7);
-  color: var(--brand-primary, #116ACC);
+  color: var(--brand-primary, #00C8D7);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
 }
 
@@ -1252,7 +1252,7 @@ onUnmounted(() => {
 .source-image-card .card-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(17, 106, 204, 0.85);
+  background: rgba(0, 200, 215, 0.85);
   color: #FFFFFF;
   display: flex;
   flex-direction: column;
@@ -1297,7 +1297,7 @@ onUnmounted(() => {
 
 .upload-dropzone:hover,
 .upload-dropzone:focus-within {
-  border-color: var(--brand-primary, #116ACC);
+  border-color: var(--brand-primary, #00C8D7);
   background: var(--brand-subtle, #EFF6FF);
   outline: none;
 }
@@ -1309,7 +1309,7 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  color: var(--brand-primary, #116ACC);
+  color: var(--brand-primary, #00C8D7);
   background: var(--brand-subtle, #EFF6FF);
 }
 
@@ -1343,7 +1343,7 @@ onUnmounted(() => {
   border: 1px solid var(--border-color, #D8E1EC);
   border-radius: 7px;
   background: rgba(255, 255, 255, 0.62);
-  color: var(--brand-primary, #116ACC);
+  color: var(--brand-primary, #00C8D7);
   font-size: 11px;
   font-weight: 600;
   white-space: nowrap;
@@ -1351,7 +1351,7 @@ onUnmounted(() => {
 }
 
 .upload-select-btn:hover {
-  border-color: var(--brand-primary, #116ACC);
+  border-color: var(--brand-primary, #00C8D7);
 }
 
 .ratio-select {
@@ -1369,8 +1369,8 @@ onUnmounted(() => {
 }
 
 .ratio-select:focus {
-  border-color: var(--brand-primary, #116ACC);
-  box-shadow: 0 0 0 2px rgba(17, 106, 204, 0.12);
+  border-color: var(--brand-primary, #00C8D7);
+  box-shadow: 0 0 0 2px rgba(0, 200, 215, 0.12);
 }
 
 .dimension-fields {
@@ -1405,8 +1405,8 @@ onUnmounted(() => {
 }
 
 .dimension-input-wrap:focus-within {
-  border-color: var(--brand-primary, #116ACC);
-  box-shadow: 0 0 0 2px rgba(17, 106, 204, 0.12);
+  border-color: var(--brand-primary, #00C8D7);
+  box-shadow: 0 0 0 2px rgba(0, 200, 215, 0.12);
 }
 
 .dimension-input-wrap input {
@@ -1606,11 +1606,11 @@ onUnmounted(() => {
 }
 
 .ratio-card:hover {
-  border-color: var(--brand-primary, #116ACC);
+  border-color: var(--brand-primary, #00C8D7);
 }
 
 .ratio-card.is-selected {
-  border-color: var(--brand-primary, #116ACC);
+  border-color: var(--brand-primary, #00C8D7);
   background: var(--brand-subtle, #EFF6FF);
 }
 
@@ -1631,7 +1631,7 @@ onUnmounted(() => {
   font-weight: 600;
   padding: 1px 5px;
   border-radius: 4px;
-  background: #DBEAFE;
+  background: #C9F2F6;
   color: #1E40AF;
 }
 
@@ -1687,7 +1687,7 @@ onUnmounted(() => {
 
 .layout-count-tab.is-selected {
   background: rgba(255, 255, 255, 0.78);
-  color: var(--brand-primary, #116ACC);
+  color: var(--brand-primary, #00C8D7);
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.1);
 }
 
@@ -1713,7 +1713,7 @@ onUnmounted(() => {
 }
 
 .layout-btn.is-selected {
-  border-color: var(--brand-primary, #116ACC);
+  border-color: var(--brand-primary, #00C8D7);
   background: rgba(219, 234, 254, 0.48);
 }
 
@@ -1735,7 +1735,7 @@ onUnmounted(() => {
 }
 
 .layout-btn.is-selected .layout-mini-cell {
-  background: var(--brand-primary, #116ACC);
+  background: var(--brand-primary, #00C8D7);
 }
 
 .slider-row {
@@ -1760,7 +1760,7 @@ onUnmounted(() => {
 
 .range-slider {
   width: 100%;
-  accent-color: var(--brand-primary, #116ACC);
+  accent-color: var(--brand-primary, #00C8D7);
   cursor: pointer;
 }
 
@@ -1788,7 +1788,7 @@ onUnmounted(() => {
 }
 
 .color-swatch-btn.is-selected {
-  box-shadow: 0 0 0 2px var(--brand-primary, #116ACC);
+  box-shadow: 0 0 0 2px var(--brand-primary, #00C8D7);
 }
 
 .color-swatch-btn.is-checker {
@@ -1858,9 +1858,9 @@ onUnmounted(() => {
 
 .btn-footer-action.is-primary {
   border: none;
-  background: var(--brand-primary, #116ACC);
+  background: var(--brand-primary, #00C8D7);
   color: #FFFFFF;
-  box-shadow: 0 2px 8px rgba(17, 106, 204, 0.28);
+  box-shadow: 0 2px 8px rgba(0, 200, 215, 0.28);
 }
 
 .btn-footer-action.is-primary:hover {

@@ -1786,7 +1786,7 @@ function initCodeMirror() {
     },
     ".cm-activeLineGutter": {
       backgroundColor: "transparent",
-      color: "var(--brand-primary, #116ACC)",
+      color: "var(--brand-primary, #00C8D7)",
       opacity: "1 !important",
       fontWeight: "700"
     },
@@ -3189,9 +3189,9 @@ html.dark .btn-submit-url:hover:not(:disabled) {
 
 .btn-toolbar-dropdown:hover,
 .btn-toolbar-dropdown.is-active {
-  background: var(--brand-primary-subtle, rgba(17, 106, 204, 0.08));
-  border-color: var(--brand-primary, #116ACC);
-  color: var(--brand-primary, #116ACC);
+  background: var(--brand-primary-subtle, rgba(0, 200, 215, 0.08));
+  border-color: var(--brand-primary, #00C8D7);
+  color: var(--brand-primary, #00C8D7);
 }
 
 .popout-item {
@@ -3213,8 +3213,8 @@ html.dark .btn-submit-url:hover:not(:disabled) {
   color: var(--text-main, #1F2937);
 }
 .popout-item.is-active {
-  background: var(--brand-primary-subtle, rgba(17, 106, 204, 0.08));
-  color: var(--brand-primary, #116ACC);
+  background: var(--brand-primary-subtle, rgba(0, 200, 215, 0.08));
+  color: var(--brand-primary, #00C8D7);
   font-weight: 600;
 }
 
@@ -3436,7 +3436,7 @@ html.dark .btn-submit-url:hover:not(:disabled) {
 .url-action-btn:hover {
   border-color: var(--accent-color, #116acc);
   color: var(--accent-color, #116acc);
-  background: var(--accent-bg, rgba(17, 106, 204, 0.08));
+  background: var(--accent-bg, rgba(0, 200, 215, 0.08));
 }
 
 .url-action-btn.is-primary {

@@ -1100,7 +1100,7 @@ html.dark .bar-divider {
 }
 
 .bar-publish-btn {
-  color: var(--brand-primary, #116ACC);
+  color: var(--brand-primary, #00C8D7);
 }
 
 .bar-publish-btn:hover,

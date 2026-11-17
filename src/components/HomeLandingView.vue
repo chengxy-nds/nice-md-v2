@@ -497,7 +497,7 @@ html.dark .nav-text-link {
 }
 
 .btn-wandor-cta {
-  background: #0a0a0a;
+  background: linear-gradient(180deg, #00D9E3 0%, #00C8D7 100%);
   color: #ffffff;
   border: none;
   border-radius: 9999px;
@@ -508,13 +508,13 @@ html.dark .nav-text-link {
   letter-spacing: 0.02em;
   cursor: pointer;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 4px 14px rgba(0, 200, 215, 0.35);
 }
 
 .btn-wandor-cta:hover {
-  background: #262626;
+  background: linear-gradient(180deg, #00C8D7 0%, #00A9B8 100%);
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 6px 18px rgba(0, 200, 215, 0.45);
 }
 
 .btn-wandor-cta:active {
@@ -540,12 +540,13 @@ html.dark .btn-wandor-cta {
 }
 
 .wandor-hero-title {
-  font-family: var(--font-sans);
+  font-family: Georgia, 'Times New Roman', 'Songti SC', 'Noto Serif SC', serif;
+  font-style: italic;
   font-size: clamp(2.5rem, 5.5vw, 4.25rem);
   font-weight: 600;
   color: #1a1a1a;
-  line-height: 1.1;
-  letter-spacing: -0.04em;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
   margin: 0 0 1.25rem 0;
 }
 
@@ -571,15 +572,12 @@ html.dark .wandor-hero-subtitle {
 .wandor-prompt-card {
   position: relative;
   width: min(44rem, 92vw);
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
-  border: 2px solid rgba(255, 255, 255, 0.95);
-  border-radius: 2.75rem; /* ~44px */
-  box-shadow: 
-    0 1.25rem 3.5rem rgba(0, 0, 0, 0.07),
-    0 0.125rem 0.5rem rgba(0, 0, 0, 0.03),
-    inset 0 1px 0 #ffffff;
+  background: #ffffff;
+  border: 1px solid #E8EAED;
+  border-radius: 1.5rem; /* 24px：CapCut 式大圆角输入框 */
+  box-shadow:
+    0 1rem 2.5rem rgba(15, 23, 42, 0.06),
+    0 0.125rem 0.5rem rgba(15, 23, 42, 0.03);
   padding: 1.75rem 2rem 1.375rem;
   display: flex;
   flex-direction: column;
@@ -698,7 +696,7 @@ html.dark .btn-card-sample-pill {
 
 /* Submit CTA Button */
 .btn-card-submit-cta {
-  background: #0a0a0a;
+  background: linear-gradient(180deg, #00D9E3 0%, #00C8D7 100%);
   color: #ffffff;
   border: none;
   border-radius: 9999px;
@@ -709,13 +707,13 @@ html.dark .btn-card-sample-pill {
   letter-spacing: 0.02em;
   cursor: pointer;
   transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 14px rgba(0, 200, 215, 0.35);
 }
 
 .btn-card-submit-cta:hover {
-  background: #262626;
+  background: linear-gradient(180deg, #00C8D7 0%, #00A9B8 100%);
   transform: translateY(-1px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 6px 18px rgba(0, 200, 215, 0.45);
 }
 
 .btn-card-submit-cta:active {
@@ -1203,7 +1201,7 @@ html.dark .footer-wordmark {
 }
 
 .nav-text-link:hover {
-  color: #1769d2;
+  color: #00A9B8;
   opacity: 1;
 }
 
@@ -1218,11 +1216,11 @@ html.dark .nav-text-link {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px solid #1769d2;
-  border-radius: 7px;
-  background: #1769d2;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #00D9E3 0%, #00C8D7 100%);
   color: #fff;
-  box-shadow: none;
+  box-shadow: 0 4px 14px rgba(0, 200, 215, 0.35);
   font-family: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -1238,9 +1236,9 @@ html.dark .nav-text-link {
 .btn-wandor-cta:hover,
 .btn-card-submit-cta:hover,
 .hero-start-button:hover {
-  background: #1258b5;
-  border-color: #1258b5;
-  box-shadow: none;
+  background: linear-gradient(180deg, #00C8D7 0%, #00A9B8 100%);
+  border-color: transparent;
+  box-shadow: 0 6px 18px rgba(0, 200, 215, 0.45);
   transform: translateY(-1px);
 }
 
@@ -1272,7 +1270,7 @@ html.dark .hero-start-button {
   align-items: center;
   gap: 8px;
   margin-bottom: 20px;
-  color: #1769d2;
+  color: #00A9B8;
   font-size: 12px;
   font-weight: 650;
   letter-spacing: 0.02em;
@@ -1282,7 +1280,7 @@ html.dark .hero-start-button {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: #1769d2;
+  background: #00A9B8;
 }
 
 .wandor-hero-title {
@@ -1295,7 +1293,7 @@ html.dark .hero-start-button {
 }
 
 .wandor-hero-title span {
-  color: #1769d2;
+  color: #00A9B8;
 }
 
 html.dark .wandor-hero-title {
@@ -1349,7 +1347,7 @@ html.dark .wandor-hero-subtitle {
 }
 
 .hero-secondary-button:hover {
-  color: #1769d2;
+  color: #00A9B8;
 }
 
 .hero-capabilities {
@@ -1373,8 +1371,8 @@ html.dark .wandor-hero-subtitle {
   width: 100%;
   padding: 20px;
   gap: 14px;
-  border: 1px solid #dfe6ef;
-  border-radius: 12px;
+  border: 1px solid #E8EAED;
+  border-radius: 24px;
   background: #fff;
   box-shadow: 0 12px 32px rgba(20, 38, 66, 0.07);
   backdrop-filter: none;
@@ -1484,7 +1482,7 @@ html.dark .wandor-card-input {
   transform: none;
   border-color: #b8c9df;
   background: #f8fafc;
-  color: #1769d2;
+  color: #00A9B8;
 }
 
 html.dark .btn-card-upload-icon,
@@ -1511,7 +1509,7 @@ html.dark .btn-card-sample-pill {
 }
 
 .section-pretitle {
-  color: #1769d2;
+  color: #00A9B8;
   font-size: 10px;
   letter-spacing: 0.1em;
 }
@@ -1549,9 +1547,9 @@ html.dark .section-main-title {
 }
 
 .channel-tab-item.is-active {
-  border-color: #b9d2f2;
-  background: #edf5ff;
-  color: #145cb5;
+  border-color: #A8E6EC;
+  background: #E6F7F9;
+  color: #00A9B8;
   box-shadow: none;
 }
 
@@ -1667,14 +1665,14 @@ html.dark .feature-card {
   height: 34px;
   margin-bottom: 4px;
   border-radius: 7px;
-  background: #edf5ff;
-  color: #1769d2;
+  background: #E6F7F9;
+  color: #00A9B8;
 }
 
 .icon-terracotta,
 .icon-purple {
-  background: #edf5ff;
-  color: #1769d2;
+  background: #E6F7F9;
+  color: #00A9B8;
 }
 
 html.dark .icon-blue,
@@ -1724,7 +1722,7 @@ html.dark .feature-name {
 }
 
 .footer-link:hover {
-  color: #1769d2;
+  color: #00A9B8;
 }
 
 @media (max-width: 960px) {
@@ -1870,7 +1868,7 @@ html.dark .feature-name {
 
 /* ── Editorial home composition ── */
 .wandor-landing-wrapper {
-  background: #fbfbfa;
+  background: #F7F8FA;
   color: #182233;
 }
 
@@ -1883,7 +1881,7 @@ html.dark .wandor-landing-wrapper {
   min-height: min(820px, 100vh);
   min-height: min(820px, 100dvh);
   padding: 0 32px 48px;
-  background: #fbfbfa;
+  background: #F7F8FA;
 }
 
 html.dark .wandor-hero-viewport {
@@ -1934,7 +1932,7 @@ html.dark .wandor-wordmark {
 }
 
 .nav-text-link:hover {
-  color: #1769d2;
+  color: #00A9B8;
   opacity: 1;
 }
 
@@ -1948,11 +1946,11 @@ html.dark .nav-text-link {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border: 1px solid #1769d2;
-  border-radius: 7px;
-  background: #1769d2;
+  border: 1px solid transparent;
+  border-radius: 9999px;
+  background: linear-gradient(180deg, #00D9E3 0%, #00C8D7 100%);
   color: #fff;
-  box-shadow: none;
+  box-shadow: 0 4px 14px rgba(0, 200, 215, 0.35);
   font-family: inherit;
   font-size: 13px;
   font-weight: 600;
@@ -1967,10 +1965,10 @@ html.dark .nav-text-link {
 
 .btn-wandor-cta:hover,
 .btn-card-submit-cta:hover {
-  transform: none;
-  border-color: #0c58b5;
-  background: #0c58b5;
-  box-shadow: none;
+  transform: translateY(-1px);
+  border-color: transparent;
+  background: linear-gradient(180deg, #00C8D7 0%, #00A9B8 100%);
+  box-shadow: 0 6px 18px rgba(0, 200, 215, 0.45);
 }
 
 html.dark .btn-wandor-cta,
@@ -2017,7 +2015,7 @@ html.dark .btn-card-submit-cta {
 }
 
 .wandor-hero-title span {
-  color: #1769d2;
+  color: #00A9B8;
 }
 
 html.dark .wandor-hero-title {
@@ -2045,8 +2043,8 @@ html.dark .wandor-hero-subtitle {
   width: min(100%, 760px);
   padding: 16px;
   gap: 12px;
-  border: 1px solid #dfe4ea;
-  border-radius: 9px;
+  border: 1px solid #E8EAED;
+  border-radius: 24px;
   background: #fff;
   box-shadow: 0 3px 12px rgba(25, 40, 60, 0.035);
   text-align: left;
@@ -2151,7 +2149,7 @@ html.dark .wandor-card-input {
   transform: none;
   border-color: #c9d4e1;
   background: #f8fafc;
-  color: #1769d2;
+  color: #00A9B8;
 }
 
 html.dark .btn-card-upload-icon,
@@ -2193,7 +2191,7 @@ html.dark .btn-card-sample-pill {
   padding: 0;
   border: 0;
   background: transparent;
-  color: #1769d2;
+  color: #00A9B8;
   font: inherit;
   font-size: 12px;
   font-weight: 550;
@@ -2214,7 +2212,7 @@ html.dark .proof-names {
 }
 
 .section-pretitle {
-  color: #1769d2;
+  color: #00A9B8;
 }
 
 .channel-item-card {
