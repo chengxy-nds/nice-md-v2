@@ -841,7 +841,7 @@
 
 .storage-provider-option.is-selected {
   border-color: var(--brand-primary-border, #A8E6EC);
-  background: var(--brand-subtle, #E6F7F9);
+  background: var(--sidebar-selected, #F0F2F5);
   color: var(--brand-primary-hover, #00A9B8);
 }
 
@@ -1140,7 +1140,7 @@
 }
 
 .cloud-nav-tab.is-active {
-  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
+  background: var(--sidebar-selected, #F0F2F5);
   border-color: var(--brand-primary-ring, rgba(0, 200, 215, 0.35));
   box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
 }

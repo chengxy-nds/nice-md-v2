@@ -2411,7 +2411,7 @@ html.dark .trash-doc-list {
 }
 
 .trash-doc-item.selected {
-  background: var(--sidebar-selected, #eaf3ff);
+  background: var(--sidebar-selected, #F0F2F5);
   box-shadow: inset 2px 0 0 #00A9B8, inset 0 0 0 1px #e1eaf7;
 }
 
@@ -2420,7 +2420,7 @@ html.dark .trash-doc-item:hover {
 }
 
 html.dark .trash-doc-item.selected {
-  background: var(--sidebar-selected, var(--brand-primary-tint, rgba(0, 200, 215, 0.15)));
+  background: var(--sidebar-selected, rgba(255, 255, 255, 0.08));
   box-shadow: inset 2px 0 0 var(--brand-primary-light, #C9F2F6), inset 0 0 0 1px rgba(96, 165, 250, 0.18);
 }
 
