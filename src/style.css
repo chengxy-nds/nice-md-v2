@@ -297,6 +297,8 @@ html[data-color-mode="light"] {
   --shadow-paper: 0 2px 6px rgba(15, 23, 42, 0.03), 0 12px 36px rgba(15, 23, 42, 0.05);
 
   /* ── 统一核心主按钮设计变量 (CapCut 青色主按钮) ── */
+  --btn-radius: 8px;
+  --btn-shadow: 0 0 12px #04040405;
   --btn-primary-bg: linear-gradient(180deg, #00D9E3 0%, #00C8D7 100%);
   --btn-primary-hover: linear-gradient(180deg, #00C8D7 0%, #00A9B8 100%);
   --btn-primary-active: #008A99;
@@ -1415,9 +1417,12 @@ html, body {
   overscroll-behavior: none;
 }
 /* 防双击缩放、去掉点按高亮：按钮和 tab 都是点按目标。 */
+/* 全局按钮默认：8px 圆角 + 极淡阴影（各组件自己的 radius/shadow 会覆盖它）。 */
 button {
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  border-radius: var(--btn-radius, 8px);
+  box-shadow: var(--btn-shadow, 0 0 12px #04040405);
 }
 .workspace-tab-item {
   touch-action: manipulation;

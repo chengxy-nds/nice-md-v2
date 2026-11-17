@@ -809,7 +809,7 @@ function resetSidebarWidth() {
       aria-label="新建文档"
       @click="handleCreateRootDoc"
     >
-      <Plus size="14" stroke-width="2.4" />
+      <Plus size="18" stroke-width="3" />
       <span>新建文档</span>
     </button>
     <!-- Toolbar: 云端同步与文档操作 -->
@@ -1335,12 +1335,15 @@ html.dark .sidebar-container {
   align-items: center;
   justify-content: flex-start;
   gap: 15px;
-  width: calc(100% - 32px);
+  /* 与下边的文件列表、搜索框同宽：容器已有 12px 内边距，按钮不再额外缩进。 */
+  width: 100%;
   height: 44px;
-  margin: 12px 16px 8px;
+  margin: 12px 0 8px;
   padding-left: 20px;
   border: none;
   border-radius: 6px;
+  /* CapCut 实测：按钮无阴影、无边框；全局按钮的淡阴影不适用于它。 */
+  box-shadow: none;
   background: linear-gradient(90deg, #4CD7E9 0%, #76E3F5 50%, #6DE0F1 100%);
   color: #0E0E11;
   font-size: 14px;

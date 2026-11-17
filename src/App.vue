@@ -4,7 +4,7 @@ import {
   Menu, Sparkles, Search, Image, ImagePlus, BookOpen, Link, Upload, Trash2,
   Eye, EyeOff, Download, Undo2, Redo2, Code2, MoreHorizontal,
   ChevronDown, ChevronRight, FileCode, FileText, Globe, Settings, Check, X,
-  History, Copy, Plus, ArrowLeftToLine, ArrowRightToLine, CircleX, Send, Palette,
+  History, Copy, Plus, ArrowLeftToLine, ArrowRightToLine, CircleX, ListX, Send, Palette,
   LayoutGrid, Maximize, Minimize
 } from '@lucide/vue';
 import { applyTheme, getThemeDefaultStyles, getThemeSavedStyles, themes as themePresets } from './utils/themePresets';
@@ -501,6 +501,12 @@ function handleCloseRightTabs(tabId) {
   closeTabList(openTabIds.value.slice(0, idx + 1), tabId);
 }
 
+function handleCloseOtherTabs(tabId) {
+  const idx = openTabIds.value.indexOf(tabId);
+  if (idx === -1) return;
+  closeTabList([tabId], tabId);
+}
+
 function handleCloseAllTabs() {
   if (openTabIds.value.length === 0) return;
   closeTabList([]);
@@ -527,6 +533,7 @@ const tabMenuItems = computed(() => {
     { key: 'close', label: '关闭', icon: X, disabled: idx === -1, action: () => handleCloseTab(targetId) },
     { key: 'close-left', label: '关闭左侧', icon: ArrowLeftToLine, disabled: idx <= 0, action: () => handleCloseLeftTabs(targetId) },
     { key: 'close-right', label: '关闭右侧', icon: ArrowRightToLine, disabled: idx === -1 || idx >= total - 1, action: () => handleCloseRightTabs(targetId) },
+    { key: 'close-others', label: '关闭其他', icon: ListX, disabled: idx === -1 || total <= 1, action: () => handleCloseOtherTabs(targetId) },
     { key: 'close-all', label: '关闭全部', icon: CircleX, danger: true, dividerBefore: true, disabled: total === 0, action: () => handleCloseAllTabs() }
   ];
 });
