@@ -344,7 +344,7 @@ async function handleElementClick(sectionName) {
   height: 100%;
   width: 100%;
   overflow: hidden;
-  background: var(--bg-app, #F8F8F8);
+  background: #FFFFFF;
   color: var(--text-main, #222222);
   font-family: var(--font-sans, 'Inter Tight', -apple-system, BlinkMacSystemFont, sans-serif);
 }
@@ -463,9 +463,9 @@ async function handleElementClick(sectionName) {
   width: 100%;
   height: 100%;
   padding: 0 1.875rem 0 2rem;
-  border-radius: 6px;
-  border: 1px solid var(--border-color, #EDEDED);
-  background: #f8fafc;
+  border-radius: 8px;
+  border: none;
+  background: #FFFFFF;
   color: var(--text-main, #222222);
   font-size: 0.75rem;
   font-weight: 500;
@@ -592,8 +592,8 @@ async function handleElementClick(sectionName) {
 }
 
 .tc-list-item.is-active {
-  background: #eef5fd;
-  border-color: #d5e4f5;
+  background: #CCF4F9;
+  border-color: transparent;
 }
 
 .tc-list-item.is-active::before {
@@ -604,7 +604,7 @@ async function handleElementClick(sectionName) {
   bottom: 0.5rem;
   width: 2px;
   border-radius: 2px;
-  background: #2775b6;
+  background: #00A9B8;
 }
 
 /* Theme color dot */
@@ -1015,8 +1015,8 @@ async function handleElementClick(sectionName) {
 
 :global(html.dark) .tc-list-item.is-active,
 :global(html[data-color-mode="dark"]) .tc-list-item.is-active {
-  background: rgba(55, 148, 255, 0.1);
-  border-color: rgba(55, 148, 255, 0.3);
+  background: rgba(0, 200, 215, 0.16);
+  border-color: transparent;
 }
 
 :global(html.dark) .tc-list-section-header,
