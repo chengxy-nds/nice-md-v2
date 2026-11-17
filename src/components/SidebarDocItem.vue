@@ -6,6 +6,7 @@ let closeActiveDocMenu = null;
 import { ref, computed, nextTick, watch, onUnmounted } from 'vue';
 import { Pencil, Trash2, History, Copy, Pin, MoreHorizontal } from '@lucide/vue';
 import { showConfirm } from '../utils/confirmDialog';
+import { countDocChars, countDocImages } from '../utils/docStats';
 
 const props = defineProps({
   doc: { type: Object, required: true },
@@ -71,26 +72,11 @@ const docTime = computed(() => {
   return formatDocTime(props.doc.updatedAt || props.doc.createdAt || Date.now());
 });
 
-const docCharCount = computed(() => {
-  const raw = props.doc.content || '';
-  if (!raw) return 0;
-  const cleaned = raw
-    .replace(/<[^>]+>/g, '')
-    .replace(/```[\s\S]*?```/g, m => m.replace(/```\w*\n?/g, ''))
-    .replace(/[#*`~>\-[\]()!|]/g, '')
-    .replace(/\s+/g, '');
-  return cleaned.length;
-});
+const docCharCount = computed(() => countDocChars(props.doc.content));
 
 // 图片数：正文里 ![...](...) 和 <img> 出现的次数，显示在字数后面。
 // 同一张图在文中出现两次算两张，和读者看到的一致。
-const docImageCount = computed(() => {
-  const raw = props.doc.content || '';
-  if (!raw) return 0;
-  const md = raw.match(/!\[.*?]\((?:https?:\/\/[^\s)]+|data:image\/[^\s)]+)\)/g);
-  const html = raw.match(/<img[^>]+src=["'][^"']+["']/gi);
-  return (md ? md.length : 0) + (html ? html.length : 0);
-});
+const docImageCount = computed(() => countDocImages(props.doc.content));
 
 // 标题匹配高亮：把标题按搜索词切成片段渲染（纯文本插值，无 v-html，
 // 避免标题里的 HTML 被执行）。无搜索词时只有一个片段，渲染与原来一致。
