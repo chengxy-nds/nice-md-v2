@@ -499,11 +499,11 @@ html.dark .file-row::before {
 /* P1-4: 选中态加左侧 2px 指示条，不再只靠背景色区分。
    原来浅色 hover #f5f8fc 与选中 #f1f6fd 几乎看不出差别。 */
 .file-row.selected {
-  background: var(--sidebar-selected, #eaf3ff);
+  background: var(--sidebar-selected, #F0F2F5);
 }
 
 html.dark .file-row.selected {
-  background: var(--sidebar-selected, var(--brand-primary-tint, rgba(0, 200, 215, 0.15)));
+  background: var(--sidebar-selected, rgba(255, 255, 255, 0.08));
 }
 
 .file-row.is-dragging-before {
