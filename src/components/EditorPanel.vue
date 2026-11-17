@@ -1510,7 +1510,7 @@ const lineNumbers = computed(() => {
 // ── 底部统计 countUp（笔记页 artifact 的做法）──
 // 切换文档时，单词/字数/行数/图数从 0 用 650ms 立方缓出（1-(1-p)^3）数到目标值；
 // 打字时不重播，直接显示实时值。isCountingStats 为真时显示动画值，否则显示实时值。
-// 字数和图数走 src/utils/docStats.js 的统一口径，和侧栏文档列表显示的数字一致。
+// 字数和图数走 src/utils/docStats.js 的统一口径；字数/图数只在编辑区底部显示，文档列表不再显示。
 const liveStats = computed(() => ({
   words: editorText.value.split(/\s+/).filter(Boolean).length,
   zi: countDocChars(editorText.value),
