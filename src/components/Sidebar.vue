@@ -801,6 +801,17 @@ function resetSidebarWidth() {
       @dblclick="resetSidebarWidth"
       title="拖拽调整侧边栏宽度，双击恢复默认"
     ></div>
+    <!-- 新建文档：CapCut 式大按钮，主操作 -->
+    <button
+      type="button"
+      class="sidebar-create-btn"
+      title="新建文档"
+      aria-label="新建文档"
+      @click="handleCreateRootDoc"
+    >
+      <Plus size="18" stroke-width="3" />
+      <span>新建文档</span>
+    </button>
     <!-- Toolbar: 云端同步与文档操作 -->
     <div class="toolbar">
       <div class="toolbar-meta">

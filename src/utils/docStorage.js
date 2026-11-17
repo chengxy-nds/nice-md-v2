@@ -8,8 +8,7 @@ const KEYS = {
   groups: 'nicemd_groups',
   activeDocId: 'nicemd_active_doc_id',
   openTabs: 'nicemd_open_tabs',
-  sidebarVisible: 'nicemd_sidebar_visible_v3',
-  sidebarWide: 'nicemd_sidebar_wide_v1'
+  sidebarVisible: 'nicemd_sidebar_visible_v3'
 };
 
 function safeGet(key, fallback) {
@@ -112,24 +111,6 @@ export function loadSidebarVisible() {
     return raw === null ? true : raw === 'true';
   } catch {
     return true;
-  }
-}
-
-export function loadSidebarWide() {
-  // 宽 / 窄模式也单独记：默认宽栏。
-  try {
-    const raw = localStorage.getItem(KEYS.sidebarWide);
-    return raw === null ? true : raw === 'true';
-  } catch {
-    return true;
-  }
-}
-
-export function saveSidebarWide(wide) {
-  try {
-    localStorage.setItem(KEYS.sidebarWide, wide ? 'true' : 'false');
-  } catch {
-    // ignore
   }
 }
 
