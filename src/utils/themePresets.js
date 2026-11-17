@@ -24,7 +24,7 @@ export const themes = [
     },
     typography: {
       h1: { variant: 'pill', size: '1.25em', weight: 700, align: 'center', bg: '#2775b6', color: '#ffffff', radius: '9999px', padding: '6px 24px', letterSpacing: '0.02em', marginTop: '1.6em', marginBottom: '1.2em' },
-      h2: { variant: 'bar', size: '1.35em', weight: 700, borderColor: '#2775b6', padding: '0.3em 0.6em', letterSpacing: '-0.2px' },
+      h2: { variant: 'bar', size: '1.35em', weight: 700, borderColor: '#2775b6', padding: '0.6em', letterSpacing: '-0.2px' },
       h3: { variant: 'icon', size: '18px', weight: 700, color: '#2b2b2b', iconUrl: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 32' fill='none'%3E%3Cpath d='M4 28L18 8L28 22L34 14L44 28H4Z' fill='%232775b6' fill-opacity='0.18' stroke='%232775b6' stroke-width='2.5' stroke-linejoin='round'/%3E%3Ccircle cx='36' cy='8' r='3' fill='%232775b6' fill-opacity='0.45'/%3E%3C/svg%3E", iconSize: '30px', iconMarginBottom: '8px', textMarginTop: '30px', lineHeight: '2.4em', marginTop: '15px', marginBottom: '15px', letterSpacing: '0em' },
       p: { size: '16px', lineHeight: 1.75, letterSpacing: '0.08em', color: '#0d0d0d' },
       strong: { color: '#2775b6', weight: 700 },
@@ -58,12 +58,16 @@ export const themes = [
       '--shadow-md': '0 8px 24px rgba(0,0,0,0.04)'
     },
     typography: {
-      h1: { variant: 'pill', size: '1.25em', weight: 700, align: 'center', bg: '#965829', color: '#ffffff', radius: '9999px', padding: '6px 24px', marginTop: '1.6em', marginBottom: '1.2em' },
-      h2: { variant: 'bar', size: '1.35em', weight: 700, borderColor: '#965829', padding: '0.3em 0.6em' },
+      h1: { variant: 'underline', size: '1.35em', weight: 700, color: '#965829', borderColor: '#965829', borderWidth: '2px', padding: '0 0 0.3em', letterSpacing: '0.04em', marginTop: '1.6em', marginBottom: '1.2em' },
+      h2: { variant: 'underline', size: '1.25em', weight: 700, color: '#965829', borderColor: '#965829', borderWidth: '1.5px', padding: '0 0 0.25em' },
       h3: { variant: 'simple', size: '18px', weight: 700, color: '#965829' },
-      p: { size: '16px', lineHeight: 2, color: '#3d3229' },
+      p: { size: '16px', lineHeight: 2, letterSpacing: '0.06em', color: '#3d3229' },
       strong: { color: '#965829', weight: 700 },
-      blockquote: { variant: 'bar', borderColor: '#965829', bg: 'var(--accent-bg)', radius: '0 8px 8px 0', padding: '14px 22px' }
+      blockquote: { variant: 'card', borderColor: '#965829', bg: 'var(--accent-bg)', radius: '10px', padding: '14px 20px' },
+      code: { bg: 'var(--code-bg)', color: 'var(--code-text)', radius: '4px', padding: '2px 4px', size: '0.9em' },
+      a: { color: '#965829' },
+      table: { headerBg: 'var(--accent-bg)', borderColor: 'var(--border-color)', radius: '8px' },
+      hr: { variant: 'gradient', color: '#965829' }
     }
   },
   {
@@ -89,12 +93,16 @@ export const themes = [
       '--shadow-md': '0 8px 24px rgba(0,0,0,0.04)'
     },
     typography: {
-      h1: { variant: 'pill', size: '1.25em', weight: 700, align: 'center', bg: '#0d6848', color: '#ffffff', radius: '9999px', padding: '6px 24px', marginTop: '1.6em', marginBottom: '1.2em' },
-      h2: { variant: 'bar', size: '1.35em', weight: 700, borderColor: '#0d6848', padding: '0.3em 0.6em' },
+      h1: { variant: 'bar', size: '1.4em', weight: 700, color: '#0d6848', borderColor: '#0d6848', borderWidth: '5px', padding: '0.6em', marginTop: '1.6em', marginBottom: '1.2em' },
+      h2: { variant: 'underline', size: '1.3em', weight: 700, color: '#0d6848', borderColor: '#0d6848', borderWidth: '2px', padding: '0 0 0.3em' },
       h3: { variant: 'simple', size: '18px', weight: 700, color: '#0d6848' },
-      p: { size: '16px', lineHeight: 2, color: '#1b382b' },
+      p: { size: '16px', lineHeight: 2, letterSpacing: '0.05em', color: '#1b382b' },
       strong: { color: '#0d6848', weight: 700 },
-      blockquote: { variant: 'bar', borderColor: '#0d6848', bg: 'var(--accent-bg)', radius: '0 8px 8px 0', padding: '14px 22px' }
+      blockquote: { variant: 'striped', borderColor: '#0d6848', bg: 'var(--accent-bg)', radius: '8px', padding: '12px 18px' },
+      code: { bg: 'var(--code-bg)', color: 'var(--code-text)', radius: '4px', padding: '2px 4px', size: '0.9em' },
+      a: { color: '#0d6848' },
+      table: { headerBg: 'var(--accent-bg)', borderColor: 'var(--border-color)', radius: '8px' },
+      hr: { variant: 'solid', color: 'var(--border-color)' }
     }
   },
   {
@@ -120,12 +128,16 @@ export const themes = [
       '--shadow-md': '0 8px 24px rgba(0,0,0,0.04)'
     },
     typography: {
-      h1: { variant: 'pill', size: '1.2em', weight: 700, align: 'center', bg: '#8a9a86', color: '#ffffff', radius: '9999px', padding: '6px 22px', marginTop: '1.6em', marginBottom: '1.2em' },
-      h2: { variant: 'bar', size: '1.3em', weight: 700, borderColor: '#8a9a86', padding: '0.3em 0.6em' },
+      h1: { variant: 'simple', size: '1.3em', weight: 700, align: 'center', color: '#6f7e6b', letterSpacing: '0.12em', marginTop: '1.8em', marginBottom: '1.4em' },
+      h2: { variant: 'bar', size: '1.25em', weight: 700, color: '#6f7e6b', borderColor: '#8a9a86', borderWidth: '2px', padding: '0.6em' },
       h3: { variant: 'simple', size: '17px', weight: 700, color: '#6f7e6b' },
-      p: { size: '15.5px', lineHeight: 1.9, color: '#3a3a3a' },
+      p: { size: '15.5px', lineHeight: 1.9, letterSpacing: '0.1em', color: '#3a3a3a' },
       strong: { color: '#6f7e6b', weight: 700 },
-      blockquote: { variant: 'bar', borderColor: '#8a9a86', bg: 'var(--accent-bg)', radius: '0 6px 6px 0', padding: '12px 18px' }
+      blockquote: { variant: 'card', borderColor: '#8a9a86', bg: 'var(--accent-bg)', radius: '10px', padding: '14px 20px' },
+      code: { bg: 'var(--code-bg)', color: 'var(--code-text)', radius: '4px', padding: '2px 4px', size: '0.9em' },
+      a: { color: '#8a9a86' },
+      table: { headerBg: 'var(--accent-bg)', borderColor: 'var(--border-color)', radius: '8px' },
+      hr: { variant: 'dashed', color: '#8a9a86' }
     }
   },
   {
@@ -151,12 +163,16 @@ export const themes = [
       '--shadow-md': '0 8px 24px rgba(0,0,0,0.04)'
     },
     typography: {
-      h1: { variant: 'pill', size: '1.2em', weight: 700, align: 'center', bg: '#a62b2b', color: '#ffffff', radius: '9999px', padding: '6px 22px', marginTop: '1.6em', marginBottom: '1.2em' },
-      h2: { variant: 'bar', size: '1.3em', weight: 700, borderColor: '#a62b2b', padding: '0.3em 0.6em' },
+      h1: { variant: 'pill', size: '1.25em', weight: 700, align: 'center', bg: '#a62b2b', color: '#ffffff', radius: '6px', padding: '8px 24px', letterSpacing: '0.08em', marginTop: '1.6em', marginBottom: '1.2em' },
+      h2: { variant: 'bar', size: '1.3em', weight: 700, color: '#a62b2b', borderColor: '#a62b2b', borderWidth: '4px', padding: '0.6em' },
       h3: { variant: 'simple', size: '17px', weight: 700, color: '#a62b2b' },
-      p: { size: '16px', lineHeight: 2, color: '#2d2621' },
+      p: { size: '16px', lineHeight: 2, letterSpacing: '0.1em', color: '#2d2621' },
       strong: { color: '#a62b2b', weight: 700 },
-      blockquote: { variant: 'bar', borderColor: '#a62b2b', bg: 'var(--accent-bg)', radius: '0 6px 6px 0', padding: '12px 18px' }
+      blockquote: { variant: 'card', borderColor: '#a62b2b', bg: 'var(--accent-bg)', radius: '10px', padding: '14px 20px' },
+      code: { bg: 'var(--code-bg)', color: 'var(--code-text)', radius: '4px', padding: '2px 4px', size: '0.9em' },
+      a: { color: '#a62b2b' },
+      table: { headerBg: 'var(--accent-bg)', borderColor: 'var(--border-color)', radius: '8px' },
+      hr: { variant: 'gradient', color: '#a62b2b' }
     }
   },
   {
@@ -182,12 +198,16 @@ export const themes = [
       '--shadow-md': '0 4px 12px rgba(0,0,0,0.08)'
     },
     typography: {
-      h1: { variant: 'simple', size: '1.6em', weight: 700, color: '#24292e' },
-      h2: { variant: 'simple', size: '1.35em', weight: 700, color: '#24292e' },
+      h1: { variant: 'underline', size: '1.6em', weight: 700, color: '#24292e', borderColor: '#eaecef', borderWidth: '1px', padding: '0 0 0.3em', marginTop: '1.5em', marginBottom: '1em' },
+      h2: { variant: 'underline', size: '1.35em', weight: 700, color: '#24292e', borderColor: '#eaecef', borderWidth: '1px', padding: '0 0 0.25em' },
       h3: { variant: 'simple', size: '18px', weight: 600, color: '#24292e' },
-      p: { size: '15px', lineHeight: 1.7, color: '#24292e' },
+      p: { size: '15px', lineHeight: 1.7, letterSpacing: '0.02em', color: '#24292e' },
       strong: { color: '#0366d6', weight: 600 },
-      blockquote: { variant: 'bar', borderColor: '#dfe2e5', bg: '#f6f8fa', radius: '0 4px 4px 0', padding: '10px 16px' }
+      blockquote: { variant: 'bar', borderColor: '#dfe2e5', bg: '#f6f8fa', radius: '0 4px 4px 0', padding: '10px 16px' },
+      code: { bg: 'var(--code-bg)', color: 'var(--code-text)', radius: '4px', padding: '2px 4px', size: '0.9em' },
+      a: { color: '#0366d6' },
+      table: { headerBg: '#f6f8fa', borderColor: 'var(--border-color)', radius: '6px' },
+      hr: { variant: 'solid', color: 'var(--border-color)' }
     }
   },
   {
@@ -213,12 +233,16 @@ export const themes = [
       '--shadow-md': '0 4px 12px rgba(0,0,0,0.08)'
     },
     typography: {
-      h1: { variant: 'simple', size: '1.6em', weight: 700, color: '#2c3e50' },
-      h2: { variant: 'bar', size: '1.35em', weight: 700, borderColor: '#42b983', padding: '0.2em 0.5em' },
+      h1: { variant: 'bar', size: '1.6em', weight: 700, color: '#2c3e50', borderColor: '#42b983', borderWidth: '5px', padding: '0.6em', marginTop: '1.5em', marginBottom: '1em' },
+      h2: { variant: 'bar', size: '1.35em', weight: 700, color: '#2c3e50', borderColor: '#42b983', borderWidth: '4px', padding: '0.5em' },
       h3: { variant: 'simple', size: '18px', weight: 600, color: '#2c3e50' },
-      p: { size: '15px', lineHeight: 1.75, color: '#2c3e50' },
+      p: { size: '15px', lineHeight: 1.75, letterSpacing: '0.03em', color: '#2c3e50' },
       strong: { color: '#42b983', weight: 700 },
-      blockquote: { variant: 'bar', borderColor: '#42b983', bg: 'var(--accent-bg)', radius: '0 4px 4px 0', padding: '10px 16px' }
+      blockquote: { variant: 'bar', borderColor: '#42b983', bg: 'var(--accent-bg)', radius: '0 4px 4px 0', padding: '10px 16px' },
+      code: { bg: 'var(--code-bg)', color: 'var(--code-text)', radius: '4px', padding: '2px 4px', size: '0.9em' },
+      a: { color: '#42b983' },
+      table: { headerBg: 'var(--accent-bg)', borderColor: 'var(--border-color)', radius: '6px' },
+      hr: { variant: 'solid', color: 'var(--border-color)' }
     }
   },
   {
@@ -244,12 +268,16 @@ export const themes = [
       '--shadow-md': '0 8px 24px rgba(0,0,0,0.3)'
     },
     typography: {
-      h1: { variant: 'pill', size: '1.6em', weight: 700, align: 'center', bg: '#61afef', color: '#181a1f', radius: '6px', padding: '8px 20px' },
-      h2: { variant: 'bar', size: '1.35em', weight: 700, borderColor: '#61afef', padding: '0.3em 0.6em' },
+      h1: { variant: 'pill', size: '1.5em', weight: 700, align: 'center', bg: '#61afef', color: '#181a1f', radius: '8px', padding: '8px 20px', marginTop: '1.5em', marginBottom: '1.2em' },
+      h2: { variant: 'bar', size: '1.35em', weight: 700, color: '#abb2bf', borderColor: '#61afef', borderWidth: '4px', padding: '0.6em' },
       h3: { variant: 'simple', size: '18px', weight: 600, color: '#61afef' },
-      p: { size: '15px', lineHeight: 1.8, color: '#abb2bf' },
+      p: { size: '15px', lineHeight: 1.8, letterSpacing: '0.04em', color: '#abb2bf' },
       strong: { color: '#61afef', weight: 700 },
-      blockquote: { variant: 'bar', borderColor: '#61afef', bg: 'rgba(97, 175, 239, 0.1)', radius: '0 6px 6px 0', padding: '12px 18px' }
+      blockquote: { variant: 'bar', borderColor: '#61afef', bg: 'rgba(97, 175, 239, 0.1)', radius: '0 6px 6px 0', padding: '12px 18px' },
+      code: { bg: 'var(--code-bg)', color: 'var(--code-text)', radius: '4px', padding: '2px 4px', size: '0.9em' },
+      a: { color: '#61afef' },
+      table: { headerBg: 'rgba(97, 175, 239, 0.1)', borderColor: 'var(--border-color)', radius: '6px' },
+      hr: { variant: 'solid', color: 'var(--border-color)' }
     }
   }
 ];

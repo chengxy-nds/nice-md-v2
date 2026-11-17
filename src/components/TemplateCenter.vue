@@ -239,7 +239,6 @@ async function handleElementClick(sectionName) {
                 <span class="tc-list-name">{{ theme.name }}</span>
                 <span class="tc-tag">{{ theme.tag }}</span>
               </div>
-              <p class="tc-list-desc">{{ theme.description }}</p>
             </div>
             <span v-if="props.currentTheme === theme.id" class="tc-list-state is-applied">当前使用</span>
             <span v-else-if="selectedTheme && selectedTheme.id === theme.id" class="tc-list-state">预览中</span>
@@ -589,8 +588,9 @@ async function handleElementClick(sectionName) {
   transform: scale(.99);
 }
 
+/* 选中态与文档列表统一：浅灰底 + 青色指示条（不再是青色底）。 */
 .tc-list-item.is-active {
-  background: #CCF4F9;
+  background: var(--sidebar-selected, #F0F2F5);
   border-color: transparent;
 }
 
@@ -653,20 +653,8 @@ async function handleElementClick(sectionName) {
 }
 
 .tc-list-item.is-active .tc-tag {
-  color: #55718e;
-  background: #e1ebf6;
-}
-
-.tc-list-desc {
-  font-size: 0.6875rem;
-  color: #78879a;
-  line-height: 1.4;
-  margin: 0;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-  font-weight: 400;
+  color: #52525B;
+  background: #E4E4E7;
 }
 
 .tc-list-state {
@@ -918,10 +906,6 @@ async function handleElementClick(sectionName) {
     padding: 0.5rem;
   }
 
-  .tc-list-desc {
-    -webkit-line-clamp: 1;
-  }
-
   .tc-preview-pane {
     min-height: 60vh;
     flex: 1 0 60vh;
@@ -1018,7 +1002,7 @@ async function handleElementClick(sectionName) {
 
 :global(html.dark) .tc-list-item.is-active,
 :global(html[data-color-mode="dark"]) .tc-list-item.is-active {
-  background: rgba(0, 200, 215, 0.16);
+  background: var(--sidebar-selected, rgba(255, 255, 255, 0.08));
   border-color: transparent;
 }
 
@@ -1036,11 +1020,6 @@ async function handleElementClick(sectionName) {
 :global(html.dark) .tc-list-name,
 :global(html[data-color-mode="dark"]) .tc-list-name {
   color: var(--text-main, #cccccc);
-}
-
-:global(html.dark) .tc-list-desc,
-:global(html[data-color-mode="dark"]) .tc-list-desc {
-  color: #9aa8ba;
 }
 
 :global(html.dark) .tc-list-state,
