@@ -845,7 +845,7 @@ html.dark .tab-context-menu {
   width: 100%;
   padding: 6px 9px;
   border: none;
-  border-radius: 7px;
+  border-radius: var(--btn-radius, 8px);
   background: transparent;
   color: #1e293b;
   font-size: 12.5px;
