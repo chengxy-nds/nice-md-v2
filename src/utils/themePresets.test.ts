@@ -23,8 +23,10 @@ test('groupThemesByCategory separates user custom themes from built-in themes an
   assert.deepEqual(custom.map(t => t.id), ['custom-123', 'user-saved-without-prefix']);
 });
 
-test('groupThemesByCategory classifies default exported themes as built-in', () => {
+test('groupThemesByCategory classifies default exported themes as built-in with raw-markdown first', () => {
   const { builtIn } = groupThemesByCategory(themes);
-  assert.ok(builtIn.length >= 8);
+  assert.ok(builtIn.length >= 9);
+  assert.equal(themes[0].id, 'raw-markdown');
+  assert.equal(builtIn[0].id, 'raw-markdown');
   assert.ok(builtIn.some(t => t.id === 'classic-indigo'));
 });

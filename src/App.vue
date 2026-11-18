@@ -1090,7 +1090,18 @@ if (isCloudSyncEnabled()) {
   triggerFullAutoSync();
 }
 
-const currentTheme = ref(localStorage.getItem('nicemd_theme') || 'classic-indigo');
+const DEFAULT_RAW_THEME_MIGRATION_KEY = 'nicemd_default_theme_raw_v1';
+let initialSavedTheme = localStorage.getItem('nicemd_theme');
+if (!localStorage.getItem(DEFAULT_RAW_THEME_MIGRATION_KEY)) {
+  try {
+    localStorage.setItem(DEFAULT_RAW_THEME_MIGRATION_KEY, '1');
+    if (!initialSavedTheme || initialSavedTheme === 'classic-indigo') {
+      initialSavedTheme = 'raw-markdown';
+      localStorage.setItem('nicemd_theme', 'raw-markdown');
+    }
+  } catch {}
+}
+const currentTheme = ref(initialSavedTheme || 'raw-markdown');
 const currentCodeTheme = ref(localStorage.getItem('nicemd_code_theme') || 'mdnice-classic');
 
 const themeCatalogVersion = ref(0);
@@ -1100,7 +1111,7 @@ const allThemes = computed(() => {
 });
 
 const activeThemeName = computed(() =>
-  allThemes.value.find(t => t.id === currentTheme.value)?.name || '山海'
+  allThemes.value.find(t => t.id === currentTheme.value)?.name || '原始 · 无风格'
 );
 const editorPanelRef = ref(null);
 const previewPanelRef = ref(null);

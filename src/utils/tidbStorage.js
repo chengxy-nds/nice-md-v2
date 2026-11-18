@@ -316,7 +316,7 @@ export async function initTidbTables(connectionString) {
     UPDATE nicemd_custom_themes 
     SET is_deleted = 1 
     WHERE id IN (
-      'classic-indigo', 'mountain-warm', 'mountain-forest', 'mountain-tea',
+      'raw-markdown', 'classic-indigo', 'mountain-warm', 'mountain-forest', 'mountain-tea',
       'mountain-red', 'mountain-purple', 'mountain-gold', '135-morandi',
       '135-guofeng', 'github-clean', 'typora-github', 'typora-vue',
       'vue-emerald', 'nordic-ice', 'typora-dark', 'default'
@@ -350,7 +350,7 @@ export async function testTidbConnection(connectionString) {
     SELECT COUNT(*) as cnt FROM nicemd_custom_themes 
     WHERE is_deleted = 0 
     AND id NOT IN (
-      'classic-indigo', 'mountain-warm', 'mountain-forest', 'mountain-tea',
+      'raw-markdown', 'classic-indigo', 'mountain-warm', 'mountain-forest', 'mountain-tea',
       'mountain-red', 'mountain-purple', 'mountain-gold', '135-morandi',
       '135-guofeng', 'github-clean', 'typora-github', 'typora-vue',
       'vue-emerald', 'nordic-ice', 'typora-dark', 'default'

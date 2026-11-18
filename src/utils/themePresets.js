@@ -1,12 +1,51 @@
 import { logger } from './logger.js';
 export const themes = [
   {
+    id: 'raw-markdown',
+    name: '原始 · 无风格',
+    icon: 'FileText',
+    dark: false,
+    description: '纯净原始 Markdown 排版，无额外装饰与主题滤镜，还原最本真的文档结构。',
+    tag: '默认 · 原始',
+    styles: {
+      '--bg-app': '#ffffff',
+      '--bg-editor': '#ffffff',
+      '--bg-preview': '#ffffff',
+      '--text-main': '#1f2328',
+      '--text-muted': '#656d76',
+      '--border-color': '#d0d7de',
+      '--accent-color': '#64748b',
+      '--accent-hover': '#475569',
+      '--accent-bg': '#f6f8fa',
+      '--code-bg': 'rgba(175, 184, 193, 0.2)',
+      '--code-text': '#1f2328',
+      '--shadow-sm': 'none',
+      '--shadow-md': 'none'
+    },
+    typography: {
+      h1: { variant: 'underline', size: '1.75em', weight: 700, color: '#1f2328', borderColor: '#d8dee4', borderWidth: '1px', padding: '0 0 0.3em', marginTop: '1.5em', marginBottom: '0.8em' },
+      h2: { variant: 'underline', size: '1.4em', weight: 700, color: '#1f2328', borderColor: '#d8dee4', borderWidth: '1px', padding: '0 0 0.25em', marginTop: '1.4em', marginBottom: '0.7em' },
+      h3: { variant: 'simple', size: '1.15em', weight: 600, color: '#1f2328', marginTop: '1.2em', marginBottom: '0.6em' },
+      h4: { variant: 'simple', size: '1em', weight: 600, color: '#1f2328', marginTop: '1em', marginBottom: '0.5em' },
+      h5: { variant: 'simple', size: '0.9em', weight: 600, color: '#1f2328', marginTop: '1em', marginBottom: '0.5em' },
+      h6: { variant: 'simple', size: '0.85em', weight: 600, color: '#656d76', marginTop: '1em', marginBottom: '0.5em' },
+      p: { size: '16px', lineHeight: 1.75, letterSpacing: '0em', color: '#1f2328', marginBottom: '14px' },
+      strong: { color: '#1f2328', weight: 700 },
+      em: { color: '#1f2328' },
+      blockquote: { variant: 'bar', borderColor: '#d0d7de', borderWidth: '3px', bg: 'transparent', textColor: '#57606a', radius: '0', padding: '4px 16px' },
+      code: { bg: 'rgba(175, 184, 193, 0.2)', color: '#1f2328', radius: '4px', padding: '2px 5px', size: '0.88em' },
+      a: { color: '#0969da' },
+      table: { headerBg: '#f6f8fa', borderColor: '#d0d7de', radius: '0px' },
+      hr: { variant: 'solid', color: '#d8dee4' }
+    }
+  },
+  {
     id: 'classic-indigo',
     name: '山海 · 经典',
     icon: 'BookOpen',
     dark: false,
     description: '经典山海主题,米白纸面 + 藏蓝强调,适合公众号深度长文。',
-    tag: '默认 · 经典',
+    tag: '山海 · 经典',
     styles: {
       '--bg-app': '#fcfcfc',
       '--bg-editor': '#ffffff',
@@ -283,6 +322,7 @@ export const themes = [
 ];
 
 export const builtInThemeIds = new Set([
+  'raw-markdown',
   'classic-indigo',
   'mountain-warm',
   'mountain-forest',
@@ -370,7 +410,7 @@ try {
   });
 } catch (e) {}
 
-export function getThemeSavedStyles(themeId = 'classic-indigo') {
+export function getThemeSavedStyles(themeId = 'raw-markdown') {
   const theme = themes.find(t => t.id === themeId) || themes[0];
   if (!isBuiltInTheme(themeId) && theme?.customStyles) {
     return JSON.parse(JSON.stringify(theme.customStyles));
@@ -394,7 +434,7 @@ function parseFontSize(val, fallback) {
   return val;
 }
 
-export function getThemeDefaultStyles(themeId = 'classic-indigo') {
+export function getThemeDefaultStyles(themeId = 'raw-markdown') {
   const theme = themes.find(t => t.id === themeId) || themes[0];
   if (!isBuiltInTheme(themeId) && theme?.customStyles) {
     return JSON.parse(JSON.stringify(theme.customStyles));
@@ -424,13 +464,13 @@ export function getThemeDefaultStyles(themeId = 'classic-indigo') {
       textAlign: undefined,
       display: undefined
     },
-    h2: { fontSize: parseFontSize(typo.h2?.size, '22px'), color: typo.h2?.borderColor || primary, fontWeight: String(typo.h2?.weight || 700) },
+    h2: { fontSize: parseFontSize(typo.h2?.size, '22px'), color: typo.h2?.color || typo.h2?.borderColor || primary, fontWeight: String(typo.h2?.weight || 700) },
     h3: { fontSize: parseFontSize(typo.h3?.size, '18px'), color: typo.h3?.color || textMain, fontWeight: String(typo.h3?.weight || 700) },
-    h4: { fontSize: parseFontSize(typo.h4?.size, '16px'), color: textMain, fontWeight: '700' },
-    h5: { fontSize: '15px', color: textMain, fontWeight: '700' },
-    h6: { fontSize: '14px', color: textMuted, fontWeight: '700' },
+    h4: { fontSize: parseFontSize(typo.h4?.size, '16px'), color: typo.h4?.color || textMain, fontWeight: String(typo.h4?.weight || 700) },
+    h5: { fontSize: parseFontSize(typo.h5?.size, '15px'), color: typo.h5?.color || textMain, fontWeight: String(typo.h5?.weight || 700) },
+    h6: { fontSize: parseFontSize(typo.h6?.size, '14px'), color: typo.h6?.color || textMuted, fontWeight: String(typo.h6?.weight || 700) },
     strong: { color: typo.strong?.color || primary, fontWeight: String(typo.strong?.weight || 700) },
-    em: { color: primary, fontStyle: 'italic' },
+    em: { color: typo.em?.color || primary, fontStyle: 'italic' },
     del: { color: textMuted, textDecoration: 'line-through' },
     u: { color: textMain, textDecoration: 'underline' },
     mark: { backgroundColor: '#fff566', color: '#000000' },
@@ -439,16 +479,16 @@ export function getThemeDefaultStyles(themeId = 'classic-indigo') {
     sup: { fontSize: '11px' },
     code: { backgroundColor: codeBg, color: codeText, fontSize: typo.code?.size || '14px' },
     pre: { backgroundColor: '#282c34' },
-    blockquote: { borderLeftColor: primary, backgroundColor: accentBg, textColor: textMuted },
+    blockquote: { borderLeftColor: typo.blockquote?.borderColor || primary, backgroundColor: typo.blockquote?.bg || accentBg, textColor: typo.blockquote?.textColor || textMuted },
     ul: { listStyleType: 'disc' },
     ol: { listStyleType: 'decimal' },
     li: { color: textMain, fontSize: '15px', lineHeight: '1.8' },
-    table: { borderColor: borderColor, headerBg: accentBg },
-    th: { backgroundColor: accentBg, color: textMain, fontWeight: '700' },
-    td: { borderColor: borderColor, color: textMain },
-    hr: { borderColor: borderColor },
-    a: { color: primary, textDecoration: 'none' },
-    img: { borderRadius: '8px', display: 'block', margin: '0 auto', maxWidth: '100%', boxShadow: 'none', border: 'none' }
+    table: { borderColor: typo.table?.borderColor || borderColor, headerBg: typo.table?.headerBg || accentBg },
+    th: { backgroundColor: typo.table?.headerBg || accentBg, color: textMain, fontWeight: '700' },
+    td: { borderColor: typo.table?.borderColor || borderColor, color: textMain },
+    hr: { borderColor: typo.hr?.color || borderColor },
+    a: { color: typo.a?.color || primary, textDecoration: 'none' },
+    img: { borderRadius: theme.id === 'raw-markdown' ? '0px' : '8px', display: 'block', margin: '0 auto', maxWidth: '100%', boxShadow: 'none', border: 'none' }
   };
 }
 

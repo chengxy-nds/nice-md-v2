@@ -40,7 +40,7 @@ const props = defineProps({
   },
   themeId: {
     type: String,
-    default: 'classic-indigo'
+    default: 'raw-markdown'
   },
   themes: {
     type: Array,
@@ -916,7 +916,7 @@ onUnmounted(() => {
           <span class="bar-btn-label">主题</span>
           <div v-show="!showThemeMenu" class="right-tooltip" role="tooltip">
             <span class="right-tooltip-label">排版主题</span>
-            <span class="right-tooltip-shortcut">{{ activeThemeObj?.name || '山海 · 经典' }}</span>
+            <span class="right-tooltip-shortcut">{{ activeThemeObj?.name || '原始 · 无风格' }}</span>
           </div>
         </button>
 

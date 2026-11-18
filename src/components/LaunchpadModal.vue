@@ -48,7 +48,7 @@ const props = defineProps({
   },
   themeId: {
     type: String,
-    default: 'classic-indigo'
+    default: 'raw-markdown'
   },
   codeThemeId: {
     type: String,

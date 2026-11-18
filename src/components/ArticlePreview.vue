@@ -1,12 +1,24 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
-import { FileText } from '@lucide/vue';
+import {
+  FileText,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
+  Download,
+  FileCode,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  Maximize2
+} from '@lucide/vue';
 import 'katex/dist/katex.min.css';
 import { compileToWeChatHtml, cleanEmptyListItems } from '../utils/wechatStyles';
 import { ensureMarkdownExtensions } from '../utils/markdownExtensions';
 import { parseMarkdownWithDocToc } from '../utils/markdownToc';
 import { themes } from '../utils/themePresets';
 import { getCodeThemeStyles } from '../utils/codeThemes';
+import { soundEngine } from '../utils/synthAudio';
 import MaterialPopup from './MaterialPopup.vue';
 import { logger } from '../utils/logger.js';
 
@@ -23,7 +35,7 @@ const props = defineProps({
   },
   themeId: {
     type: String,
-    default: 'classic-indigo'
+    default: 'raw-markdown'
   },
   codeThemeId: {
     type: String,
@@ -49,8 +61,326 @@ const props = defineProps({
 
 const emit = defineEmits(['element-click', 'scroll', 'focusActive', 'update:customStyles', 'open-customizer']);
 
+const wrapperRef = ref(null);
 const previewContainerRef = ref(null);
 const wechatFrameRef = ref(null);
+
+// ── Mermaid Hover Action Bar & Fullscreen Lightbox State ──
+const hoveredMermaidEl = ref(null);
+const hoveredMermaidPos = ref({ top: 0, right: 0, visible: false });
+const mermaidLightboxOpen = ref(false);
+const mermaidItems = ref([]);
+const activeMermaidIndex = ref(0);
+const mermaidZoom = ref(1);
+const mermaidPan = ref({ x: 0, y: 0 });
+const isMermaidPanning = ref(false);
+const mermaidThumbsRef = ref(null);
+let mermaidPanStart = { x: 0, y: 0 };
+let mermaidPanOrigin = { x: 0, y: 0 };
+let mermaidDidDrag = false;
+
+const activeMermaidItem = computed(() => mermaidItems.value[activeMermaidIndex.value] || null);
+const canSwitchMermaid = computed(() => mermaidItems.value.length > 1);
+
+function extractNormalizedMermaidSvg(mermaidNode, index = 0) {
+  const svgEl = mermaidNode?.querySelector?.('svg');
+  if (!svgEl) return null;
+
+  const clone = svgEl.cloneNode(true);
+  clone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+  clone.setAttribute('xmlns:xlink', 'http://www.w3.org/1999/xlink');
+
+  let width = 0;
+  let height = 0;
+  const vbAttr = svgEl.getAttribute('viewBox');
+  if (vbAttr) {
+    const parts = vbAttr.trim().split(/[\s,]+/).map(Number);
+    if (parts.length === 4 && parts[2] > 0 && parts[3] > 0) {
+      width = Math.ceil(parts[2]);
+      height = Math.ceil(parts[3]);
+    }
+  }
+  const rect = svgEl.getBoundingClientRect();
+  if ((!width || !height) && rect.width > 0 && rect.height > 0) {
+    width = Math.ceil(rect.width);
+    height = Math.ceil(rect.height);
+  }
+  if (!width || !height) {
+    width = 800;
+    height = 480;
+  }
+
+  if (!clone.getAttribute('viewBox')) {
+    clone.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  }
+  clone.setAttribute('width', String(width));
+  clone.setAttribute('height', String(height));
+  clone.style.maxWidth = 'none';
+  clone.style.width = `${width}px`;
+  clone.style.height = `${height}px`;
+  clone.style.background = '#ffffff';
+
+  const xml = new XMLSerializer().serializeToString(clone);
+  const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(xml)}`;
+
+  return {
+    index,
+    width,
+    height,
+    xml,
+    dataUrl,
+    title: `流程图 ${index + 1}`
+  };
+}
+
+function collectAllRenderedMermaids(targetEl = null) {
+  const root = previewContainerRef.value;
+  if (!root) return { list: [], targetIdx: 0 };
+  const nodes = Array.from(root.querySelectorAll('.mermaid')).filter((el) => el.querySelector('svg'));
+  const list = [];
+  let targetIdx = 0;
+  nodes.forEach((node, idx) => {
+    const info = extractNormalizedMermaidSvg(node, idx);
+    if (info) {
+      if (node === targetEl) targetIdx = list.length;
+      list.push(info);
+    }
+  });
+  return { list, targetIdx };
+}
+
+function updateHoveredMermaidPosition(el) {
+  if (!el || !wrapperRef.value || !el.isConnected) {
+    hoveredMermaidPos.value.visible = false;
+    return;
+  }
+  const wrapRect = wrapperRef.value.getBoundingClientRect();
+  const elRect = el.getBoundingClientRect();
+  if (elRect.bottom <= wrapRect.top + 36 || elRect.top >= wrapRect.bottom - 36) {
+    hoveredMermaidPos.value.visible = false;
+    return;
+  }
+  hoveredMermaidPos.value = {
+    top: Math.max(8, elRect.top - wrapRect.top + 8),
+    right: Math.max(12, wrapRect.right - elRect.right + 8),
+    visible: true
+  };
+}
+
+function handlePreviewMouseMove(e) {
+  const target = e.target;
+  if (!target || !target.closest) return;
+  if (target.closest('.mermaid-hover-toolbar')) return;
+  const mEl = target.closest('.mermaid');
+  if (mEl && mEl.querySelector('svg')) {
+    if (hoveredMermaidEl.value !== mEl || !hoveredMermaidPos.value.visible) {
+      hoveredMermaidEl.value = mEl;
+      updateHoveredMermaidPosition(mEl);
+    }
+    return;
+  }
+  if (hoveredMermaidEl.value) {
+    hoveredMermaidEl.value = null;
+    hoveredMermaidPos.value.visible = false;
+  }
+}
+
+function handlePreviewMouseLeave() {
+  hoveredMermaidEl.value = null;
+  hoveredMermaidPos.value.visible = false;
+}
+
+function openMermaidLightboxFromEl(mermaidEl) {
+  const { list, targetIdx } = collectAllRenderedMermaids(mermaidEl);
+  if (!list.length) return;
+  soundEngine.playClick();
+  mermaidItems.value = list;
+  activeMermaidIndex.value = targetIdx;
+  mermaidZoom.value = 1;
+  mermaidPan.value = { x: 0, y: 0 };
+  mermaidLightboxOpen.value = true;
+  hoveredMermaidEl.value = null;
+  hoveredMermaidPos.value.visible = false;
+}
+
+function closeMermaidLightbox() {
+  cleanupMermaidPanListeners();
+  mermaidLightboxOpen.value = false;
+  mermaidZoom.value = 1;
+  mermaidPan.value = { x: 0, y: 0 };
+}
+
+function selectMermaidAt(idx) {
+  if (idx < 0 || idx >= mermaidItems.value.length) return;
+  soundEngine.playClick();
+  activeMermaidIndex.value = idx;
+  mermaidZoom.value = 1;
+  mermaidPan.value = { x: 0, y: 0 };
+  nextTick(() => {
+    const container = mermaidThumbsRef.value;
+    if (!container) return;
+    const activeBtn = container.querySelector('.editor-lightbox-thumb-btn.is-active');
+    if (activeBtn && typeof activeBtn.scrollIntoView === 'function') {
+      activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  });
+}
+
+function showPrevMermaid() {
+  if (!canSwitchMermaid.value) return;
+  const len = mermaidItems.value.length;
+  selectMermaidAt((activeMermaidIndex.value - 1 + len) % len);
+}
+
+function showNextMermaid() {
+  if (!canSwitchMermaid.value) return;
+  const len = mermaidItems.value.length;
+  selectMermaidAt((activeMermaidIndex.value + 1) % len);
+}
+
+function stepMermaidZoom(delta) {
+  const next = Math.max(0.25, Math.min(6, Math.round((mermaidZoom.value + delta) * 100) / 100));
+  mermaidZoom.value = next;
+  if (next === 1) {
+    mermaidPan.value = { x: 0, y: 0 };
+  }
+}
+
+function resetMermaidView() {
+  mermaidZoom.value = 1;
+  mermaidPan.value = { x: 0, y: 0 };
+}
+
+function handleMermaidWheel(e) {
+  const delta = e.deltaY < 0 ? 0.2 : -0.2;
+  stepMermaidZoom(delta);
+}
+
+function onMermaidPointerMove(e) {
+  if (!isMermaidPanning.value) return;
+  const dx = e.clientX - mermaidPanStart.x;
+  const dy = e.clientY - mermaidPanStart.y;
+  if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+    mermaidDidDrag = true;
+  }
+  mermaidPan.value = {
+    x: mermaidPanOrigin.x + dx,
+    y: mermaidPanOrigin.y + dy
+  };
+}
+
+function cleanupMermaidPanListeners() {
+  isMermaidPanning.value = false;
+  window.removeEventListener('pointermove', onMermaidPointerMove);
+  window.removeEventListener('pointerup', cleanupMermaidPanListeners);
+  window.removeEventListener('pointercancel', cleanupMermaidPanListeners);
+}
+
+function startMermaidPan(e) {
+  if (e.button !== 0) return;
+  mermaidDidDrag = false;
+  isMermaidPanning.value = true;
+  mermaidPanStart = { x: e.clientX, y: e.clientY };
+  mermaidPanOrigin = { ...mermaidPan.value };
+  window.addEventListener('pointermove', onMermaidPointerMove);
+  window.addEventListener('pointerup', cleanupMermaidPanListeners);
+  window.addEventListener('pointercancel', cleanupMermaidPanListeners);
+}
+
+function handleMermaidImgClick() {
+  if (mermaidDidDrag) {
+    mermaidDidDrag = false;
+    return;
+  }
+  if (mermaidZoom.value < 1.75) {
+    mermaidZoom.value = 2;
+  } else {
+    resetMermaidView();
+  }
+}
+
+function sanitizeFileBaseName(raw) {
+  const cleaned = String(raw || 'mermaid')
+    .replace(/[\\/:*?"<>|]/g, '-')
+    .trim();
+  return cleaned || 'mermaid';
+}
+
+function downloadMermaidSvg(item = activeMermaidItem.value) {
+  if (!item?.xml) return;
+  soundEngine.playClick();
+  const baseName = sanitizeFileBaseName(props.docTitle);
+  const filename = `${baseName}-流程图${(item.index ?? 0) + 1}.svg`;
+  const blob = new Blob([item.xml], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function downloadMermaidPng(item = activeMermaidItem.value) {
+  if (!item?.dataUrl) return;
+  soundEngine.playClick();
+  const baseName = sanitizeFileBaseName(props.docTitle);
+  const filename = `${baseName}-流程图${(item.index ?? 0) + 1}.png`;
+
+  try {
+    const img = new Image();
+    img.decoding = 'sync';
+    await new Promise((resolve, reject) => {
+      img.onload = resolve;
+      img.onerror = reject;
+      img.src = item.dataUrl;
+    });
+
+    const pad = 28;
+    const rawW = (item.width || img.naturalWidth || 800) + pad * 2;
+    const rawH = (item.height || img.naturalHeight || 480) + pad * 2;
+    const maxDim = Math.max(rawW, rawH);
+    const scale = Math.min(3, Math.max(1.5, Math.floor((4096 / maxDim) * 10) / 10));
+
+    const canvas = document.createElement('canvas');
+    canvas.width = Math.round(rawW * scale);
+    canvas.height = Math.round(rawH * scale);
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, rawW, rawH);
+    ctx.drawImage(img, pad, pad, rawW - pad * 2, rawH - pad * 2);
+
+    const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+    if (!blob) throw new Error('Canvas toBlob empty');
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  } catch (err) {
+    logger.warn('[ArticlePreview] PNG export fallback to SVG:', err);
+    downloadMermaidSvg(item);
+  }
+}
+
+function handleHoverMermaidDownloadPng() {
+  if (!hoveredMermaidEl.value) return;
+  const { list, targetIdx } = collectAllRenderedMermaids(hoveredMermaidEl.value);
+  const item = list[targetIdx] || extractNormalizedMermaidSvg(hoveredMermaidEl.value, 0);
+  if (item) downloadMermaidPng(item);
+}
+
+function handleHoverMermaidDownloadSvg() {
+  if (!hoveredMermaidEl.value) return;
+  const { list, targetIdx } = collectAllRenderedMermaids(hoveredMermaidEl.value);
+  const item = list[targetIdx] || extractNormalizedMermaidSvg(hoveredMermaidEl.value, 0);
+  if (item) downloadMermaidSvg(item);
+}
 
 // Material Replacement Popup state
 const materialPopupVisible = ref(false);
@@ -81,7 +411,9 @@ function handlePopupOpenCustomizer(key) {
   emit('open-customizer', key);
 }
 
-const activeCustomStyles = computed(() => props.customStyles || {});
+const activeCustomStyles = computed(() =>
+  props.themeId === 'raw-markdown' ? {} : (props.customStyles || {})
+);
 
 const customStyleVars = computed(() => {
   const s = activeCustomStyles.value || {};
@@ -411,6 +743,9 @@ const getScrollableElement = () => {
 };
 
 const handleScroll = () => {
+  if (hoveredMermaidEl.value) {
+    updateHoveredMermaidPosition(hoveredMermaidEl.value);
+  }
   const el = getScrollableElement();
   if (el && props.activePane === 'preview') {
     const scrollHeight = el.scrollHeight - el.clientHeight;
@@ -453,6 +788,27 @@ function setActivePreviewTarget(el) {
 }
 
 function handleGlobalKeydown(e) {
+  if (mermaidLightboxOpen.value) {
+    if (e.key === 'Escape') {
+      closeMermaidLightbox();
+    } else if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      showPrevMermaid();
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      showNextMermaid();
+    } else if (e.key === '+' || e.key === '=') {
+      e.preventDefault();
+      stepMermaidZoom(0.25);
+    } else if (e.key === '-' || e.key === '_') {
+      e.preventDefault();
+      stepMermaidZoom(-0.25);
+    } else if (e.key === '0') {
+      e.preventDefault();
+      resetMermaidView();
+    }
+    return;
+  }
   if (e.key === 'Escape') {
     materialPopupVisible.value = false;
     clearActivePreviewTarget();
@@ -479,6 +835,7 @@ onMounted(() => {
 });
 
 onBeforeUnmount(() => {
+  cleanupMermaidPanListeners();
   window.removeEventListener('keydown', handleGlobalKeydown);
   document.removeEventListener('click', handleGlobalClick);
   if (activeTargetTimer) {
@@ -502,6 +859,7 @@ function scrollToPreviewHeading(targetId) {
 function handlePreviewElementClick(e) {
   const target = e.target;
   if (!target || !target.closest) return;
+  if (target.closest('.mermaid-hover-toolbar')) return;
   // Only trigger for clicks inside rendered content
   if (!target.closest('.preview-body') && !target.closest('.wechat-phone-frame') && !target.closest('.tc-rendered-paper')) return;
 
@@ -514,6 +872,15 @@ function handlePreviewElementClick(e) {
   }
 
   if (target.closest('details, summary')) {
+    return;
+  }
+
+  // 0. Click on rendered Mermaid diagram -> Open interactive zoom & download lightbox
+  const mermaidEl = target.closest('.mermaid');
+  if (mermaidEl && mermaidEl.querySelector('svg')) {
+    e.preventDefault();
+    e.stopPropagation();
+    openMermaidLightboxFromEl(mermaidEl);
     return;
   }
 
@@ -668,12 +1035,54 @@ function handlePopupClose() {
 
 <template>
   <div
+    ref="wrapperRef"
     class="article-preview-wrapper"
     :style="customStyleVars"
     @mouseenter="emit('focusActive', 'preview')"
+    @mousemove="handlePreviewMouseMove"
+    @mouseleave="handlePreviewMouseLeave"
     @click="handlePreviewElementClick"
   >
     <component is="style" v-if="injectedCustomCss">{{ injectedCustomCss }}</component>
+
+    <!-- Hover Floating Action Pill for Mermaid Diagrams (outside v-html so WeChat copy stays pure) -->
+    <div
+      v-if="hoveredMermaidEl && hoveredMermaidPos.visible"
+      class="mermaid-hover-toolbar"
+      :style="{ top: `${hoveredMermaidPos.top}px`, right: `${hoveredMermaidPos.right}px` }"
+      @click.stop
+    >
+      <button
+        type="button"
+        class="mermaid-hover-btn"
+        title="全屏放大查看流程图"
+        aria-label="放大查看流程图"
+        @click="openMermaidLightboxFromEl(hoveredMermaidEl)"
+      >
+        <Maximize2 size="13" />
+        <span>放大</span>
+      </button>
+      <button
+        type="button"
+        class="mermaid-hover-btn"
+        title="下载高清 PNG 图片"
+        aria-label="下载 PNG"
+        @click="handleHoverMermaidDownloadPng"
+      >
+        <Download size="13" />
+        <span>PNG</span>
+      </button>
+      <button
+        type="button"
+        class="mermaid-hover-btn"
+        title="下载矢量 SVG 文件"
+        aria-label="下载 SVG"
+        @click="handleHoverMermaidDownloadSvg"
+      >
+        <FileCode size="13" />
+        <span>SVG</span>
+      </button>
+    </div>
 
     <div
       ref="previewContainerRef"
@@ -770,6 +1179,161 @@ function handlePopupClose() {
       @open-customizer="handlePopupOpenCustomizer"
       @close="handlePopupClose"
     />
+
+    <!-- Fullscreen Mermaid Interactive Preview & Download Lightbox -->
+    <Teleport to="body">
+      <div
+        v-if="mermaidLightboxOpen && activeMermaidItem"
+        class="editor-lightbox-backdrop mermaid-lightbox-backdrop"
+        @click="closeMermaidLightbox"
+      >
+        <div class="editor-lightbox-topbar" @click.stop>
+          <div class="editor-lightbox-btns">
+            <button
+              type="button"
+              class="editor-lightbox-btn is-icon"
+              title="缩小 (-)"
+              aria-label="缩小"
+              @click="stepMermaidZoom(-0.25)"
+            >
+              <ZoomOut size="15" />
+            </button>
+            <button
+              type="button"
+              class="editor-lightbox-zoom-badge"
+              title="点击重置 100% (0)"
+              @click="resetMermaidView"
+            >
+              {{ Math.round(mermaidZoom * 100) }}%
+            </button>
+            <button
+              type="button"
+              class="editor-lightbox-btn is-icon"
+              title="放大 (+)"
+              aria-label="放大"
+              @click="stepMermaidZoom(0.25)"
+            >
+              <ZoomIn size="15" />
+            </button>
+            <button
+              type="button"
+              class="editor-lightbox-btn is-icon"
+              title="重置适应窗口 (0)"
+              aria-label="重置适应窗口"
+              @click="resetMermaidView"
+            >
+              <RotateCcw size="14" />
+            </button>
+            <span class="editor-lightbox-sep"></span>
+            <button
+              type="button"
+              class="editor-lightbox-btn"
+              title="导出 3x 高清白底 PNG"
+              @click="downloadMermaidPng()"
+            >
+              <Download size="15" />
+              <span>下载 PNG</span>
+            </button>
+            <button
+              type="button"
+              class="editor-lightbox-btn"
+              title="导出矢量 SVG 源文件"
+              @click="downloadMermaidSvg()"
+            >
+              <FileCode size="15" />
+              <span>下载 SVG</span>
+            </button>
+            <button
+              type="button"
+              class="editor-lightbox-close"
+              aria-label="关闭预览 (Esc)"
+              @click="closeMermaidLightbox"
+            >
+              <X size="16" />
+            </button>
+          </div>
+        </div>
+
+        <div
+          class="editor-lightbox-stage"
+          @click.self="closeMermaidLightbox"
+          @wheel.prevent="handleMermaidWheel"
+        >
+          <div
+            class="mermaid-lightbox-card"
+            :class="{ 'is-zoomed': mermaidZoom > 1, 'is-panning': isMermaidPanning }"
+            :style="{
+              transform: `translate(${mermaidPan.x}px, ${mermaidPan.y}px) scale(${mermaidZoom})`
+            }"
+            @pointerdown="startMermaidPan"
+            @click.stop="handleMermaidImgClick"
+          >
+            <img
+              :src="activeMermaidItem.dataUrl"
+              :alt="activeMermaidItem.title"
+              class="mermaid-lightbox-img"
+              draggable="false"
+            />
+          </div>
+        </div>
+
+        <button
+          v-if="canSwitchMermaid"
+          type="button"
+          class="editor-lightbox-nav-btn editor-lightbox-nav-prev"
+          title="上一张流程图"
+          aria-label="上一张流程图"
+          @click.stop="showPrevMermaid"
+        >
+          <ChevronLeft size="22" />
+        </button>
+        <button
+          v-if="canSwitchMermaid"
+          type="button"
+          class="editor-lightbox-nav-btn editor-lightbox-nav-next"
+          title="下一张流程图"
+          aria-label="下一张流程图"
+          @click.stop="showNextMermaid"
+        >
+          <ChevronRight size="22" />
+        </button>
+
+        <div
+          v-if="mermaidItems.length > 0"
+          class="editor-lightbox-bottom-dock"
+          @click.stop
+        >
+          <div class="editor-lightbox-counter">
+            {{ activeMermaidIndex + 1 }} / {{ mermaidItems.length }}
+          </div>
+          <div
+            ref="mermaidThumbsRef"
+            class="editor-lightbox-thumbs"
+            role="listbox"
+            aria-label="文中流程图缩略图列表"
+          >
+            <button
+              v-for="(item, idx) in mermaidItems"
+              :key="`mermaid-thumb-${idx}`"
+              type="button"
+              role="option"
+              :aria-selected="idx === activeMermaidIndex"
+              class="editor-lightbox-thumb-btn mermaid-lightbox-thumb-btn"
+              :class="{ 'is-active': idx === activeMermaidIndex }"
+              :aria-label="`切换到第 ${idx + 1} 张流程图`"
+              @click="selectMermaidAt(idx)"
+            >
+              <img
+                :src="item.dataUrl"
+                :alt="item.title"
+                class="editor-lightbox-thumb-img mermaid-lightbox-thumb-img"
+                draggable="false"
+              />
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </div>
 </template>
 
@@ -799,23 +1363,24 @@ function handlePopupClose() {
   height: 0;
 }
 
-/* Desktop studio backdrop + elevated reading paper sheet */
+/* Flush full-bleed preview surface without outer margin, radius, or shadow */
 .preview-body:not(.is-wechat-wrapper) {
   display: block;
-  padding: 24px 28px 36px;
-  background-color: #F3F5F8;
+  padding: 0;
+  background-color: var(--ct-body-bg, var(--bg-preview, #ffffff));
   background-image: none;
   box-sizing: border-box;
 }
 
 :global(html.dark) .preview-body:not(.is-wechat-wrapper),
 :global(html[data-color-mode="dark"]) .preview-body:not(.is-wechat-wrapper) {
-  background-color: rgba(0, 0, 0, 0.22);
+  background-color: var(--bg-preview, #141413);
 }
 
 .preview-body:not(.is-wechat-wrapper) .preview-content-frame {
-  max-width: 720px;
-  margin: 0 auto;
+  max-width: none;
+  width: 100%;
+  margin: 0;
   min-height: 100%;
   display: flex;
   flex-direction: column;
@@ -841,24 +1406,24 @@ function handlePopupClose() {
   margin: 0;
   padding: 0 !important;
   background: var(--ct-body-bg, var(--bg-preview, #ffffff));
-  border-radius: 14px;
-  border: 1px solid rgba(15, 23, 42, 0.055);
-  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.025), 0 12px 30px rgba(15, 23, 42, 0.035);
-  overflow: hidden;
-  transition: background-color 0.25s ease, box-shadow 0.25s ease;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+  overflow: visible;
+  transition: background-color 0.25s ease;
 }
 
 .preview-body:not(.is-wechat-wrapper) .markdown-body :deep(#nice) {
   min-height: 100%;
-  padding: 36px 42px 48px !important;
+  padding: 20px 24px 32px !important;
   box-sizing: border-box;
   border-radius: 0;
 }
 
 :global(html.dark) .preview-body:not(.is-wechat-wrapper) .markdown-body,
 :global(html[data-color-mode="dark"]) .preview-body:not(.is-wechat-wrapper) .markdown-body {
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  border-color: transparent;
+  box-shadow: none;
 }
 
 /* Deep dark mode support for standard preview surface */
@@ -1129,6 +1694,12 @@ function handlePopupClose() {
   margin: 16px auto;
   border-radius: var(--ct-img-radius, 8px);
   box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+}
+
+[data-theme="raw-markdown"] .markdown-body :deep(img),
+[data-theme="raw-markdown"] .wechat-body :deep(img) {
+  border-radius: var(--ct-img-radius, 0px);
+  box-shadow: none;
 }
 
 .markdown-body :deep(section[data-role="image-container"]),
@@ -1441,13 +2012,13 @@ function handlePopupClose() {
    的滚动区接管滚动，不再内外两层套着滚。桌面端不受影响。 */
 @media (max-width: 960px), (pointer: coarse) {
   .preview-body:not(.is-wechat-wrapper) {
-    padding: 12px 12px 24px;
+    padding: 0;
   }
   .preview-body:not(.is-wechat-wrapper) .markdown-body {
-    border-radius: 12px;
+    border-radius: 0;
   }
   .preview-body:not(.is-wechat-wrapper) .markdown-body :deep(#nice) {
-    padding: 22px 20px 32px !important;
+    padding: 18px 16px 28px !important;
   }
   .preview-body.is-wechat-wrapper {
     padding: 0;
@@ -1499,6 +2070,10 @@ function handlePopupClose() {
   vertical-align: middle;
   color: var(--accent-color, #2775b6);
 }
+[data-theme="raw-markdown"] .markdown-body :deep(.katex),
+[data-theme="raw-markdown"] .wechat-body :deep(.katex) {
+  color: var(--text-main, #1f2328);
+}
 .markdown-body :deep(.katex-display),
 .wechat-body :deep(.katex-display) {
   display: block;
@@ -1520,11 +2095,101 @@ function handlePopupClose() {
   box-shadow: none !important;
   border-radius: 0 !important;
 }
+.markdown-body :deep(.mermaid),
+.wechat-body :deep(.mermaid),
 .mermaid {
+  position: relative;
   display: flex;
   justify-content: center;
   margin: 1.5em 0;
+  padding: 12px 8px;
   width: 100%;
+  box-sizing: border-box;
+  border-radius: 10px;
+  cursor: zoom-in;
+  transition: background-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.markdown-body :deep(.mermaid:hover),
+.wechat-body :deep(.mermaid:hover) {
+  background-color: rgba(0, 180, 197, 0.04);
+  box-shadow: inset 0 0 0 1px rgba(0, 180, 197, 0.24);
+}
+
+.mermaid-hover-toolbar {
+  position: absolute;
+  z-index: 30;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 5px;
+  border-radius: 8px;
+  background: rgba(15, 23, 42, 0.86);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(8px);
+}
+
+.mermaid-hover-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 8px;
+  border-radius: 5px;
+  border: none;
+  background: transparent;
+  color: #f8fafc;
+  font-size: 11.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.mermaid-hover-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #ffffff;
+}
+
+:global(.mermaid-lightbox-card) {
+  background: #ffffff;
+  padding: 24px 32px;
+  border-radius: 12px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
+  max-width: 88vw;
+  max-height: calc(100vh - 196px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+  transition: transform 0.16s ease;
+  transform-origin: center center;
+}
+
+:global(.mermaid-lightbox-card.is-panning) {
+  cursor: grabbing;
+  transition: none;
+}
+
+:global(.mermaid-lightbox-img) {
+  max-width: calc(88vw - 64px);
+  max-height: calc(100vh - 244px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  display: block;
+  user-select: none;
+}
+
+:global(.mermaid-lightbox-thumb-btn) {
+  background: #ffffff !important;
+}
+
+:global(.mermaid-lightbox-thumb-img) {
+  object-fit: contain !important;
+  padding: 3px;
+  box-sizing: border-box;
+  background: #ffffff;
 }
 
 .offscreen-pane {

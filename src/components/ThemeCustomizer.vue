@@ -12,7 +12,7 @@ import { indentWithTab } from '@codemirror/commands';
 
 const props = defineProps({
   modelValue: { type: Object, default: () => ({}) },
-  themeId: { type: String, default: 'classic-indigo' },
+  themeId: { type: String, default: 'raw-markdown' },
   codeThemeId: { type: String, default: 'atom-one-dark' },
   open: { type: Boolean, default: false }
 });

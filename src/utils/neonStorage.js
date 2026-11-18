@@ -191,7 +191,7 @@ export async function initNeonTables(connectionString) {
     UPDATE nicemd_custom_themes 
     SET is_deleted = TRUE 
     WHERE id IN (
-      'classic-indigo', 'mountain-warm', 'mountain-forest', 'mountain-tea',
+      'raw-markdown', 'classic-indigo', 'mountain-warm', 'mountain-forest', 'mountain-tea',
       'mountain-red', 'mountain-purple', 'mountain-gold', '135-morandi',
       '135-guofeng', 'github-clean', 'typora-github', 'typora-vue',
       'vue-emerald', 'nordic-ice', 'typora-dark', 'default'
@@ -224,7 +224,7 @@ export async function testNeonConnection(connectionString) {
     SELECT count(*)::int as count FROM nicemd_custom_themes 
     WHERE is_deleted = FALSE
     AND id NOT IN (
-      'classic-indigo', 'mountain-warm', 'mountain-forest', 'mountain-tea',
+      'raw-markdown', 'classic-indigo', 'mountain-warm', 'mountain-forest', 'mountain-tea',
       'mountain-red', 'mountain-purple', 'mountain-gold', '135-morandi',
       '135-guofeng', 'github-clean', 'typora-github', 'typora-vue',
       'vue-emerald', 'nordic-ice', 'typora-dark', 'default'

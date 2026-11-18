@@ -18,7 +18,7 @@ import ThemeCustomizer from './ThemeCustomizer.vue';
 const props = defineProps({
   currentTheme: {
     type: String,
-    default: 'classic-indigo'
+    default: 'raw-markdown'
   }
 });
 
@@ -70,6 +70,7 @@ function themeDot(theme) {
 // 主题画廊:把内置主题转成卡片数据,附上描述文案。
 const themeGallery = computed(() => {
   const descriptions = {
+    'raw-markdown': '纯净原始 Markdown 排版，无额外装饰与主题滤镜，还原最本真的文档结构。',
     'classic-indigo': '经典山海主题,米白纸面 + 藏蓝强调,适合公众号深度长文。',
     'mountain-warm': '暖沙米黄纸面 + 暖棕强调,温润耐读,适合随笔与生活分享。',
     'mountain-forest': '米白纸面 + 墨绿强调,自然清爽,适合生活与自然主题内容。',
@@ -79,7 +80,8 @@ const themeGallery = computed(() => {
     'typora-dark': '深色护眼风,暗色纸面 + 柔和高亮,适合夜间长时间写作。'
   };
   const tags = {
-    'classic-indigo': '默认 · 经典',
+    'raw-markdown': '默认 · 原始',
+    'classic-indigo': '山海 · 经典',
     'mountain-warm': '山海变体 · 暖',
     'mountain-forest': '山海变体 · 绿',
     'typora-github': 'Typora · 浅色',

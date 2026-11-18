@@ -135,12 +135,16 @@ export function stripOssProcessFromMarkdown(md) {
   return md.replace(/(!\[[^\]]*\]\([^)\s]+)\?x-oss-process=[^)\s]+/g, '$1');
 }
 
-export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', codeThemeId = 'mdnice-classic', customCss = '', customStyles = null, livePreviewEl = null, options = {}) {
+export function compileToWeChatHtml(htmlContent, themeId = 'raw-markdown', codeThemeId = 'mdnice-classic', customCss = '', customStyles = null, livePreviewEl = null, options = {}) {
   const effectiveCodeThemeId = customStyles?.code?.codeThemeId || codeThemeId || 'mdnice-classic';
   const codeTheme = codeThemes.find(t => t.id === effectiveCodeThemeId) || codeThemes.find(t => t.id === codeThemeId) || codeThemes[0];
   const codeStyles = (codeTheme && codeTheme.styles) ? codeTheme.styles : {};
   const theme = themes.find(t => t.id === themeId) || themes[0];
   const themeStyles = theme.styles;
+  if (theme.id === 'raw-markdown') {
+    customStyles = {};
+    customCss = '';
+  }
 
   const bodyColor = customStyles?.body?.color || themeStyles['--text-main'] || '#3f3f3f';
   const bodyBg = customStyles?.body?.backgroundColor || themeStyles['--bg-preview'] || '#ffffff';
@@ -1349,11 +1353,11 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
     display: inline;
   `));
 
-  styleEl('em', `
+  styleEl('em', (wechatTypo.em ? wechatTypo.em + '; display: inline;' : `
     font-style: italic;
     color: ${colors.primary};
     display: inline;
-  `);
+  `));
 
   styleEl('mark', `
     background-color: #fff566;
@@ -1566,7 +1570,7 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
   });
 
   // 8. Code Blocks (Strictly isolated: styled according to selected codeTheme, with resilient section wrapper for WeChat MP)
-  const isMacStyle = customStyles?.code?.macStyle !== false;
+  const isMacStyle = theme.id === 'raw-markdown' ? false : (customStyles?.code?.macStyle !== false);
   const showCodeLang = customStyles?.code?.showLang === true;
   const codeFontSize = customStyles?.code?.fontSize || '13.5px';
   const codeLineHeight = customStyles?.code?.lineHeight || '1.7';
@@ -1612,8 +1616,8 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
       padding-bottom: 0px;
       padding-left: 0px;
       padding-right: 0px;
-      border-radius: 8px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.06);
+      border-radius: ${theme.id === 'raw-markdown' ? '6px' : '8px'};
+      box-shadow: ${theme.id === 'raw-markdown' ? 'none' : '0 4px 16px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.06)'};
       border: 1px solid rgba(0, 0, 0, 0.08);
       background-color: ${codeBg};
       overflow: hidden;
@@ -1833,7 +1837,8 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
       const latexCode = rawFormula.trim();
       if (!latexCode) return;
 
-      const hexColor = colors.primary.replace('#', '').toUpperCase();
+      const mathColor = theme.id === 'raw-markdown' ? colors.text : colors.primary;
+      const hexColor = mathColor.replace('#', '').toUpperCase();
       const dpi = isBlock ? '140' : '130';
       const fullLatex = `\\dpi{${dpi}} \\bg{transparent} \\fg{${hexColor}} ${latexCode}`;
       const encodedLatex = encodeURIComponent(fullLatex)
@@ -1890,7 +1895,8 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
       katexEl.closest('.katex-display')
     );
 
-    const hexColor = colors.primary.replace('#', '').toUpperCase();
+    const mathColor = theme.id === 'raw-markdown' ? colors.text : colors.primary;
+    const hexColor = mathColor.replace('#', '').toUpperCase();
     const dpi = isBlock ? '140' : '130';
     const fullLatex = `\\dpi{${dpi}} \\bg{transparent} \\fg{${hexColor}} ${latexCode}`;
     const encodedLatex = encodeURIComponent(fullLatex)
@@ -2059,14 +2065,15 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
       }
 
       const { widthRule, heightRule } = getWechatImgDimensionsCss(img);
+      const isRawTheme = theme.id === 'raw-markdown';
       img.setAttribute('style', cleanCss(`
         ${widthRule}
         max-width: 100% !important;
         ${heightRule}
         display: block !important;
         margin: 16px auto !important;
-        border-radius: 8px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+        border-radius: ${isRawTheme ? '0px' : '8px'};
+        box-shadow: ${isRawTheme ? 'none' : '0 4px 12px rgba(0,0,0,0.06)'};
       `));
     }
   });
@@ -2166,6 +2173,10 @@ export function compileToWeChatHtml(htmlContent, themeId = 'classic-indigo', cod
       return;
     }
     if (href.startsWith('#')) return;
+    if (theme.id === 'raw-markdown' && !options?.isExport) {
+      a.setAttribute('style', cleanCss(`color: ${colors.primary}; text-decoration: none;`));
+      return;
+    }
     const isWeChatDomain = href.includes('mp.weixin.qq.com') || href.startsWith('weixin://');
     if (!isWeChatDomain) {
       const span = doc.createElement('span');
@@ -3074,7 +3085,7 @@ export function previewDomToWechatHtml(previewEl, primaryColor) {
  * Copies styled HTML + fallback plain text to user clipboard.
  * When `previewEl` is provided, uses WYSIWYG computed-style path.
  */
-export async function copyToWeChat(htmlContent, plainText, themeId = 'classic-indigo', codeThemeId = 'mdnice-classic', customCss = '', customStyles = null, livePreviewEl = null, options = {}) {
+export async function copyToWeChat(htmlContent, plainText, themeId = 'raw-markdown', codeThemeId = 'mdnice-classic', customCss = '', customStyles = null, livePreviewEl = null, options = {}) {
   // Always use the bulletproof compileToWeChatHtml engine to ensure zero negative margins,
   // zero floats, zero layout collisions, and 100% WeChat MP Editor compatibility.
   const effectiveCodeThemeId = customStyles?.code?.codeThemeId || codeThemeId || 'mdnice-classic';

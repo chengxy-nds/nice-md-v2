@@ -283,14 +283,14 @@ export function buildWechatTypo(theme, colors) {
         s.push(`max-width: 90%`);
         break;
       case 'bar':
-        s.push(`border-left: 4px solid {primary}`);
+        s.push(`border-left: ${spec.borderWidth || '4px'} solid ${spec.borderColor ? fill(spec.borderColor, colors) : '{primary}'}`);
         s.push(`padding-left: 10px`);
-        s.push(`color: {text}`);
+        s.push(`color: ${spec.color ? fill(spec.color, colors) : '{text}'}`);
         break;
       case 'underline':
-        s.push(`border-bottom: 2px solid {primary}`);
+        s.push(`border-bottom: ${spec.borderWidth || '2px'} solid ${spec.borderColor ? fill(spec.borderColor, colors) : '{primary}'}`);
         s.push(`padding-bottom: 6px`);
-        s.push(`color: {text}`);
+        s.push(`color: ${spec.color ? fill(spec.color, colors) : '{text}'}`);
         break;
       case 'icon':
         s.push(`text-align: center`);
@@ -306,7 +306,7 @@ export function buildWechatTypo(theme, colors) {
         s.push(`padding-right: 0`);
         break;
       default:
-        s.push(`color: {primary}`);
+        s.push(`color: ${spec.color ? fill(spec.color, colors) : '{primary}'}`);
         break;
     }
     out[tag] = fill(s.join('; '), colors);
@@ -340,6 +340,10 @@ export function buildWechatTypo(theme, colors) {
     out['strong'] = `color: ${T.strong.color ? fill(T.strong.color, colors) : colors.primary}; font-weight: ${T.strong.weight || 700};`;
   }
 
+  if (T.em) {
+    out['em'] = `color: ${T.em.color ? fill(T.em.color, colors) : colors.primary}; font-style: italic;`;
+  }
+
   if (T.a) {
     const s = [];
     if (T.a.color) s.push(`color: ${fill(T.a.color, colors)}`);
@@ -350,20 +354,20 @@ export function buildWechatTypo(theme, colors) {
     const s = [];
     switch (T.blockquote.variant) {
       case 'card':
-        s.push(`border: 1px solid {primary}`);
-        s.push(`border-radius: 10px`);
+        s.push(`border: 1px solid ${T.blockquote.borderColor ? fill(T.blockquote.borderColor, colors) : '{primary}'}`);
+        s.push(`border-radius: ${T.blockquote.radius || '10px'}`);
         break;
       case 'striped':
-        s.push(`border-radius: 8px`);
+        s.push(`border-radius: ${T.blockquote.radius || '8px'}`);
         break;
       default:
-        s.push(`border-left: 4px solid {primary}`);
-        s.push(`border-radius: 0 8px 8px 0`);
+        s.push(`border-left: ${T.blockquote.borderWidth || '4px'} solid ${T.blockquote.borderColor ? fill(T.blockquote.borderColor, colors) : '{primary}'}`);
+        s.push(`border-radius: ${T.blockquote.radius || '0 8px 8px 0'}`);
         break;
     }
     s.push(`background-color: ${T.blockquote.bg ? fill(T.blockquote.bg, colors) : '{accentBg}'}`);
     s.push(`color: ${T.blockquote.textColor ? fill(T.blockquote.textColor, colors) : '{muted}'}`);
-    s.push(`padding: 14px 20px`);
+    s.push(`padding: ${T.blockquote.padding || '14px 20px'}`);
     out['blockquote'] = fill(s.join('; '), colors);
     out['blockquoteP'] = `margin-top: 0px; margin-bottom: 0px; padding-top: 0px; padding-bottom: 0px; color: ${fill(T.blockquote.textColor || '{muted}', colors)};`;
   }

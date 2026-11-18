@@ -111,7 +111,7 @@ const props = defineProps({
   },
   currentTheme: {
     type: String,
-    default: 'classic-indigo'
+    default: 'raw-markdown'
   },
   themePresets: {
     type: Array,
