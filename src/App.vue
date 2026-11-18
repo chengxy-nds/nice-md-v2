@@ -2477,10 +2477,34 @@ const mobileActiveView = ref('editor'); // 'editor' or 'preview'
 const mobileSidebarOpen = ref(false);
 
 const previewVisible = ref(localStorage.getItem('nicemd_preview_visible') !== 'false');
+const editorVisible = ref(localStorage.getItem('nicemd_editor_visible') !== 'false');
+// 确保不会同时把编辑区与预览区都隐藏导致页面空白
+if (!previewVisible.value && !editorVisible.value) {
+  previewVisible.value = true;
+  localStorage.setItem('nicemd_preview_visible', 'true');
+}
+
 const togglePreview = () => {
   soundEngine.playClick();
   previewVisible.value = !previewVisible.value;
   localStorage.setItem('nicemd_preview_visible', previewVisible.value.toString());
+  if (!previewVisible.value && !editorVisible.value) {
+    editorVisible.value = true;
+    localStorage.setItem('nicemd_editor_visible', 'true');
+  }
+};
+
+const toggleEditor = () => {
+  soundEngine.playClick();
+  editorVisible.value = !editorVisible.value;
+  localStorage.setItem('nicemd_editor_visible', editorVisible.value.toString());
+  if (!editorVisible.value) {
+    if (focusMode.value) focusMode.value = false;
+    if (!previewVisible.value) {
+      previewVisible.value = true;
+      localStorage.setItem('nicemd_preview_visible', 'true');
+    }
+  }
 };
 
 // ── 专注模式（笔记页 artifact 的做法）──
@@ -2495,6 +2519,10 @@ function toggleFocusMode() {
   soundEngine.playClick();
   focusMode.value = !focusMode.value;
   if (focusMode.value) {
+    if (!editorVisible.value) {
+      editorVisible.value = true;
+      localStorage.setItem('nicemd_editor_visible', 'true');
+    }
     focusPrevSidebarVisible = sidebarVisible.value;
     sidebarVisible.value = false;
     if (window.innerWidth <= 960) mobileActiveView.value = 'editor';
@@ -2927,7 +2955,7 @@ watch(customStyles, () => {
           />
 
           <!-- 3. 编辑与排版双栏工作台 -->
-          <div v-else class="workspace-grid" :class="[`active-view-${mobileActiveView}`, { 'preview-hidden': !previewVisible, 'theme-panel-open': showThemePanel, 'is-focus': focusMode }]">
+          <div v-else class="workspace-grid" :class="[`active-view-${mobileActiveView}`, { 'preview-hidden': !previewVisible, 'editor-hidden': !editorVisible, 'theme-panel-open': showThemePanel, 'is-focus': focusMode }]">
           <!-- Document Tabs Bar -->
           <div class="workspace-tabs" role="tablist" aria-label="已打开文档标签">
             <div
@@ -3374,6 +3402,7 @@ watch(customStyles, () => {
                 :scrollPercentage="scrollPercentage"
                 :activePane="activeScrollPane"
                 :previewVisible="previewVisible"
+                :editorVisible="editorVisible"
                 :customStyles="customStyles"
                 :themePanelVisible="showThemePanel"
                 @change-theme="changeTheme"
@@ -3386,6 +3415,7 @@ watch(customStyles, () => {
                 @scroll="handleScroll"
                 @focusActive="handleFocusActive"
                 @togglePreview="togglePreview"
+                @toggleEditor="toggleEditor"
                 @open-launchpad="openLaunchpad"
               />
             </div>

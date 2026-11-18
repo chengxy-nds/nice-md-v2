@@ -383,14 +383,14 @@ function hasPrefixOption(id) {
   border-radius: 2px;
 }
 
-/* 关闭按钮：CapCut 弹窗样式——灰色实心圆 + 白色 ×（实测 #797979，约 36px）。 */
+/* 关闭按钮：无背景，hover 时给浅底 */
 .drawer-close-btn {
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 50%;
   border: none;
-  background: var(--modal-close-bg, #797979);
-  color: #ffffff;
+  background: transparent;
+  color: var(--modal-close-fg, #64748b);
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -400,8 +400,8 @@ function hasPrefixOption(id) {
 }
 
 .drawer-close-btn:hover {
-  background: var(--modal-close-bg-hover, #666666);
-  color: #ffffff;
+  background: var(--modal-close-bg-hover, #f1f5f9);
+  color: var(--modal-close-fg-hover, #0f172a);
 }
 
 /* 2. Search & Color Filter Bar */

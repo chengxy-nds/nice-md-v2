@@ -3,6 +3,8 @@ import { ref, computed, watch, nextTick, onUnmounted } from 'vue';
 import {
   Eye,
   EyeOff,
+  PanelLeftClose,
+  PanelLeftOpen,
   Monitor,
   Smartphone,
   Copy,
@@ -60,6 +62,10 @@ const props = defineProps({
     type: Boolean,
     default: true
   },
+  editorVisible: {
+    type: Boolean,
+    default: true
+  },
   customStyles: {
     type: Object,
     default: () => ({})
@@ -76,6 +82,7 @@ const emit = defineEmits([
   'scroll',
   'focusActive',
   'togglePreview',
+  'toggleEditor',
   'open-launchpad',
   'update:customStyles',
   'save-theme',
@@ -865,6 +872,27 @@ onUnmounted(() => {
             <span class="right-tooltip-label">{{ previewVisible ? '隐藏预览区' : '显示预览区' }}</span>
           </div>
         </button>
+
+        <button
+          type="button"
+          class="bar-action-btn right-nav-target"
+          :class="{ 'is-active': !editorVisible }"
+          :aria-pressed="!editorVisible"
+          data-no-tooltip="true"
+          @mouseenter="handleRightBarHover"
+          @focus="handleRightBarHover"
+          @click="$emit('toggleEditor')"
+          :aria-label="editorVisible ? '隐藏编辑区（仅看预览）' : '显示编辑区'"
+        >
+          <span class="right-btn-icon ic-panel">
+            <PanelLeftClose v-if="editorVisible" size="18" stroke-width="1.7" />
+            <PanelLeftOpen v-else size="18" stroke-width="1.7" />
+          </span>
+          <span class="bar-btn-label">{{ editorVisible ? '仅看预览' : '显示编辑' }}</span>
+          <div class="right-tooltip" role="tooltip">
+            <span class="right-tooltip-label">{{ editorVisible ? '隐藏编辑区（仅看预览）' : '显示编辑区' }}</span>
+          </div>
+        </button>
       </div>
 
       <div class="bar-bottom">
@@ -1427,14 +1455,38 @@ html.dark .bar-action-btn.is-active {
   animation: deviceWiggle 0.6s var(--ease-out);
 }
 
-/* 预览显隐图标：眨眼动效 */
+/* 预览显隐图标：即刻眨眼微弹动效 */
 @keyframes eyeWink {
-  0%, 86%, 100% { transform: scaleY(1); }
-  92% { transform: scaleY(0.12); }
+  0%, 100% { transform: scaleY(1) scaleX(1); }
+  40% { transform: scaleY(0.14) scaleX(1.08); }
+  75% { transform: scaleY(1.06) scaleX(0.98); }
 }
 
 .bar-action-btn:hover .ic-eye {
-  animation: eyeWink 1.8s ease-in-out infinite;
+  animation: eyeWink 0.55s var(--ease-out);
+}
+
+/* 编辑区显隐图标：侧栏轻推回弹 */
+@keyframes panelSlide {
+  0%, 100% { transform: translateX(0) scale(1); }
+  35% { transform: translateX(-2.5px) scale(1.06); }
+  70% { transform: translateX(1.5px) scale(0.98); }
+}
+
+.bar-action-btn:hover .ic-panel {
+  animation: panelSlide 0.55s var(--ease-out);
+}
+
+/* 排版主题色卡：以左下角装订轴心轻展摇摆 */
+@keyframes swatchFan {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  30% { transform: rotate(-14deg) scale(1.08); }
+  65% { transform: rotate(8deg) scale(1.04); }
+}
+
+.bar-action-btn:hover .ic-swatch {
+  animation: swatchFan 0.6s var(--ease-out);
+  transform-origin: 32% 72%;
 }
 
 /* 主题调色板：画板轻微摇摆 */

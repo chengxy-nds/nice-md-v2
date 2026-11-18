@@ -1457,7 +1457,18 @@ html.dark .workspace-column.editor-column {
   border-right: none;
 }
 
-.workspace-grid.theme-panel-open:not(.preview-hidden) .workspace-columns {
+.workspace-grid.editor-hidden .workspace-columns,
+.workspace-grid.theme-panel-open.editor-hidden .workspace-columns {
+  grid-template-columns: minmax(0, 0px) minmax(0, 1fr);
+}
+
+.workspace-grid.editor-hidden .workspace-column.editor-column {
+  opacity: 0;
+  pointer-events: none;
+  border-right: none;
+}
+
+.workspace-grid.theme-panel-open:not(.preview-hidden):not(.editor-hidden) .workspace-columns {
   grid-template-columns: calc(50% - 12rem) calc(50% + 12rem);
 }
 
@@ -1761,8 +1772,10 @@ html.dark .workspace-column.editor-column {
      规则特异度更高，这里一并覆盖。 */
   .workspace-columns,
   .workspace-grid.preview-hidden .workspace-columns,
-  .workspace-grid.theme-panel-open:not(.preview-hidden) .workspace-columns,
+  .workspace-grid.editor-hidden .workspace-columns,
+  .workspace-grid.theme-panel-open:not(.preview-hidden):not(.editor-hidden) .workspace-columns,
   .workspace-grid.theme-panel-open.preview-hidden .workspace-columns,
+  .workspace-grid.theme-panel-open.editor-hidden .workspace-columns,
   .workspace-grid.is-focus .workspace-columns,
   .app-container.is-focus .workspace-grid .workspace-columns {
     grid-template-columns: minmax(0, 1fr) !important;

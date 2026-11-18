@@ -229,9 +229,11 @@ html[data-color-mode="light"] {
   --brand-primary: #00C8D7;
   --brand-primary-hover: #00A9B8;
   --brand-primary-active: #008A99;
-  /* 弹窗关闭按钮（CapCut 实测：灰色实心圆 + 白色 ×，约 36px）：常态 #797979，hover 加深。 */
-  --modal-close-bg: #797979;
-  --modal-close-bg-hover: #666666;
+  /* 弹窗关闭按钮：无实心黑/灰底，常态透明 + 柔灰图标，hover 给浅底。 */
+  --modal-close-bg: transparent;
+  --modal-close-bg-hover: #f1f5f9;
+  --modal-close-fg: #64748b;
+  --modal-close-fg-hover: #0f172a;
   --brand-primary-light: #C9F2F6;
   --brand-primary-subtle: rgba(0, 200, 215, 0.08);
   --brand-subtle: #E6F7F9;
@@ -356,6 +358,10 @@ body.dark {
   --wandor-text: #f3f4f6;
   --wandor-muted: #9ca3af;
   --wandor-prompt: #d97706;
+  --modal-close-bg: transparent;
+  --modal-close-bg-hover: rgba(255, 255, 255, 0.08);
+  --modal-close-fg: #94a3b8;
+  --modal-close-fg-hover: #f8fafc;
   --glass-bg: rgba(20, 20, 24, 0.82);
   --glass-border: rgba(255, 255, 255, 0.14);
   --glass-shadow: 0 1.25rem 3.125rem rgba(0, 0, 0, 0.45);

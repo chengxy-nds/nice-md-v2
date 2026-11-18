@@ -118,11 +118,11 @@
   font-weight: 400;
 }
 
-/* 抽屉关闭按钮：CapCut 弹窗样式——灰色实心圆 + 白色 ×（实测 #797979，约 36px）。 */
+/* 抽屉关闭按钮：无背景，hover 时给浅底 */
 .btn-drawer-close {
-  background: var(--modal-close-bg, #797979);
+  background: transparent;
   border: none;
-  color: #ffffff;
+  color: var(--modal-close-fg, #64748b);
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 50%;
@@ -134,9 +134,8 @@
 }
 
 .btn-drawer-close:hover {
-  background: var(--modal-close-bg-hover, #666666);
-  color: #ffffff;
-  transform: scale(1.06);
+  background: var(--modal-close-bg-hover, #f1f5f9);
+  color: var(--modal-close-fg-hover, #0f172a);
 }
 
 /* Scrollable Content */
@@ -1256,9 +1255,9 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 }
 
 .manage-modal-close {
-  background: var(--modal-close-bg, #797979);
+  background: transparent;
   border: none;
-  color: #ffffff;
+  color: var(--modal-close-fg, #64748b);
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 50%;
@@ -1270,9 +1269,8 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 }
 
 .manage-modal-close:hover {
-  background: var(--modal-close-bg-hover, #666666);
-  color: #ffffff;
-  transform: scale(1.06);
+  background: var(--modal-close-bg-hover, #f1f5f9);
+  color: var(--modal-close-fg-hover, #0f172a);
 }
 
 /* Two-Column Body Layout */
@@ -1933,9 +1931,9 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 }
 
 .picker-modal-close {
-  background: var(--modal-close-bg, #797979);
+  background: transparent;
   border: none;
-  color: #ffffff;
+  color: var(--modal-close-fg, #64748b);
   width: 2.25rem;
   height: 2.25rem;
   border-radius: 50%;
@@ -1947,8 +1945,8 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 }
 
 .picker-modal-close:hover {
-  background: var(--modal-close-bg-hover, #666666);
-  color: #ffffff;
+  background: var(--modal-close-bg-hover, #f1f5f9);
+  color: var(--modal-close-fg-hover, #0f172a);
 }
 
 .cover-picker-body {
@@ -2208,15 +2206,15 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 
 :global(html.dark) .btn-drawer-close,
 :global(html[data-color-mode="dark"]) .btn-drawer-close {
-  background: var(--modal-close-bg, #797979);
+  background: transparent;
   border: none;
-  color: #ffffff;
+  color: var(--modal-close-fg, #94a3b8);
 }
 
 :global(html.dark) .btn-drawer-close:hover,
 :global(html[data-color-mode="dark"]) .btn-drawer-close:hover {
-  background: var(--modal-close-bg-hover, #666666);
-  color: #ffffff;
+  background: var(--modal-close-bg-hover, rgba(255, 255, 255, 0.08));
+  color: var(--modal-close-fg-hover, #f8fafc);
 }
 
 :global(html.dark) .current-doc-banner,
@@ -2493,15 +2491,15 @@ html.dark .orange-ring-radio.is-checked .ring-inner {
 
 :global(html.dark) .manage-modal-close,
 :global(html[data-color-mode="dark"]) .manage-modal-close {
-  background: var(--modal-close-bg, #797979);
+  background: transparent;
   border: none;
-  color: #ffffff;
+  color: var(--modal-close-fg, #94a3b8);
 }
 
 :global(html.dark) .manage-modal-close:hover,
 :global(html[data-color-mode="dark"]) .manage-modal-close:hover {
-  background: var(--modal-close-bg-hover, #666666);
-  color: #ffffff;
+  background: var(--modal-close-bg-hover, rgba(255, 255, 255, 0.08));
+  color: var(--modal-close-fg-hover, #f8fafc);
 }
 
 :global(html.dark) .manage-modal-subtitle,

@@ -40,7 +40,13 @@ import {
   parseEditorFontSizeNumber
 } from '../utils/editorPreferences';
 import { showConfirm } from '../utils/confirmDialog';
-import { countDocChars, countDocImages } from '../utils/docStats';
+import {
+  countDocWords,
+  countDocChars,
+  countDocLines,
+  countDocImages,
+  extractDocImages
+} from '../utils/docStats';
 import { writeTextToClipboard } from '../utils/clipboard';
 import { detectUrlAtOffset, downloadUrlResource, getFastPreviewImageUrl } from '../utils/editorUrlHelper';
 import { fireConfetti } from '../utils/celebrate';
@@ -330,7 +336,9 @@ const urlImgNaturalSize = ref({ width: 0, height: 0 });
 const lightboxImageUrl = ref('');
 const lightboxRawUrl = ref('');
 const lightboxImageName = ref('');
+const lightboxActiveIndex = ref(-1);
 const lightboxImgRef = ref(null);
+const lightboxThumbsRef = ref(null);
 const lightboxZoom = ref(1);
 const lightboxPan = ref({ x: 0, y: 0 });
 const lightboxImgLoading = ref(false);
@@ -828,17 +836,25 @@ async function handleCopyHoveredUrl(url) {
   }
 }
 
-function openUrlLightbox(url, name = '') {
+function openUrlLightbox(url, name = '', explicitIndex = -1) {
   if (!url) return;
   soundEngine.playClick();
   const fastUrl = getFastPreviewImageUrl(url, 1200);
+  const sameDisplayUrl = lightboxImageUrl.value === fastUrl;
   lightboxRawUrl.value = url;
   lightboxUseRaw.value = fastUrl === url;
   lightboxImageUrl.value = fastUrl;
   lightboxImageName.value = name || '图片预览';
+  if (explicitIndex >= 0 && explicitIndex < editorImages.value.length) {
+    lightboxActiveIndex.value = explicitIndex;
+  } else {
+    lightboxActiveIndex.value = editorImages.value.findIndex((it) => it.url === url);
+  }
   lightboxZoom.value = 1;
   lightboxPan.value = { x: 0, y: 0 };
-  lightboxImgLoading.value = true;
+  if (!sameDisplayUrl) {
+    lightboxImgLoading.value = true;
+  }
   hideUrlPreviewImmediately();
   nextTick(() => {
     if (lightboxImgRef.value?.complete && lightboxImgRef.value.naturalWidth > 0) {
@@ -847,59 +863,70 @@ function openUrlLightbox(url, name = '') {
   });
 }
 
+function openFirstDocImageLightbox() {
+  const first = editorImages.value[0];
+  if (!first) return;
+  openUrlLightbox(first.url, first.alt || '图片 1', 0);
+}
+
 function closeUrlLightbox() {
   cleanupLightboxPanListeners();
   lightboxImageUrl.value = '';
   lightboxRawUrl.value = '';
   lightboxImageName.value = '';
+  lightboxActiveIndex.value = -1;
   lightboxZoom.value = 1;
   lightboxPan.value = { x: 0, y: 0 };
   lightboxImgLoading.value = false;
   isLightboxPanning.value = false;
 }
 
-// 编辑区灯箱里左右切换文中的图：从正文 Markdown 里按顺序抽出去重的图片地址
-// （和发布弹窗里 articleImages 同一套取法）。当前这张不在列表里时
-// （比如悬停打开的站外图、文件链接），不显示切换按钮。
-const editorImages = computed(() => {
-  const list = [];
-  const text = editorText.value || '';
-  const mdRegex = /!\[([^\]]*)\]\((https?:\/\/[^\s)]+|data:image\/[^\s)]+)\)/g;
-  let match;
-  while ((match = mdRegex.exec(text)) !== null) {
-    if (match[2] && !list.some((it) => it.url === match[2])) {
-      list.push({ url: match[2], alt: match[1] || '' });
-    }
-  }
-  const htmlRegex = /<img[^>]+src=["']([^"']+)["']/gi;
-  while ((match = htmlRegex.exec(text)) !== null) {
-    if (match[1] && !list.some((it) => it.url === match[1])) {
-      list.push({ url: match[1], alt: '' });
-    }
-  }
-  return list;
-});
+// 编辑区灯箱里左右切换文中的图：按正文出现顺序提取全部图片（含 =WxH 尺寸图片与 <img>），
+// 与底部状态栏“N 图”统计完全一致。
+const editorImages = computed(() => extractDocImages(editorText.value));
 
 const lightboxImageIndex = computed(() => {
   if (!lightboxRawUrl.value) return -1;
+  const idx = lightboxActiveIndex.value;
+  if (idx >= 0 && idx < editorImages.value.length && editorImages.value[idx]?.url === lightboxRawUrl.value) {
+    return idx;
+  }
   return editorImages.value.findIndex((it) => it.url === lightboxRawUrl.value);
 });
 const canSwitchLightboxImage = computed(
   () => lightboxImageIndex.value >= 0 && editorImages.value.length > 1,
 );
 
+function scrollActiveLightboxThumbIntoView() {
+  nextTick(() => {
+    const container = lightboxThumbsRef.value;
+    if (!container) return;
+    const activeEl = container.querySelector('.editor-lightbox-thumb-btn.is-active');
+    if (activeEl && typeof activeEl.scrollIntoView === 'function') {
+      activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  });
+}
+
+function selectLightboxImageAt(idx) {
+  const target = editorImages.value[idx];
+  if (!target) return;
+  openUrlLightbox(target.url, target.alt || `图片 ${idx + 1}`, idx);
+  scrollActiveLightboxThumbIntoView();
+}
+
 function showPrevLightboxImage() {
   if (!canSwitchLightboxImage.value) return;
   const len = editorImages.value.length;
-  const next = editorImages.value[(lightboxImageIndex.value - 1 + len) % len];
-  openUrlLightbox(next.url, next.alt);
+  const nextIdx = (lightboxImageIndex.value - 1 + len) % len;
+  selectLightboxImageAt(nextIdx);
 }
 
 function showNextLightboxImage() {
   if (!canSwitchLightboxImage.value) return;
   const len = editorImages.value.length;
-  const next = editorImages.value[(lightboxImageIndex.value + 1) % len];
-  openUrlLightbox(next.url, next.alt);
+  const nextIdx = (lightboxImageIndex.value + 1) % len;
+  selectLightboxImageAt(nextIdx);
 }
 
 // 手机上左右滑动切换：没放大时才算，放大了横滑是拖图；横滑超过 50px 才算，竖滑不触发。
@@ -1512,9 +1539,9 @@ const lineNumbers = computed(() => {
 // 打字时不重播，直接显示实时值。isCountingStats 为真时显示动画值，否则显示实时值。
 // 字数和图数走 src/utils/docStats.js 的统一口径；字数/图数只在编辑区底部显示，文档列表不再显示。
 const liveStats = computed(() => ({
-  words: editorText.value.split(/\s+/).filter(Boolean).length,
+  words: countDocWords(editorText.value),
   zi: countDocChars(editorText.value),
-  lines: lineNumbers.value.length,
+  lines: countDocLines(editorText.value),
   images: countDocImages(editorText.value)
 }));
 const animatedStats = ref({ words: 0, zi: 0, lines: 0, images: 0 });
@@ -2375,12 +2402,43 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
           >
             <ChevronRight size="22" />
           </button>
+
+          <!-- 底部缩略图导航栏 + 计数 -->
           <div
-            v-if="canSwitchLightboxImage && !lightboxImgLoading"
-            class="editor-lightbox-counter"
+            v-if="lightboxImageIndex >= 0 && editorImages.length > 0"
+            class="editor-lightbox-bottom-dock"
             @click.stop
           >
-            {{ lightboxImageIndex + 1 }} / {{ editorImages.length }}
+            <div class="editor-lightbox-counter">
+              {{ lightboxImageIndex + 1 }} / {{ editorImages.length }}
+            </div>
+            <div
+              ref="lightboxThumbsRef"
+              class="editor-lightbox-thumbs"
+              role="listbox"
+              aria-label="文中图片缩略图列表"
+            >
+              <button
+                v-for="(imgItem, idx) in editorImages"
+                :key="`${idx}-${imgItem.url}`"
+                type="button"
+                role="option"
+                :aria-selected="idx === lightboxImageIndex"
+                class="editor-lightbox-thumb-btn"
+                :class="{ 'is-active': idx === lightboxImageIndex }"
+                :aria-label="`切换到第 ${idx + 1} 张图片`"
+                @click="selectLightboxImageAt(idx)"
+              >
+                <img
+                  :src="getFastPreviewImageUrl(imgItem.url, 240)"
+                  :alt="imgItem.alt || `图片 ${idx + 1}`"
+                  class="editor-lightbox-thumb-img"
+                  loading="eager"
+                  draggable="false"
+                  @error="(e) => { if (e.target && e.target.src !== imgItem.url) e.target.src = imgItem.url; }"
+                />
+              </button>
+            </div>
           </div>
         </div>
       </Teleport>
@@ -2507,10 +2565,19 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
     </div>
 
         <div class="editor-footer">
-          <span>{{ displayStats.words }} 单词</span>
-          <span>{{ displayStats.zi }}字</span>
-          <span>{{ displayStats.lines }} 行</span>
-          <span v-if="displayStats.images > 0">{{ displayStats.images }}图</span>
+          <span title="中英文分词词数">{{ displayStats.words }} 词</span>
+          <span title="正文可见字数（不含 Markdown 符号与链接地址）">{{ displayStats.zi }} 字</span>
+          <span title="文档总行数">{{ displayStats.lines }} 行</span>
+          <button
+            v-if="displayStats.images > 0"
+            type="button"
+            class="editor-footer-img-btn"
+            title="点击从第 1 张开始预览文中图片"
+            aria-label="预览文中图片"
+            @click="openFirstDocImageLightbox"
+          >
+            {{ displayStats.images }}图
+          </button>
         </div>
 
     <!-- In-place Image Cropper Modal -->
@@ -2710,6 +2777,28 @@ textarea::placeholder {
 :global(html.dark) .editor-footer {
   border-top-color: rgba(255, 255, 255, 0.08);
   color: var(--text-muted, #64748B);
+}
+
+.editor-footer-img-btn {
+  appearance: none;
+  border: none;
+  background: transparent;
+  padding: 2px 6px;
+  margin: -2px -4px;
+  border-radius: 5px;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  transition: color 0.16s ease, background-color 0.16s ease, transform 0.12s ease;
+}
+
+.editor-footer-img-btn:hover {
+  color: var(--brand-primary, #00B4C5);
+  background: rgba(0, 180, 197, 0.1);
+}
+
+.editor-footer-img-btn:active {
+  transform: scale(0.95);
 }
 
 /* ── Inline Find Bar (Responsive & Compact rem sizing) ── */
@@ -3555,6 +3644,8 @@ html.dark .btn-submit-url:hover:not(:disabled) {
   position: relative;
   width: 100%;
   height: 100%;
+  padding: 52px 0 96px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3563,8 +3654,8 @@ html.dark .btn-submit-url:hover:not(:disabled) {
 }
 
 .editor-lightbox-img {
-  max-width: 88vw;
-  max-height: 82vh;
+  max-width: 86vw;
+  max-height: calc(100vh - 188px);
   border-radius: 8px;
   box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45);
   object-fit: contain;
@@ -3584,7 +3675,7 @@ html.dark .btn-submit-url:hover:not(:disabled) {
 
 .editor-lightbox-loading {
   position: fixed;
-  bottom: 24px;
+  bottom: 108px;
   left: 50%;
   transform: translateX(-50%);
   padding: 6px 14px;
@@ -3593,6 +3684,7 @@ html.dark .btn-submit-url:hover:not(:disabled) {
   border: 1px solid rgba(255, 255, 255, 0.16);
   color: #e2e8f0;
   font-size: 12px;
+  z-index: 4;
 }
 
 /* Lightbox 左右切换：文中的图一张一张翻，首尾循环。 */
@@ -3630,19 +3722,85 @@ html.dark .btn-submit-url:hover:not(:disabled) {
   right: 16px;
 }
 
-.editor-lightbox-counter {
+.editor-lightbox-bottom-dock {
   position: fixed;
-  bottom: 24px;
+  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
-  padding: 6px 14px;
-  border-radius: 999px;
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  color: #e2e8f0;
-  font-size: 12px;
-  font-variant-numeric: tabular-nums;
   z-index: 3;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  max-width: min(92vw, 760px);
+}
+
+.editor-lightbox-counter {
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: rgba(15, 23, 42, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: #e2e8f0;
+  font-size: 11.5px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+}
+
+.editor-lightbox-thumbs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.84);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(10px);
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.editor-lightbox-thumbs::-webkit-scrollbar {
+  height: 4px;
+}
+
+.editor-lightbox-thumbs::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+}
+
+.editor-lightbox-thumb-btn {
+  position: relative;
+  width: 58px;
+  height: 42px;
+  padding: 0;
+  border-radius: 7px;
+  border: 2px solid transparent;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+  flex-shrink: 0;
+  cursor: pointer;
+  opacity: 0.56;
+  transition: opacity 0.18s ease, transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.editor-lightbox-thumb-btn:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}
+
+.editor-lightbox-thumb-btn.is-active {
+  opacity: 1;
+  border-color: var(--brand-primary, #00C8D7);
+  box-shadow: 0 0 0 2px rgba(0, 200, 215, 0.28);
+  transform: translateY(-1px) scale(1.04);
+}
+
+.editor-lightbox-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 @media (max-width: 640px) {
@@ -3652,6 +3810,11 @@ html.dark .btn-submit-url:hover:not(:disabled) {
 
   .editor-lightbox-nav-next {
     right: 8px;
+  }
+
+  .editor-lightbox-thumb-btn {
+    width: 48px;
+    height: 36px;
   }
 }
 </style>
