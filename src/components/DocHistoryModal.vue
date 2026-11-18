@@ -442,11 +442,11 @@ async function copyHistoricalContent() {
 
                 <!-- Action Buttons: Restore & Copy -->
                 <div class="diff-actions-right">
-                  <button class="btn-copy-history" @click="copyHistoricalContent" title="复制该历史版本的 Markdown 文本">
+                  <button class="btn-copy-history" @click="copyHistoricalContent">
                     <Copy size="13" />
                     <span>{{ copyToastVisible ? '已复制！' : '复制此版' }}</span>
                   </button>
-                  <button class="btn-restore-version" @click="handleRestore" title="将此历史版本覆盖回当前正在编辑的文章">
+                  <button class="btn-restore-version" @click="handleRestore">
                     <RotateCcw size="13" />
                     <span>恢复为此版本</span>
                   </button>

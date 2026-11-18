@@ -1444,7 +1444,6 @@ const cssLineCount = computed(() => {
               v-if="localStyles[el.key]"
               class="reset-btn"
               @click="resetCategory(el.key)"
-              title="恢复默认"
             >重置</button>
           </div>
         </div>
@@ -1463,7 +1462,6 @@ const cssLineCount = computed(() => {
             <button
               class="clear-material-btn"
               @click="clearMaterial(el.key)"
-              title="清除素材，恢复默认 CSS 样式"
             >
               <X size="11" />
               <span>清除</span>
@@ -2146,7 +2144,7 @@ const cssLineCount = computed(() => {
         <!-- Right Side Quick Anchor Navigation Rail -->
         <aside class="css-anchors-rail">
           <div class="anchors-rail-header">快速锚点</div>
-          <button class="rail-insert-material-btn" @click="openMaterialModal(activeCssAnchor || 'h1')" title="打开素材模版库快速选用">
+          <button class="rail-insert-material-btn" @click="openMaterialModal(activeCssAnchor || 'h1')">
             <Sparkles size="11" />
             <span>素材库</span>
           </button>
@@ -2172,7 +2170,6 @@ const cssLineCount = computed(() => {
       <button
         class="reset-all-btn"
         @click="resetAll"
-        :title="isCustomTheme ? '恢复为上次保存时的样式状态' : '还原为当前预设主题默认纯净设置'"
       >
         <RotateCcw size="13" />
         <span>{{ isCustomTheme ? '恢复未保存' : '恢复默认' }}</span>
@@ -2183,7 +2180,6 @@ const cssLineCount = computed(() => {
         v-if="!isCustomTheme"
         class="save-theme-btn"
         @click="handleSaveThemeAs"
-        title="将当前自定义样式另存为新的主题预设"
       >
         <Palette size="13" />
         <span>另存为主题</span>
@@ -2194,7 +2190,6 @@ const cssLineCount = computed(() => {
         v-else
         class="save-styles-btn is-save-theme"
         @click="handleSaveCustomTheme"
-        title="保存改动到当前自定义主题"
       >
         <Save size="13" />
         <span>保存主题</span>

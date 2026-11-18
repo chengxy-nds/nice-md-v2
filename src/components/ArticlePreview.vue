@@ -1,5 +1,6 @@
 <script setup>
 import { ref, computed, watch, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { FileText } from '@lucide/vue';
 import 'katex/dist/katex.min.css';
 import { compileToWeChatHtml, cleanEmptyListItems } from '../utils/wechatStyles';
 import { ensureMarkdownExtensions } from '../utils/markdownExtensions';
@@ -725,16 +726,25 @@ function handlePopupClose() {
             v-else-if="props.isWeChatMode"
             class="phone-empty-placeholder"
           >
-            <div class="phone-empty-icon">📝</div>
+            <div class="desktop-empty-badge">
+              <FileText size="20" stroke-width="1.6" />
+            </div>
             <div class="phone-empty-title">暂无文章内容</div>
             <div class="phone-empty-sub">在左侧输入 Markdown 内容即可在此实时预览微信手机排版效果</div>
           </div>
           <div
             v-else
-            class="markdown-body wechat-body"
+            class="markdown-body wechat-body desktop-empty-sheet"
             :style="markdownBodyStyles"
-            v-html="wechatStyledHtml"
-          ></div>
+          >
+            <div class="desktop-empty-placeholder">
+              <div class="desktop-empty-badge">
+                <FileText size="22" stroke-width="1.6" />
+              </div>
+              <div class="desktop-empty-title">实时排版预览</div>
+              <div class="desktop-empty-sub">在左侧键入 Markdown，右侧实时呈现成稿样式</div>
+            </div>
+          </div>
         </div>
         <Transition name="preview-chrome">
           <div v-if="props.isWeChatMode" class="phone-article-footer">
@@ -789,13 +799,26 @@ function handlePopupClose() {
   height: 0;
 }
 
-/* Standard Markdown preview fills the workspace like the editor surface. */
+/* Desktop studio backdrop + elevated reading paper sheet */
 .preview-body:not(.is-wechat-wrapper) {
   display: block;
-  padding: 0;
-  background-color: var(--bg-editor, #ffffff);
+  padding: 24px 28px 36px;
+  background-color: #F3F5F8;
   background-image: none;
   box-sizing: border-box;
+}
+
+:global(html.dark) .preview-body:not(.is-wechat-wrapper),
+:global(html[data-color-mode="dark"]) .preview-body:not(.is-wechat-wrapper) {
+  background-color: rgba(0, 0, 0, 0.22);
+}
+
+.preview-body:not(.is-wechat-wrapper) .preview-content-frame {
+  max-width: 720px;
+  margin: 0 auto;
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 .markdown-body {
@@ -811,29 +834,31 @@ function handlePopupClose() {
 }
 
 .preview-body:not(.is-wechat-wrapper) .markdown-body {
+  flex: 1;
   width: 100%;
   max-width: none;
   min-height: 100%;
   margin: 0;
   padding: 0 !important;
   background: var(--ct-body-bg, var(--bg-preview, #ffffff));
-  border-radius: 0;
-  border: 0;
-  box-shadow: none;
+  border-radius: 14px;
+  border: 1px solid rgba(15, 23, 42, 0.055);
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.025), 0 12px 30px rgba(15, 23, 42, 0.035);
   overflow: hidden;
   transition: background-color 0.25s ease, box-shadow 0.25s ease;
 }
 
 .preview-body:not(.is-wechat-wrapper) .markdown-body :deep(#nice) {
   min-height: 100%;
-  padding: 24px 32px 40px !important;
+  padding: 36px 42px 48px !important;
   box-sizing: border-box;
   border-radius: 0;
 }
 
 :global(html.dark) .preview-body:not(.is-wechat-wrapper) .markdown-body,
 :global(html[data-color-mode="dark"]) .preview-body:not(.is-wechat-wrapper) .markdown-body {
-  border-color: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
 }
 
 /* Deep dark mode support for standard preview surface */
@@ -1190,6 +1215,9 @@ function handlePopupClose() {
 
 .standard-screen-scroll {
   width: 100%;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
 }
 
 .phone-dynamic-island {
@@ -1256,25 +1284,65 @@ function handlePopupClose() {
   padding: 32px 16px;
   text-align: center;
   color: #94a3b8;
-  gap: 8px;
+  gap: 10px;
   user-select: none;
 }
 
-.phone-empty-icon {
-  font-size: 32px;
+.desktop-empty-sheet {
+  display: flex;
+  flex-direction: column;
+}
+
+.desktop-empty-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+  min-height: 360px;
+  padding: 48px 24px;
+  text-align: center;
+  gap: 10px;
+  user-select: none;
+}
+
+.desktop-empty-badge {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
+  background: #F4F6FA;
+  border: 1px solid #EAECEF;
+  color: #71839D;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   margin-bottom: 4px;
 }
 
+:global(html.dark) .desktop-empty-badge {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+}
+
+.desktop-empty-title,
 .phone-empty-title {
   font-size: 14px;
   font-weight: 600;
-  color: #64748b;
+  color: #475569;
+  letter-spacing: -0.01em;
 }
 
+:global(html.dark) .desktop-empty-title,
+:global(html.dark) .phone-empty-title {
+  color: #cbd5e1;
+}
+
+.desktop-empty-sub,
 .phone-empty-sub {
-  font-size: 12px;
+  font-size: 12.5px;
   line-height: 1.6;
-  max-width: 240px;
+  max-width: 310px;
   color: #94a3b8;
 }
 
@@ -1372,6 +1440,15 @@ function handlePopupClose() {
    去掉全部框体装饰，文章按真实宽度通栏显示，只留文章标题头；外层本来
    的滚动区接管滚动，不再内外两层套着滚。桌面端不受影响。 */
 @media (max-width: 960px), (pointer: coarse) {
+  .preview-body:not(.is-wechat-wrapper) {
+    padding: 12px 12px 24px;
+  }
+  .preview-body:not(.is-wechat-wrapper) .markdown-body {
+    border-radius: 12px;
+  }
+  .preview-body:not(.is-wechat-wrapper) .markdown-body :deep(#nice) {
+    padding: 22px 20px 32px !important;
+  }
   .preview-body.is-wechat-wrapper {
     padding: 0;
     background: transparent;

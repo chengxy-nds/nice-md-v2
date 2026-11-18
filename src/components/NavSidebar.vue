@@ -17,7 +17,7 @@
       @focus="onButtonHover"
       role="button"
       tabindex="0"
-      title="EasyMD"
+      aria-label="EasyMD"
     >
       <div class="brand-inner">
         <BrandLogo :size="32" />
@@ -40,7 +40,7 @@
       <!-- 文档：点一下，文档列表挨着图标栏弹出 -->
       <button
         type="button" class="nav-rail-btn nav-target" data-key="docs"
-        :class="{ 'is-active': docsOpen }"
+        :class="{ 'is-active': currentView === 'editor' && docsOpen }"
         aria-label="我的文档"
         @click="emit('toggle-docs')"
         @mouseenter="onButtonHover" @focus="onButtonHover"
@@ -48,7 +48,7 @@
         <span class="nav-btn-icon ic-docs"><FileText size="20" stroke-width="2" /></span>
         <div class="nav-tooltip" role="tooltip">
           <span class="nav-tooltip-label">我的文档</span>
-          <span class="nav-tooltip-shortcut">{{ docsOpen ? '点击收起' : '点击展开' }}</span>
+          <span class="nav-tooltip-shortcut">{{ currentView === 'editor' ? (docsOpen ? '点击收起' : '点击展开') : '回到编辑' }}</span>
         </div>
       </button>
       <button
@@ -96,7 +96,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, onUnmounted } from 'vue';
 import {
   House,
   FileText,
@@ -117,42 +117,58 @@ const emit = defineEmits([
   'open-settings', 'open-launchpad', 'toggle-docs'
 ]);
 
-/* ── 液体滑块，和右侧栏（PreviewPanel 的 right-glider）同一个做法：
-      灰色圆片只在滑过时出现，滑到哪个图标就到哪个图标后面，
-      鼠标离开整栏就消失，不常驻在当前选中的图标上。定位是同步算的，
-      不包 rAF，滑过立刻就有反应。
-      注意：这里不做纵向拉伸——右侧栏的圆片是实色，拉一下没事；
-      左侧这个是径向渐变（中心实、边缘晕开），一拉就把渐变拉成椭圆，
-      边缘跟着抖，看着就不顺滑。所以只干净地滑过去，不拉伸。 ── */
+/* ── 液体滑块：与右侧栏（PreviewPanel 的 right-glider）100% 同步算法：
+      实色圆片（#ECEFF2）+ 距离自适应 scaleY 纵向拉伸 + 210ms 弹性回缩，
+      彻底消除径向渐变拉伸发虚的问题，丝滑度与右侧栏完全一致。 ── */
 const railRef = ref(null);
 const gliderRef = ref(null);
+let stretchTimer = null;
 
-function moveGliderToEl(btn) {
+function moveGliderToEl(btn, stretch = true) {
   if (!btn || !gliderRef.value || !railRef.value) return;
   const barRect = railRef.value.getBoundingClientRect();
   const btnRect = btn.getBoundingClientRect();
   const top = btnRect.top - barRect.top;
   const left = btnRect.left - barRect.left;
 
-  // 圆片尺寸跟着按钮走，保证正好盖住图标。
+  const prevY = parseFloat(gliderRef.value.dataset.y || String(top));
+  const dist = Math.abs(top - prevY);
+  gliderRef.value.dataset.y = String(top);
+
+  const stretchY = stretch ? 1 + Math.min(dist / 500, 0.16) : 1;
+
   gliderRef.value.style.width = `${btnRect.width}px`;
   gliderRef.value.style.height = `${btnRect.height}px`;
-  gliderRef.value.style.transform = `translate(${left}px, ${top}px)`;
+  gliderRef.value.style.transform = `translate(${left}px, ${top}px) scaleY(${stretchY})`;
   gliderRef.value.classList.add('is-visible');
+
+  clearTimeout(stretchTimer);
+  if (stretchY > 1.01) {
+    stretchTimer = setTimeout(() => {
+      if (gliderRef.value) {
+        gliderRef.value.style.transform = `translate(${left}px, ${top}px) scaleY(1)`;
+      }
+    }, 380 * 0.55);
+  }
 }
 
 function onButtonHover(e) {
   const target = e.currentTarget;
   if (target) {
-    moveGliderToEl(target);
+    moveGliderToEl(target, true);
   }
 }
 
 function handleRailMouseLeave() {
+  clearTimeout(stretchTimer);
   if (gliderRef.value) {
     gliderRef.value.classList.remove('is-visible');
   }
 }
+
+onUnmounted(() => {
+  clearTimeout(stretchTimer);
+});
 
 </script>
 
@@ -162,19 +178,24 @@ function handleRailMouseLeave() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  width: 56px;
-  min-width: 56px;
+  width: 54px;
+  min-width: 54px;
   height: 100%;
-  padding: 10px 0;
-  background: #fff;
-  border-right: 1px solid #e7edf5;
+  padding: 12px 0 14px;
+  background: var(--bg-rail, #FAFAFC);
+  border-right: 1px solid var(--border-subtle, #ECEEF3);
   flex-shrink: 0;
+  z-index: 70;
+}
+html.dark .nav-sidebar {
+  background: var(--bg-rail, #18181B);
+  border-right-color: var(--border-subtle, #27272A);
 }
 .nav-rail {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   position: relative;
   z-index: 2;
 }
@@ -182,49 +203,48 @@ function handleRailMouseLeave() {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 8px;
   margin-top: auto;
-  padding-top: 8px;
-  border-top: 1px solid var(--border-color, #E8EAED);
+  padding-top: 10px;
+  border-top: 1px solid var(--border-subtle, #EDEDF0);
   position: relative;
   z-index: 2;
 }
+html.dark .nav-rail-bottom {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
 
-/* ── 液体滑块：灰色圆片，只在滑过时出现，滑到滑过的图标后面 ──
-      圆片是柔和的径向渐变，边缘晕开（像 muse 官网侧边栏那种
-      柔和的圆底），不是生硬的实色块。 */
+/* ★ 左侧栏液体滑块 (与右侧栏 .right-glider 完全一致的实色圆片 + 弹性过渡) ★ */
 .nav-glider {
   position: absolute;
   top: 0;
   left: 0;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 999px;
-  background: radial-gradient(circle, #ECEFF2 0%, #ECEFF2 62%, rgba(236, 239, 242, 0) 100%);
+  background: #ECEFF2;
   opacity: 0;
   pointer-events: none;
   z-index: 1;
-  /* 位置全由 JS 的 translate 决定（和右侧栏一样）；不要在这里写 left，
-     否则 translate 的 left 会再叠加一次，圆片就偏到图标右边去了。 */
   transition: transform 380ms var(--ease-glide),
               width 300ms var(--ease-glide),
               height 300ms var(--ease-glide),
               border-radius 300ms var(--ease-glide),
-              opacity 0.2s var(--ease-out);
+              opacity 200ms ease;
   will-change: transform;
 }
 .nav-glider.is-visible {
   opacity: 1;
 }
 html.dark .nav-glider {
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.12) 0%, rgba(255, 255, 255, 0.12) 62%, rgba(255, 255, 255, 0) 100%);
+  background: rgba(255, 255, 255, 0.12);
 }
 
 /* ── Logo：32px，滑过有果冻弹动 ── */
 .nav-brand {
   position: relative;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -272,26 +292,36 @@ html.dark .nav-glider {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border: none;
   border-radius: 50%;
   background: transparent;
-  color: var(--text-secondary, #64748b);
+  color: var(--text-muted, #555770);
   cursor: pointer;
   flex-shrink: 0;
-  transition: color 0.2s ease, transform 0.12s;
+  transition: color 0.2s ease, background 0.2s ease, transform 0.12s;
   z-index: 2;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
 }
 .nav-rail-btn:hover {
-  color: var(--text-main);
+  color: var(--text-main, #0F172A);
+}
+html.dark .nav-rail-btn:hover {
+  color: #FFFFFF;
 }
 /* 按下回弹（和右侧栏一样） */
 .nav-rail-btn:active {
   transform: scale(0.93);
 }
 .nav-rail-btn.is-active {
-  color: var(--text-main);
+  color: var(--text-main, #0F172A);
+  background: rgba(15, 23, 42, 0.055);
+}
+html.dark .nav-rail-btn.is-active {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.09);
 }
 
 /* ── 左侧图标微动效（和右侧栏一个做法）：滑过时图标自己动一下，
@@ -301,6 +331,8 @@ html.dark .nav-glider {
   display: flex;
   align-items: center;
   justify-content: center;
+  width: 100%;
+  height: 100%;
   will-change: transform;
 }
 
@@ -398,5 +430,14 @@ html.dark .nav-glider {
   font-size: 11.5px;
   color: var(--text-secondary, #64748b);
   font-weight: 400;
+}
+html.dark .nav-tooltip {
+  background: #242429;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #F3F4F6;
+  box-shadow: 0 8px 24px -2px rgba(0, 0, 0, 0.5), 0 2px 6px -1px rgba(0, 0, 0, 0.3);
+}
+html.dark .nav-tooltip-shortcut {
+  color: #9CA3AF;
 }
 </style>

@@ -474,15 +474,15 @@ onUnmounted(() => {
 
             <!-- Rotation & Flip Actions -->
             <div class="transform-actions">
-              <button class="btn-transform" @click="rotateClockwise" title="顺时针旋转 90°">
+              <button class="btn-transform" @click="rotateClockwise">
                 <RotateCw size="14" />
                 <span>旋转</span>
               </button>
-              <button class="btn-transform" :class="{ 'is-active': flipH }" @click="toggleFlipHorizontal" title="水平翻转">
+              <button class="btn-transform" :class="{ 'is-active': flipH }" @click="toggleFlipHorizontal">
                 <FlipHorizontal size="14" />
                 <span>翻转</span>
               </button>
-              <button class="btn-transform" @click="resetAll" title="重置全部变换与裁剪框">
+              <button class="btn-transform" @click="resetAll">
                 <RotateCcw size="14" />
                 <span>重置</span>
               </button>
@@ -577,17 +577,17 @@ onUnmounted(() => {
             </div>
 
             <div class="footer-actions">
-              <button class="btn-footer-secondary" @click="handleDownload" title="保存裁剪后的高清 PNG 到本地">
+              <button class="btn-footer-secondary" @click="handleDownload">
                 <Download size="14" />
                 <span>下载图片</span>
               </button>
 
-              <button class="btn-footer-secondary" :disabled="isExporting" @click="handleCopy" title="直接复制到剪贴板，支持在富文本中粘贴">
+              <button class="btn-footer-secondary" :disabled="isExporting" @click="handleCopy">
                 <Copy size="14" />
                 <span>{{ isExporting ? '处理中...' : '复制剪贴板' }}</span>
               </button>
 
-              <button class="btn-footer-secondary" :disabled="isUploading" @click="handleInsertNew" title="作为一张全新图片插入到文档当前光标处">
+              <button class="btn-footer-secondary" :disabled="isUploading" @click="handleInsertNew">
                 <Plus size="14" />
                 <span>作为新图插入</span>
               </button>
@@ -597,7 +597,6 @@ onUnmounted(() => {
                 class="btn-footer-primary"
                 :disabled="isUploading"
                 @click="handleReplaceOriginal"
-                title="在当前文档中直接替换此图片链接，文章立即更新"
               >
                 <Sparkles size="14.5" />
                 <span>{{ isUploading ? '正在上传云端...' : '替换正文原图' }}</span>

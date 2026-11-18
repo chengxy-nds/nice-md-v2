@@ -1027,6 +1027,7 @@ function handleSyncComplete(payload) {
   }
   if (payload.customThemes && Array.isArray(payload.customThemes)) {
     mergeCustomThemes(payload.customThemes);
+    themeCatalogVersion.value++;
   }
   const activeDocs = documents.value.filter(d => !d.isDeleted && !d.is_deleted);
   if (activeDocs.length > 0) {
@@ -1088,8 +1089,14 @@ if (isCloudSyncEnabled()) {
 const currentTheme = ref(localStorage.getItem('nicemd_theme') || 'classic-indigo');
 const currentCodeTheme = ref(localStorage.getItem('nicemd_code_theme') || 'mdnice-classic');
 
+const themeCatalogVersion = ref(0);
+const allThemes = computed(() => {
+  void themeCatalogVersion.value;
+  return [...themePresets];
+});
+
 const activeThemeName = computed(() =>
-  themePresets.find(t => t.id === currentTheme.value)?.name || '山海'
+  allThemes.value.find(t => t.id === currentTheme.value)?.name || '山海'
 );
 const editorPanelRef = ref(null);
 const previewPanelRef = ref(null);
@@ -1662,6 +1669,7 @@ function handleSaveTheme(styles) {
     updatedAt: Date.now()
   };
   themePresets.push(newTheme);
+  themeCatalogVersion.value++;
   const customOnly = themePresets.filter(t => t.isCustom || !t.builtIn || t.id.startsWith('custom-'));
   saveCustomThemes(customOnly);
   realtimeSyncCustomTheme(newTheme);
@@ -1698,6 +1706,7 @@ function handleSaveCustomTheme({ themeId, styles, css }) {
   }
   const customOnly = themePresets.filter(t => t.isCustom || !t.builtIn || t.id.startsWith('custom-'));
   saveCustomThemes(customOnly);
+  themeCatalogVersion.value++;
   realtimeSyncCustomTheme(theme);
   customStyles.value = cleanStyles;
   if (activeDocument.value) {
@@ -2516,7 +2525,21 @@ const closeSidebarList = () => {
   if (!isNarrowDrawer.value) sidebarVisible.value = false;
 };
 
+const handleToggleDocs = () => {
+  if (currentView.value !== 'editor') {
+    currentView.value = 'editor';
+    sidebarVisible.value = true;
+    return;
+  }
+  sidebarVisible.value = !sidebarVisible.value;
+};
+
 const sidebarRef = ref(null);
+const customSidebarSlotWidth = ref(null);
+const isSidebarResizing = ref(false);
+const sidebarSlotStyle = computed(() =>
+  customSidebarSlotWidth.value ? { '--sidebar-width': `${customSidebarSlotWidth.value}px` } : undefined
+);
 
 const handleScroll = (percentage) => {
   if (!syncScrollEnabled.value) return;
@@ -2644,6 +2667,7 @@ onMounted(async () => {
           knownIds.add(t.id);
         }
       });
+      themeCatalogVersion.value++;
     }
   } catch {}
 
@@ -2826,7 +2850,7 @@ watch(customStyles, () => {
             @open-materials="currentView = 'materials'"
             @open-settings="openSettings()"
             @open-launchpad="isLaunchpadOpen = true"
-            @toggle-docs="sidebarVisible = !sidebarVisible"
+            @toggle-docs="handleToggleDocs"
           />
         </div>
 
@@ -2834,45 +2858,51 @@ watch(customStyles, () => {
           <!-- Sidebar Backdrop on Mobile -->
           <div v-if="mobileSidebarOpen" class="sidebar-backdrop" @click="mobileSidebarOpen = false"></div>
 
-          <!-- 左侧抽屉平滑滑入/滑出过渡 (Muse Glide Transition) -->
-          <!-- P0-3: v-if 改 v-show。原来每次点“文档”都销毁重建整个
-               Sidebar（重读 localStorage、重注册 7 个监听、每篇文档
-               全文算字数），展开卡顿主因之一。v-show 只切换显示，
-               组件常驻，状态与滚动位置都保留。移动端抽屉仍由
-               mobile-drawer-open 类控制，不受影响。 -->
-          <Transition name="sidebar-slide">
-            <Sidebar
-              ref="sidebarRef"
-              :class="{ 'mobile-drawer-open': mobileSidebarOpen }"
-              :inert="isNarrowDrawer && !mobileSidebarOpen"
-              v-show="(sidebarVisible || mobileSidebarOpen) && currentView === 'editor'"
-              :documents="documents"
-              :groups="groups"
-              :activeDocId="activeDocId"
-              :currentView="currentView"
-              :isCloudSyncing="isSidebarSyncing"
-              @select-doc="(id) => { handleSelectDoc(id); currentView = 'editor'; mobileSidebarOpen = false; }"
-              @swipe-close="mobileSidebarOpen = false"
-              @close-drawer="closeSidebarList"
-              @create-doc="(groupId) => { handleCreateDoc(groupId); currentView = 'editor'; }"
-              @open-doc-history="openDocHistory"
-              @rename-doc="handleRenameDoc"
-              @delete-doc="handleDeleteDoc"
-              @restore-doc="handleRestoreDoc"
-              @permanent-delete-doc="handlePermanentDeleteDoc"
-              @empty-recycle-bin="handleEmptyRecycleBin"
-              @create-group="handleCreateGroup"
-              @rename-group="handleRenameGroup"
-              @delete-group="handleDeleteGroup"
-              @move-doc="handleMoveDoc"
-              @reorder-docs="handleReorderDocs"
-              @reorder-groups="handleReorderGroups"
-              @duplicate-doc="handleDuplicateDoc"
-              @toggle-pin="handleTogglePinDoc"
-              @cloud-sync-action="handleSidebarCloudSync"
-              @open-cloud-settings="openSettings('cloud')"
-            />
-          </Transition>
+          <!-- 左侧文档栏：桌面端用外层轨道裁剪 + 右对齐固定宽抽屉，收起/展开与工作区同帧同步推进，消除占位跳变 -->
+          <div
+            v-show="currentView === 'editor'"
+            class="sidebar-slot"
+            :class="{
+              'is-collapsed': !sidebarVisible,
+              'is-resizing': isSidebarResizing
+            }"
+            :style="sidebarSlotStyle"
+          >
+            <div class="sidebar-slot-inner">
+              <Sidebar
+                ref="sidebarRef"
+                :class="{ 'mobile-drawer-open': mobileSidebarOpen }"
+                :inert="(isNarrowDrawer && !mobileSidebarOpen) || (!isNarrowDrawer && !sidebarVisible)"
+                :documents="documents"
+                :groups="groups"
+                :activeDocId="activeDocId"
+                :currentView="currentView"
+                :isCloudSyncing="isSidebarSyncing"
+                @width-change="(w) => { customSidebarSlotWidth = w; }"
+                @resize-state="(val) => { isSidebarResizing = val; }"
+                @select-doc="(id) => { handleSelectDoc(id); currentView = 'editor'; mobileSidebarOpen = false; }"
+                @swipe-close="mobileSidebarOpen = false"
+                @close-drawer="closeSidebarList"
+                @create-doc="(groupId) => { handleCreateDoc(groupId); currentView = 'editor'; }"
+                @open-doc-history="openDocHistory"
+                @rename-doc="handleRenameDoc"
+                @delete-doc="handleDeleteDoc"
+                @restore-doc="handleRestoreDoc"
+                @permanent-delete-doc="handlePermanentDeleteDoc"
+                @empty-recycle-bin="handleEmptyRecycleBin"
+                @create-group="handleCreateGroup"
+                @rename-group="handleRenameGroup"
+                @delete-group="handleDeleteGroup"
+                @move-doc="handleMoveDoc"
+                @reorder-docs="handleReorderDocs"
+                @reorder-groups="handleReorderGroups"
+                @duplicate-doc="handleDuplicateDoc"
+                @toggle-pin="handleTogglePinDoc"
+                @cloud-sync-action="handleSidebarCloudSync"
+                @open-cloud-settings="openSettings('cloud')"
+              />
+            </div>
+          </div>
 
           <!-- 1. 模板中心 -->
           <Transition name="nx-view" mode="out-in">
@@ -3025,7 +3055,7 @@ watch(customStyles, () => {
                     <button class="popout-item" @click="editorPanelRef?.triggerFileInput('.txt'); showImportMenu = false"><FileCode size="14" /><span>纯文本 (.txt)</span></button>
                   </div>
                 </div>
-                <button @click="handleFillSample()" class="btn-icon btn-toolbar-sample hide-on-narrow" title="填充 Markdown 示例内容"><BookOpen size="13.5" /><span>示例</span></button>
+                <button @click="handleFillSample()" class="btn-icon btn-toolbar-sample hide-on-narrow" aria-label="填充 Markdown 示例内容"><BookOpen size="13.5" /><span>示例</span></button>
               </div>
 
               <span class="toolbar-sep hide-on-narrow"></span>
@@ -3211,7 +3241,7 @@ watch(customStyles, () => {
                   class="btn-toolbar-dropdown"
                   :class="{ 'is-active': showDocThemeMenu }"
                   @click="toggleDocThemeMenu"
-                  title="切换文章排版主题"
+                  aria-label="切换文章排版主题"
                 >
                   <span
                     class="theme-swatch-dot"
@@ -3290,7 +3320,7 @@ watch(customStyles, () => {
                   class="btn-toolbar-dropdown"
                   :class="{ 'is-active': showCodeThemeMenu }"
                   @click="toggleCodeThemeMenu"
-                  title="切换代码块高亮主题"
+                  aria-label="切换代码块高亮主题"
                 >
                   <Code2 size="13" class="dropdown-code-icon" />
                   <span class="dropdown-label-prefix">代码</span>
@@ -3338,11 +3368,13 @@ watch(customStyles, () => {
                 :markdown="markdownContent"
                 :docTitle="activeDocument?.title ?? '未命名文档'"
                 :themeId="currentTheme"
+                :themes="allThemes"
                 :scrollPercentage="scrollPercentage"
                 :activePane="activeScrollPane"
                 :previewVisible="previewVisible"
                 :customStyles="customStyles"
                 :themePanelVisible="showThemePanel"
+                @change-theme="changeTheme"
                 @update:customStyles="customStyles = $event"
                 @save-theme="handleSaveTheme"
                 @save-custom-theme="handleSaveCustomTheme"

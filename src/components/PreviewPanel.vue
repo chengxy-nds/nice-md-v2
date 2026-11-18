@@ -10,6 +10,7 @@ import {
   CircleCheck,
   Sparkles,
   Palette,
+  SwatchBook,
   Send
 } from '@lucide/vue';
 import {
@@ -19,6 +20,7 @@ import {
   stripOssProcessFromMarkdown
 } from '../utils/wechatStyles';
 import { parseMarkdownWithDocToc } from '../utils/markdownToc';
+import { themes as defaultThemePresets, groupThemesByCategory } from '../utils/themePresets';
 import { soundEngine } from '../utils/synthAudio';
 import ThemeCustomizer from './ThemeCustomizer.vue';
 import ArticlePreview from './ArticlePreview.vue';
@@ -37,6 +39,10 @@ const props = defineProps({
   themeId: {
     type: String,
     default: 'classic-indigo'
+  },
+  themes: {
+    type: Array,
+    default: () => defaultThemePresets
   },
   codeThemeId: {
     type: String,
@@ -65,6 +71,7 @@ const props = defineProps({
 });
 
 const emit = defineEmits([
+  'change-theme',
   'update:codeThemeId',
   'scroll',
   'focusActive',
@@ -247,8 +254,14 @@ watch(isWeChatMode, (newVal) => {
 // ── Right Bar Liquid Glider (Muse Motion) ──
 const rightBarRef = ref(null);
 const rightGliderRef = ref(null);
+const rightThemeBtnRef = ref(null);
 const rightPaletteBtnRef = ref(null);
 let rightStretchTimer = null;
+
+// Theme popout state (defined early so glider handlers can reference it)
+const themePopoutRef = ref(null);
+const showThemeMenu = ref(false);
+const themePopoutStyle = ref({});
 
 // 预览显隐切换时冻结液体滑块：网格收起/展开的 .36s 里按钮的
 // getBoundingClientRect 每帧都在变，滑块按旧位置追会抖；切换完 420ms 再解冻。
@@ -292,18 +305,24 @@ function handleRightBarHover(e) {
   }
 }
 
-function handleRightBarMouseLeave() {
-  if (props.themePanelVisible && rightPaletteBtnRef.value) {
+function syncRightBarActiveGlider() {
+  if (showThemeMenu.value && rightThemeBtnRef.value) {
+    moveRightGliderToEl(rightThemeBtnRef.value, true);
+  } else if (props.themePanelVisible && rightPaletteBtnRef.value) {
     moveRightGliderToEl(rightPaletteBtnRef.value, true);
   } else if (rightGliderRef.value) {
     rightGliderRef.value.classList.remove('is-visible');
   }
 }
 
+function handleRightBarMouseLeave() {
+  syncRightBarActiveGlider();
+}
+
 watch(() => props.themePanelVisible, async (visible) => {
   if (!visible) {
     document.querySelectorAll('.preview-active-target').forEach(el => el.classList.remove('preview-active-target'));
-    if (rightGliderRef.value) rightGliderRef.value.classList.remove('is-visible');
+    syncRightBarActiveGlider();
   } else {
     await nextTick();
     if (rightPaletteBtnRef.value) {
@@ -529,6 +548,7 @@ const updateCopyPopoutPosition = async () => {
 
 const openCopyMenu = ({ pinned = false } = {}) => {
   clearCopyHoverTimer();
+  if (showThemeMenu.value) closeThemeMenu();
   if (pinned) isCopyMenuPinned.value = true;
   if (!showCopyMenu.value) {
     showCopyMenu.value = true;
@@ -581,11 +601,110 @@ const handleSelectCopyAction = (actionFn) => {
   actionFn();
 };
 
+// ── Right Sidebar Theme Popout (Built-in & My Themes) ──
+const groupedThemes = computed(() => {
+  const source = Array.isArray(props.themes) && props.themes.length > 0 ? props.themes : defaultThemePresets;
+  return groupThemesByCategory(source);
+});
+
+const activeThemeObj = computed(() => {
+  const source = Array.isArray(props.themes) && props.themes.length > 0 ? props.themes : defaultThemePresets;
+  return source.find(t => t.id === props.themeId) || source[0];
+});
+
+const activeThemeAccent = computed(() => activeThemeObj.value?.styles?.['--accent-color'] || '#116ACC');
+
+const handleThemeOutsidePointerDown = (e) => {
+  if (!showThemeMenu.value) return;
+  const target = e.target;
+  if (rightThemeBtnRef.value?.contains(target) || themePopoutRef.value?.contains(target)) {
+    return;
+  }
+  closeThemeMenu();
+};
+
+const handleThemeKeyDown = (e) => {
+  if (e.key === 'Escape' && showThemeMenu.value) {
+    closeThemeMenu();
+  }
+};
+
+const attachThemeMenuListeners = () => {
+  window.addEventListener('mousedown', handleThemeOutsidePointerDown, true);
+  window.addEventListener('keydown', handleThemeKeyDown);
+  window.addEventListener('resize', closeThemeMenu);
+};
+
+const detachThemeMenuListeners = () => {
+  window.removeEventListener('mousedown', handleThemeOutsidePointerDown, true);
+  window.removeEventListener('keydown', handleThemeKeyDown);
+  window.removeEventListener('resize', closeThemeMenu);
+};
+
+const updateThemePopoutPosition = async () => {
+  themePopoutStyle.value = { top: '-9999px', left: '-9999px', visibility: 'hidden' };
+  await nextTick();
+  const anchorEl = rightThemeBtnRef.value;
+  if (!showThemeMenu.value || !anchorEl || !themePopoutRef.value) return;
+
+  const anchorRect = anchorEl.getBoundingClientRect();
+  const panelRect = themePopoutRef.value.getBoundingClientRect();
+  const maxTop = Math.max(POPOUT_VIEWPORT_PADDING, window.innerHeight - panelRect.height - POPOUT_VIEWPORT_PADDING);
+  const preferredTop = anchorRect.bottom - panelRect.height;
+  const top = Math.min(Math.max(preferredTop, POPOUT_VIEWPORT_PADDING), maxTop);
+  const left = Math.max(POPOUT_VIEWPORT_PADDING, anchorRect.left - panelRect.width - POPOUT_TRIGGER_GAP);
+
+  themePopoutStyle.value = {
+    top: `${Math.round(top)}px`,
+    left: `${Math.round(left)}px`,
+    visibility: 'visible'
+  };
+};
+
+const openThemeMenu = async () => {
+  closeCopyMenu();
+  if (!showThemeMenu.value) {
+    showThemeMenu.value = true;
+    attachThemeMenuListeners();
+    await updateThemePopoutPosition();
+    if (rightThemeBtnRef.value) {
+      moveRightGliderToEl(rightThemeBtnRef.value, true);
+    }
+  }
+};
+
+const closeThemeMenu = () => {
+  if (showThemeMenu.value) {
+    showThemeMenu.value = false;
+    detachThemeMenuListeners();
+    syncRightBarActiveGlider();
+  }
+};
+
+const toggleThemeMenu = () => {
+  if (showThemeMenu.value) {
+    closeThemeMenu();
+    return;
+  }
+  openThemeMenu();
+};
+
+const selectThemeFromPopout = (themeId) => {
+  emit('change-theme', themeId);
+  closeThemeMenu();
+};
+
+const openCustomizerFromThemePopout = () => {
+  closeThemeMenu();
+  emit('update:themePanelVisible', true);
+};
+
 onUnmounted(() => {
   clearCopyHoverTimer();
   clearTimeout(rightStretchTimer);
   clearTimeout(rightGliderSuppressTimer);
   detachCopyMenuListeners();
+  detachThemeMenuListeners();
 });
 </script>
 
@@ -738,7 +857,32 @@ onUnmounted(() => {
 
       <div class="bar-bottom">
         <button
+          ref="rightThemeBtnRef"
+          type="button"
+          class="bar-action-btn right-nav-target right-theme-btn"
+          :class="{ 'is-active': showThemeMenu }"
+          :aria-expanded="showThemeMenu"
+          aria-haspopup="menu"
+          data-no-tooltip="true"
+          @mouseenter="handleRightBarHover"
+          @focus="handleRightBarHover"
+          @click.stop="toggleThemeMenu"
+          aria-label="切换排版主题"
+        >
+          <span class="right-btn-icon ic-swatch">
+            <SwatchBook size="18" stroke-width="1.7" />
+          </span>
+          <span class="right-theme-dot" :style="{ backgroundColor: activeThemeAccent }" aria-hidden="true"></span>
+          <span class="bar-btn-label">主题</span>
+          <div v-show="!showThemeMenu" class="right-tooltip" role="tooltip">
+            <span class="right-tooltip-label">排版主题</span>
+            <span class="right-tooltip-shortcut">{{ activeThemeObj?.name || '山海 · 经典' }}</span>
+          </div>
+        </button>
+
+        <button
           ref="rightPaletteBtnRef"
+          type="button"
           class="bar-action-btn right-nav-target"
           :class="{ 'is-active': themePanelVisible }"
           :aria-pressed="themePanelVisible"
@@ -751,7 +895,7 @@ onUnmounted(() => {
           <span class="right-btn-icon ic-theme">
             <Palette size="18" stroke-width="1.7" />
           </span>
-          <span class="bar-btn-label">主题</span>
+          <span class="bar-btn-label">自定义</span>
           <div class="right-tooltip" role="tooltip">
             <span class="right-tooltip-label">自定义主题与排版</span>
           </div>
@@ -760,6 +904,81 @@ onUnmounted(() => {
     </aside>
 
     <Teleport to="body">
+      <div
+        v-if="showThemeMenu"
+        ref="themePopoutRef"
+        class="theme-popout-panel"
+        :style="themePopoutStyle"
+        role="menu"
+        aria-label="选择排版主题"
+      >
+        <div class="popout-header theme-popout-header">
+          <span class="popout-title">排版主题</span>
+        </div>
+
+        <div class="theme-popout-scroll">
+          <div class="theme-popout-group">
+            <div class="theme-popout-group-label">
+              <span>内置主题</span>
+              <span class="theme-popout-count">{{ groupedThemes.builtIn.length }}</span>
+            </div>
+            <div class="theme-popout-list">
+              <button
+                v-for="t in groupedThemes.builtIn"
+                :key="t.id"
+                type="button"
+                class="theme-popout-item"
+                :class="{ 'is-active': t.id === props.themeId }"
+                role="menuitemradio"
+                :aria-checked="t.id === props.themeId"
+                @click="selectThemeFromPopout(t.id)"
+              >
+                <span
+                  class="theme-popout-swatch"
+                  :style="{ backgroundColor: t.styles?.['--accent-color'] || '#116ACC' }"
+                ></span>
+                <span class="theme-popout-name">{{ t.name }}</span>
+                <Check v-if="t.id === props.themeId" size="14" stroke-width="2.2" class="theme-popout-check" />
+              </button>
+            </div>
+          </div>
+
+          <div class="popout-divider"></div>
+
+          <div class="theme-popout-group">
+            <div class="theme-popout-group-label">
+              <span>我的主题</span>
+              <span class="theme-popout-count">{{ groupedThemes.custom.length }}</span>
+            </div>
+            <div v-if="groupedThemes.custom.length > 0" class="theme-popout-list">
+              <button
+                v-for="t in groupedThemes.custom"
+                :key="t.id"
+                type="button"
+                class="theme-popout-item"
+                :class="{ 'is-active': t.id === props.themeId }"
+                role="menuitemradio"
+                :aria-checked="t.id === props.themeId"
+                @click="selectThemeFromPopout(t.id)"
+              >
+                <span
+                  class="theme-popout-swatch"
+                  :style="{ backgroundColor: t.styles?.['--accent-color'] || '#116ACC' }"
+                ></span>
+                <span class="theme-popout-name">{{ t.name }}</span>
+                <Check v-if="t.id === props.themeId" size="14" stroke-width="2.2" class="theme-popout-check" />
+              </button>
+            </div>
+            <div v-else class="theme-popout-empty">
+              <span class="theme-popout-empty-text">暂无自定义主题</span>
+              <button type="button" class="theme-popout-create-btn" @click="openCustomizerFromThemePopout">
+                去创建
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div
         v-if="showCopyMenu"
         ref="copyPopoutRef"
@@ -917,8 +1136,8 @@ onUnmounted(() => {
 .preview-right-bar {
   width: 50px;
   flex-shrink: 0;
-  background: var(--bg-card, #FFFFFF);
-  border-left: 1px solid var(--border-subtle, #EDEDF0);
+  background: var(--bg-rail, #FAFAFC);
+  border-left: 1px solid var(--border-subtle, #ECEEF3);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -1376,7 +1595,221 @@ html.dark .popout-item:hover {
 .popout-divider {
   height: 1px;
   background: var(--border-color, rgba(0, 0, 0, 0.06));
-  margin: 3px 4px;
+  margin: 4px;
+}
+
+/* Right-rail active theme swatch dot indicator */
+.right-theme-btn {
+  position: relative;
+}
+
+.right-theme-dot {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1.5px solid var(--bg-rail, #FAFAFC);
+  box-shadow: 0 0 0 0.5px rgba(15, 23, 42, 0.14);
+  pointer-events: none;
+  transition: transform 0.16s ease, border-color 0.25s ease;
+}
+
+.right-theme-btn:hover .right-theme-dot {
+  transform: scale(1.15);
+}
+
+html.dark .right-theme-dot {
+  border-color: var(--bg-rail, #18181B);
+  box-shadow: 0 0 0 0.5px rgba(255, 255, 255, 0.22);
+}
+
+/* Categorized Theme Switcher Popout Panel */
+.theme-popout-panel {
+  position: fixed;
+  width: 224px;
+  max-height: min(520px, calc(100vh - 24px));
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, rgba(15, 23, 42, 0.08));
+  border-radius: 12px;
+  box-shadow:
+    0 12px 32px rgba(15, 23, 42, 0.12),
+    0 2px 8px rgba(15, 23, 42, 0.04);
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  z-index: 9999;
+  font-family: var(--font-sans);
+  box-sizing: border-box;
+  animation: themePopoutIn 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes themePopoutIn {
+  from {
+    opacity: 0;
+    transform: translateX(6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+html.dark .theme-popout-panel {
+  background: #22252A;
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 14px 36px rgba(0, 0, 0, 0.45),
+    0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.theme-popout-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 8px 7px;
+  margin-bottom: 4px;
+}
+
+.theme-popout-scroll {
+  overflow-y: auto;
+  scrollbar-width: thin;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.theme-popout-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 2px 0;
+}
+
+.theme-popout-group-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 3px 8px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted, #64748B);
+  letter-spacing: 0.02em;
+}
+
+.theme-popout-count {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #94A3B8;
+  font-variant-numeric: tabular-nums;
+}
+
+.theme-popout-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.theme-popout-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 7px 8px;
+  border: none;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-main, #1E293B);
+  font-size: 12.5px;
+  font-weight: 500;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition: background 120ms ease, color 120ms ease;
+}
+
+.theme-popout-item:hover {
+  background: var(--bg-capsule, #F1F5F9);
+}
+
+.theme-popout-item.is-active {
+  background: #E6F4F7;
+  color: #0F172A;
+  font-weight: 600;
+}
+
+html.dark .theme-popout-item {
+  color: #E2E8F0;
+}
+
+html.dark .theme-popout-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+html.dark .theme-popout-item.is-active {
+  background: rgba(0, 200, 215, 0.16);
+  color: #F8FAFC;
+}
+
+.theme-popout-swatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
+}
+
+.theme-popout-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.theme-popout-check {
+  flex-shrink: 0;
+  color: #00A4B6;
+}
+
+html.dark .theme-popout-check {
+  color: #38BDF8;
+}
+
+.theme-popout-empty {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 8px;
+  border-radius: 7px;
+  background: rgba(15, 23, 42, 0.025);
+}
+
+html.dark .theme-popout-empty {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.theme-popout-empty-text {
+  font-size: 12px;
+  color: var(--text-muted, #94A3B8);
+}
+
+.theme-popout-create-btn {
+  border: none;
+  background: transparent;
+  padding: 2px 6px;
+  border-radius: 5px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #00A4B6;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.theme-popout-create-btn:hover {
+  background: rgba(0, 164, 182, 0.1);
 }
 
 /* Card Deck 3D Layered Notifications matching Screenshot */

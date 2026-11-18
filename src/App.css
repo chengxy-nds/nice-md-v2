@@ -457,23 +457,36 @@ html.dark .wandor-wordmark {
   gap: 0;
 }
 
-/* ── 左侧文档侧边栏平滑展开/折叠过渡 (Muse Ease-Glide) ── */
-/* P0-3: 只留 transform + opacity。原来 margin-left: -320px 是布局
-   属性，每帧重排整个编辑区/预览区，而且 -320px 是写死的，与真实
-   宽度 clamp(17rem, 20vw, 24rem) 及拖拽后的 220–640px 都对不上。
-   改为 translateX(-100%)，按自身宽度滑出，走合成器。代价：展开/
-   收起时工作区不再被平滑推动，侧边栏以抽屉方式滑入滑出，收起完
-   成瞬间工作区扩展一次。 */
-.sidebar-slide-enter-active,
-.sidebar-slide-leave-active {
-  transition: transform 0.36s var(--ease-glide),
-              opacity 0.2s var(--ease-out);
+/* ── 左侧文档侧边栏丝滑收起/展开轨道 ──
+   外层 .sidebar-slot 宽度在 0 ↔ var(--sidebar-width) 间过渡，内层固定宽度
+   且右对齐（justify-content: flex-end），让侧边栏内部永不重排折行、右边框与
+   工作区同帧同步推动——彻底消除原来 translateX 滑出时的空白占位与收尾瞬间跳变。 */
+.sidebar-slot {
+  --sidebar-width: clamp(14.25rem, 16.5vw, 18.5rem);
+  width: var(--sidebar-width);
+  flex: 0 0 auto;
+  height: 100%;
+  overflow: hidden;
+  transition: width 300ms cubic-bezier(0.32, 0.72, 0, 1);
 }
 
-.sidebar-slide-enter-from,
-.sidebar-slide-leave-to {
-  transform: translateX(-100%);
-  opacity: 0;
+.sidebar-slot.is-collapsed {
+  width: 0;
+}
+
+.sidebar-slot.is-resizing {
+  transition: none !important;
+}
+
+.sidebar-slot-inner {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.sidebar-slot.is-collapsed .sidebar-resizer {
+  pointer-events: none;
 }
 
 /* ── C. 视图切换（首页 / 编辑器 / 模板 / 素材）── mode="out-in"：
@@ -506,13 +519,13 @@ html.dark .wandor-wordmark {
 }
 
 .workspace-tabs {
-  height: 38px;
+  height: 40px;
   display: flex;
-  align-items: stretch;
+  align-items: flex-end;
   gap: 0;
-  padding: 0;
-  background: var(--bg-editor, #ffffff);
-  box-shadow: inset 0 -1px 0 #e5ebf3;
+  padding: 6px 12px 0;
+  background: #F5F7FA;
+  box-shadow: inset 0 -1px 0 #EAECEF;
   flex-shrink: 0;
   width: 100%;
   box-sizing: border-box;
@@ -521,16 +534,17 @@ html.dark .wandor-wordmark {
 }
 
 html.dark .workspace-tabs {
-  background: var(--bg-editor, #1b1b1f);
+  background: #14151a;
   box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
 }
 
 .workspace-tabs-scroll {
   display: flex;
-  align-items: stretch;
-  gap: 0;
-  max-width: calc(100% - 38px);
-  height: 100%;
+  align-items: flex-end;
+  gap: 2px;
+  max-width: calc(100% - 36px);
+  height: calc(100% + 1px);
+  margin-bottom: -1px;
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
@@ -540,31 +554,37 @@ html.dark .workspace-tabs {
   position: relative;
 }
 
-/* 标签组（TransitionGroup 根节点）：只包标签本身，滚动容器仍是外层，
-   所以拖拽滚动 / wheel / scrollIntoView 不受影响。 */
+/* 标签组（TransitionGroup 根节点）：只包标签本身，盖在滑动背景卡片上方（z-index: 2） */
 .workspace-tabs-group {
+  position: relative;
+  z-index: 2;
   display: flex;
-  align-items: stretch;
+  align-items: flex-end;
+  gap: 2px;
   flex-shrink: 0;
   min-height: 100%;
+  padding-bottom: 1px;
+  box-sizing: border-box;
 }
 
-/* ── 标签激活指示滑块 ── 2px 顶部高亮条，唯一一块，用 transform 在激活
-   标签之间滑动（JS 量测 + rAF，见 App.vue 的 moveTabGlider）；宽按激活
-   标签的实际宽走，宽窄标签切换时跟着伸缩。放在滚动容器内部、按内容
-   坐标定位，随标签一起滚动。 */
+/* ── 标签激活滑动卡片（丝滑圆角文件夹页签）──
+   整张圆角白底页签卡片作为滑块，在切换标签时按真实宽度顺滑平移与伸缩，
+   彻底消除平直线条悬挑在圆角上方的生硬感，并自然覆盖底部分割线融入下方工具栏。 */
 .workspace-tab-glider {
   position: absolute;
-  top: 0;
+  bottom: 0;
   left: 0;
-  height: 2px;
+  height: 35px;
   width: 0;
-  background: #00A9B8;
-  border-radius: 0 0 2px 2px;
+  background: var(--bg-editor, #ffffff);
+  border: 1px solid #EAECEF;
+  border-bottom: none;
+  border-radius: 9px 9px 0 0;
+  box-sizing: border-box;
   opacity: 0;
   pointer-events: none;
-  z-index: 3;
-  transition: transform var(--motion-slow) var(--ease-glide), width var(--motion-slow) var(--ease-glide), opacity var(--motion-base) var(--ease-out);
+  z-index: 1;
+  transition: transform 320ms var(--ease-glide), width 320ms var(--ease-glide), opacity var(--motion-base) var(--ease-out);
   will-change: transform, width;
 }
 
@@ -578,7 +598,8 @@ html.dark .workspace-tabs {
 }
 
 html.dark .workspace-tab-glider {
-  background: var(--brand-primary-light, #C9F2F6);
+  background: var(--bg-editor, #1b1b1f);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 /* ── 标签栏过渡（nx-tab / TransitionGroup）──
@@ -623,17 +644,18 @@ html.dark .workspace-tab-glider {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 7px;
-  height: 100%;
-  min-width: 112px;
-  max-width: 210px;
+  gap: 6px;
+  height: 34px;
+  width: 152px;
+  min-width: 152px;
+  max-width: 152px;
   flex-shrink: 0;
-  padding: 0 10px 0 12px;
-  border-radius: 0;
-  border: none;
-  border-right: 1px solid #e5ebf3;
-  background: var(--bg-editor, #ffffff);
-  box-shadow: inset 0 -1px 0 #e5ebf3;
+  padding: 0 8px 0 10px;
+  border-radius: 9px 9px 0 0;
+  border: 1px solid transparent;
+  border-bottom: none;
+  background: transparent;
+  box-shadow: none;
   color: #64748b;
   font-size: 12.5px;
   font-weight: 500;
@@ -644,35 +666,36 @@ html.dark .workspace-tab-glider {
 }
 
 .workspace-tab-item:hover:not(.is-active) {
-  background: #fafcff;
+  background: rgba(255, 255, 255, 0.65);
   color: #1e293b;
 }
 
 html.dark .workspace-tab-item {
-  background: var(--bg-editor, #1b1b1f);
-  border-right-color: rgba(255, 255, 255, 0.08);
-  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
   color: #94a3b8;
 }
 
 html.dark .workspace-tab-item:hover:not(.is-active) {
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(255, 255, 255, 0.05);
   color: #f1f5f9;
 }
 
+/* 激活态底色与圆角边框由下层 .workspace-tab-glider 滑动卡片承担，这里保持透明只改字重与字色 */
 .workspace-tab-item.is-active {
-  background: #f5f8fc;
-  box-shadow: inset 0 -1px 0 #e5ebf3;
-  color: #0f172a;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+  color: #0F172A;
+  font-weight: 600;
   z-index: 2;
 }
 
-/* 激活态顶部高亮改由 .workspace-tab-glider 滑动承担（见上），这里不再
-   用静态 ::before，否则滑块和静态条会重叠成两条。 */
-
 html.dark .workspace-tab-item.is-active {
-  background: #252936;
-  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
   color: #f8fafc;
 }
 
@@ -703,8 +726,9 @@ html.dark .workspace-tab-item.is-active .workspace-tab-icon {
 }
 
 .workspace-tab-item.is-renaming {
-  min-width: 140px;
-  max-width: 220px;
+  width: 184px;
+  min-width: 184px;
+  max-width: 184px;
   padding-right: 10px;
 }
 
@@ -780,11 +804,12 @@ html.dark .workspace-tab-close:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 100%;
+  align-self: center;
+  width: 28px;
+  height: 28px;
+  margin-left: 4px;
   border: none;
-  border-right: 1px solid transparent;
-  border-radius: 0;
+  border-radius: 7px;
   background: transparent;
   color: #64748b;
   cursor: pointer;
@@ -793,12 +818,12 @@ html.dark .workspace-tab-close:hover {
 }
 
 .workspace-tab-add:hover {
-  background: #edf4ff;
+  background: rgba(15, 23, 42, 0.06);
   color: #00A9B8;
 }
 
 .workspace-tab-add:active {
-  transform: scale(.97);
+  transform: scale(.94);
 }
 
 html.dark .workspace-tab-add:hover {
@@ -973,7 +998,7 @@ html.dark .empty-tabs-title {
   display: flex;
   align-items: center;
   padding: 0 20px;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid #EEF1F5;
   background: var(--bg-editor, #ffffff);
   box-shadow: none;
   flex-shrink: 0;
@@ -981,6 +1006,10 @@ html.dark .empty-tabs-title {
   z-index: 10;
   box-sizing: border-box;
   transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+html.dark .workspace-toolbar {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 
 .header-actions {
@@ -993,9 +1022,9 @@ html.dark .empty-tabs-title {
 .toolbar-btn-group {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 10px;
+  gap: 3px;
+  padding: 4px 0;
+  border-radius: 8px;
   background: transparent;
   transition: all 0.2s ease;
 }
@@ -1005,7 +1034,7 @@ html.dark .empty-tabs-title {
   height: 16px;
   background: var(--border-subtle, #EDF1F7);
   display: inline-block;
-  margin: 0 3px;
+  margin: 0 4px;
   opacity: 1;
 }
 
@@ -1017,21 +1046,25 @@ html.dark .empty-tabs-title {
   background: transparent;
   border: 1px solid transparent;
   color: var(--text-muted, #64748B);
-  border-radius: 10px;
-  width: 28px;
-  height: 28px;
+  border-radius: 7px;
+  width: 30px;
+  height: 30px;
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background 0.14s ease, color 0.14s ease, border-color 0.14s ease;
 }
 
 .workspace-toolbar .btn-icon:hover {
   color: var(--text-main, #0F172A);
-  background: var(--bg-card, #FFFFFF);
-  border-color: var(--border-color, #E2E8F0);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  background: #F3F5F8;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+html.dark .workspace-toolbar .btn-icon:hover {
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .workspace-toolbar .btn-icon.is-active {
@@ -1246,19 +1279,24 @@ html.dark .popout-item.is-active {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 28px;
-  background: var(--bg-card, #FFFFFF);
-  border: 1px solid var(--border-color, #E2E8F0);
+  height: 30px;
+  background: #F6F8FA;
+  border: 1px solid #E8ECF2;
   color: var(--text-main, #0F172A);
   padding: 0 10px;
-  border-radius: 7px;
+  border-radius: 8px;
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+  box-shadow: none;
   transition: all 0.15s ease;
   white-space: nowrap;
   font-family: var(--font-sans);
+}
+
+html.dark .btn-toolbar-dropdown {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
 }
 
 .dropdown-label-prefix {
@@ -1284,9 +1322,9 @@ html.dark .popout-item.is-active {
 
 .btn-toolbar-dropdown:hover,
 .btn-toolbar-dropdown.is-active {
-  background: var(--bg-card, #FFFFFF);
-  border-color: var(--brand-primary, #116ACC);
-  box-shadow: 0 0 0 2px var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
+  background: #EEF3F9;
+  border-color: var(--brand-primary, #00B4C5);
+  box-shadow: 0 0 0 2px var(--brand-primary-tint, rgba(0, 200, 215, 0.12));
 }
 
 .workspace-columns {
@@ -1308,7 +1346,11 @@ html.dark .popout-item.is-active {
 }
 
 .workspace-column.editor-column {
-  border-right: 1px solid var(--border-color);
+  border-right: 1px solid #EAECEF;
+}
+
+html.dark .workspace-column.editor-column {
+  border-right-color: var(--border-color);
 }
 
 .workspace-grid.preview-hidden .workspace-columns {
@@ -1356,6 +1398,7 @@ html.dark .popout-item.is-active {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .sidebar-slot,
   .workspace-columns {
     transition-duration: 0.01ms !important;
   }
@@ -1573,6 +1616,19 @@ html.dark .popout-item.is-active {
     display: none;
   }
   
+  /* 窄屏走固定浮层抽屉：拍平桌面端裁剪轨道，不影响 fixed 定位与滑入动画 */
+  .sidebar-slot,
+  .sidebar-slot.is-collapsed {
+    display: contents !important;
+    width: auto !important;
+    overflow: visible !important;
+    transition: none !important;
+  }
+
+  .sidebar-slot-inner {
+    display: contents !important;
+  }
+
   /* Sidebar as floating mobile drawer */
   .sidebar-container {
     position: fixed !important;
@@ -2115,3 +2171,11 @@ html.dark .popout-item.is-active {
     bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* 桌面端主题切换入口已移至右侧侧边栏，隐藏顶部工具栏里的重复按钮；≤960px 预览模式保留作移动端回退 */
+@media (min-width: 961px) {
+  .workspace-toolbar .toolbar-doc-theme-container {
+    display: none !important;
+  }
+}
+

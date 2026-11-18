@@ -1523,7 +1523,6 @@ onMounted(() => {
               <button 
                 class="btn-action-tool btn-select-toggle" 
                 @click="toggleSelectAll"
-                title="一键全选或取消全选所有已登录渠道"
               >
                 <span>{{ isAllSelected ? '取消全选' : '全选' }}</span>
               </button>
@@ -1531,7 +1530,6 @@ onMounted(() => {
               <button 
                 class="btn-action-tool btn-batch-manage" 
                 @click="showPlatformManageModal = true"
-                title="管理要在控制台展示的平台渠道"
               >
                 <Layers size="13" />
                 <span>渠道管理</span>
@@ -1540,8 +1538,7 @@ onMounted(() => {
               <button 
                 class="btn-action-dark btn-refresh-status" 
                 @click="handleManualRefresh" 
-                :disabled="isCheckingLogins" 
-                title="刷新各平台登录状态"
+                :disabled="isCheckingLogins"
               >
                 <RotateCw size="12" :class="{ 'spin-anim': isCheckingLogins }" />
                 <span>刷新状态</span>

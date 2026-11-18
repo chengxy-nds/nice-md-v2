@@ -1,10 +1,16 @@
 <script setup>
+import { useId } from 'vue';
+
 defineProps({
   size: {
     type: [Number, String],
     default: 32
   }
 });
+
+const uid = useId();
+const bgGradId = `easymd-bg-${uid}`;
+const shadowId = `easymd-paper-${uid}`;
 </script>
 
 <template>
@@ -21,21 +27,51 @@ defineProps({
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
     >
-      <rect width="64" height="64" rx="16" fill="#1769D2" />
-      <path
-        d="M20 10H38L50 22V51C50 53.7614 47.7614 56 45 56H20C17.2386 56 15 53.7614 15 51V15C15 12.2386 17.2386 10 20 10Z"
-        fill="white"
+      <defs>
+        <linearGradient :id="bgGradId" x1="6" y1="4" x2="58" y2="60" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#00C8D7" />
+          <stop offset="100%" stop-color="#0093A3" />
+        </linearGradient>
+        <filter :id="shadowId" x="11" y="8" width="43" height="54" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+          <feDropShadow dx="0" dy="1.5" stdDeviation="1.5" flood-color="#005560" flood-opacity="0.18" />
+        </filter>
+      </defs>
+
+      <!-- Studio Cyan-Teal Squircle -->
+      <rect width="64" height="64" rx="16" :fill="`url(#${bgGradId})`" />
+      <rect
+        x="0.75"
+        y="0.75"
+        width="62.5"
+        height="62.5"
+        rx="15.25"
+        stroke="rgba(255, 255, 255, 0.22)"
+        stroke-width="1.5"
       />
-      <path d="M38 10V19C38 20.6569 39.3431 22 41 22H50L38 10Z" fill="#B8F2E8" />
+
+      <!-- Crisp Paper Sheet -->
+      <g :filter="`url(#${shadowId})`">
+        <path
+          d="M20 10.5H37.5L49.5 22.5V50.5C49.5 53.2614 47.2614 55.5 44.5 55.5H20C17.2386 55.5 15 53.2614 15 50.5V15.5C15 12.7386 17.2386 10.5 20 10.5Z"
+          fill="#FFFFFF"
+        />
+      </g>
+
+      <!-- Folded Corner -->
+      <path d="M37.5 10.5V19.5C37.5 21.1569 38.8431 22.5 40.5 22.5H49.5L37.5 10.5Z" fill="#BAEBF0" />
+
+      <!-- Crisp Markdown 'M' -->
       <path
-        d="M21 41V28L32 37L43 28V41"
-        stroke="#1769D2"
-        stroke-width="4"
+        d="M21 40.5V27.5L32 36.5L43 27.5V40.5"
+        stroke="#008999"
+        stroke-width="4.2"
         stroke-linecap="round"
         stroke-linejoin="round"
       />
-      <path d="M23 47H34" stroke="#9ABCEB" stroke-width="2.5" stroke-linecap="round" />
-      <rect x="37" y="43.5" width="3" height="7" rx="1.5" fill="#22B8A5" />
+
+      <!-- Editorial Rule + Live Cursor -->
+      <path d="M22.5 47H33.5" stroke="#B7E4EA" stroke-width="2.6" stroke-linecap="round" />
+      <rect x="36.5" y="43.5" width="3.2" height="7" rx="1.6" fill="#00C8D7" />
     </svg>
   </span>
 </template>

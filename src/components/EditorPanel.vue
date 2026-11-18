@@ -1756,7 +1756,7 @@ function initCodeMirror() {
       fontFeatureSettings: "inherit"
     },
     ".cm-content": {
-      padding: "20px 0 32px",
+      padding: "28px 0 48px",
       lineHeight: editorLineHeightRatio.value,
       fontFamily: "inherit",
       letterSpacing: "inherit",
@@ -1769,10 +1769,10 @@ function initCodeMirror() {
     ".cm-gutters": {
       display: showLineNumbers.value ? "flex" : "none",
       backgroundColor: "transparent",
-      borderRight: "1px solid rgba(148, 163, 184, 0.16)",
+      borderRight: "none",
       color: "var(--text-muted, #94a3b8)",
-      minWidth: "42px",
-      paddingLeft: "6px"
+      minWidth: "48px",
+      paddingLeft: "10px"
     },
     ".cm-lineNumbers": {
       minWidth: "36px"
@@ -1783,16 +1783,16 @@ function initCodeMirror() {
       textAlign: "center",
       fontSize: "11px",
       fontFamily: "'JetBrains Mono', Consolas, monospace",
-      color: "var(--text-muted, #94a3b8)",
-      opacity: "0.45",
+      color: "#B6C0CE",
+      opacity: "0.85",
       lineHeight: `${editorLineHeight}px`,
       boxSizing: "border-box"
     },
     ".cm-activeLineGutter": {
       backgroundColor: "transparent",
-      color: "var(--brand-primary, #00C8D7)",
+      color: "#475569",
       opacity: "1 !important",
-      fontWeight: "700"
+      fontWeight: "600"
     },
     ".cm-activeLine": {
       backgroundColor: "transparent"
@@ -1804,7 +1804,7 @@ function initCodeMirror() {
       fontStyle: "normal"
     },
     ".cm-line": {
-      padding: "0 16px",
+      padding: "0 24px",
       lineHeight: editorLineHeightRatio.value
     },
     /* Warm Yellow-Orange Search & Selection Match Highlighting */
@@ -2116,9 +2116,9 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
         <button @click="insertFormat('link'); showFloatBar = false" title="链接"><Link size="14" /></button>
         <span class="float-sep float-sep-mid"></span>
         <span class="float-row-break"></span>
-        <button @click="insertFormat('h1'); showFloatBar = false" title="H1">H1</button>
-        <button @click="insertFormat('h2'); showFloatBar = false" title="H2">H2</button>
-        <button @click="insertFormat('h3'); showFloatBar = false" title="H3">H3</button>
+        <button @click="insertFormat('h1'); showFloatBar = false">H1</button>
+        <button @click="insertFormat('h2'); showFloatBar = false">H2</button>
+        <button @click="insertFormat('h3'); showFloatBar = false">H3</button>
         <button @click="insertFormat('quote'); showFloatBar = false" title="引用">❝</button>
         <button @click="insertFormat('ul'); showFloatBar = false" title="无序列表">•≡</button>
         <button @click="insertFormat('ol'); showFloatBar = false" title="有序列表">1.</button>
@@ -2175,7 +2175,6 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
             <div class="url-card-actions">
               <button
                 class="url-action-btn"
-                title="放大预览"
                 @click="openUrlLightbox(hoveredUrlInfo.url, hoveredUrlInfo.filename)"
               >
                 <ZoomIn size="13" />
@@ -2183,7 +2182,6 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
               </button>
               <button
                 class="url-action-btn"
-                title="裁剪此图片"
                 @click="handleStartCrop(hoveredUrlInfo.url, hoveredUrlInfo.filename)"
               >
                 <Crop size="13" />
@@ -2305,7 +2303,6 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
               <span class="editor-lightbox-sep"></span>
               <button
                 class="editor-lightbox-btn"
-                title="新窗口打开"
                 @click="openHoveredUrl(lightboxRawUrl || lightboxImageUrl)"
               >
                 <ExternalLink size="15" />
@@ -2313,7 +2310,6 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
               </button>
               <button
                 class="editor-lightbox-btn"
-                title="裁剪此图片"
                 @click="handleStartCropFromLightbox"
               >
                 <Crop size="15" />
@@ -2321,7 +2317,6 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
               </button>
               <button
                 class="editor-lightbox-btn"
-                title="下载图片"
                 @click="handleDownloadHoveredUrl(lightboxRawUrl || lightboxImageUrl, lightboxImageName)"
               >
                 <Download size="15" />
@@ -2505,7 +2500,7 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
               @keydown="onFindKeydown"
             />
           </div>
-          <button @click="doReplace" class="find-action-btn" title="替换当前">替换</button>
+          <button @click="doReplace" class="find-action-btn">替换</button>
           <button @click="doReplaceAll" class="find-action-btn" title="全部替换">全部</button>
         </div>
       </div>
@@ -2573,17 +2568,17 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
 
 
 .line-gutter {
-  padding: 20px 0 20px 6px;
-  width: 42px;
+  padding: 28px 0 48px 10px;
+  width: 48px;
   background: transparent;
-  border-right: 1px solid rgba(148, 163, 184, 0.16);
+  border-right: none;
   text-align: center;
   user-select: none;
   font-family: 'JetBrains Mono', Consolas, monospace;
   font-size: 11px;
   font-weight: 500;
-  color: var(--text-muted);
-  opacity: 0.45;
+  color: #B6C0CE;
+  opacity: 0.85;
   overflow-y: hidden;
   box-sizing: border-box;
   flex-shrink: 0;
@@ -2602,7 +2597,7 @@ defineExpose({ handleUndo, handleRedo, openFindReplace, closeFindReplace, handle
 textarea {
   position: absolute;
   top: 0; left: 0; width: 100%; height: 100%;
-  margin: 0; padding: 20px 16px 32px; box-sizing: border-box;
+  margin: 0; padding: 28px 28px 48px; box-sizing: border-box;
   font-family: inherit;
   font-size: inherit; font-weight: 400; letter-spacing: inherit;
   line-height: inherit; font-feature-settings: inherit; white-space: pre-wrap; overflow-wrap: break-word; word-break: break-word;
@@ -2638,7 +2633,7 @@ textarea::placeholder {
 }
 
 .codemirror-markdown-editor :deep(.cm-line) {
-  max-width: 1000px;
+  max-width: 780px;
 }
 
 /* Drag overlay styling */
@@ -2702,14 +2697,19 @@ textarea::placeholder {
      全局是 border-box，所以高度里把 inset 加回来，内容区仍是 28px。
      env() 在桌面端是 0，桌面端高度不变。 */
   height: calc(28px + env(safe-area-inset-bottom));
-  padding: 0 16px env(safe-area-inset-bottom);
-  border-top: 1px solid var(--border-color, #E2E8F0);
-  background: var(--bg-toolbar, #FAFBFC);
+  padding: 0 20px env(safe-area-inset-bottom);
+  border-top: 1px solid #F2F4F7;
+  background: transparent;
   font-size: 11.5px;
   font-weight: 500;
   font-variant-numeric: tabular-nums;
-  color: var(--text-muted, #64748B);
+  color: #94A3B8;
   flex-shrink: 0;
+}
+
+:global(html.dark) .editor-footer {
+  border-top-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-muted, #64748B);
 }
 
 /* ── Inline Find Bar (Responsive & Compact rem sizing) ── */
@@ -3111,8 +3111,8 @@ html.dark .btn-submit-url:hover:not(:disabled) {
 /* Floating quick-scroll buttons */
 .scroll-quick-btns {
   position: absolute;
-  bottom: 12px;
-  right: 12px;
+  bottom: 14px;
+  right: 16px;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -3122,15 +3122,16 @@ html.dark .btn-submit-url:hover:not(:disabled) {
 .scroll-quick-btn {
   width: 28px;
   height: 28px;
-  border-radius: 6px;
-  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  border: 1px solid #EAECEF;
   background: var(--bg-editor);
-  color: var(--text-muted);
+  color: #94A3B8;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.04);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0.5;
+  opacity: 0.55;
   transition: all 0.15s ease;
 }
 

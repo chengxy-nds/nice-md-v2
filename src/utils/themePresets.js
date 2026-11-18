@@ -451,3 +451,28 @@ export function getThemeDefaultStyles(themeId = 'classic-indigo') {
     img: { borderRadius: '8px', display: 'block', margin: '0 auto', maxWidth: '100%', boxShadow: 'none', border: 'none' }
   };
 }
+
+/**
+ * Separates a theme preset list into built-in themes and user-created custom themes,
+ * deduplicating by id and preserving declaration order.
+ */
+export function groupThemesByCategory(themeList = themes) {
+  const list = Array.isArray(themeList) ? themeList : [];
+  const builtIn = [];
+  const custom = [];
+  const seen = new Set();
+
+  for (const theme of list) {
+    if (!theme || !theme.id || seen.has(theme.id)) continue;
+    seen.add(theme.id);
+    const isCustom = Boolean(theme.isCustom || theme.id.startsWith('custom-') || !isBuiltInTheme(theme.id));
+    if (isCustom) {
+      custom.push(theme);
+    } else {
+      builtIn.push(theme);
+    }
+  }
+
+  return { builtIn, custom };
+}
+

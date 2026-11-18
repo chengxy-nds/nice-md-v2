@@ -161,7 +161,6 @@ function scrollToChannels() {
               <button
                 class="btn-card-sample-pill"
                 @click="emit('insert-sample'); emit('enter-editor');"
-                title="载入精选示例文档"
               >
                 <span>示例文档</span>
               </button>

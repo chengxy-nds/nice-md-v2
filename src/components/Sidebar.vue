@@ -14,6 +14,7 @@ import {
   Folder,
   FolderOpen,
   ChevronRight,
+  ChevronDown,
   Pencil,
   Trash2,
   Trash,
@@ -162,7 +163,8 @@ const emit = defineEmits([
   'move-doc', 'reorder-docs', 'reorder-groups', 'toggle-collapse',
   'open-templates', 'open-materials', 'open-doc-history',
   'duplicate-doc', 'toggle-pin',
-  'cloud-sync-action', 'open-cloud-settings', 'swipe-close', 'close-drawer'
+  'cloud-sync-action', 'open-cloud-settings', 'swipe-close', 'close-drawer',
+  'width-change', 'resize-state'
 ]);
 
 // ── Search, Filter & Sort State ──
@@ -724,6 +726,7 @@ function loadSavedSidebarWidth() {
       const val = parseInt(saved, 10);
       if (!isNaN(val) && val >= MIN_SIDEBAR_WIDTH && val <= MAX_SIDEBAR_WIDTH) {
         customSidebarWidth.value = val;
+        emit('width-change', val);
       }
     }
   } catch (err) {
@@ -736,6 +739,7 @@ let cleanupResizeListeners = null;
 function startResizing(e) {
   if (window.innerWidth <= 960) return;
   isResizing.value = true;
+  emit('resize-state', true);
   const startX = e.clientX;
   const initialWidth = customSidebarWidth.value || sidebarContainerRef.value?.offsetWidth || 280;
 
@@ -743,12 +747,14 @@ function startResizing(e) {
     if (!isResizing.value) return;
     const delta = moveEvent.clientX - startX;
     const maxAllowed = Math.min(MAX_SIDEBAR_WIDTH, Math.round(window.innerWidth * 0.45));
-    const nextWidth = Math.min(Math.max(initialWidth + delta, MIN_SIDEBAR_WIDTH), maxAllowed);
-    customSidebarWidth.value = Math.round(nextWidth);
+    const nextWidth = Math.round(Math.min(Math.max(initialWidth + delta, MIN_SIDEBAR_WIDTH), maxAllowed));
+    customSidebarWidth.value = nextWidth;
+    emit('width-change', nextWidth);
   };
 
   const onMouseUp = () => {
     isResizing.value = false;
+    emit('resize-state', false);
     if (cleanupResizeListeners) {
       cleanupResizeListeners();
       cleanupResizeListeners = null;
@@ -777,6 +783,7 @@ function startResizing(e) {
 
 function resetSidebarWidth() {
   customSidebarWidth.value = null;
+  emit('width-change', null);
   try {
     localStorage.removeItem(SIDEBAR_WIDTH_KEY);
   } catch (err) {
@@ -801,7 +808,18 @@ function resetSidebarWidth() {
       @dblclick="resetSidebarWidth"
       title="拖拽调整侧边栏宽度，双击恢复默认"
     ></div>
-    <!-- Toolbar: 云端同步与文档操作 -->
+    <!-- CapCut 式主操作按钮：「+ 新建文档」青蓝渐变通栏按钮 -->
+    <button
+      type="button"
+      class="sidebar-create-btn"
+      @click="handleCreateRootDoc"
+      aria-label="新建文档"
+    >
+      <Plus size="18" stroke-width="2.3" />
+      <span>新建文档</span>
+    </button>
+
+    <!-- Toolbar: 云端同步与文件夹/排序操作 -->
     <div class="toolbar">
       <div class="toolbar-meta">
         <div class="sync-menu-container" ref="syncMenuRef">
@@ -859,15 +877,6 @@ function resetSidebarWidth() {
         </div>
       </div>
       <div class="toolbar-actions">
-        <!-- 新建文档：小按钮，放在展开文件夹按钮左侧 -->
-        <button
-          class="sidebar-toolbar-btn is-create"
-          @click="handleCreateRootDoc"
-          title="新建文档"
-          aria-label="新建文档"
-        >
-          <Plus size="16" stroke-width="2" />
-        </button>
         <button
           v-if="groups.length > 0"
           class="sidebar-toolbar-btn"
@@ -914,11 +923,11 @@ function resetSidebarWidth() {
 
     <!-- Search Bar -->
     <label class="search">
-      <Search size="16" class="search-icon-inside" />
+      <Search size="15" class="search-icon-inside" />
       <input
         v-model="searchQuery"
         type="text"
-        placeholder="搜索文档标题或正文内容..."
+        placeholder="搜索文档..."
       />
       <button 
         v-if="searchQuery" 
@@ -1035,6 +1044,7 @@ function resetSidebarWidth() {
               @dblclick.stop="startRenameGroup(group)"
               :title="group.name"
               data-tooltip-truncated="true"
+              data-placement="top"
             >{{ group.name }}</span>
 
             <!-- group name edit -->
@@ -1224,7 +1234,7 @@ function resetSidebarWidth() {
             <div class="meta">{{ formatTrashDocTime(doc) }} · {{ trashDocCharCount(doc) }}字</div>
           </div>
           <div class="trash-item-actions" @click.stop>
-            <button class="trash-action-btn restore-btn" @click="handleRestoreDoc(doc)" title="恢复文档">
+            <button class="trash-action-btn restore-btn" @click="handleRestoreDoc(doc)" aria-label="恢复文档">
               <RotateCcw size="14" stroke-width="2" />
               <span>恢复</span>
             </button>
@@ -1241,22 +1251,20 @@ function resetSidebarWidth() {
 <style scoped>
 .sidebar-container {
   position: relative;
-  /* 文档面板宽度缩到原来的 3/4：17rem→12.75rem，20vw→15vw，24rem→18rem。 */
-  width: clamp(12.75rem, 15vw, 18rem);
+  width: var(--sidebar-width, clamp(14.25rem, 16.5vw, 18.5rem));
   min-width: 10.3125rem;
   container: docs-sidebar / inline-size;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: rgba(255, 255, 255, 0.88);
-  border-right: 1px solid #e7edf5;
-  padding: 10px 12px 10px;
+  background: #F6F8FB;
+  border-right: 1px solid #EAECEF;
+  padding: 12px 12px 10px;
   overflow: hidden;
   z-index: 4;
   box-sizing: border-box;
-  backdrop-filter: blur(18px);
-  transition: background 0.2s var(--ease-glide), border-color 0.2s var(--ease-glide);
+  transition: background 0.2s var(--ease-out), border-color 0.2s var(--ease-out);
 }
 
 .sidebar-container.is-resizing {
@@ -1264,19 +1272,11 @@ function resetSidebarWidth() {
   user-select: none !important;
 }
 
-/* P0-3: 滑入/滑出期间去掉 backdrop-filter: blur(18px)，否则 0.36s 内
-   每帧重算背景模糊。过渡类由 Vue 加在根元素上，scoped 选择器
-   优先级高于 .sidebar-container 的 blur 声明。 */
-.sidebar-container.sidebar-slide-enter-active,
-.sidebar-container.sidebar-slide-leave-active {
-  backdrop-filter: none;
-}
-
 .sidebar-resizer {
   position: absolute;
   top: 0;
-  right: -3px;
-  width: 6px;
+  right: 0;
+  width: 5px;
   height: 100%;
   cursor: col-resize;
   z-index: 50;
@@ -1288,10 +1288,10 @@ function resetSidebarWidth() {
   position: absolute;
   top: 0;
   bottom: 0;
-  left: 2px;
+  right: 0;
   width: 2px;
   background: transparent;
-  transition: background 0.12s var(--ease-glide);
+  transition: background 0.12s var(--ease-out);
 }
 
 .sidebar-resizer:hover::after,
@@ -1333,28 +1333,27 @@ html.dark .sidebar-container {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 15px;
-  /* 与下边的文件列表、搜索框同宽：容器已有 12px 内边距，按钮不再额外缩进。 */
+  gap: 10px;
   width: 100%;
-  height: 44px;
-  margin: 12px 0 8px;
-  padding-left: 20px;
+  height: 38px;
+  margin: 0 0 10px;
+  padding: 0 14px;
   border: none;
-  border-radius: 6px;
-  /* CapCut 实测：按钮无阴影、无边框；全局按钮的淡阴影不适用于它。 */
-  box-shadow: none;
-  background: linear-gradient(90deg, #4CD7E9 0%, #76E3F5 50%, #6DE0F1 100%);
-  color: #0E0E11;
-  font-size: 14px;
+  border-radius: 9px;
+  box-shadow: 0 2px 8px rgba(0, 164, 182, 0.22);
+  background: linear-gradient(135deg, #00BED0 0%, #00A4B6 100%);
+  color: #FFFFFF;
+  font-size: 13.5px;
   font-weight: 600;
   font-family: inherit;
   cursor: pointer;
   flex-shrink: 0;
-  transition: background 0.2s var(--ease-glide), transform 0.12s var(--ease-glide);
+  transition: background 0.2s var(--ease-glide), box-shadow 0.2s var(--ease-glide), transform 0.12s var(--ease-glide);
 }
 
 .sidebar-create-btn:hover {
-  background: linear-gradient(90deg, #19CBE0 0%, #1ECDE2 50%, #24D0E5 100%);
+  background: linear-gradient(135deg, #00B2C4 0%, #0095A6 100%);
+  box-shadow: 0 4px 12px rgba(0, 164, 182, 0.28);
 }
 
 .sidebar-create-btn:active {
@@ -1834,34 +1833,44 @@ html.dark .icon-btn.is-active {
 
 /* ── 3. Search Bar (.search) ── */
 .search {
-  height: 40px;
+  height: 35px;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 0 12px;
-  border: 1px solid var(--border-color, #E8EAED);
-  border-radius: 12px;
-  background: #ffffff;
-  box-shadow: none;
+  padding: 0 11px;
+  border: 1px solid #E6EBF2;
+  border-radius: 9px;
+  background: #FFFFFF;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.02);
   margin-bottom: 10px;
   flex-shrink: 0;
   box-sizing: border-box;
-  transition: border-color 0.12s var(--ease-glide), box-shadow 0.12s var(--ease-glide);
+  transition: background 0.15s var(--ease-glide), border-color 0.15s var(--ease-glide), box-shadow 0.15s var(--ease-glide);
+}
+
+.search:hover {
+  border-color: #D4DCE8;
 }
 
 .search:focus-within {
-  border-color: #00A9B8;
-  box-shadow: 0 0 0 3px rgba(38, 120, 232, 0.12);
+  background: #ffffff;
+  border-color: #00B4C5;
+  box-shadow: 0 0 0 3px rgba(0, 200, 215, 0.12);
 }
 
 html.dark .search {
-  background: #1e1e24;
-  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: transparent;
   box-shadow: none;
 }
 
+html.dark .search:focus-within {
+  background: #1e1e24;
+  border-color: #00C8D7;
+}
+
 .search-icon-inside {
-  color: #7488a5;
+  color: #8A94A6;
   flex: none;
 }
 
@@ -1873,7 +1882,7 @@ html.dark .search {
   outline: 0;
   background: transparent;
   font-size: 0.8125rem;
-  color: #1e293b;
+  color: #111827;
   font-family: inherit;
 }
 
@@ -1882,7 +1891,7 @@ html.dark .search input {
 }
 
 .search input::placeholder {
-  color: #a1adbd;
+  color: #9CA3AF;
 }
 
 .search-clear-btn {
@@ -2010,9 +2019,10 @@ html.dark .create-group-input {
 }
 
 .folder-row {
+  position: relative;
   display: flex;
   align-items: center;
-  min-height: 35px;
+  min-height: 36px;
   padding: 0 8px;
   gap: 8px;
   font-size: 0.875rem;
@@ -2028,7 +2038,7 @@ html.dark .create-group-input {
 /* P0-2: hover 只改背景色。原来的 translateX(1.5px) 会让整行在鼠标
    滑过时横移，悬停边缘反复进出 hover；:active 的 scale 同理去掉。 */
 .folder-row:hover {
-  background: var(--sidebar-hover, #f5f8fc);
+  background: rgba(15, 23, 42, 0.045);
 }
 
 .folder-row:focus-visible,
@@ -2067,18 +2077,20 @@ html.dark .folder-row:hover {
   transform: rotate(90deg);
 }
 
-/* P1-2: 文件夹图标改回 Lucide Folder/FolderOpen。原来是手绘 CSS
-   文件夹（1.6px 描边 + 奶油填充），与全站 Lucide 线条风格不一致，
-   深色模式还漏了琥珀色版。Lucide 是描边图标，深色下无需另配底色。 */
+/* CapCut 风格文件夹图标：统一高雅中性碳灰，告别跳脱的亮黄色 */
 .folder-lucide {
-  color: #f0a13b;
+  color: #475569;
   flex: none;
   display: flex;
   align-items: center;
 }
 
+html.dark .folder-lucide {
+  color: #cbd5e1;
+}
+
 .folder-lucide.gray {
-  color: #8ea0b8;
+  color: #64748b;
 }
 
 html.dark .folder-lucide.gray {
@@ -2091,6 +2103,24 @@ html.dark .folder-lucide.gray {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: #1F2937;
+}
+
+html.dark .folder-name {
+  color: #f1f5f9;
+}
+
+/* 仅在 hover / 按钮聚焦时为右侧 3 个操作按钮留出空间，常态下名字可直达数字角标旁，不再提前截断 */
+.folder-row:hover:not(.is-renaming) .folder-name,
+.folder-row:focus-within:not(.is-renaming) .folder-name {
+  padding-right: 64px;
+}
+
+.ungrouped-folder .folder-row:hover .folder-name,
+.ungrouped-folder .folder-row:focus-within .folder-name {
+  padding-right: 8px;
 }
 
 .group-rename-input {
@@ -2113,19 +2143,22 @@ html.dark .group-rename-input {
   color: #f1f5f9;
 }
 
-/* P0-1: 右侧区域定宽，计数与操作按钮绝对定位叠放，只切换
-   opacity / visibility，不再 display: none ↔ flex。原来 hover 瞬间
-   右侧从 ~30px 的计数跳成 ~70px 的 3 个按钮，整行重排导致抖动。
-   定宽 88px 是按 P1 的 28px 按钮算的：3×28 + 2×2 gap = 88。 */
+/* 常态下按计数角标宽度自适应，hover 时操作按钮右对齐浮现并由 .folder-name padding-right 防碰撞 */
 .folder-right {
   margin-left: auto;
   position: relative;
-  width: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  min-width: 20px;
   height: 28px;
   flex-shrink: 0;
 }
 
-.folder-right .count,
+.folder-right .count {
+  transition: opacity 0.12s var(--ease-glide), visibility 0.12s var(--ease-glide);
+}
+
 .folder-right .folder-actions {
   position: absolute;
   right: 0;
@@ -2134,18 +2167,20 @@ html.dark .group-rename-input {
   transition: opacity 0.12s var(--ease-glide), visibility 0.12s var(--ease-glide);
 }
 
+/* CapCut 风格轻量计数角标 (如 CapCut 的 Trending 5) */
 .count {
   margin-left: auto;
-  min-width: 23px;
-  height: 23px;
-  padding: 0 7px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
   display: grid;
   place-items: center;
-  border-radius: 20px;
-  background: #edf1f6;
-  color: #78879b;
-  font-size: 0.6875rem;
-  font-weight: 700;
+  border-radius: 6px;
+  background: rgba(15, 23, 42, 0.055);
+  color: #64748B;
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
 }
 
 .folder-right .count,
@@ -2154,8 +2189,8 @@ html.dark .group-rename-input {
 }
 
 html.dark .count {
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 255, 255, 0.65);
 }
 
 .folder-actions {
@@ -2164,6 +2199,7 @@ html.dark .count {
   gap: 2px;
   opacity: 0;
   visibility: hidden;
+  pointer-events: none;
 }
 
 .folder-row:hover .count,
@@ -2176,13 +2212,27 @@ html.dark .count {
 .folder-row:focus-within .folder-actions {
   opacity: 1;
   visibility: visible;
+  pointer-events: auto;
 }
 
 @media (hover: none) {
-  /* 触屏没有 hover，操作按钮常显，否则分组操作够不着。 */
+  /* 触屏没有 hover，操作按钮常显，并预留按钮宽度。 */
+  .folder-right {
+    min-width: 82px;
+  }
+  .ungrouped-folder .folder-right {
+    min-width: 26px;
+  }
+  .folder-row:hover:not(.is-renaming) .folder-name,
+  .folder-row:focus-within:not(.is-renaming) .folder-name,
+  .ungrouped-folder .folder-row:hover .folder-name,
+  .ungrouped-folder .folder-row:focus-within .folder-name {
+    padding-right: 0;
+  }
   .folder-right .folder-actions {
     opacity: 1;
     visibility: visible;
+    pointer-events: auto;
   }
   .folder-right .count {
     opacity: 0;
@@ -2194,8 +2244,8 @@ html.dark .count {
   background: transparent;
   border: none;
   color: #78879b;
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   border-radius: var(--sidebar-radius-sm, 8px);
   display: flex;
   align-items: center;
@@ -2313,10 +2363,11 @@ html.dark .bottom {
 }
 
 .trash {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 7px 7px;
+  padding: 7px 8px;
   border: 1px solid transparent;
   border-radius: 9px;
   color: #52647d;
@@ -2415,31 +2466,62 @@ html.dark .trash-drop-badge {
 
 .trash .count {
   margin-left: auto;
+  transition: opacity 0.12s var(--ease-glide), visibility 0.12s var(--ease-glide);
 }
 
 .trash-clear-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 4px;
   flex: 0 0 auto;
-  min-height: 26px;
-  padding: 0 8px;
+  min-height: 24px;
+  padding: 0 7px;
   border: 1px solid transparent;
-  border-radius: 7px;
+  border-radius: 6px;
   background: transparent;
-  color: #d45454;
+  color: #ef4444;
   font: inherit;
   font-size: 0.6875rem;
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
-  transition: background 0.12s var(--ease-glide), border-color 0.12s var(--ease-glide);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.15s var(--ease-glide), visibility 0.15s var(--ease-glide), background 0.12s var(--ease-glide), border-color 0.12s var(--ease-glide);
+}
+
+.trash:hover:not(.is-empty) .count,
+.trash:focus-within:not(.is-empty) .count {
+  opacity: 0;
+  visibility: hidden;
+}
+
+.trash:hover .trash-clear-btn,
+.trash:focus-within .trash-clear-btn {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+@media (hover: none) {
+  .trash-clear-btn {
+    position: static;
+    transform: none;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+  }
 }
 
 .trash-clear-btn:hover {
-  background: #fff1f1;
-  border-color: #f6d4d4;
+  background: rgba(239, 68, 68, 0.08);
+  border-color: transparent;
 }
 
 .trash-clear-btn:focus-visible {

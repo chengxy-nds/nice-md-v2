@@ -355,6 +355,7 @@ onUnmounted(() => {
         @dblclick.stop="startRename"
         :title="doc.title || '未命名文档'"
         data-tooltip-truncated="true"
+        data-placement="top"
       >
         <span class="title-text"><span v-for="(part, i) in titleParts" :key="i" :class="{ 'search-match': part.isMatch }">{{ part.text }}</span></span>
         <!-- P1-3: 置顶徽标用 Lucide Pin，不再用 emoji 📌（菜单里本来
@@ -390,6 +391,7 @@ onUnmounted(() => {
       ref="moreBtnRef"
       class="more"
       :class="{ 'is-active': isMenuOpen }"
+      aria-label="文档更多操作"
       @click.stop="toggleMenu"
     >
       <!-- P1-3/P1-4: “···”按钮 16px，按钮本身 28px（见 .more 样式）。 -->
@@ -438,65 +440,44 @@ onUnmounted(() => {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  min-height: 52px;
-  margin: 4px 0;
-  border-radius: 12px;
+  gap: 10px;
+  padding: 8px 10px;
+  min-height: 48px;
+  margin: 2px 0;
+  border-radius: 8px;
   cursor: pointer;
-  transition: background .25s var(--ease-spring),
-              transform .25s var(--ease-spring),
-              box-shadow .2s var(--ease-spring);
+  transition: background .2s var(--ease-glide),
+              box-shadow .2s var(--ease-glide);
   background: transparent;
   user-select: none;
   box-sizing: border-box;
 }
 
-/* 悬停：背景 + translateX(2px)，.25s 弹簧（只用 transform，不产生布局抖动；
-   P0 时为避文件夹行的宽度跳变删过这里的横移，文件夹行已用固定宽度修好，
-   文档行本身宽度固定，横移是安全的）。 */
 .file-row:hover {
-  background: var(--sidebar-hover, #f5f8fc);
-  transform: translateX(2px);
+  background: rgba(15, 23, 42, 0.045);
 }
 
 html.dark .file-row:hover {
   background: rgba(255, 255, 255, 0.05);
 }
 
-/* P1-4: 选中态加左侧 2px 指示条，不再只靠背景色区分。
-   指示条用 ::before，scaleY(0→1) .3s 弹簧长出（笔记页 artifact 的做法），
-   代替原来静态的 inset box-shadow。 */
-.file-row::before {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 8px;
-  bottom: 8px;
-  width: 2px;
-  border-radius: 2px;
-  background: #00A9B8;
-  opacity: 0;
-  transform: scaleY(0);
-  transition: opacity .3s var(--ease-spring), transform .3s var(--ease-spring);
-  pointer-events: none;
-}
-.file-row.selected::before {
-  opacity: 1;
-  transform: scaleY(1);
-}
-html.dark .file-row::before {
-  background: var(--brand-primary-light, #C9F2F6);
+/* 选中态：无边框、无阴影的柔和冷青底块，干净贴合侧栏与品牌主色 */
+.file-row.selected {
+  background: #E6F4F7;
+  box-shadow: none;
 }
 
-/* P1-4: 选中态加左侧 2px 指示条，不再只靠背景色区分。
-   原来浅色 hover #f5f8fc 与选中 #f1f6fd 几乎看不出差别。 */
-.file-row.selected {
-  background: var(--sidebar-selected, #F0F2F5);
+.file-row.selected:hover {
+  background: #DFF0F4;
 }
 
 html.dark .file-row.selected {
-  background: var(--sidebar-selected, rgba(255, 255, 255, 0.08));
+  background: rgba(0, 200, 215, 0.14);
+  box-shadow: none;
+}
+
+html.dark .file-row.selected:hover {
+  background: rgba(0, 200, 215, 0.18);
 }
 
 .file-row.is-dragging-before {
@@ -516,10 +497,11 @@ html.dark .file-row.selected {
 
 .file-name {
   font-size: 0.8125rem;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  color: var(--sidebar-text, #6c7688);
+  color: var(--sidebar-text, #4B5563);
   line-height: 1.35;
   display: flex;
   align-items: center;
@@ -546,10 +528,9 @@ html.dark .search-match {
   color: var(--brand-primary-border, #A8E6EC);
 }
 
-/* 选中只改标题颜色，不改字重：500→700 / 400→500 的字重变化会改字形
-   宽度引起回流（笔记页 artifact 的毛病），这里直接删掉。 */
 .file-row.selected .file-name {
-  color: #1e293b;
+  color: #0F172A;
+  font-weight: 600;
 }
 
 html.dark .file-name {
@@ -557,7 +538,7 @@ html.dark .file-name {
 }
 
 html.dark .file-row.selected .file-name {
-  color: #f1f5f9;
+  color: #f8fafc;
 }
 
 .pin-badge {
@@ -580,14 +561,18 @@ html.dark .pin-badge {
   line-height: 1.2;
 }
 
+.file-row.selected .meta {
+  color: #546A7B;
+}
+
 html.dark .meta {
   color: #94a3b8;
 }
 
 .more {
-  /* 文档行“···”常显：之前默认 0.48 透明，桌面上不滑过几乎看不见。
-     颜色也加深到 #475569，不滑过也一眼能看到。 */
-  opacity: 1;
+  /* 文档行“···”默认隐藏，仅在鼠标滑过文档行（或菜单打开/聚焦）时显示 */
+  opacity: 0;
+  pointer-events: none;
   color: #475569;
   border: none;
   background: transparent;
@@ -603,10 +588,23 @@ html.dark .meta {
   flex-shrink: 0;
 }
 
-/* 触屏：文档行“···”热区扩到 36px，不用先点选中文档才能看清它
-   （分组的操作按钮已经是这个做法，见 Sidebar.vue 的 hover:none 规则）。 */
+.file-row:hover .more,
+.file-row:focus-within .more,
+.file-row.is-menu-open .more,
+.more.is-active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+html.dark .more {
+  color: #94a3b8;
+}
+
+/* 触屏无 hover：文档行“···”常显且热区扩到 36px */
 @media (hover: none) {
   .more {
+    opacity: 1;
+    pointer-events: auto;
     width: 36px;
     height: 36px;
   }
