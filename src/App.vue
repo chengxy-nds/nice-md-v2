@@ -2844,7 +2844,7 @@ watch(customStyles, () => {
 
       <!-- App Body: Left NavSidebar + Doc Panel + Main Content -->
       <div class="app-body">
-        <!-- 左侧导航栏：只放导航（logo / 新建 / 首页 / 模板 / 素材 / 设置 / 发布），不放文档和文件夹 -->
+        <!-- 左侧导航栏：只放导航（logo / 首页 / 文档 / 模板 / 素材 / 设置），不放文档和文件夹 -->
         <div class="app-left">
           <NavSidebar
             :currentView="currentView"
@@ -2853,7 +2853,6 @@ watch(customStyles, () => {
             @open-templates="currentView = 'templates'"
             @open-materials="currentView = 'materials'"
             @open-settings="openSettings()"
-            @open-launchpad="isLaunchpadOpen = true"
             @toggle-docs="handleToggleDocs"
           />
         </div>

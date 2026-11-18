@@ -696,7 +696,19 @@ const selectThemeFromPopout = (themeId) => {
 
 const openCustomizerFromThemePopout = () => {
   closeThemeMenu();
+  if (!props.previewVisible) {
+    emit('togglePreview');
+  }
   emit('update:themePanelVisible', true);
+};
+
+const handlePaletteButtonClick = () => {
+  if (!props.previewVisible) {
+    emit('togglePreview');
+    emit('update:themePanelVisible', true);
+    return;
+  }
+  emit('update:themePanelVisible', !props.themePanelVisible);
 };
 
 onUnmounted(() => {
@@ -734,7 +746,7 @@ onUnmounted(() => {
 
     <!-- Theme Customizer Panel (between preview and slider) -->
     <Transition name="theme-slide">
-      <div v-if="themePanelVisible" class="theme-sidebar-wrapper">
+      <div v-if="themePanelVisible && previewVisible" class="theme-sidebar-wrapper">
         <ThemeCustomizer
           ref="themeCustomizerRef"
           :modelValue="activeCustomStyles"
@@ -772,7 +784,7 @@ onUnmounted(() => {
           aria-label="发布文章"
         >
           <span class="right-btn-icon ic-plane">
-            <Send size="18" stroke-width="1.8" class="bar-publish-icon" />
+            <Send size="21" stroke-width="1.85" class="bar-publish-icon" />
           </span>
           <span class="bar-btn-label">发布</span>
           <div class="right-tooltip" role="tooltip">
@@ -884,12 +896,12 @@ onUnmounted(() => {
           ref="rightPaletteBtnRef"
           type="button"
           class="bar-action-btn right-nav-target"
-          :class="{ 'is-active': themePanelVisible }"
-          :aria-pressed="themePanelVisible"
+          :class="{ 'is-active': themePanelVisible && previewVisible }"
+          :aria-pressed="themePanelVisible && previewVisible"
           data-no-tooltip="true"
           @mouseenter="handleRightBarHover"
           @focus="handleRightBarHover"
-          @click="$emit('update:themePanelVisible', !themePanelVisible)"
+          @click="handlePaletteButtonClick"
           aria-label="自定义主题"
         >
           <span class="right-btn-icon ic-theme">
@@ -1331,15 +1343,23 @@ html.dark .bar-divider {
 }
 
 .bar-publish-btn {
+  width: 40px;
+  height: 40px;
   color: var(--brand-primary, #00C8D7);
 }
 
-.bar-publish-btn:hover,
+.bar-publish-btn:hover {
+  color: #00A9B8;
+}
+
 .bar-action-btn:hover {
   color: var(--text-main, #0F172A);
 }
 
-html.dark .bar-publish-btn:hover,
+html.dark .bar-publish-btn:hover {
+  color: #38E4F0;
+}
+
 html.dark .bar-action-btn:hover {
   color: #FFFFFF;
 }

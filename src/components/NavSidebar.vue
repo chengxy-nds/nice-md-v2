@@ -82,15 +82,6 @@
         <span class="nav-btn-icon ic-settings"><Settings size="20" stroke-width="2" /></span>
         <div class="nav-tooltip" role="tooltip"><span class="nav-tooltip-label">设置</span></div>
       </button>
-      <button
-        type="button" class="nav-rail-btn nav-target" data-key="launch"
-        aria-label="发布"
-        @click="emit('open-launchpad')"
-        @mouseenter="onButtonHover" @focus="onButtonHover"
-      >
-        <span class="nav-btn-icon ic-launch"><Rocket size="20" stroke-width="2" /></span>
-        <div class="nav-tooltip" role="tooltip"><span class="nav-tooltip-label">发布</span></div>
-      </button>
     </div>
   </div>
 </template>
@@ -102,8 +93,7 @@ import {
   FileText,
   LayoutTemplate,
   Image,
-  Settings,
-  Rocket
+  Settings
 } from '@lucide/vue';
 import BrandLogo from './BrandLogo.vue';
 
@@ -114,7 +104,7 @@ defineProps({
 
 const emit = defineEmits([
   'go-home', 'open-templates', 'open-materials',
-  'open-settings', 'open-launchpad', 'toggle-docs'
+  'open-settings', 'toggle-docs'
 ]);
 
 /* ── 液体滑块：与右侧栏（PreviewPanel 的 right-glider）100% 同步算法：
@@ -385,16 +375,6 @@ html.dark .nav-rail-btn.is-active {
 }
 .nav-rail-btn:hover .ic-settings {
   animation: gearSpin 0.6s var(--ease-out);
-}
-
-/* 发布火箭：向上飞一下 */
-@keyframes rocketFly {
-  0%, 100% { transform: translate(0, 0) rotate(0deg); }
-  35% { transform: translate(2px, -3px) rotate(-14deg); }
-  70% { transform: translate(-1px, 1px) rotate(4deg); }
-}
-.nav-rail-btn:hover .ic-launch {
-  animation: rocketFly 0.65s var(--ease-out);
 }
 
 /* ── 文字提示：滑过图标，右边浮出名字 ── */

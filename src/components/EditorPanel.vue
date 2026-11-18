@@ -2633,7 +2633,7 @@ textarea::placeholder {
 }
 
 .codemirror-markdown-editor :deep(.cm-line) {
-  max-width: 780px;
+  max-width: none;
 }
 
 /* Drag overlay styling */
