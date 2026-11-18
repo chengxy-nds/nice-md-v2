@@ -166,6 +166,9 @@ export function getGithubLastSyncTime() {
 export function setGithubLastSyncTime(timestamp = Date.now()) {
   try {
     localStorage.setItem(GITHUB_LAST_SYNC_KEY, String(timestamp));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('nicemd-cloud-sync-completed', { detail: { provider: 'github', timestamp } }));
+    }
   } catch {}
 }
 

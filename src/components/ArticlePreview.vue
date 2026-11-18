@@ -10,7 +10,8 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Maximize2
+  Maximize2,
+  MoveHorizontal
 } from '@lucide/vue';
 import 'katex/dist/katex.min.css';
 import { compileToWeChatHtml, cleanEmptyListItems } from '../utils/wechatStyles';
@@ -49,6 +50,10 @@ const props = defineProps({
     type: Boolean,
     default: false
   },
+  editorVisible: {
+    type: Boolean,
+    default: true
+  },
   scrollPercentage: {
     type: Number,
     default: 0
@@ -64,6 +69,62 @@ const emit = defineEmits(['element-click', 'scroll', 'focusActive', 'update:cust
 const wrapperRef = ref(null);
 const previewContainerRef = ref(null);
 const wechatFrameRef = ref(null);
+
+// ── Preview-Only Reading Width State & Persistence ──
+const PREVIEW_ONLY_WIDTH_KEY = 'nicemd_preview_only_width_v1';
+const DEFAULT_PREVIEW_ONLY_WIDTH = 860;
+const PREVIEW_WIDTH_PRESETS = [
+  { key: '760', label: '标准', value: 760 },
+  { key: '860', label: '适中', value: 860 },
+  { key: '1060', label: '宽屏', value: 1060 },
+  { key: 'full', label: '全宽', value: 'full' }
+];
+
+function loadSavedPreviewOnlyWidth() {
+  try {
+    const raw = localStorage.getItem(PREVIEW_ONLY_WIDTH_KEY);
+    if (raw === 'full') return 'full';
+    const num = Number(raw);
+    if (Number.isFinite(num) && num >= 600 && num <= 1400) {
+      return Math.round(num);
+    }
+  } catch {}
+  return DEFAULT_PREVIEW_ONLY_WIDTH;
+}
+
+const previewOnlyWidth = ref(loadSavedPreviewOnlyWidth());
+const lastNumericPreviewWidth = ref(
+  typeof previewOnlyWidth.value === 'number' ? previewOnlyWidth.value : DEFAULT_PREVIEW_ONLY_WIDTH
+);
+
+function savePreviewOnlyWidth(val) {
+  previewOnlyWidth.value = val;
+  if (typeof val === 'number') {
+    lastNumericPreviewWidth.value = val;
+  }
+  try {
+    localStorage.setItem(PREVIEW_ONLY_WIDTH_KEY, String(val));
+  } catch {}
+}
+
+function handlePreviewWidthSliderInput(e) {
+  const num = Number(e?.target?.value);
+  if (Number.isFinite(num) && num >= 600 && num <= 1400) {
+    savePreviewOnlyWidth(Math.round(num));
+  }
+}
+
+const isPreviewOnlyDesktop = computed(() => !props.editorVisible && !props.isWeChatMode);
+
+const previewOnlyMaxWidthCss = computed(() => {
+  if (!isPreviewOnlyDesktop.value) return 'none';
+  if (previewOnlyWidth.value === 'full') return '100%';
+  return `${previewOnlyWidth.value}px`;
+});
+
+const previewOnlyWidthLabel = computed(() =>
+  previewOnlyWidth.value === 'full' ? '100%' : `${previewOnlyWidth.value}px`
+);
 
 // ── Mermaid Hover Action Bar & Fullscreen Lightbox State ──
 const hoveredMermaidEl = ref(null);
@@ -859,7 +920,7 @@ function scrollToPreviewHeading(targetId) {
 function handlePreviewElementClick(e) {
   const target = e.target;
   if (!target || !target.closest) return;
-  if (target.closest('.mermaid-hover-toolbar')) return;
+  if (target.closest('.mermaid-hover-toolbar') || target.closest('.preview-width-floating-bar')) return;
   // Only trigger for clicks inside rendered content
   if (!target.closest('.preview-body') && !target.closest('.wechat-phone-frame') && !target.closest('.tc-rendered-paper')) return;
 
@@ -1087,8 +1148,11 @@ function handlePopupClose() {
     <div
       ref="previewContainerRef"
       class="preview-body"
-      :class="{ 'is-wechat-wrapper': props.isWeChatMode }"
-      :style="activeThemeStyles"
+      :class="{
+        'is-wechat-wrapper': props.isWeChatMode,
+        'is-preview-only': isPreviewOnlyDesktop
+      }"
+      :style="[activeThemeStyles, isPreviewOnlyDesktop ? { '--preview-only-max-width': previewOnlyMaxWidthCss } : null]"
       :data-theme="props.themeId"
       @scroll="handleScroll"
     >
@@ -1166,6 +1230,50 @@ function handlePopupClose() {
         </Transition>
       </div>
     </div>
+
+    <!-- Bottom Floating Preview Width Adjuster (only in Preview-Only desktop mode) -->
+    <Transition name="preview-chrome">
+      <div
+        v-if="isPreviewOnlyDesktop"
+        class="preview-width-floating-bar"
+        role="region"
+        aria-label="预览宽度调节"
+        @click.stop
+      >
+        <div class="preview-width-label-group">
+          <MoveHorizontal size="13" class="preview-width-icon" />
+          <span class="preview-width-title">预览宽度</span>
+        </div>
+
+        <div class="preview-width-presets" role="group" aria-label="预设宽度">
+          <button
+            v-for="preset in PREVIEW_WIDTH_PRESETS"
+            :key="preset.key"
+            type="button"
+            class="preview-width-preset-btn"
+            :class="{ 'is-active': previewOnlyWidth === preset.value }"
+            :title="preset.value === 'full' ? '铺满整个预览区域 (100%)' : `预览宽度 ${preset.value}px`"
+            @click="savePreviewOnlyWidth(preset.value)"
+          >
+            {{ preset.label }}
+          </button>
+        </div>
+
+        <div class="preview-width-slider-wrap">
+          <input
+            type="range"
+            min="600"
+            max="1400"
+            step="20"
+            class="preview-width-slider"
+            :value="previewOnlyWidth === 'full' ? 1400 : lastNumericPreviewWidth"
+            aria-label="自定义预览宽度像素"
+            @input="handlePreviewWidthSliderInput"
+          />
+          <span class="preview-width-val">{{ previewOnlyWidthLabel }}</span>
+        </div>
+      </div>
+    </Transition>
 
     <!-- Click-to-Replace Material Popup -->
     <MaterialPopup
@@ -1341,6 +1449,8 @@ function handlePopupClose() {
 .article-preview-wrapper {
   width: 100%;
   height: 100%;
+  min-height: 0;
+  max-height: 100%;
   display: flex;
   flex-direction: column;
   position: relative;
@@ -1349,6 +1459,8 @@ function handlePopupClose() {
 
 .preview-body {
   flex: 1;
+  min-height: 0;
+  max-height: 100%;
   overflow-y: auto;
   scrollbar-width: none;
   padding: 0;
@@ -1386,6 +1498,13 @@ function handlePopupClose() {
   flex-direction: column;
 }
 
+.preview-body.is-preview-only:not(.is-wechat-wrapper) .preview-content-frame {
+  max-width: var(--preview-only-max-width, 860px);
+  width: 100%;
+  margin: 0 auto;
+  transition: max-width 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
 .markdown-body {
   width: 100%;
   box-sizing: border-box;
@@ -1418,6 +1537,10 @@ function handlePopupClose() {
   padding: 20px 24px 32px !important;
   box-sizing: border-box;
   border-radius: 0;
+}
+
+.preview-body.is-preview-only:not(.is-wechat-wrapper) .markdown-body :deep(#nice) {
+  padding: 28px 32px 84px !important;
 }
 
 :global(html.dark) .preview-body:not(.is-wechat-wrapper) .markdown-body,
@@ -2220,5 +2343,140 @@ function handlePopupClose() {
 .markdown-body :deep(pre):hover::-webkit-scrollbar-thumb,
 .wechat-body :deep(pre):hover::-webkit-scrollbar-thumb {
   background: rgba(255,255,255,0.15);
+}
+
+/* ── Bottom Floating Preview Width Bar (Preview-Only Mode) ── */
+.preview-width-floating-bar {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 5px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.08), 0 2px 6px rgba(15, 23, 42, 0.04);
+  font-family: var(--font-sans);
+  user-select: none;
+  opacity: 0.88;
+  transition: opacity 0.18s ease, box-shadow 0.18s ease;
+}
+
+.preview-width-floating-bar:hover,
+.preview-width-floating-bar:focus-within {
+  opacity: 1;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.12), 0 2px 8px rgba(15, 23, 42, 0.06);
+}
+
+:global(html.dark) .preview-width-floating-bar {
+  background: rgba(28, 28, 32, 0.9);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+}
+
+.preview-width-label-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+:global(html.dark) .preview-width-label-group {
+  color: #94a3b8;
+}
+
+.preview-width-icon {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.preview-width-presets {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 7px;
+  background: #f1f5f9;
+}
+
+:global(html.dark) .preview-width-presets {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.preview-width-preset-btn {
+  border: none;
+  background: transparent;
+  color: #475569;
+  font-size: 11.5px;
+  font-weight: 500;
+  line-height: 1;
+  padding: 5px 8px;
+  border-radius: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.14s ease, color 0.14s ease, box-shadow 0.14s ease;
+}
+
+.preview-width-preset-btn:hover:not(.is-active) {
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.55);
+}
+
+.preview-width-preset-btn.is-active {
+  background: #ffffff;
+  color: #00A9B8;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+}
+
+:global(html.dark) .preview-width-preset-btn {
+  color: #cbd5e1;
+}
+
+:global(html.dark) .preview-width-preset-btn.is-active {
+  background: #27272a;
+  color: #38bdf8;
+}
+
+.preview-width-slider-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding-left: 4px;
+  border-left: 1px solid #e2e8f0;
+}
+
+:global(html.dark) .preview-width-slider-wrap {
+  border-left-color: rgba(255, 255, 255, 0.1);
+}
+
+.preview-width-slider {
+  width: 88px;
+  height: 4px;
+  accent-color: #00A9B8;
+  cursor: pointer;
+}
+
+.preview-width-val {
+  min-width: 42px;
+  text-align: right;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #334155;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+:global(html.dark) .preview-width-val {
+  color: #e2e8f0;
 }
 </style>

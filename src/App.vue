@@ -1054,8 +1054,11 @@ function triggerFullAutoSync() {
       groups.value,
       getAllDocSnapshots(),
       loadCustomThemes(),
-      () => {},
+      () => {
+        isSidebarSyncing.value = true;
+      },
       (err, res) => {
+        isSidebarSyncing.value = false;
         if (!err && res) {
           handleSyncComplete(res);
         }
@@ -1084,11 +1087,6 @@ window.addEventListener('nicemd-cloud-provider-changed', () => {
 window.addEventListener('nicemd-request-auto-sync', () => {
   triggerFullAutoSync();
 });
-
-// Initial startup sync if Cloud Sync is enabled
-if (isCloudSyncEnabled()) {
-  triggerFullAutoSync();
-}
 
 const DEFAULT_RAW_THEME_MIGRATION_KEY = 'nicemd_default_theme_raw_v1';
 let initialSavedTheme = localStorage.getItem('nicemd_theme');
@@ -2602,6 +2600,7 @@ onMounted(async () => {
   // BEFORE any cloud-sync init reads the configs (step 5 below). Legacy
   // plaintext configs are unaffected if unlock finds nothing to decrypt.
   try { await unlockSecureCredentials(); } catch { /* legacy path still works */ }
+  window.dispatchEvent(new CustomEvent('nicemd-cloud-provider-changed'));
 
   // 1. Load persisted state
   documents.value = loadDocuments();
@@ -2690,8 +2689,11 @@ onMounted(async () => {
       groups.value,
       getAllDocSnapshots(),
       loadCustomThemes(),
-      null,
+      () => {
+        isSidebarSyncing.value = true;
+      },
       (err, res) => {
+        isSidebarSyncing.value = false;
         if (!err && res) {
           handleSyncComplete(res);
         }

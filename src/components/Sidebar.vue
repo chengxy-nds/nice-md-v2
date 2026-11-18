@@ -48,11 +48,45 @@ const currentProviderLabel = computed(() =>
   CLOUD_PROVIDER_LABELS[cloudSyncInfo.value.provider] || '云端同步'
 );
 
+function formatCompactSyncTime(ts) {
+  const num = Number(ts);
+  if (!num || !Number.isFinite(num) || num <= 0) return '';
+  const d = new Date(num);
+  if (Number.isNaN(d.getTime())) return '';
+  const now = new Date();
+  const pad = (n) => String(n).padStart(2, '0');
+  const hhmm = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  const isToday =
+    d.getFullYear() === now.getFullYear() &&
+    d.getMonth() === now.getMonth() &&
+    d.getDate() === now.getDate();
+  if (isToday) return hhmm;
+  return `${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${hhmm}`;
+}
+
+function formatFullSyncTime(ts) {
+  const num = Number(ts);
+  if (!num || !Number.isFinite(num) || num <= 0) return '';
+  const d = new Date(num);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+const formattedLastSyncTime = computed(() =>
+  cloudSyncInfo.value.configured ? formatCompactSyncTime(cloudSyncInfo.value.lastSyncTime) : ''
+);
+
+const fullLastSyncTime = computed(() =>
+  cloudSyncInfo.value.configured ? formatFullSyncTime(cloudSyncInfo.value.lastSyncTime) : ''
+);
+
 const syncButtonTitle = computed(() => {
   if (props.isCloudSyncing) return '正在执行云端同步...';
   if (!cloudSyncInfo.value.configured) return '未设置自定义同步，点击前往配置';
-  if (cloudSyncInfo.value.enabled) return `${currentProviderLabel.value} 实时同步已开启（点击选择同步操作）`;
-  return `已配置 ${currentProviderLabel.value}（点击选择同步操作）`;
+  const timeSuffix = fullLastSyncTime.value ? ` · 最近同步 ${fullLastSyncTime.value}` : '';
+  if (cloudSyncInfo.value.enabled) return `${currentProviderLabel.value} 自动同步已开启${timeSuffix}`;
+  return `已配置 ${currentProviderLabel.value}${timeSuffix}`;
 });
 
 const syncMenuOptions = computed(() => {
@@ -124,6 +158,7 @@ onMounted(() => {
   refreshCloudSyncState();
   loadSavedSidebarWidth();
   window.addEventListener('nicemd-cloud-provider-changed', refreshCloudSyncState);
+  window.addEventListener('nicemd-cloud-sync-completed', refreshCloudSyncState);
   window.addEventListener('nicemd-tidb-config-updated', refreshCloudSyncState);
   window.addEventListener('nicemd-neon-config-updated', refreshCloudSyncState);
   window.addEventListener('nicemd-github-config-updated', refreshCloudSyncState);
@@ -139,6 +174,7 @@ onUnmounted(() => {
     cleanupResizeListeners = null;
   }
   window.removeEventListener('nicemd-cloud-provider-changed', refreshCloudSyncState);
+  window.removeEventListener('nicemd-cloud-sync-completed', refreshCloudSyncState);
   window.removeEventListener('nicemd-tidb-config-updated', refreshCloudSyncState);
   window.removeEventListener('nicemd-neon-config-updated', refreshCloudSyncState);
   window.removeEventListener('nicemd-github-config-updated', refreshCloudSyncState);
@@ -154,6 +190,12 @@ const props = defineProps({
   activeDocId: { type: String, default: null },
   currentView: { type: String, default: 'editor' },
   isCloudSyncing: { type: Boolean, default: false }
+});
+
+watch(() => props.isCloudSyncing, (syncing) => {
+  if (!syncing) {
+    refreshCloudSyncState();
+  }
 });
 
 const emit = defineEmits([
@@ -842,7 +884,10 @@ function resetSidebarWidth() {
             <RefreshCw size="13" class="sync-icon" :class="{ 'is-spinning': props.isCloudSyncing }" />
             <span v-if="cloudSyncInfo.enabled && !props.isCloudSyncing" class="dot"></span>
             <span class="sync-label">
-              {{ props.isCloudSyncing ? '同步中...' : (cloudSyncInfo.enabled ? '已同步' : (cloudSyncInfo.configured ? '同步' : '云同步')) }}
+              {{ props.isCloudSyncing ? '同步中...' : (formattedLastSyncTime ? '同步' : (cloudSyncInfo.enabled ? '已同步' : (cloudSyncInfo.configured ? '同步' : '云同步'))) }}
+            </span>
+            <span v-if="formattedLastSyncTime && !props.isCloudSyncing" class="sync-time-sub">
+              {{ formattedLastSyncTime }}
             </span>
             <ChevronDown v-if="cloudSyncInfo.configured" size="12" class="sync-chevron" :class="{ 'is-open': showSyncMenu }" />
           </button>
@@ -850,7 +895,10 @@ function resetSidebarWidth() {
           <Transition name="sync-dropdown">
             <div v-if="showSyncMenu && cloudSyncInfo.configured" class="sync-dropdown-menu" role="menu">
               <div class="sync-dropdown-header">
-                <span class="sync-channel-name">{{ currentProviderLabel }}</span>
+                <div class="sync-channel-meta">
+                  <span class="sync-channel-name">{{ currentProviderLabel }}</span>
+                  <span v-if="formattedLastSyncTime" class="sync-channel-time">最近 {{ formattedLastSyncTime }}</span>
+                </div>
                 <button type="button" class="sync-settings-link" @click="handleOpenCloudSettings" title="打开云端同步设置">
                   <Settings size="13" />
                   <span>配置</span>
@@ -1461,9 +1509,9 @@ html.dark .sidebar-container {
 .sync-trigger-btn {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 4.5px;
   height: 30px;
-  padding: 0 9px;
+  padding: 0 7px;
   border-radius: 8px;
   border: 1px solid transparent;
   background: transparent;
@@ -1504,6 +1552,21 @@ html.dark .sidebar-container {
 
 .sync-label {
   line-height: 1;
+}
+
+.sync-time-sub {
+  font-size: 10px;
+  font-weight: 400;
+  color: #94a3b8;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+  margin-left: -1px;
+}
+
+.sync-trigger-btn:hover .sync-time-sub,
+.sync-trigger-btn.is-menu-open .sync-time-sub {
+  color: #64748b;
 }
 
 .sync-icon {
@@ -1581,10 +1644,24 @@ html.dark .sidebar-container {
   margin-bottom: 2px;
 }
 
+.sync-channel-meta {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
 .sync-channel-name {
   font-size: 11px;
   font-weight: 700;
   color: #64748b;
+}
+
+.sync-channel-time {
+  font-size: 10px;
+  font-weight: 400;
+  color: #94a3b8;
+  font-variant-numeric: tabular-nums;
 }
 
 .sync-settings-link {
@@ -2691,7 +2768,7 @@ html.dark .trash-doc-item .meta {
 
 @container docs-sidebar (max-width: 280px) {
   .toolbar {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 4px;
     margin: 12px 0 8px;
   }
@@ -2702,19 +2779,20 @@ html.dark .trash-doc-item .meta {
 
   .sync-trigger-btn {
     height: 28px;
-    padding: 0 7px;
+    padding: 0 5px;
+    gap: 3.5px;
     font-size: 0.75rem;
   }
 
   .toolbar-actions {
     margin-left: auto;
-    gap: 2px;
+    gap: 1px;
   }
 
   .sidebar-toolbar-btn,
   .icon-btn {
-    width: 28px;
-    height: 28px;
+    width: 26px;
+    height: 26px;
   }
 
   .search {

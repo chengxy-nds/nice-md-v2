@@ -3,6 +3,8 @@ import {
   getTidbConfig,
   saveTidbConfig,
   isTidbSyncEnabled,
+  getTidbLastSyncTime,
+  setTidbLastSyncTime,
   testTidbConnection,
   pushAllToTidb,
   pullFromTidb,
@@ -24,6 +26,8 @@ import {
   getNeonConfig,
   saveNeonConfig,
   isNeonSyncEnabled,
+  getLastSyncTime as getNeonLastSyncTime,
+  setLastSyncTime as setNeonLastSyncTime,
   testNeonConnection,
   pushAllToNeon,
   pullFromNeon,
@@ -47,6 +51,7 @@ import {
   isGithubSyncEnabled,
   hasGithubCredentials,
   getGithubLastSyncTime,
+  setGithubLastSyncTime,
   testGithubConnection,
   pushAllToGithub,
   pullFromGithub,
@@ -90,6 +95,8 @@ const PROVIDER_ADAPTERS = {
     saveConfig: saveTidbConfig,
     hasCredentials: (cfg) => Boolean(cfg?.connectionString?.trim()),
     isEnabled: isTidbSyncEnabled,
+    getLastSyncTime: getTidbLastSyncTime,
+    setLastSyncTime: setTidbLastSyncTime,
     canAutoSync: (cfg) => Boolean(cfg.autoSync && cfg.connectionString?.trim()),
     testConnection: (cfgOrConn) => testTidbConnection(asConnStr(cfgOrConn, getTidbConfig())),
     pushAll: (cfgOrConn, docs, groups, histories, themes) =>
@@ -115,6 +122,8 @@ const PROVIDER_ADAPTERS = {
     saveConfig: saveNeonConfig,
     hasCredentials: (cfg) => Boolean(cfg?.connectionString?.trim()),
     isEnabled: isNeonSyncEnabled,
+    getLastSyncTime: getNeonLastSyncTime,
+    setLastSyncTime: setNeonLastSyncTime,
     canAutoSync: (cfg) => Boolean(cfg.autoSync && cfg.connectionString?.trim()),
     testConnection: (cfgOrConn) => testNeonConnection(asConnStr(cfgOrConn, getNeonConfig())),
     pushAll: (cfgOrConn, docs, groups, histories, themes) =>
@@ -140,6 +149,8 @@ const PROVIDER_ADAPTERS = {
     saveConfig: saveGithubConfig,
     hasCredentials: (cfg) => hasGithubCredentials(cfg),
     isEnabled: isGithubSyncEnabled,
+    getLastSyncTime: getGithubLastSyncTime,
+    setLastSyncTime: setGithubLastSyncTime,
     canAutoSync: (cfg) => Boolean(cfg.autoSync && hasGithubCredentials(cfg)),
     testConnection: (cfgOrConn) => testGithubConnection(asGithubCfg(cfgOrConn)),
     pushAll: (cfgOrConn, docs, groups, histories, themes) =>
@@ -291,6 +302,7 @@ export function getConfiguredCloudSyncInfo() {
         provider: id,
         config: cfg,
         syncArg: adapter.getSyncArg(cfg),
+        lastSyncTime: adapter.getLastSyncTime ? adapter.getLastSyncTime() : 0,
       };
     }
   }
@@ -305,6 +317,7 @@ export function getConfiguredCloudSyncInfo() {
       provider: active,
       config: activeCfg,
       syncArg: activeAdapter.getSyncArg(activeCfg),
+      lastSyncTime: activeAdapter.getLastSyncTime ? activeAdapter.getLastSyncTime() : 0,
     };
   }
 
@@ -318,6 +331,7 @@ export function getConfiguredCloudSyncInfo() {
         provider: id,
         config: cfg,
         syncArg: adapter.getSyncArg(cfg),
+        lastSyncTime: adapter.getLastSyncTime ? adapter.getLastSyncTime() : 0,
       };
     }
   }
@@ -328,6 +342,7 @@ export function getConfiguredCloudSyncInfo() {
     provider: active,
     config: activeCfg,
     syncArg: null,
+    lastSyncTime: 0,
   };
 }
 
@@ -397,7 +412,12 @@ function flushRealtimeEntry(key) {
   const adapter = getAdapter(getActiveCloudProvider());
   const promise = trackMutationPromise(adapter[entry.action](adapter.getConfig(), entry.payload));
   promise.then(
-    (v) => entry.resolvers.forEach((r) => r(v)),
+    (v) => {
+      if (v !== false && adapter.setLastSyncTime) {
+        adapter.setLastSyncTime(Date.now());
+      }
+      entry.resolvers.forEach((r) => r(v));
+    },
     () => entry.resolvers.forEach((r) => r(undefined)),
   );
   return promise;
@@ -540,10 +560,16 @@ export function triggerAutoSyncDebounced(docs, groups, histories = [], customThe
     try {
       if (typeof onSyncStart === 'function') onSyncStart();
       const res = await adapter.syncBidirectional(adapter.getSyncArg(config), docs, groups, histories, customThemes);
-      if (myGen !== syncGeneration) return;
+      if (myGen !== syncGeneration) {
+        if (typeof onSyncEnd === 'function') onSyncEnd(null, null);
+        return;
+      }
       if (typeof onSyncEnd === 'function') onSyncEnd(null, res);
     } catch (err) {
-      if (myGen !== syncGeneration) return;
+      if (myGen !== syncGeneration) {
+        if (typeof onSyncEnd === 'function') onSyncEnd(null, null);
+        return;
+      }
       const errMsg = err?.message || String(err);
       if (isAuthError(errMsg)) {
         cloudAuthErrorProviders.add(provider);
@@ -574,11 +600,17 @@ export async function triggerAutoSyncImmediate(docs, groups, histories = [], cus
   try {
     if (typeof onSyncStart === 'function') onSyncStart();
     const res = await adapter.syncBidirectional(adapter.getSyncArg(config), docs, groups, histories, customThemes);
-    if (myGen !== syncGeneration) return;
+    if (myGen !== syncGeneration) {
+      if (typeof onSyncEnd === 'function') onSyncEnd(null, null);
+      return;
+    }
     if (typeof onSyncEnd === 'function') onSyncEnd(null, res);
     return res;
   } catch (err) {
-    if (myGen !== syncGeneration) return;
+    if (myGen !== syncGeneration) {
+      if (typeof onSyncEnd === 'function') onSyncEnd(null, null);
+      return;
+    }
     const errMsg = err?.message || String(err);
     if (isAuthError(errMsg)) {
       cloudAuthErrorProviders.add(provider);

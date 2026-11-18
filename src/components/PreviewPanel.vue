@@ -730,6 +730,7 @@ onUnmounted(() => {
 <template>
   <div 
     class="preview-panel" 
+    :class="{ 'is-standalone-rail': !previewVisible }"
     @mouseenter="emit('focusActive', 'preview')"
   >
     <!-- Left Area: Main Preview header and body -->
@@ -741,6 +742,7 @@ onUnmounted(() => {
         :codeThemeId="props.codeThemeId"
         :customStyles="activeCustomStyles"
         :isWeChatMode="isWeChatMode"
+        :editorVisible="props.editorVisible"
         :scrollPercentage="props.scrollPercentage"
         :activePane="props.activePane"
         @element-click="handleElementClick"
@@ -788,6 +790,7 @@ onUnmounted(() => {
           @mouseenter="handleRightBarHover"
           @focus="handleRightBarHover"
           data-no-tooltip="true"
+          title="发布与多渠道分发"
           aria-label="发布文章"
         >
           <span class="right-btn-icon ic-plane">
@@ -810,6 +813,7 @@ onUnmounted(() => {
             class="bar-action-btn copy-main-btn right-nav-target"
             :class="{ 'is-active': showCopyMenu }"
             data-no-tooltip="true"
+            title="复制排版内容"
             aria-label="复制排版内容"
             aria-haspopup="menu"
             :aria-expanded="showCopyMenu"
@@ -835,6 +839,7 @@ onUnmounted(() => {
           class="bar-action-btn preview-mode-toggle-btn right-nav-target"
           :class="{ 'is-active': isWeChatMode, 'is-current-mode': !isWeChatMode }"
           :aria-pressed="isWeChatMode"
+          :title="isWeChatMode ? '切换为电脑预览' : '切换为手机模拟预览'"
           :aria-label="isWeChatMode ? '切换为电脑预览' : '切换为手机模拟预览'"
           data-no-tooltip="true"
           @mouseenter="handleRightBarHover"
@@ -861,6 +866,7 @@ onUnmounted(() => {
           @mouseenter="handleRightBarHover"
           @focus="handleRightBarHover"
           @click="$emit('togglePreview')"
+          :title="previewVisible ? '隐藏预览区' : '显示预览区'"
           :aria-label="previewVisible ? '隐藏预览区' : '显示预览区'"
         >
           <span class="right-btn-icon ic-eye">
@@ -882,7 +888,8 @@ onUnmounted(() => {
           @mouseenter="handleRightBarHover"
           @focus="handleRightBarHover"
           @click="$emit('toggleEditor')"
-          :aria-label="editorVisible ? '隐藏编辑区（仅看预览）' : '显示编辑区'"
+          :title="editorVisible ? '仅展示预览（隐藏编辑区）' : '显示编辑区'"
+          :aria-label="editorVisible ? '仅展示预览（隐藏编辑区）' : '显示编辑区'"
         >
           <span class="right-btn-icon ic-panel">
             <PanelLeftClose v-if="editorVisible" size="18" stroke-width="1.7" />
@@ -890,7 +897,7 @@ onUnmounted(() => {
           </span>
           <span class="bar-btn-label">{{ editorVisible ? '仅看预览' : '显示编辑' }}</span>
           <div class="right-tooltip" role="tooltip">
-            <span class="right-tooltip-label">{{ editorVisible ? '隐藏编辑区（仅看预览）' : '显示编辑区' }}</span>
+            <span class="right-tooltip-label">{{ editorVisible ? '仅展示预览（隐藏编辑区）' : '显示编辑区' }}</span>
           </div>
         </button>
       </div>
@@ -1084,11 +1091,17 @@ onUnmounted(() => {
   overflow: hidden;
 }
 
+.preview-panel.is-standalone-rail {
+  overflow: visible;
+}
+
 .preview-main-content {
   flex: 1;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
+  max-height: 100%;
   height: 100%;
   overflow: hidden;
   background: var(--bg-preview);

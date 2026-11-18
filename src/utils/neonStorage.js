@@ -80,6 +80,9 @@ export function getLastSyncTime() {
 export function setLastSyncTime(timestamp = Date.now()) {
   try {
     localStorage.setItem(NEON_LAST_SYNC_KEY, String(timestamp));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('nicemd-cloud-sync-completed', { detail: { provider: 'neon', timestamp } }));
+    }
   } catch {}
 }
 

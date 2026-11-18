@@ -97,6 +97,9 @@ export function getTidbLastSyncTime() {
 export function setTidbLastSyncTime(timestamp = Date.now()) {
   try {
     localStorage.setItem(TIDB_LAST_SYNC_KEY, String(timestamp));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('nicemd-cloud-sync-completed', { detail: { provider: 'tidb', timestamp } }));
+    }
   } catch {}
 }
 
