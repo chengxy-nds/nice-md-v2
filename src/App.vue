@@ -4,7 +4,7 @@ import {
   Menu, Sparkles, Search, Image, ImagePlus, BookOpen, Link, Upload, Trash2,
   Eye, EyeOff, Download, Undo2, Redo2, Code2, MoreHorizontal,
   ChevronDown, ChevronRight, FileCode, FileText, Globe, Settings, Check, X,
-  History, Copy, Plus, ArrowLeftToLine, ArrowRightToLine, CircleX, ListX, Send, Palette,
+  History, Copy, Plus, Pencil, ArrowLeftToLine, ArrowRightToLine, CircleX, ListX, Send, Palette,
   LayoutGrid, Maximize, Minimize
 } from '@lucide/vue';
 import { applyTheme, getThemeDefaultStyles, getThemeSavedStyles, themes as themePresets } from './utils/themePresets';
@@ -414,7 +414,9 @@ watch([activeDocId, activeDocMap], ([newId, docMap]) => {
 
 // Take snapshot before switching doc & clear transient inline rename
 watch(activeDocId, (newId, oldId) => {
-  renamingTabId.value = null;
+  if (renamingTabId.value && renamingTabId.value !== newId) {
+    renamingTabId.value = null;
+  }
   if (newId !== oldId) {
     scrollPercentage.value = 0;
   }
@@ -529,8 +531,10 @@ const tabMenuItems = computed(() => {
   const targetId = tabMenuTargetId.value;
   const idx = tabMenuTargetIndex.value;
   const total = openTabs.value.length;
+  const targetTab = openTabs.value.find(t => t.id === targetId);
   return [
-    { key: 'close', label: '关闭', icon: X, disabled: idx === -1, action: () => handleCloseTab(targetId) },
+    { key: 'rename', label: '重命名', icon: Pencil, disabled: !targetTab, action: () => targetTab && startRenameTab(targetTab) },
+    { key: 'close', label: '关闭', icon: X, dividerBefore: true, disabled: idx === -1, action: () => handleCloseTab(targetId) },
     { key: 'close-left', label: '关闭左侧', icon: ArrowLeftToLine, disabled: idx <= 0, action: () => handleCloseLeftTabs(targetId) },
     { key: 'close-right', label: '关闭右侧', icon: ArrowRightToLine, disabled: idx === -1 || idx >= total - 1, action: () => handleCloseRightTabs(targetId) },
     { key: 'close-others', label: '关闭其他', icon: ListX, disabled: idx === -1 || total <= 1, action: () => handleCloseOtherTabs(targetId) },
@@ -613,7 +617,7 @@ function closeTabMenu() {
 function scheduleTabMenuHoverOpen(anchorEl, tabId) {
   clearTabMenuTimers();
   if (!anchorEl || isDraggingTabs.value) return;
-  const delayMs = tabMenuVisible.value ? 0 : 150;
+  const delayMs = tabMenuVisible.value ? 0 : 280;
   tabMenuHoverOpenTimer = setTimeout(() => {
     const rect = anchorEl.getBoundingClientRect();
     openTabMenu(tabId, rect.left - 8, rect.bottom + TAB_MENU_OFFSET_Y);
@@ -2935,9 +2939,8 @@ watch(customStyles, () => {
               @mousedown="handleTabsMouseDown"
               @dragstart.prevent
             >
-              <!-- 标签激活指示滑块：唯一一块 2px 顶部高亮条，用 transform 在激活标签之间滑动
-                   （量测 + rAF 合并读写 + ResizeObserver，见 moveTabGlider；不随滚动条移动，
-                   它是滚动内容的一部分，随标签一起滚动）。 -->
+              <!-- 浏览器标签激活滑块：顶部圆角 + 底部外撇反弧，用 transform 在激活标签之间滑动
+                   （量测 + rAF 合并读写 + ResizeObserver，见 moveTabGlider；它是滚动内容的一部分，随标签一起滚动）。 -->
               <span class="workspace-tab-glider" ref="tabGliderRef" aria-hidden="true" />
               <!-- nx-tab：新增标签弹簧入场、关闭淡出、剩余标签 FLIP 平移。
                    TransitionGroup 只包标签本身（.workspace-tabs-group），滚动容器仍是外层

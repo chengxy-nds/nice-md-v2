@@ -519,13 +519,12 @@ html.dark .wandor-wordmark {
 }
 
 .workspace-tabs {
-  height: 40px;
+  height: 42px;
   display: flex;
   align-items: flex-end;
   gap: 0;
-  padding: 6px 12px 0;
-  background: #F5F7FA;
-  box-shadow: inset 0 -1px 0 #EAECEF;
+  padding: 6px 10px 0 4px;
+  background: #E8EDF5;
   flex-shrink: 0;
   width: 100%;
   box-sizing: border-box;
@@ -534,17 +533,16 @@ html.dark .wandor-wordmark {
 }
 
 html.dark .workspace-tabs {
-  background: #14151a;
-  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08);
+  background: #13161B;
 }
 
 .workspace-tabs-scroll {
   display: flex;
   align-items: flex-end;
-  gap: 2px;
+  gap: 0;
   max-width: calc(100% - 36px);
-  height: calc(100% + 1px);
-  margin-bottom: -1px;
+  height: 100%;
+  padding: 0 10px;
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
@@ -560,32 +558,50 @@ html.dark .workspace-tabs {
   z-index: 2;
   display: flex;
   align-items: flex-end;
-  gap: 2px;
+  gap: 0;
   flex-shrink: 0;
   min-height: 100%;
-  padding-bottom: 1px;
   box-sizing: border-box;
 }
 
-/* ── 标签激活滑动卡片（丝滑圆角文件夹页签）──
-   整张圆角白底页签卡片作为滑块，在切换标签时按真实宽度顺滑平移与伸缩，
-   彻底消除平直线条悬挑在圆角上方的生硬感，并自然覆盖底部分割线融入下方工具栏。 */
+/* ── 浏览器标签激活滑动卡片（Chrome Refresh 流畅圆角 + 外撇底弧）──
+   整张圆角白底页签作为滑块，顶部 10px 圆角、底部 ::before/::after 10px 反弧外撇，
+   与下方白色工具栏无缝融为一体；切换标签时按真实位置顺滑平移。 */
 .workspace-tab-glider {
   position: absolute;
   bottom: 0;
   left: 0;
-  height: 35px;
+  height: 36px;
   width: 0;
   background: var(--bg-editor, #ffffff);
-  border: 1px solid #EAECEF;
-  border-bottom: none;
-  border-radius: 9px 9px 0 0;
+  border: none;
+  border-radius: 10px 10px 0 0;
   box-sizing: border-box;
   opacity: 0;
   pointer-events: none;
   z-index: 1;
-  transition: transform 320ms var(--ease-glide), width 320ms var(--ease-glide), opacity var(--motion-base) var(--ease-out);
+  transition: transform 280ms var(--ease-glide), width 280ms var(--ease-glide), opacity var(--motion-base) var(--ease-out);
   will-change: transform, width;
+}
+
+.workspace-tab-glider::before,
+.workspace-tab-glider::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  width: 10px;
+  height: 10px;
+  pointer-events: none;
+}
+
+.workspace-tab-glider::before {
+  left: -10px;
+  background: radial-gradient(circle at 0 0, transparent 9.6px, var(--bg-editor, #ffffff) 10.2px);
+}
+
+.workspace-tab-glider::after {
+  right: -10px;
+  background: radial-gradient(circle at 100% 0, transparent 9.6px, var(--bg-editor, #ffffff) 10.2px);
 }
 
 .workspace-tab-glider.is-visible {
@@ -599,7 +615,14 @@ html.dark .workspace-tabs {
 
 html.dark .workspace-tab-glider {
   background: var(--bg-editor, #1b1b1f);
-  border-color: rgba(255, 255, 255, 0.1);
+}
+
+html.dark .workspace-tab-glider::before {
+  background: radial-gradient(circle at 0 0, transparent 9.6px, var(--bg-editor, #1b1b1f) 10.2px);
+}
+
+html.dark .workspace-tab-glider::after {
+  background: radial-gradient(circle at 100% 0, transparent 9.6px, var(--bg-editor, #1b1b1f) 10.2px);
 }
 
 /* ── 标签栏过渡（nx-tab / TransitionGroup）──
@@ -645,47 +668,104 @@ html.dark .workspace-tab-glider {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 34px;
-  width: 152px;
-  min-width: 152px;
-  max-width: 152px;
+  height: 36px;
+  width: 164px;
+  min-width: 164px;
+  max-width: 164px;
   flex-shrink: 0;
-  padding: 0 8px 0 10px;
-  border-radius: 9px 9px 0 0;
-  border: 1px solid transparent;
-  border-bottom: none;
+  padding: 0 8px 0 12px;
+  border-radius: 10px 10px 0 0;
+  border: none;
   background: transparent;
   box-shadow: none;
-  color: #64748b;
+  color: #475569;
   font-size: 12.5px;
   font-weight: 500;
   font-family: var(--font-sans);
   cursor: pointer;
   box-sizing: border-box;
-  transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out);
+  transition: color var(--motion-fast) var(--ease-out);
 }
 
-.workspace-tab-item:hover:not(.is-active) {
-  background: rgba(255, 255, 255, 0.65);
-  color: #1e293b;
+.workspace-tab-item > * {
+  position: relative;
+  z-index: 1;
+}
+
+/* 悬停胶囊底色（::before 内缩圆角胶囊，Chrome 质感） */
+.workspace-tab-item::before {
+  content: '';
+  position: absolute;
+  inset: 4px 4px;
+  border-radius: 8px;
+  background: transparent;
+  pointer-events: none;
+  z-index: 0;
+  transition: background var(--motion-fast) var(--ease-out);
+}
+
+.workspace-tab-item:hover:not(.is-active)::before {
+  background: rgba(15, 23, 42, 0.065);
+}
+
+.workspace-tab-item.is-renaming:not(.is-active)::before {
+  background: rgba(255, 255, 255, 0.72);
 }
 
 html.dark .workspace-tab-item {
   background: transparent;
-  border-color: transparent;
   box-shadow: none;
   color: #94a3b8;
 }
 
 html.dark .workspace-tab-item:hover:not(.is-active) {
-  background: rgba(255, 255, 255, 0.05);
   color: #f1f5f9;
 }
 
-/* 激活态底色与圆角边框由下层 .workspace-tab-glider 滑动卡片承担，这里保持透明只改字重与字色 */
+html.dark .workspace-tab-item:hover:not(.is-active)::before {
+  background: rgba(255, 255, 255, 0.075);
+}
+
+html.dark .workspace-tab-item.is-renaming:not(.is-active)::before {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* 标签间竖线分割（::after 1px × 16px，激活/悬停及其左侧相邻标签自动隐藏） */
+.workspace-tab-item::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 50%;
+  width: 1px;
+  height: 16px;
+  transform: translateY(-50%);
+  border-radius: 1px;
+  background: rgba(15, 23, 42, 0.16);
+  pointer-events: none;
+  z-index: 2;
+  transition: opacity var(--motion-fast) var(--ease-out);
+}
+
+html.dark .workspace-tab-item::after {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.workspace-tab-item.is-active::after,
+.workspace-tab-item:hover::after,
+.workspace-tab-item.is-renaming::after,
+.workspace-tab-item:has(+ .workspace-tab-item.is-active)::after,
+.workspace-tab-item:has(+ .workspace-tab-item:hover)::after,
+.workspace-tab-item:has(+ .workspace-tab-item.is-renaming)::after {
+  opacity: 0;
+}
+
+.workspace-tab-item:hover:not(.is-active) {
+  color: #0F172A;
+}
+
+/* 激活态底色与弧形耳角由下层 .workspace-tab-glider 承担，这里保持透明只改字重与字色 */
 .workspace-tab-item.is-active {
   background: transparent;
-  border-color: transparent;
   box-shadow: none;
   color: #0F172A;
   font-weight: 600;
@@ -694,19 +774,18 @@ html.dark .workspace-tab-item:hover:not(.is-active) {
 
 html.dark .workspace-tab-item.is-active {
   background: transparent;
-  border-color: transparent;
   box-shadow: none;
   color: #f8fafc;
 }
 
 .workspace-tab-icon {
   flex-shrink: 0;
-  color: #8b9bb0;
+  color: #64748b;
   transition: color var(--motion-fast) var(--ease-out);
 }
 
 .workspace-tab-item:hover:not(.is-active) .workspace-tab-icon {
-  color: #52647d;
+  color: #334155;
 }
 
 .workspace-tab-item.is-active .workspace-tab-icon {
@@ -726,10 +805,10 @@ html.dark .workspace-tab-item.is-active .workspace-tab-icon {
 }
 
 .workspace-tab-item.is-renaming {
-  width: 184px;
-  min-width: 184px;
-  max-width: 184px;
-  padding-right: 10px;
+  width: 164px;
+  min-width: 164px;
+  max-width: 164px;
+  padding: 0 10px 0 12px;
 }
 
 .workspace-tab-input {
@@ -738,8 +817,9 @@ html.dark .workspace-tab-item.is-active .workspace-tab-icon {
   width: 100%;
   height: 24px;
   padding: 0 6px;
-  border-radius: 5px;
+  border-radius: 6px;
   border: 1px solid #00A9B8;
+  box-shadow: 0 0 0 2px rgba(0, 169, 184, 0.14);
   background: #ffffff;
   color: #0f172a;
   font-size: 12.5px;
@@ -752,6 +832,7 @@ html.dark .workspace-tab-item.is-active .workspace-tab-icon {
 html.dark .workspace-tab-input {
   background: #14161c;
   border-color: var(--brand-primary-light, #C9F2F6);
+  box-shadow: 0 0 0 2px rgba(0, 200, 215, 0.18);
   color: #f1f5f9;
 }
 
@@ -762,21 +843,20 @@ html.dark .workspace-tab-input {
   width: 18px;
   height: 18px;
   border: none;
-  border-radius: 4px;
+  border-radius: 50%;
   background: transparent;
-  color: #8b9bb0;
+  color: #64748b;
   cursor: pointer;
   padding: 0;
   flex-shrink: 0;
-  /* × 默认藏起来（只改透明度）：按钮本身是固定 18px 宽的槽位，出现/消失
-     不挤标题；滑过标签、激活标签、键盘聚焦到它时再淡出。 */
-  opacity: 0;
+  /* 浏览器标签规范：每个标签常显 × 关闭按钮，圆形淡灰悬停反馈 */
+  opacity: 0.72;
   transition: opacity var(--motion-fast) var(--ease-out), transform var(--motion-fast) var(--ease-out), background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out);
 }
 
 .workspace-tab-item.is-active .workspace-tab-close {
-  opacity: 0.85;
-  color: #64748b;
+  opacity: 0.88;
+  color: #475569;
 }
 
 .workspace-tab-item:hover .workspace-tab-close,
@@ -786,8 +866,8 @@ html.dark .workspace-tab-input {
 }
 
 .workspace-tab-close:hover {
-  background: #edf4ff;
-  color: #00A9B8;
+  background: rgba(15, 23, 42, 0.1);
+  color: #0F172A;
   opacity: 1;
 }
 
@@ -795,9 +875,17 @@ html.dark .workspace-tab-input {
   transform: scale(.9);
 }
 
+html.dark .workspace-tab-close {
+  color: #94a3b8;
+}
+
+html.dark .workspace-tab-item.is-active .workspace-tab-close {
+  color: #cbd5e1;
+}
+
 html.dark .workspace-tab-close:hover {
-  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
-  color: var(--brand-primary-light, #C9F2F6);
+  background: rgba(255, 255, 255, 0.14);
+  color: #f8fafc;
 }
 
 .workspace-tab-add {
@@ -807,28 +895,33 @@ html.dark .workspace-tab-close:hover {
   align-self: center;
   width: 28px;
   height: 28px;
-  margin-left: 4px;
+  margin-left: 0;
+  margin-bottom: 4px;
   border: none;
-  border-radius: 7px;
+  border-radius: 50%;
   background: transparent;
-  color: #64748b;
+  color: #475569;
   cursor: pointer;
   flex-shrink: 0;
   transition: background var(--motion-fast) var(--ease-out), color var(--motion-fast) var(--ease-out), transform var(--motion-fast) var(--ease-out);
 }
 
 .workspace-tab-add:hover {
-  background: rgba(15, 23, 42, 0.06);
-  color: #00A9B8;
+  background: rgba(15, 23, 42, 0.08);
+  color: #0F172A;
 }
 
 .workspace-tab-add:active {
   transform: scale(.94);
 }
 
+html.dark .workspace-tab-add {
+  color: #94a3b8;
+}
+
 html.dark .workspace-tab-add:hover {
-  background: var(--brand-primary-tint, rgba(0, 200, 215, 0.15));
-  color: var(--brand-primary-light, #C9F2F6);
+  background: rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
 }
 
 .tab-context-menu {
